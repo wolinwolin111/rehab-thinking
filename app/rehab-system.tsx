@@ -1,355 +1,301 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { DIRECTION_RULES, getDirectionRule, type DirectionRule } from "./direction-rules";
 import {
   GENERAL_RED_FLAGS,
-  IMAGING_OPTIONS,
   REGIONS,
   detectFromText,
-  type CheckItem,
   type Exercise,
+  type InjuryPattern,
   type Region,
+  type RegionId,
 } from "./rehab-library";
 
 type Step = 0 | 1 | 2 | 3 | 4;
-type Result = "normal" | "limited" | "painful" | "weak" | "positive" | "skip";
-type AssessmentGroup = "movement" | "strength" | "function" | "special";
-
-const STEPS = ["症状信息", "先确认", "评估检查", "处理与复测", "训练与复查"];
-const RESULT_LABELS: Array<{ value: Result; label: string }> = [
-  { value: "normal", label: "正常" },
-  { value: "limited", label: "受限" },
-  { value: "painful", label: "疼痛" },
-  { value: "weak", label: "偏弱" },
-  { value: "skip", label: "未做" },
-];
-
-const EMPTY_SYMPTOMS = {
-  swelling: false,
-  bruising: false,
-  tenderness: false,
-  motion: false,
-  painfulAction: false,
-  weakness: false,
-  numbness: false,
-  loadLimited: false,
+type Result = "normal" | "limited" | "painful" | "weak" | "skip" | "positive";
+type Answer = "yes" | "no";
+type SymptomKey = "swelling" | "tenderness" | "motion" | "painfulAction" | "weakness" | "numbness";
+type Finding = {
+  id: string;
+  title: string;
+  kind: "immediate" | "delayed" | "training";
+  rule?: DirectionRule;
+  note: string;
 };
 
-const SYMPTOM_OPTIONS: Array<{ key: keyof typeof EMPTY_SYMPTOMS; label: string }> = [
+const STEP_LABELS = ["症状", "先确认", "检查", "处理", "训练复查"];
+const ONSETS = ["今天或昨天", "2–7天", "1–6周", "超过6周", "反复出现"];
+const PAIN_TYPES = ["酸痛", "胀痛", "刺痛", "牵拉痛", "麻或电感", "说不清"];
+const SYMPTOMS: Array<{ key: SymptomKey; label: string }> = [
   { key: "swelling", label: "有肿胀" },
-  { key: "bruising", label: "有淤青" },
   { key: "tenderness", label: "按压会痛" },
   { key: "motion", label: "活动受限" },
-  { key: "painfulAction", label: "有疼痛动作" },
-  { key: "weakness", label: "感觉力量不足" },
-  { key: "numbness", label: "有麻、刺、电感" },
-  { key: "loadLimited", label: "承重或日常使用受限" },
+  { key: "painfulAction", label: "做动作会痛" },
+  { key: "weakness", label: "力量不足" },
+  { key: "numbness", label: "有麻、刺或电感" },
 ];
 
-const PAIN_NATURES = ["酸痛", "胀痛", "刺痛", "牵拉痛", "麻/电感", "说不清"];
-const PAIN_TIMES = ["今天/昨天", "2–7天", "1–6周", "超过6周", "反复出现"];
+const REGION_WORDS: Record<RegionId, string[]> = {
+  neck: ["颈", "脖子", "落枕"], shoulder: ["肩", "抬手", "肩胛"], elbow: ["肘", "网球肘"], wrist: ["腕", "手腕", "手指", "拇指"],
+  thoracic: ["胸椎", "上背", "肋骨", "肩胛内侧"], back: ["腰", "下背", "坐骨"], hip: ["髋", "腹股沟", "大腿", "臀"],
+  knee: ["膝", "髌骨", "半月板"], ankle: ["踝", "崴脚", "跟腱", "脚脖"], foot: ["足底", "脚底", "前脚掌", "脚趾", "足背"],
+};
 
-function accessLabel(access: "self" | "assisted" | "trained") {
-  if (access === "self") return "可以单人完成";
-  if (access === "assisted") return "需要同伴协助";
-  return "需要受过训练的操作者";
+function inferRegion(text: string): RegionId | "" {
+  for (const [id, words] of Object.entries(REGION_WORDS) as Array<[RegionId, string[]]>) {
+    if (words.some((word) => text.includes(word))) return id;
+  }
+  return "";
 }
 
-function SummaryPill({ children }: { children: React.ReactNode }) {
-  return <span className="summary-pill">{children}</span>;
+function makeCustomPattern(region: Region, text: string): InjuryPattern {
+  const samples = region.injuries;
+  const uniqueExercises = (phase: "early" | "rebuild" | "return") => {
+    const seen = new Set<string>();
+    return samples.flatMap((item) => item[phase]).filter((item) => !seen.has(item.name) && seen.add(item.name)).slice(0, 3);
+  };
+  return {
+    id: `${region.id}-custom`, name: "自定义症状", type: "overuse", keywords: [], typical: text,
+    ask: [], palpation: [], special: [], softTissue: [], mobilization: [],
+    early: uniqueExercises("early"), rebuild: uniqueExercises("rebuild"), return: uniqueExercises("return"),
+  };
 }
 
-function ResultChooser({ value, onChange }: { value?: Result; onChange: (value: Result) => void }) {
-  return (
-    <div className="result-chooser" aria-label="记录检查结果">
-      {RESULT_LABELS.map((item) => (
-        <button
-          type="button"
-          key={item.value}
-          className={value === item.value ? `selected ${item.value}` : ""}
-          onClick={() => onChange(item.value)}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
+function OptionRow({ options, value, onChange }: { options: string[]; value: string; onChange: (value: string) => void }) {
+  return <div className="guide-options">{options.map((option) => <button type="button" key={option} className={value === option ? "selected" : ""} onClick={() => onChange(option)}>{option}</button>)}</div>;
 }
 
-function ExerciseCard({ item }: { item: Exercise }) {
+function StepHeader({ eyebrow, title, current, total }: { eyebrow: string; title: string; current?: number; total?: number }) {
+  return <header className="guide-heading"><div><span>{eyebrow}</span><h1>{title}</h1></div>{current && total ? <b>{current} / {total}</b> : null}</header>;
+}
+
+function ExerciseCard({ exercise }: { exercise: Exercise }) {
   const [open, setOpen] = useState(false);
-  return (
-    <article className="training-card">
-      <button className="motion-placeholder" type="button" onClick={() => setOpen(true)} aria-label={`查看${item.name}动作方法`}>
-        <span className="motion-figure" aria-hidden="true"><i /><b /><em /></span>
-        <strong>动作方法</strong>
-      </button>
-      <div className="training-copy">
-        <h3>{item.name}</h3>
-        <div className="sets-reps"><b>{item.groups}</b><b>{item.reps}</b></div>
-        <p><span>观察</span>{item.observe}</p>
-      </div>
-      {open && (
-        <div className="demo-backdrop" role="presentation" onClick={() => setOpen(false)}>
-          <section className="demo-sheet" role="dialog" aria-modal="true" aria-label={`${item.name}动作说明`} onClick={(event) => event.stopPropagation()}>
-            <header><div><span>动作演示</span><h2>{item.name}</h2></div><button type="button" onClick={() => setOpen(false)}>关闭</button></header>
-            <div className="demo-stage">
-              <span className="motion-figure large" aria-hidden="true"><i /><b /><em /></span>
-              <div className="video-reserved"><strong>视频位置已保留</strong><span>后续可直接上传自有拍摄视频</span></div>
-            </div>
-            <ol className="demo-instructions">
-              <li><b>摆好位置</b><span>{item.how}</span></li>
-              <li><b>完成数量</b><span>{item.groups}，{item.reps}</span></li>
-              <li><b>边做边看</b><span>{item.observe}</span></li>
-            </ol>
-            <div className="level-switch"><div><span>做不了</span><strong>{item.easier}</strong></div><div><span>太轻松</span><strong>{item.harder}</strong></div></div>
-          </section>
-        </div>
-      )}
-    </article>
-  );
-}
-
-function CheckCard({ item, value, onChange }: { item: CheckItem; value?: Result; onChange: (value: Result) => void }) {
-  return (
-    <article className="check-card">
-      <div className="check-number" aria-hidden="true">✓</div>
-      <div className="check-copy"><h3>{item.name}</h3><p>{item.how}</p><strong>观察：{item.observe}</strong></div>
-      <ResultChooser value={value} onChange={onChange} />
-    </article>
-  );
+  return <article className="simple-exercise">
+    <button type="button" className="exercise-open" onClick={() => setOpen((value) => !value)}><span>动作</span><strong>{exercise.name}</strong><b>{exercise.groups} · {exercise.reps}</b></button>
+    {open && <div className="exercise-detail"><p>{exercise.how}</p><dl><div><dt>观察</dt><dd>{exercise.observe}</dd></div><div><dt>做不了</dt><dd>{exercise.easier}</dd></div><div><dt>太轻松</dt><dd>{exercise.harder}</dd></div></dl><button type="button" disabled>视频演示 · 后续上传</button></div>}
+  </article>;
 }
 
 export default function RehabSystem() {
   const [step, setStep] = useState<Step>(0);
-  const [regionId, setRegionId] = useState("ankle");
-  const [injuryId, setInjuryId] = useState("ankle-lateral");
-  const [input, setInput] = useState("昨天打球落地时崴了右脚，外侧肿痛，走路有点跛");
-  const [side, setSide] = useState("右侧");
-  const [painTime, setPainTime] = useState("2–7天");
-  const [painNature, setPainNature] = useState("刺痛");
-  const [painScore, setPainScore] = useState(5);
-  const [symptoms, setSymptoms] = useState(EMPTY_SYMPTOMS);
-  const [redFlags, setRedFlags] = useState<Record<number, boolean>>({});
-  const [imaging, setImaging] = useState(IMAGING_OPTIONS[0]);
-  const [assessmentGroup, setAssessmentGroup] = useState<AssessmentGroup>("movement");
+  const [intakePart, setIntakePart] = useState(0);
+  const [description, setDescription] = useState("");
+  const [regionId, setRegionId] = useState<RegionId | "">("");
+  const [matchedInjuryId, setMatchedInjuryId] = useState("");
+  const [useMatch, setUseMatch] = useState(false);
+  const [location, setLocation] = useState("");
+  const [scene, setScene] = useState("");
+  const [side, setSide] = useState("");
+  const [onset, setOnset] = useState("");
+  const [painType, setPainType] = useState("");
+  const [symptoms, setSymptoms] = useState<Record<SymptomKey, boolean>>({ swelling: false, tenderness: false, motion: false, painfulAction: false, weakness: false, numbness: false });
+  const [safetyIndex, setSafetyIndex] = useState(0);
+  const [safety, setSafety] = useState<Record<number, Answer>>({});
+  const [imaging, setImaging] = useState("");
+  const [assessmentIndex, setAssessmentIndex] = useState(0);
   const [results, setResults] = useState<Record<string, Result>>({});
-  const [activeTreatment, setActiveTreatment] = useState(0);
-  const [treatmentResult, setTreatmentResult] = useState<Record<number, "better" | "same" | "worse">>({});
+  const [treatmentFinding, setTreatmentFinding] = useState(0);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [candidateResults, setCandidateResults] = useState<Record<string, "better" | "same" | "worse">>({});
+  const [treatmentDone, setTreatmentDone] = useState(false);
   const [trainingPhase, setTrainingPhase] = useState<"early" | "rebuild" | "return">("early");
   const [followup, setFollowup] = useState<Record<string, "better" | "same" | "worse">>({});
-  const [savedCount, setSavedCount] = useState(0);
   const [toast, setToast] = useState("");
 
-  const region = useMemo(() => REGIONS.find((item) => item.id === regionId) ?? REGIONS[0], [regionId]);
-  const pattern = useMemo(() => region.injuries.find((item) => item.id === injuryId) ?? region.injuries[0], [region, injuryId]);
+  const region = useMemo(() => REGIONS.find((item) => item.id === regionId), [regionId]);
+  const matchedPattern = useMemo(() => region?.injuries.find((item) => item.id === matchedInjuryId), [region, matchedInjuryId]);
+  const pattern = useMemo(() => region ? (useMatch && matchedPattern ? matchedPattern : makeCustomPattern(region, description)) : null, [region, useMatch, matchedPattern, description]);
 
-  const collected = useMemo(() => {
-    const items = [`${side}${region.name}`, pattern.name, painTime, `${painScore}分`, painNature];
-    SYMPTOM_OPTIONS.forEach((item) => { if (symptoms[item.key]) items.push(item.label); });
-    return items;
-  }, [side, region.name, pattern.name, painTime, painScore, painNature, symptoms]);
+  const intakeComplete = Boolean(description.trim().length >= 4 && region && location.trim() && scene.trim() && side && onset && painType && intakePart >= 6);
+  const hasSafetyConcern = Object.values(safety).includes("yes");
+  const safetyAnswered = GENERAL_RED_FLAGS.every((_, index) => Boolean(safety[index]));
+  const safetyComplete = Boolean(safetyAnswered && imaging && (!hasSafetyConcern || imaging !== "none"));
 
-  const flagged = Object.values(redFlags).some(Boolean);
-  const completedCount = Object.keys(results).length;
-  const resultValues = Object.values(results);
-  const hasLimited = symptoms.motion || resultValues.includes("limited");
-  const hasPain = symptoms.painfulAction || resultValues.includes("painful");
-  const hasWeak = symptoms.weakness || resultValues.includes("weak");
-  const hasPositive = resultValues.includes("positive");
+  const assessmentItems = useMemo(() => {
+    if (!region || !pattern) return [];
+    return [
+      ...region.movements.map((item) => ({ id: item.id, group: "活动度", title: item.name, how: item.how, observe: item.observe })),
+      ...region.strength.map((item) => ({ id: item.id, group: "力量", title: item.name, how: item.how, observe: item.observe })),
+      ...region.functions.map((item) => ({ id: item.id, group: "功能", title: item.name, how: item.how, observe: item.observe })),
+      ...pattern.special.map((item, index) => ({ id: `special-${index}`, group: "特殊检查", title: item.name, how: item.how, observe: `阳性表现：${item.positive}` })),
+    ];
+  }, [region, pattern]);
+  const assessmentComplete = assessmentItems.length > 0 && assessmentItems.every((item) => Boolean(results[item.id]));
 
-  const problems = useMemo(() => {
-    const next: string[] = [];
-    if (symptoms.swelling) next.push("肿胀仍存在");
-    if (hasLimited) next.push("活动方向受限");
-    if (hasPain) next.push("动作会诱发疼痛");
-    if (symptoms.tenderness) next.push("局部按压痛");
-    if (hasWeak) next.push("力量或控制不足");
-    if (symptoms.numbness) next.push("麻、刺或电感需要跟踪");
-    if (hasPositive) next.push("特殊检查阳性待确认");
-    if (!next.length) next.push("暂未记录明确异常，先完成基础检查");
-    return next;
-  }, [symptoms, hasLimited, hasPain, hasWeak, hasPositive]);
+  const findings = useMemo<Finding[]>(() => {
+    if (!region) return [];
+    const list: Finding[] = [];
+    if (symptoms.swelling) list.push({ id: "swelling", title: "肿胀", kind: "delayed", note: "先处理和观察肿胀；不要求当场消失。" });
+    region.movements.forEach((movement) => {
+      if (results[movement.id] === "limited" || results[movement.id] === "painful") {
+        const response = getDirectionRule(region.id, movement.id, movement.name);
+        list.push({ id: response.id, title: response.finding, kind: "immediate", rule: response, note: response.retest });
+      }
+    });
+    region.functions.forEach((item) => {
+      if (results[item.id] === "painful" || results[item.id] === "limited") {
+        const preferred = region.id === "knee" ? DIRECTION_RULES.find((rule) => rule.id === "knee-load-flex") : undefined;
+        const response = preferred ?? getDirectionRule(region.id, item.id, item.name);
+        list.push({ id: `${response.id}-${item.id}`, title: `${item.name}疼痛或受限`, kind: "immediate", rule: response, note: response.retest });
+      }
+    });
+    if (symptoms.tenderness) list.push({ id: "tenderness", title: "按压痛", kind: "delayed", note: "只记录范围，避免反复按压；24–48小时后再比较。" });
+    if (Object.entries(results).some(([id, value]) => id.startsWith("special-") && value === "positive")) list.push({ id: "positive-special", title: "特殊检查阳性", kind: "delayed", note: "记录具体阳性表现；结合影像或专业评估确认，不把单项检查当作诊断。" });
+    const weakness = region.strength.some((item) => results[item.id] === "weak" || results[item.id] === "painful") || symptoms.weakness;
+    if (weakness) list.push({ id: "weakness", title: "力量或控制不足", kind: "training", note: "直接安排训练，下次与健侧比较，不做当场反复测试。" });
+    if (symptoms.numbness) list.push({ id: "nerve", title: "麻、刺或电感", kind: "immediate", rule: getDirectionRule(region.id, "nerve", "神经相关动作"), note: "只保留不让症状向手脚末端扩散的方向。" });
+    return list.length ? list : [{ id: "no-clear", title: "暂未发现明确异常", kind: "training", note: "从基础能力训练开始，下次出现具体问题时再补查。" }];
+  }, [region, results, symptoms]);
 
-  const treatmentCards = useMemo(() => {
-    const cards: Array<{ label: string; title: string; do: string[]; observe: string; retest?: string; delayed?: boolean }> = [];
-    if (symptoms.swelling) cards.push({ label: "肿胀", title: "先减轻肿胀对活动的影响", do: ["抬高患处并进行轻柔主动活动", "由受过训练的操作者进行近端到远端再回流方向的轻柔处理", "减少会让肿胀持续增加的活动量"], observe: "记录轮廓、皮肤褶皱和同一位置的围度变化。", delayed: true });
-    if (hasLimited) cards.push({ label: "活动受限", title: `恢复${region.name}受限方向`, do: [`先处理候选肌肉：${pattern.softTissue.join("、")}`, "马上重复原受限方向", `改善不明显时，由受训人员尝试：${pattern.mobilization.join("、")}`], observe: "只看同一方向是否更顺、幅度是否增加。", retest: "用完全相同姿势重复原来的活动度测试。" });
-    if (hasPain) cards.push({ label: "疼痛动作", title: "找出能改变疼痛动作的因素", do: [`先对${pattern.softTissue.slice(0, 3).join("、")}做短时放松试验`, "改变一个动作条件：幅度、支撑、速度或关节位置", "每次只改变一个因素"], observe: "疼痛是否下降，动作是否更敢做。", retest: "按原速度、原范围重复同一个疼痛动作。" });
-    if (symptoms.tenderness) cards.push({ label: "按压痛", title: "减少局部刺激并观察恢复", do: ["不反复按压确认疼痛", `处理周围肌腹：${pattern.softTissue.slice(0, 2).join("、")}`, "根据受伤时间安排保护或逐步恢复活动"], observe: "观察24–48小时后压痛范围是否缩小，不要求当场消失。", delayed: true });
-    if (hasWeak) cards.push({ label: "力量不足", title: "直接进入对应力量训练", do: ["不追求当场力量变化", `先从“${pattern.early[0].name}”或“${pattern.rebuild[0].name}”开始`, "下次康复再与健侧比较力量和动作质量"], observe: "记录完成的组数、个数、动作质量和次日反应。", delayed: true });
-    if (symptoms.numbness) cards.push({ label: "麻刺电感", title: "先确认神经症状是否稳定", do: ["记录感觉出现的区域", "比较颈/腰与肢体动作是否改变症状", "只做不让症状向远端扩散的轻柔滑动"], observe: "症状向身体近端集中可继续；向手脚末端扩散则停止。", retest: "重复最容易改变感觉的动作，不反复拉到终点。" });
-    if (hasPositive) cards.push({ label: "阳性检查", title: "补充医学或影像信息", do: ["保存具体阳性检查和发生场景", "用问答记录是否有骨折、韧带、肌腱、骨髓水肿或积液", "遵守医生给出的固定、负重和训练限制"], observe: "阳性特殊检查只提高某个方向的可能性，不单独当作诊断。", delayed: true });
-    return cards.length ? cards : [{ label: "基础", title: "完成低负荷能力建立", do: ["选择最接近日常需求的动作", "从容易成功的版本开始", "下次比较完成质量"], observe: "训练中和次日均保持稳定。", delayed: true }];
-  }, [symptoms, hasLimited, hasPain, hasWeak, hasPositive, pattern, region.name]);
+  const maxUnlocked: Step = !intakeComplete ? 0 : !safetyComplete ? 1 : !assessmentComplete ? 2 : !treatmentDone ? 3 : 4;
+  const currentAssessment = assessmentItems[Math.min(assessmentIndex, Math.max(0, assessmentItems.length - 1))];
+  const currentFinding = findings[Math.min(treatmentFinding, findings.length - 1)];
+  const candidates = currentFinding?.rule ? [
+    ...currentFinding.rule.muscleCandidates.map((name) => ({ type: "肌肉处理", name })),
+    ...currentFinding.rule.jointCandidates.map((name) => ({ type: "关节处理 · 受训人员", name })),
+  ] : [];
+  const currentCandidate = candidates[candidateIndex];
 
-  function chooseRegion(next: Region) {
-    setRegionId(next.id);
-    setInjuryId(next.injuries[0].id);
-    setResults({});
-    setActiveTreatment(0);
+  const summary = [region?.name, location, side, onset, painType].filter(Boolean) as string[];
+  const exercises = pattern ? pattern[trainingPhase] : [];
+
+  function analyzeDescription() {
+    if (description.trim().length < 4) { setToast("请先用一句话描述问题"); return; }
+    const detected = detectFromText(description);
+    const detectedRegion = detected?.regionId ?? inferRegion(description);
+    setRegionId(detectedRegion);
+    setMatchedInjuryId(detected?.id ?? "");
+    setUseMatch(Boolean(detected));
+    if (/左/.test(description) && /右/.test(description)) setSide("双侧"); else if (/左/.test(description)) setSide("左侧"); else if (/右/.test(description)) setSide("右侧");
+    setSymptoms((current) => ({ ...current, swelling: /肿|积液/.test(description), tenderness: /压痛|按压/.test(description), motion: /受限|僵|不能伸|不能弯/.test(description), painfulAction: /痛|疼/.test(description), weakness: /无力|力弱/.test(description), numbness: /麻|电|放射/.test(description) }));
+    setIntakePart(1);
   }
 
-  function parseInput() {
-    const detected = detectFromText(input);
-    if (!detected) {
-      setToast("暂时没识别到明确部位，请从关节列表选择");
-      return;
-    }
-    setRegionId(detected.regionId);
-    setInjuryId(detected.id);
-    const text = input;
-    setSymptoms((current) => ({
-      ...current,
-      swelling: /肿|积液/.test(text), bruising: /淤|青紫/.test(text), tenderness: /按|压痛/.test(text),
-      motion: /受限|不能动|僵/.test(text), painfulAction: /痛|疼/.test(text), weakness: /无力|力弱/.test(text),
-      numbness: /麻|电|放射/.test(text), loadLimited: /不能走|跛|不能承重|抬不起/.test(text),
-    }));
-    setToast(`已匹配：${detected.regionName} · ${detected.name}`);
+  function goTo(next: Step) {
+    if (next > maxUnlocked) { setToast(`请先完成“${STEP_LABELS[maxUnlocked]}”`); return; }
+    setStep(next);
+  }
+
+  function recordAssessment(value: Result) {
+    if (!currentAssessment) return;
+    setResults((current) => ({ ...current, [currentAssessment.id]: value }));
+    if (assessmentIndex < assessmentItems.length - 1) setAssessmentIndex((index) => index + 1);
+  }
+
+  function recordCandidate(value: "better" | "same" | "worse") {
+    if (!currentFinding || !currentCandidate) return;
+    const key = `${currentFinding.id}-${candidateIndex}`;
+    setCandidateResults((current) => ({ ...current, [key]: value }));
+    if (value !== "better" && candidateIndex < candidates.length - 1) setCandidateIndex((index) => index + 1);
+  }
+
+  function nextFinding() {
+    if (treatmentFinding < findings.length - 1) { setTreatmentFinding((index) => index + 1); setCandidateIndex(0); }
+    else { setTreatmentDone(true); setStep(4); }
   }
 
   function saveCase() {
-    const key = "rehabmind-cases";
-    let previous: unknown[] = [];
-    try { previous = JSON.parse(window.localStorage.getItem(key) ?? "[]") as unknown[]; } catch { previous = []; }
-    const record = { id: Date.now(), savedAt: new Date().toISOString(), input, regionId, injuryId, side, painTime, painNature, painScore, symptoms, imaging, results, treatmentResult, followup };
-    const next = [record, ...previous].slice(0, 20);
-    window.localStorage.setItem(key, JSON.stringify(next));
-    setSavedCount(next.length);
-    setToast("本次记录已保存在当前设备");
+    const record = { savedAt: new Date().toISOString(), description, regionId, location, scene, side, onset, painType, symptoms, safety, imaging, results, candidateResults, followup };
+    let saved: unknown[] = [];
+    try { saved = JSON.parse(window.localStorage.getItem("rehabmind-cases") ?? "[]") as unknown[]; } catch { saved = []; }
+    window.localStorage.setItem("rehabmind-cases", JSON.stringify([record, ...saved].slice(0, 20)));
+    setToast("记录已保存到当前设备");
   }
 
-  const assessmentItems = assessmentGroup === "movement" ? region.movements : assessmentGroup === "strength" ? region.strength : region.functions;
-  const phaseExercises = trainingPhase === "early" ? pattern.early : trainingPhase === "rebuild" ? pattern.rebuild : pattern.return;
-  const currentTreatment = treatmentCards[Math.min(activeTreatment, treatmentCards.length - 1)];
+  return <main className="guided-app">
+    <header className="guided-topbar"><button type="button" onClick={() => goTo(0)}><b>R</b><strong>RehabMind</strong></button><span>{region ? `${side || ""}${region.name}` : "新症状"}</span><button type="button" onClick={saveCase}>保存</button></header>
 
-  return (
-    <main className="rehab-app">
-      <header className="app-header">
-        <button className="brand" type="button" onClick={() => setStep(0)}><span>R</span><div><strong>RehabMind</strong><small>运动康复思路助手</small></div></button>
-        <div className="header-case"><span>{region.short}</span><div><b>{side}{region.name}</b><small>{pattern.name}</small></div></div>
-        <button className="save-button" type="button" onClick={saveCase}>保存本次记录{savedCount > 0 && <i>{savedCount}</i>}</button>
-      </header>
+    <nav className="locked-steps" aria-label="康复流程">
+      {STEP_LABELS.map((label, index) => <button type="button" key={label} className={`${step === index ? "active" : ""} ${index <= maxUnlocked ? "available" : "locked"}`} onClick={() => goTo(index as Step)} disabled={index > maxUnlocked}><i>{index < maxUnlocked ? "✓" : index + 1}</i><span>{label}</span></button>)}
+    </nav>
 
-      <nav className="step-rail" aria-label="康复流程">
-        {STEPS.map((label, index) => (
-          <button type="button" key={label} className={step === index ? "active" : step > index ? "done" : ""} onClick={() => setStep(index as Step)}>
-            <i>{step > index ? "✓" : index + 1}</i><span>{label}</span>
-          </button>
-        ))}
-      </nav>
+    {summary.length > 0 && <div className="case-summary"><span>已收集</span><div>{summary.map((item) => <b key={item}>{item}</b>)}</div></div>}
 
-      <div className="collected-strip">
-        <strong>已收集</strong><div>{collected.map((item) => <SummaryPill key={item}>{item}</SummaryPill>)}</div>
-      </div>
+    <section className="guided-workspace">
+      {step === 0 && <div className="guide-page">
+        {intakePart === 0 && <>
+          <StepHeader eyebrow="症状信息收集" title="先用自己的话，说清楚哪里不舒服" />
+          <div className="hero-input"><textarea autoFocus value={description} onChange={(event) => setDescription(event.target.value)} placeholder="例如：昨天打球落地崴了右脚，外侧肿，走路时疼……&#10;也可以输入系统里没有的情况。" /><button type="button" onClick={analyzeDescription}>开始询问</button></div>
+          <p className="input-promise">系统会保留你的原话。识别不到现成类型，也可以继续建立自定义评估。</p>
+        </>}
+        {intakePart === 1 && <>
+          <StepHeader eyebrow="问题 1" title="最接近哪个部位？" current={1} total={6} />
+          <select className="large-select" value={regionId} onChange={(event) => { setRegionId(event.target.value as RegionId); setMatchedInjuryId(""); setUseMatch(false); }}><option value="">请选择部位</option>{REGIONS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select>
+          {matchedPattern && <div className="match-suggestion"><span>从原话暂时匹配到</span><strong>{matchedPattern.name}</strong><div><button type="button" className={useMatch ? "selected" : ""} onClick={() => setUseMatch(true)}>基本符合</button><button type="button" className={!useMatch ? "selected" : ""} onClick={() => setUseMatch(false)}>不符合，按自定义症状继续</button></div></div>}
+          <button className="next-question" type="button" disabled={!regionId} onClick={() => setIntakePart(2)}>下一题</button>
+        </>}
+        {intakePart === 2 && <>
+          <StepHeader eyebrow="问题 2" title="最具体是哪里？" current={2} total={6} />
+          <input className="large-text" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="例如：右膝外侧、髌骨下方、左外踝前下方" />
+          <button className="next-question" type="button" disabled={!location.trim()} onClick={() => setIntakePart(3)}>下一题</button>
+        </>}
+        {intakePart === 3 && <>
+          <StepHeader eyebrow="问题 3" title="什么时候、做什么会出现？" current={3} total={6} />
+          <textarea className="large-text area" value={scene} onChange={(event) => setScene(event.target.value)} placeholder="例如：下楼时痛；跑步20分钟后出现；早上第一步最明显" />
+          <button className="next-question" type="button" disabled={!scene.trim()} onClick={() => setIntakePart(4)}>下一题</button>
+        </>}
+        {intakePart === 4 && <>
+          <StepHeader eyebrow="问题 4" title="出现多久了？" current={4} total={6} />
+          <OptionRow options={ONSETS} value={onset} onChange={(value) => { setOnset(value); setIntakePart(5); }} />
+        </>}
+        {intakePart === 5 && <>
+          <StepHeader eyebrow="问题 5" title="最接近哪种感觉？" current={5} total={6} />
+          <OptionRow options={PAIN_TYPES} value={painType} onChange={(value) => { setPainType(value); setIntakePart(6); }} />
+        </>}
+        {intakePart === 6 && <>
+          <StepHeader eyebrow="最后一题" title="现在还有哪些表现？" current={6} total={6} />
+          <div className="symptom-checks">{SYMPTOMS.map((item) => <button type="button" key={item.key} className={symptoms[item.key] ? "selected" : ""} onClick={() => setSymptoms((current) => ({ ...current, [item.key]: !current[item.key] }))}><i>{symptoms[item.key] ? "✓" : ""}</i><span>{item.label}</span></button>)}</div>
+          <div className="side-question"><strong>哪一侧？</strong><OptionRow options={["左侧", "右侧", "双侧", "中间/不分侧"]} value={side} onChange={setSide} /></div>
+          <button className="next-question" type="button" disabled={!intakeComplete} onClick={() => setStep(1)}>完成症状收集</button>
+        </>}
+      </div>}
 
-      <section className="workspace">
-        {step === 0 && (
-          <div className="intake-layout">
-            <aside className="joint-atlas">
-              <header><span>10个区域</span><strong>选择症状部位</strong></header>
-              <div>{REGIONS.map((item) => <button type="button" key={item.id} className={region.id === item.id ? "selected" : ""} onClick={() => chooseRegion(item)}><i>{item.short}</i><span>{item.name}</span><b>{item.injuries.length}</b></button>)}</div>
-            </aside>
-            <div className="intake-main">
-              <div className="page-heading"><span>症状信息收集</span><h1>先把这次最困扰的问题说清楚</h1></div>
-              <div className="symptom-input"><textarea value={input} onChange={(event) => setInput(event.target.value)} aria-label="描述症状" /><button type="button" onClick={parseInput}>识别症状</button></div>
-              <div className="pattern-picker">
-                <strong>{region.name}常见问题</strong>
-                <div>{region.injuries.map((item) => <button type="button" key={item.id} className={pattern.id === item.id ? "selected" : ""} onClick={() => setInjuryId(item.id)}><b>{item.name}</b><span>{item.typical}</span></button>)}</div>
-              </div>
-              <div className="quick-facts">
-                <section><strong>哪一侧</strong><div>{["左侧", "右侧", "双侧/中间"].map((item) => <button key={item} type="button" className={side === item ? "selected" : ""} onClick={() => setSide(item)}>{item}</button>)}</div></section>
-                <section><strong>出现多久</strong><div>{PAIN_TIMES.map((item) => <button key={item} type="button" className={painTime === item ? "selected" : ""} onClick={() => setPainTime(item)}>{item}</button>)}</div></section>
-                <section><strong>疼痛感觉</strong><div>{PAIN_NATURES.map((item) => <button key={item} type="button" className={painNature === item ? "selected" : ""} onClick={() => setPainNature(item)}>{item}</button>)}</div></section>
-                <section className="pain-scale"><strong>最明显时有多痛</strong><div><input type="range" min="0" max="10" value={painScore} onChange={(event) => setPainScore(Number(event.target.value))} /><b>{painScore}分</b></div></section>
-              </div>
-              <div className="symptom-flags"><strong>现在有哪些表现</strong><div>{SYMPTOM_OPTIONS.map((item) => <button type="button" key={item.key} className={symptoms[item.key] ? "selected" : ""} onClick={() => setSymptoms((current) => ({ ...current, [item.key]: !current[item.key] }))}>{symptoms[item.key] ? "✓ " : "+ "}{item.label}</button>)}</div></div>
-              <div className="ask-list"><strong>还要问清楚</strong>{pattern.ask.map((item) => <p key={item}>{item}</p>)}</div>
-            </div>
-          </div>
-        )}
+      {step === 1 && <div className="guide-page">
+        {safetyIndex < GENERAL_RED_FLAGS.length ? <>
+          <StepHeader eyebrow="先确认" title={GENERAL_RED_FLAGS[safetyIndex]} current={safetyIndex + 1} total={GENERAL_RED_FLAGS.length + 1} />
+          {safetyIndex === 1 && <p className="plain-note">伤后局部淤青不算这里的异常颜色；这里指整只手或脚持续发凉、苍白或发紫。</p>}
+          <div className="yes-no"><button type="button" className={safety[safetyIndex] === "no" ? "selected" : ""} onClick={() => { setSafety((current) => ({ ...current, [safetyIndex]: "no" })); setSafetyIndex((index) => index + 1); }}>没有</button><button type="button" className={safety[safetyIndex] === "yes" ? "selected alert" : ""} onClick={() => { setSafety((current) => ({ ...current, [safetyIndex]: "yes" })); setSafetyIndex((index) => index + 1); }}>有</button></div>
+        </> : <>
+          <StepHeader eyebrow="先确认" title="是否有影像或医生给出的限制？" current={GENERAL_RED_FLAGS.length + 1} total={GENERAL_RED_FLAGS.length + 1} />
+          <div className="imaging-choices"><button type="button" className={imaging === "none" ? "selected" : ""} onClick={() => setImaging("none")}>没有做过影像</button><button type="button" className={imaging === "clear" ? "selected" : ""} onClick={() => setImaging("clear")}>做过，没有骨折或明确限制</button><button type="button" className={imaging === "finding" ? "selected" : ""} onClick={() => setImaging("finding")}>有骨折、韧带/肌腱或骨髓水肿等结果</button><button type="button" className={imaging === "restricted" ? "selected" : ""} onClick={() => setImaging("restricted")}>医生给了固定、负重或训练限制</button></div>
+          {hasSafetyConcern && imaging === "none" && <div className="stop-note"><strong>这次先保存</strong><span>完成相应医学或影像确认后，从这个案例继续，不会丢失前面的信息。</span></div>}
+          <button className="next-question" type="button" disabled={!safetyComplete} onClick={() => setStep(2)}>进入检查</button>
+        </>}
+        {safetyIndex > 0 && <button className="back-question" type="button" onClick={() => setSafetyIndex((index) => Math.max(0, index - 1))}>返回上一题</button>}
+      </div>}
 
-        {step === 1 && (
-          <div className="single-column">
-            <div className="page-heading"><span>先确认</span><h1>只确认会改变今天流程的信息</h1></div>
-            <div className="safety-card">
-              <header><div><span>明显异常</span><h2>普通肿胀和伤后淤青，不算“明显变形或异常颜色”</h2></div><b>{flagged ? "需要先确认" : "可继续检查"}</b></header>
-              <div className="safety-list">
-                {GENERAL_RED_FLAGS.map((item, index) => <article key={item}><strong>{item}</strong><div><button type="button" className={redFlags[index] === false ? "selected safe" : ""} onClick={() => setRedFlags((current) => ({ ...current, [index]: false }))}>没有</button><button type="button" className={redFlags[index] === true ? "selected alert" : ""} onClick={() => setRedFlags((current) => ({ ...current, [index]: true }))}>有</button></div></article>)}
-              </div>
-            </div>
-            <div className="imaging-card">
-              <header><span>影像学信息</span><h2>不用粘贴报告，按已经知道的结果选择</h2></header>
-              <div>{IMAGING_OPTIONS.map((item) => <button type="button" key={item} className={imaging === item ? "selected" : ""} onClick={() => setImaging(item)}>{item}</button>)}</div>
-            </div>
-            {flagged && <div className="route-notice alert"><strong>先补充医学评估</strong><p>保存这次记录。获得影像或医生意见后，从本案例继续评估；不是永久停止康复流程。</p></div>}
-          </div>
-        )}
+      {step === 2 && currentAssessment && <div className="guide-page assessment-page">
+        <StepHeader eyebrow={currentAssessment.group} title={currentAssessment.title} current={assessmentIndex + 1} total={assessmentItems.length} />
+        <article className="one-check"><div><span>怎么做</span><p>{currentAssessment.how}</p></div><div><span>观察什么</span><p>{currentAssessment.observe}</p></div></article>
+        {assessmentIndex === 0 && <p className="plain-note">有健侧时先做健侧，再用相同姿势和速度做患侧。明显肿胀挡住动作时选择“暂不检查”。</p>}
+        {currentAssessment.group === "特殊检查" ? <div className="result-options special-results"><button type="button" onClick={() => recordAssessment("normal")}>阴性</button><button type="button" onClick={() => recordAssessment("positive")}>阳性</button><button type="button" onClick={() => recordAssessment("skip")}>未做</button></div> : <div className="result-options"><button type="button" onClick={() => recordAssessment("normal")}>正常</button><button type="button" onClick={() => recordAssessment("limited")}>受限</button><button type="button" onClick={() => recordAssessment("painful")}>会痛</button><button type="button" onClick={() => recordAssessment("weak")}>偏弱</button><button type="button" onClick={() => recordAssessment("skip")}>暂不检查</button></div>}
+        <div className="question-controls"><button type="button" disabled={assessmentIndex === 0} onClick={() => setAssessmentIndex((index) => Math.max(0, index - 1))}>上一项</button>{assessmentComplete && <button type="button" className="primary" onClick={() => setStep(3)}>完成检查</button>}</div>
+      </div>}
 
-        {step === 2 && (
-          <div className="assessment-workspace">
-            <div className="page-heading"><span>评估检查</span><h1>一次只做一项，结果直接记下来</h1></div>
-            {symptoms.swelling && <div className="route-notice"><strong>当前有明显肿胀</strong><p>先记录轮廓和围度。过度肿胀时不强行测终末角度，待肿胀下降后补测。</p></div>}
-            <div className="assessment-tabs">
-              {([[
-                "movement", "活动度", region.movements.length
-              ], ["strength", "肌肉力量", region.strength.length], ["function", "功能动作", region.functions.length], ["special", "特殊检查", pattern.special.length]] as [AssessmentGroup, string, number][]).map(([id, label, count]) => <button type="button" key={id} className={assessmentGroup === id ? "active" : ""} onClick={() => setAssessmentGroup(id)}><span>{label}</span><b>{count}项</b></button>)}
-            </div>
-            <div className="comparison-rule"><span>比较方法</span><strong>{region.id === "back" || region.id === "neck" || region.id === "thoracic" ? "和本人平时状态、左右方向比较" : "先做健侧，再用同样姿势、速度和力量做患侧"}</strong></div>
-            {assessmentGroup !== "special" ? (
-              <div className="check-list">{assessmentItems.map((item) => <CheckCard key={item.id} item={item} value={results[item.id]} onChange={(value) => setResults((current) => ({ ...current, [item.id]: value }))} />)}</div>
-            ) : (
-              <div className="check-list special-list">{pattern.special.map((item, index) => { const id = `special-${pattern.id}-${index}`; return <article className="check-card" key={item.name}><div className="access-badge">{accessLabel(item.access)}</div><div className="check-copy"><h3>{item.name}</h3><p>{item.how}</p><strong>阳性：{item.positive}</strong><em>下一步：{item.next}</em></div><div className="binary-result"><button type="button" className={results[id] === "normal" ? "selected" : ""} onClick={() => setResults((current) => ({ ...current, [id]: "normal" }))}>阴性</button><button type="button" className={results[id] === "positive" ? "selected positive" : ""} onClick={() => setResults((current) => ({ ...current, [id]: "positive" }))}>阳性</button><button type="button" className={results[id] === "skip" ? "selected" : ""} onClick={() => setResults((current) => ({ ...current, [id]: "skip" }))}>未做</button></div></article>; })}</div>
-            )}
-          </div>
-        )}
+      {step === 3 && currentFinding && <div className="guide-page treatment-page">
+        <StepHeader eyebrow={`需要处理或跟踪 · ${treatmentFinding + 1}/${findings.length}`} title={currentFinding.title} />
+        {currentFinding.kind !== "immediate" ? <>
+          <div className="delayed-finding"><strong>{currentFinding.kind === "training" ? "直接安排训练" : "留到下次比较"}</strong><p>{currentFinding.note}</p></div>
+          <button className="next-question" type="button" onClick={nextFinding}>{treatmentFinding < findings.length - 1 ? "看下一个问题" : "进入训练"}</button>
+        </> : <>
+          {currentFinding.rule && <div className="check-first"><span>处理前先看</span>{currentFinding.rule.firstChecks.map((item) => <p key={item}>{item}</p>)}</div>}
+          {currentCandidate ? <article className="candidate-card"><span>{currentCandidate.type}</span><h2>{currentCandidate.name}</h2><div><b>处理后复测</b><p>{currentFinding.rule?.retest}</p></div><div className="candidate-actions"><button type="button" className="better" onClick={() => recordCandidate("better")}>有改善，保留</button><button type="button" onClick={() => recordCandidate("same")}>没变化，试下一个</button><button type="button" className="worse" onClick={() => recordCandidate("worse")}>加重，停止并换方向</button></div></article> : <div className="delayed-finding"><strong>候选已经尝试完</strong><p>没有找到明确的即时改变时，不继续堆叠处理；保留训练或补充影像/专业评估。</p></div>}
+          {currentCandidate && candidateResults[`${currentFinding.id}-${candidateIndex}`] === "better" && <div className="keep-result"><strong>保留这个方向</strong><span>{currentFinding.rule?.keep}</span></div>}
+          <button className="next-question" type="button" disabled={Boolean(currentCandidate) && !candidateResults[`${currentFinding.id}-${candidateIndex}`]} onClick={nextFinding}>{treatmentFinding < findings.length - 1 ? "记录并看下一个问题" : "完成处理，进入训练"}</button>
+        </>}
+      </div>}
 
-        {step === 3 && (
-          <div className="treatment-workspace">
-            <div className="page-heading"><span>处理与复测</span><h1>先处理能改变的，再用原动作验证</h1></div>
-            <section className="problem-ledger"><header><span>发现 {problems.length} 个需要处理或跟踪的问题</span></header><div>{problems.map((item, index) => <article key={item}><b>{index + 1}</b><strong>{item}</strong></article>)}</div></section>
-            <div className="treatment-layout">
-              <nav>{treatmentCards.map((item, index) => <button type="button" key={`${item.label}-${index}`} className={activeTreatment === index ? "active" : ""} onClick={() => setActiveTreatment(index)}><i>{index + 1}</i><span>{item.label}</span></button>)}</nav>
-              <article className="treatment-focus">
-                <header><span>现在处理</span><h2>{currentTreatment.title}</h2></header>
-                <div className="do-list"><strong>怎么做</strong><ol>{currentTreatment.do.map((item) => <li key={item}>{item}</li>)}</ol></div>
-                <div className="observe-box"><span>做的时候看</span><strong>{currentTreatment.observe}</strong></div>
-                {currentTreatment.retest ? <div className="retest-box"><div><span>马上复测</span><strong>{currentTreatment.retest}</strong></div><div className="three-result">{(["better", "same", "worse"] as const).map((value) => <button type="button" key={value} className={treatmentResult[activeTreatment] === value ? `selected ${value}` : ""} onClick={() => setTreatmentResult((current) => ({ ...current, [activeTreatment]: value }))}>{value === "better" ? "改善" : value === "same" ? "没变化" : "加重"}</button>)}</div></div> : <div className="delayed-box"><span>不用当场反复测</span><strong>记录今天做了什么，下次康复再比较。</strong></div>}
-                <footer>{treatmentResult[activeTreatment] === "better" ? "有效：保留这个方向，进入训练。" : treatmentResult[activeTreatment] === "same" ? "没变化：换一个肌肉或由受训人员尝试关节松动。" : treatmentResult[activeTreatment] === "worse" ? "加重：停止这个方法，回到评估重新判断。" : "完成处理后选择结果。"}</footer>
-              </article>
-            </div>
-          </div>
-        )}
+      {step === 4 && pattern && <div className="guide-page training-page">
+        <StepHeader eyebrow="训练与复查" title="本次做什么，下次回来查什么" />
+        <div className="phase-switch"><button type="button" className={trainingPhase === "early" ? "selected" : ""} onClick={() => setTrainingPhase("early")}>先恢复日常</button><button type="button" className={trainingPhase === "rebuild" ? "selected" : ""} onClick={() => setTrainingPhase("rebuild")}>补回力量控制</button><button type="button" className={trainingPhase === "return" ? "selected" : ""} onClick={() => setTrainingPhase("return")}>回到运动</button></div>
+        <div className="exercise-list">{exercises.map((exercise) => <ExerciseCard key={exercise.name} exercise={exercise} />)}</div>
+        <section className="followup-simple"><header><span>二次、三次康复</span><h2>只复查上次留下的问题</h2></header>{findings.map((finding) => <article key={finding.id}><strong>{finding.title}</strong><div><button type="button" className={followup[finding.id] === "better" ? "selected" : ""} onClick={() => setFollowup((current) => ({ ...current, [finding.id]: "better" }))}>改善</button><button type="button" className={followup[finding.id] === "same" ? "selected" : ""} onClick={() => setFollowup((current) => ({ ...current, [finding.id]: "same" }))}>一样</button><button type="button" className={followup[finding.id] === "worse" ? "selected alert" : ""} onClick={() => setFollowup((current) => ({ ...current, [finding.id]: "worse" }))}>加重</button></div></article>)}<footer><p><b>肿胀、疼痛或活动受限还在：</b>继续对应处理，同时保留能完成的训练。</p><p><b>出现新症状：</b>回到检查，增加相关项目。</p><p><b>只是力量仍不足：</b>继续训练，下次再与健侧比较。</p></footer></section>
+        <button className="next-question" type="button" onClick={saveCase}>完成并保存</button>
+      </div>}
+    </section>
 
-        {step === 4 && (
-          <div className="training-workspace">
-            <div className="page-heading"><span>训练与复查</span><h1>本次练什么，下次回来查什么</h1></div>
-            <div className="phase-tabs">
-              <button type="button" className={trainingPhase === "early" ? "active" : ""} onClick={() => setTrainingPhase("early")}><i>1</i><span>先恢复日常</span><b>疼痛、肿胀或活动仍明显</b></button>
-              <button type="button" className={trainingPhase === "rebuild" ? "active" : ""} onClick={() => setTrainingPhase("rebuild")}><i>2</i><span>补回能力</span><b>日常动作基本可完成</b></button>
-              <button type="button" className={trainingPhase === "return" ? "active" : ""} onClick={() => setTrainingPhase("return")}><i>3</i><span>回到运动</span><b>力量和控制接近健侧</b></button>
-            </div>
-            <section className="session-plan">
-              <header><div><span>{trainingPhase === "early" ? "第1阶段" : trainingPhase === "rebuild" ? "第2阶段" : "第3阶段"}</span><h2>今天做这 {phaseExercises.length} 个动作</h2></div><b>视频功能已预留，当前先看动作方法</b></header>
-              <div className="exercise-grid">{phaseExercises.map((item) => <ExerciseCard key={item.name} item={item} />)}</div>
-            </section>
-            <section className="followup-board">
-              <header><span>二次、三次康复都从这里开始</span><h2>只复查上次发现的问题</h2></header>
-              <div className="followup-grid">
-                {problems.map((item) => <article key={item}><strong>{item}</strong><div>{(["better", "same", "worse"] as const).map((value) => <button type="button" key={value} className={followup[item] === value ? `selected ${value}` : ""} onClick={() => setFollowup((current) => ({ ...current, [item]: value }))}>{value === "better" ? "改善" : value === "same" ? "一样" : "加重"}</button>)}</div></article>)}
-              </div>
-              <div className="followup-decision"><div><span>还有肿胀、疼痛或活动受限</span><strong>继续对应处理，同时保留能完成的训练</strong></div><div><span>出现新的症状</span><strong>回到评估检查，增加相关测试</strong></div><div><span>力量与功能仍不足</span><strong>不反复做当场复测，继续训练并在下次比较</strong></div></div>
-            </section>
-          </div>
-        )}
-      </section>
-
-      <footer className="action-bar">
-        <button type="button" disabled={step === 0} onClick={() => setStep((Math.max(0, step - 1)) as Step)}>返回上一步</button>
-        <div><span>第 {step + 1} / 5 步</span><strong>{completedCount > 0 ? `已记录 ${completedCount} 项检查` : pattern.name}</strong></div>
-        {step < 4 ? <button type="button" className="primary" onClick={() => setStep((step + 1) as Step)}>继续：{STEPS[step + 1]}</button> : <button type="button" className="primary" onClick={saveCase}>完成并保存</button>}
-      </footer>
-      {toast && <button type="button" className="toast" onClick={() => setToast("")}>{toast}</button>}
-    </main>
-  );
+    {toast && <button type="button" className="guided-toast" onClick={() => setToast("")}>{toast}</button>}
+  </main>;
 }
