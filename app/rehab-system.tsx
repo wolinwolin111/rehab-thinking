@@ -10,7 +10,7 @@ import {
   type SimpleCheck,
   type TreatmentCandidate,
 } from "./first-batch-modules";
-import { buildChiefComplaintPlan } from "./chief-complaint-rules";
+import { buildChiefComplaintPlan, buildHomeCare, candidateStrengthTags } from "./chief-complaint-rules";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 type Answer = "yes" | "no";
@@ -74,6 +74,14 @@ function resultName(value?: SimpleResult) {
   return ({ normal: "基本正常", present: "存在", painful: "疼痛", weak: "偏弱", limited: "受限", skip: "未检查", positive: "阳性" } as Record<string, string>)[value || ""] || "";
 }
 
+function candidateLabel(type: TreatmentCandidate["type"]) {
+  if (type === "muscle") return "肌肉反应测试";
+  if (type === "joint") return "关节调整 · 受训人员";
+  if (type === "neural") return "神经分布与滑动 · 受训人员";
+  if (type === "irritability") return "局部刺激与负荷管理";
+  return "主动控制";
+}
+
 export default function RehabSystem() {
   const [step, setStep] = useState<Step>(0);
   const [description, setDescription] = useState("");
@@ -98,11 +106,21 @@ export default function RehabSystem() {
   const [toast, setToast] = useState("");
 
   const selectedModule = FIRST_BATCH_MODULES.find((item) => item.id === moduleId);
-  const chiefPlan = useMemo(() => selectedModule ? buildChiefComplaintPlan(selectedModule.id, location, painAction, description) : undefined, [selectedModule, location, painAction, description]);
+  const chiefPlan = useMemo(() => selectedModule ? buildChiefComplaintPlan(selectedModule.id, location, painAction, description, painType, mechanism, symptoms, onset, side) : undefined, [selectedModule, location, painAction, description, painType, mechanism, symptoms, onset, side]);
   const inferred = inferModule(`${description} ${location}`);
   const combinedText = `${description} ${location} ${painAction} ${mechanism} ${painType}`;
   const assessments = useMemo<AssessmentItem[]>(() => {
-    if (!selectedModule) return [];
+    if (!selectedModule || !chiefPlan) return [];
+    const profileCheck: AssessmentItem = {
+      kind: "local",
+      check: chiefPlan.profile === "muscle-load"
+        ? { id: "profile-muscle", title: "相关肌肉张力与力量", how: "围绕主诉位置比较相关肌肉的紧张、压痛、主动发力和健侧力量；一次只比较一个区域。", observe: "哪块肌肉紧、弱或发力时能重现熟悉症状。" }
+        : chiefPlan.profile === "irritable"
+          ? { id: "profile-irritable", title: "局部刺激程度与可能原因", how: "确认外伤时间、肿胀、皮温、静息反应和负荷规律；再观察是否有肌肉反复牵拉或关节轨迹反复碰撞。", observe: "局部反应是否正在加重，以及哪个动作和负荷最相关。" }
+          : chiefPlan.profile === "neural"
+            ? { id: "profile-neural", title: "麻电分布、感觉与力量", how: "画出麻、电或放射范围，比较两侧轻触感觉，以及伸膝、勾脚、外翻和脚趾等相关力量。", observe: "症状是否沿固定路径、是否伴感觉下降或进行性无力。" }
+            : { id: "profile-mixed", title: "疼痛性质补充检查", how: "结合位置、动作、局部反应、活动度和力量共同比较。", observe: "找出最能重复主诉的检查。" },
+    };
     const locals = selectedModule.localChecks.filter((check) => {
       if (check.id.includes("swelling")) return symptoms.includes("swelling");
       if (check.id.includes("tender")) return symptoms.includes("tenderness");
@@ -113,8 +131,11 @@ export default function RehabSystem() {
     const strengths = selectedModule.strengths.map((check) => ({ kind: "strength" as const, check }));
     const functions = selectedModule.functions.map((check) => ({ kind: "function" as const, check }));
     const specials = selectedModule.specialChecks.filter((check) => check.trigger.test(combinedText)).map((check) => ({ kind: "special" as const, check, next: check.next }));
-    return [...locals, ...motions, ...strengths, ...functions, ...specials];
-  }, [selectedModule, symptoms, combinedText]);
+    if (chiefPlan.profile === "muscle-load") return [profileCheck, ...locals, ...strengths, ...motions, ...functions, ...specials];
+    if (chiefPlan.profile === "neural") return [profileCheck, ...specials, ...motions, ...strengths, ...functions, ...locals];
+    if (chiefPlan.profile === "irritable") return [profileCheck, ...locals, ...motions, ...specials, ...strengths, ...functions];
+    return [profileCheck, ...locals, ...motions, ...strengths, ...functions, ...specials];
+  }, [selectedModule, chiefPlan, symptoms, combinedText]);
 
   const intakeComplete = Boolean(description.trim() && moduleId && location.trim() && painAction.trim() && onset && painType && mechanism && side && symptoms.length);
   const safetyAnswered = SAFETY_QUESTIONS.every((item) => safety[item.id]);
@@ -129,19 +150,25 @@ export default function RehabSystem() {
     const supportTags: string[] = [];
     if (symptoms.includes("swelling")) support.push({ id: "swelling", title: "肿胀仍需跟踪", route: "track", short: "观察轮廓是否逐次消退，不要求当场消失。", retest: "同位置、同角度观察肿胀范围和轮廓。", candidates: [], tags: ["mobility"], priority: "support" });
     if (symptoms.includes("tenderness")) support.push({ id: "tenderness", title: "局部压痛", route: "track", short: "用于帮助定位，不单独追着压痛点处理。", retest: "下次轻按同一点，记录程度和范围。", candidates: [], tags: [], priority: "support" });
+    const profileId = `profile-${chiefPlan.profile === "muscle-load" ? "muscle" : chiefPlan.profile}`;
+    if (simpleResults[profileId] === "present" || simpleResults[profileId] === "painful") {
+      support.push({ id: profileId, title: chiefPlan.profile === "muscle-load" ? "肌肉张力或发力存在相关线索" : chiefPlan.profile === "irritable" ? "局部刺激程度需要优先管理" : chiefPlan.profile === "neural" ? "麻电分布、感觉或力量存在相关线索" : "疼痛性质存在补充线索", route: chiefPlan.profile === "neural" ? "review" : "track", short: chiefPlan.assessmentFocus, retest: painAction, candidates: [], tags: chiefPlan.trainingTags, priority: "support" });
+    }
     selectedModule.motions.forEach((motion) => {
       const result = motionResults[motion.id];
       if (!result?.active || result.active === "same") return;
       supportTags.push(...motion.trainingTags);
       if (result.active === "painful") {
-        support.push({ id: motion.id, title: `${motion.title}会诱发疼痛`, route: "pain-action", short: "作为解释主诉的支持线索。", retest: painAction, candidates: [], tags: motion.trainingTags, priority: "support" });
+        support.push({ id: motion.id, title: `${motion.title}会诱发疼痛`, route: "pain-action", short: "主诉改善后，再处理这个相关动作。", retest: motion.retest, candidates: [...motion.muscles, ...motion.joints], tags: motion.trainingTags, priority: "support" });
         supportCandidates.push(...motion.muscles, ...motion.joints);
       } else if (result.passive === "same") {
-        support.push({ id: motion.id, title: `${motion.title}主动控制不足`, route: "control", short: "被动接近健侧，补充主动控制。", retest: painAction, candidates: [], tags: motion.trainingTags, priority: "support" });
-        supportCandidates.push(motion.control);
+        support.push({ id: motion.id, title: `${motion.title}主动控制不足`, route: "training", short: "被动接近健侧，留到训练阶段补主动控制。", retest: motion.retest, candidates: [], tags: motion.trainingTags, priority: "support" });
       } else if (result.passive === "limited") {
-        support.push({ id: motion.id, title: `${motion.title}主动和被动都受限`, route: "joint-muscle", short: "可从肌肉和关节两条路径帮助主诉。", retest: painAction, candidates: [], tags: motion.trainingTags, priority: "support" });
-        supportCandidates.push(...motion.muscles, ...motion.joints, motion.control);
+        support.push({ id: motion.id, title: `${motion.title}主动和被动都受限`, route: "joint-muscle", short: "主诉改善后，继续先肌肉、再关节。", retest: motion.retest, candidates: [...motion.muscles, ...motion.joints], tags: motion.trainingTags, priority: "support" });
+        supportCandidates.push(...motion.muscles, ...motion.joints);
+      } else if (result.passive === "painful") {
+        support.push({ id: motion.id, title: `${motion.title}被动活动也会疼`, route: "pain-action", short: "主诉改善后先看肌肉反应，关节处理保持轻柔。", retest: motion.retest, candidates: [...motion.muscles, ...motion.joints], tags: motion.trainingTags, priority: "support" });
+        supportCandidates.push(...motion.muscles, ...motion.joints);
       } else support.push({ id: motion.id, title: `${motion.title}需要补充被动检查`, route: "review", short: "暂不判断关节还是肌肉。", retest: painAction, candidates: [], tags: motion.trainingTags, priority: "support" });
     });
     selectedModule.strengths.forEach((check) => {
@@ -176,6 +203,15 @@ export default function RehabSystem() {
   const treatmentComplete = treatmentFindings.length === 0 || findingIndex >= treatmentFindings.length;
   const maxUnlocked: Step = !intakeComplete ? 0 : !safetyComplete ? 1 : !assessmentComplete ? 2 : !treatmentComplete ? 3 : 4;
   const tags = Array.from(new Set(findings.flatMap((item) => item.tags)));
+  const retainedMuscles = treatmentFindings.flatMap((finding) => finding.candidates.map((item) => ({ finding, item }))).filter(({ finding, item }) => item.type === "muscle" && ["better", "partial"].includes(candidateResults[`${finding.id}:${item.id}`]));
+  const homeDecisions = retainedMuscles.map(({ item }) => {
+    const relatedTags = candidateStrengthTags(item);
+    const relatedChecks = selectedModule?.strengths.filter((check) => check.trainingTags?.some((tag) => relatedTags.includes(tag))) || [];
+    const results = relatedChecks.map((check) => simpleResults[check.id]).filter(Boolean);
+    const mode = results.includes("weak") ? "strengthen" : results.includes("painful") ? "graded" : results.length > 0 && results.every((result) => result === "normal") ? "release" : "recheck";
+    return { item, mode, care: mode === "release" ? buildHomeCare(item) : undefined, relatedChecks: relatedChecks.map((check) => check.title) };
+  }).filter((decision, index, items) => items.findIndex((item) => item.item.title === decision.item.title) === index);
+  const strengthFindings = selectedModule?.strengths.filter((check) => ["weak", "painful"].includes(simpleResults[check.id])) || [];
   const exercises = selectedModule ? selectedModule.training[phase].filter((item) => !tags.length || item.tags.some((tag) => tags.includes(tag))).slice(0, 5) : [];
   const shownExercises = exercises.length ? exercises : selectedModule?.training[phase].slice(0, 4) || [];
   const currentAssessment = assessments[Math.min(assessmentIndex, Math.max(assessments.length - 1, 0))];
@@ -226,7 +262,7 @@ export default function RehabSystem() {
         <div className="two-fields"><label><strong>最具体的疼痛位置</strong><input className="large-text" value={location} onChange={(event) => setLocation(event.target.value)} placeholder={selectedModule?.locationPlaceholder || "例如：右侧、前方、骨点旁"} /></label><label><strong>最想改善的疼痛动作</strong><input className="large-text" value={painAction} onChange={(event) => setPainAction(event.target.value)} placeholder={selectedModule?.painActionPlaceholder || "例如：下楼、蹲起、抬手"} /></label></div>
         <div className="form-section"><strong>出现多久</strong><Options options={ONSETS} value={onset} onChange={setOnset} /></div>
         <div className="form-section"><strong>怎么出现的</strong><Options options={MECHANISMS} value={mechanism} onChange={setMechanism} /></div>
-        <div className="form-section"><strong>疼痛更像哪一种</strong><Options options={PAIN_TYPES} value={painType} onChange={setPainType} /></div>
+        <div className="form-section"><strong>疼痛更像哪一种</strong><Options options={PAIN_TYPES} value={painType} onChange={setPainType} />{painType && chiefPlan && <div className={`profile-preview ${chiefPlan.profile}`}><b>{chiefPlan.profile === "muscle-load" ? "优先检查肌肉张力与力量" : chiefPlan.profile === "irritable" ? "优先判断局部刺激程度与原因" : chiefPlan.profile === "neural" ? "优先检查神经分布、感觉与力量" : "结合动作与查体判断"}</b><span>{chiefPlan.assessmentFocus}</span></div>}</div>
         <div className="form-section"><strong>现在有哪些问题</strong><div className="symptom-checks">{SYMPTOMS.map((item) => <button type="button" key={item.id} className={symptoms.includes(item.id) ? "selected" : ""} onClick={() => toggleSymptom(item.id)}><i>{symptoms.includes(item.id) ? "✓" : ""}</i>{item.name}</button>)}</div></div>
         <div className="form-section"><strong>哪一侧</strong><Options options={["左侧", "右侧", "双侧/中间"]} value={side} onChange={setSide} /></div>
         <button type="button" className="next-question" disabled={!intakeComplete} onClick={() => setStep(1)}>进入先确认</button>
@@ -250,15 +286,18 @@ export default function RehabSystem() {
 
       {step === 3 && <section className="guide-page treatment-page">
         <Heading eyebrow="处理" title="先解决主诉，查体结果用于帮助它" />
+        <div className="treatment-sequence"><b className={activeFinding?.priority === "chief" ? "current" : "done"}>1 主诉反应测试</b><b className={activeFinding?.priority === "support" ? "current" : treatmentComplete ? "done" : ""}>2 补齐肌肉与关节</b><b className={treatmentComplete ? "current" : ""}>3 开始针对性训练</b></div>
         <div className="finding-overview">{findings.map((item) => <article key={item.id} className={`${item.priority === "chief" ? "chief" : ""} ${item.id === activeFinding?.id ? "active" : ""}`}><em>{item.priority === "chief" ? "最高优先" : "支持线索"}</em><b>{item.title}</b><span>{item.short}</span></article>)}</div>
         {activeFinding && activeCandidate ? <>
-          <div className="pain-baseline"><span>始终复测主诉</span><strong>{painAction}</strong></div>
-          <article className="candidate-card"><span>{activeCandidate.type === "muscle" ? "肌肉反应测试" : activeCandidate.type === "joint" ? "关节调整 · 受训人员" : "主动控制"} · {candidateIndex + 1}/{activeFinding.candidates.length}</span><h2>{activeCandidate.title}</h2><div><strong>做什么</strong><p>{activeCandidate.do}</p></div><div><strong>观察什么</strong><p>{activeCandidate.watch}</p></div><div><strong>做完复测</strong><p>保持相同台阶、速度、深度和扶持，重复：{painAction}</p></div><div className="candidate-actions complaint-actions"><button type="button" className="better" onClick={() => finishCandidate("better")}>明显改善，保留并结束</button><button type="button" className="better" onClick={() => finishCandidate("partial")}>部分改善，保留后继续</button><button type="button" onClick={() => finishCandidate("same")}>没变化，换下一项</button><button type="button" className="worse" onClick={() => finishCandidate("worse")}>加重，停止本方向</button></div></article>
-        </> : <div className="treatment-done"><b>{treatmentComplete ? "本轮反应测试已完成" : "这些问题不需要当场反复处理"}</b><p>肿胀、按压痛和力量不足主要留到后续复查；训练根据实际异常选择。</p><button type="button" onClick={() => setStep(4)}>进入训练与复查</button></div>}
+          <div className="pain-baseline"><span>{activeFinding.priority === "chief" ? "先复测主诉" : "主诉已处理，现复测查体问题"}</span><strong>{activeFinding.priority === "chief" ? painAction : activeFinding.retest}</strong></div>
+          <article className="candidate-card"><span>{candidateLabel(activeCandidate.type)} · {candidateIndex + 1}/{activeFinding.candidates.length}</span><h2>{activeCandidate.title}</h2><div><strong>做什么</strong><p>{activeCandidate.do}</p></div><div><strong>观察什么</strong><p>{activeCandidate.watch}</p></div><div><strong>{activeCandidate.type === "irritability" ? "后续比较" : "做完复测"}</strong><p>{activeCandidate.type === "irritability" ? "记录今天的肿胀、皮温和负重反应，下次在相同时间与条件下比较；不要求当场消失。" : activeFinding.priority === "chief" ? `保持相同条件重复主诉：${painAction}` : `先复测：${activeFinding.retest}；再确认主诉“${painAction}”没有反跳。`}</p></div>{activeCandidate.type === "irritability" ? <div className="candidate-actions one-action"><button type="button" className="better" onClick={() => finishCandidate("same")}>已安排负荷管理，继续排查原因</button></div> : <div className="candidate-actions complaint-actions"><button type="button" className="better" onClick={() => finishCandidate("better")}>明显改善，保留并进入下一问题</button><button type="button" className="better" onClick={() => finishCandidate("partial")}>部分改善，保留后继续</button><button type="button" onClick={() => finishCandidate("same")}>没变化，换下一项</button><button type="button" className="worse" onClick={() => finishCandidate("worse")}>加重，停止本方向</button></div>}</article>
+        </> : <div className="treatment-done"><b>{treatmentComplete ? "主诉和需要处理的查体问题已完成" : "这些问题不需要当场反复处理"}</b><p>接下来根据力量不足安排强化；有效肌肉方向是否居家放松，要再看对应力量结果。</p><button type="button" onClick={() => setStep(4)}>进入训练与居家安排</button></div>}
       </section>}
 
       {step === 4 && selectedModule && <section className="guide-page training-page">
         <Heading eyebrow="训练复查" title="继续处理未解决的问题，再推进训练" />
+        {strengthFindings.length > 0 && <div className="training-reasons"><span>力量评估决定强化方向</span>{strengthFindings.map((check) => <b key={check.id}>{check.title}：{simpleResults[check.id] === "weak" ? "偏弱，安排强化" : "发力疼痛，从不诱发症状的低负荷开始"}</b>)}</div>}
+        {homeDecisions.length > 0 && <section className="home-decisions"><header><span>居家肌肉安排</span><h2>有效方向还要结合力量结果</h2></header>{homeDecisions.map(({ item, mode, care, relatedChecks }) => <article key={item.id}><div><b>{item.title}</b><span>{relatedChecks.length ? `对应力量：${relatedChecks.join("、")}` : "尚无直接对应力量测试"}</span></div>{mode === "strengthen" && <strong className="decision-strength">力量偏弱 · 进入下方强化训练，不单纯拉伸</strong>}{mode === "graded" && <strong className="decision-graded">发力会疼 · 先做不诱发症状的低负荷训练</strong>}{mode === "recheck" && <strong className="decision-recheck">先补力量比较 · 暂不自动安排放松或强化</strong>}{mode === "release" && care && <div className="home-care"><strong>力量接近健侧 · 保留轻柔放松/拉伸</strong><b>{care.name} · {care.groups} × {care.reps}</b><p>{care.how}</p><span>观察：{care.observe}</span></div>}</article>)}</section>}
         <div className="phase-switch"><button type="button" className={phase === "restore" ? "selected" : ""} onClick={() => setPhase("restore")}>恢复活动与控制</button><button type="button" className={phase === "rebuild" ? "selected" : ""} onClick={() => setPhase("rebuild")}>重建力量与功能</button><button type="button" className={phase === "return" ? "selected" : ""} onClick={() => setPhase("return")}>回归日常与运动</button></div>
         <div className="exercise-list">{shownExercises.map((item) => <ExerciseCard key={item.id} exercise={item} />)}</div>
         <section className="session-roadmap"><header><span>后续康复</span><h2>每一次都先复查，再决定处理和训练</h2></header><article><i>2</i><div><b>第二次康复</b><p>复查肿胀、压痛、主动/被动活动和原疼痛动作。仍受限就继续肌肉与关节处理；当场改善的方向保留，再训练主动控制。</p></div></article><article><i>3+</i><div><b>第三次及以后</b><p>旧问题未解决就继续处理；出现新症状就重新检查。活动稳定后，再增加力量、平衡、步态和目标动作。</p></div></article></section>

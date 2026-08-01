@@ -37,6 +37,7 @@ test("ships gated active-passive, chief-complaint and follow-up pathways", async
   for (const name of ["膝关节", "踝关节与足部", "腰椎、骨盆与髋"]) assert.match(modules, new RegExp(name));
   for (const phrase of ["activeHow", "passiveHow", "muscleCandidates", "jointCandidates", "trainingTags", "groups", "reps", "return:"]) assert.match(modules, new RegExp(phrase));
   assert.match(system, /disabled=\{index > maxUnlocked\}/);
-  for (const phrase of ["先做主动活动", "再轻柔比较被动活动", "肌肉控制路径", "关节＋肌肉路径", "疼痛动作排查", "特殊检查", "始终复测主诉", "明显改善，保留并结束", "部分改善，保留后继续", "不要求当场消失", "不做当场反复测试", "视频演示 · 后续上传", "第二次康复", "第三次及以后", "记录已保存到当前设备"]) assert.match(system, new RegExp(phrase));
-  for (const phrase of ["膝内侧", "下楼/下台阶", "大腿外侧链", "鹅足肌群", "内收肌与内侧链", "胫骨前肌、胫骨后肌与足部支撑", "髌骨活动与对位", "踝背屈、距骨与足部关节"]) assert.match(complaintRules, new RegExp(phrase));
+  for (const phrase of ["先做主动活动", "再轻柔比较被动活动", "肌肉控制路径", "关节＋肌肉路径", "疼痛动作排查", "特殊检查", "先复测主诉", "主诉已处理，现复测查体问题", "部分改善，保留后继续", "力量评估决定强化方向", "有效方向还要结合力量结果", "不单纯拉伸", "不要求当场消失", "不做当场反复测试", "视频演示 · 后续上传", "第二次康复", "第三次及以后", "记录已保存到当前设备"]) assert.match(system, new RegExp(phrase));
+  for (const phrase of ["膝内侧", "下楼/下台阶", "大腿外侧链", "鹅足肌群", "内收肌与内侧链", "胫骨前肌、胫骨后肌与足部支撑", "髌骨活动与对位", "踝背屈、距骨与足部关节", "muscle-load", "irritable", "neural", "candidateStrengthTags", "buildHomeCare"]) assert.match(complaintRules, new RegExp(phrase));
+  for (const phrase of ["内收肌与鹅足相关肌群", "胫骨前后肌与足弓控制", "knee-adductor-bridge", "knee-foot-control"]) assert.match(modules, new RegExp(phrase));
 });

@@ -5,6 +5,17 @@ export type ChiefComplaintPlan = {
   matchedBy: string[];
   candidates: TreatmentCandidate[];
   trainingTags: string[];
+  profile: "muscle-load" | "irritable" | "neural" | "mixed";
+  assessmentFocus: string;
+};
+
+export type HomeCare = {
+  id: string;
+  name: string;
+  groups: string;
+  reps: string;
+  how: string;
+  observe: string;
 };
 
 const candidate = (
@@ -30,6 +41,8 @@ const knee = {
   hipPelvis: candidate("chief-knee-hip-pelvis", "joint", "髋关节与骨盆位置", "用骨盆稳定、髋旋转提示或髋关节位置调整做一次比较，不直接把腿长变化当诊断。", "主诉动作中的膝轨迹、承重和疼痛是否改变。"),
   quadControl: candidate("chief-knee-quad-control", "control", "股内斜肌与伸膝控制", "在可用范围做末端伸膝或小幅台阶离心控制。", "主动控制能否使用刚获得的范围，主诉动作是否更稳。"),
   hipFootControl: candidate("chief-knee-hip-foot-control", "control", "臀肌、足弓与下肢力线控制", "用侧向推墙、足弓三点支撑或小幅单腿动作做提示。", "主诉动作是否更稳，膝内外摆是否减少。"),
+  neural: candidate("chief-knee-neural", "neural", "下肢神经分布与滑动", "先比较麻电范围、左右感觉和股四头肌/勾脚/脚趾力量；由受训人员根据分布选择股神经、隐神经、腓总神经或胫神经的轻柔滑动。", "症状是否向近端收缩、力量是否稳定；不反复拉到麻电末端。"),
+  irritability: candidate("chief-knee-irritability", "irritability", "局部刺激与负荷管理", "存在急性外伤、肿胀、皮温升高或反复碰撞摩擦线索时，先减少诱发负荷并处理肿胀；需要药物或理疗时转由有资质人员决定。", "肿胀轮廓、皮温和日常负重反应是否逐日下降。"),
 };
 
 const ankle = {
@@ -43,6 +56,8 @@ const ankle = {
   midfoot: candidate("chief-ankle-midfoot", "joint", "骰骨、舟骨与中足", "用足弓或前足支撑提示先比较；有反应再由受训人员处理对应中足方向。", "足底压力、推蹬及主诉动作是否改变。"),
   toe: candidate("chief-ankle-toe", "joint", "第一跖趾关节", "比较大脚趾背伸；受限且影响推蹬时，由受训人员轻柔处理。", "走路末端推蹬和足底症状是否改变。"),
   control: candidate("chief-ankle-control", "control", "足外翻、足弓与小腿控制", "在当前可用范围练足外翻、短足和提踵，随后走相同路线。", "足弓、外踝稳定和步态是否改善。"),
+  neural: candidate("chief-ankle-neural", "neural", "小腿与足部神经分布", "记录麻电从哪里到哪里，比较足背/足底感觉、勾脚、外翻和脚趾力量；由受训人员选择对应神经轻柔滑动。", "麻电范围是否缩小、力量是否稳定，不追求强烈牵拉感。"),
+  irritability: candidate("chief-ankle-irritability", "irritability", "急性肿胀与局部刺激管理", "急性外伤或明显肿胀时先调整负重、抬高和适度加压；药物与理疗由有资质人员决定。", "肿胀轮廓、皮温、淤血范围和走路反应是否逐日改善。"),
 };
 
 const lumbarHip = {
@@ -52,11 +67,12 @@ const lumbarHip = {
   glute: candidate("chief-back-glute", "muscle", "臀大肌、臀中肌与梨状肌", "根据臀部具体位置分别比较，不深压放射症状路径。", "坐站、走路或单腿承重时主诉是否改变。"),
   adductor: candidate("chief-back-adductor", "muscle", "内收肌与髋内侧链", "腹股沟或髋内侧症状时比较内收肌群和股薄肌。", "髋内收、深蹲或走路症状是否改变。"),
   posterior: candidate("chief-back-posterior", "muscle", "腘绳肌与小腿后侧", "比较后侧链，但不把神经牵拉简单当作肌肉紧。", "弯腰、直腿抬高和主诉动作是否改变。"),
-  neural: candidate("chief-back-neural", "control", "相关神经滑动", "有麻、电、放射时，由受训人员选择轻柔神经滑动，不拉到症状末端。", "症状范围是否向近端收缩，力量是否稳定。"),
+  neural: candidate("chief-back-neural", "neural", "相关神经滑动", "有麻、电、放射时，由受训人员选择轻柔神经滑动，不拉到症状末端。", "症状范围是否向近端收缩，力量是否稳定。"),
   hipJoint: candidate("chief-back-hip-joint", "joint", "髋关节囊与髋活动", "肌肉处理后髋被动活动仍受限时，由受训人员选择对应髋关节方向。", "髋活动和原主诉动作是否同时改善。"),
   pelvis: candidate("chief-back-pelvis", "joint", "骨盆与骶髂区域反应测试", "用骨盆稳定或轻柔方向调整比较；只有能重复改变主诉才保留。", "原动作是否立即且可重复改善。"),
   lumbar: candidate("chief-back-lumbar", "joint", "腰椎或胸椎相关节段", "由受训人员在神经安全确认后检查相关节段活动，并选择轻柔方向。", "主诉动作是否改善，而不是只追求节段活动。"),
   control: candidate("chief-back-control", "control", "呼吸、骨盆与髋控制", "用呼吸、卷骨盆、臀桥或髋铰链重新使用改善后的范围。", "主诉动作能否更稳定地完成。"),
+  irritability: candidate("chief-back-irritability", "irritability", "局部刺激与活动调整", "急性外伤或局部反应明显时，先减少反复诱发动作，保持可接受范围的轻活动；药物与理疗由有资质人员决定。", "静息反应、活动耐受和次日反应是否逐步稳定。"),
 };
 
 function unique(items: TreatmentCandidate[]) {
@@ -64,11 +80,16 @@ function unique(items: TreatmentCandidate[]) {
   return items.filter((item) => !seen.has(item.id) && seen.add(item.id));
 }
 
-export function buildChiefComplaintPlan(moduleId: ModuleId, location: string, painAction: string, description: string): ChiefComplaintPlan {
-  const text = `${location} ${painAction} ${description}`;
+export function buildChiefComplaintPlan(moduleId: ModuleId, location: string, painAction: string, description: string, painType = "", mechanism = "", symptoms: string[] = [], onset = "", side = ""): ChiefComplaintPlan {
+  const text = `${location} ${painAction} ${description} ${painType} ${mechanism} ${onset}`;
   const matchedBy: string[] = [];
   const candidates: TreatmentCandidate[] = [];
   const trainingTags: string[] = [];
+  const neuralProfile = /麻|电感|电击|放射|窜|针刺/.test(`${painType} ${description}`);
+  const muscleProfile = /酸痛|牵拉痛|牵扯|拉扯|紧/.test(`${painType} ${description}`);
+  const recentInjury = /今天|昨天|2—7天/.test(onset) && !/没有明确受伤|逐渐出现/.test(mechanism);
+  const irritableProfile = /刺痛|胀痛/.test(painType) || symptoms.includes("swelling") || recentInjury || /肿|皮温|外伤|撞|扭|崴|拉伤/.test(`${description} ${mechanism}`);
+  const profile: ChiefComplaintPlan["profile"] = neuralProfile ? "neural" : irritableProfile ? "irritable" : muscleProfile ? "muscle-load" : "mixed";
 
   if (moduleId === "knee") {
     const medial = /内侧|内缘|内下|鹅足/.test(text);
@@ -90,6 +111,8 @@ export function buildChiefComplaintPlan(moduleId: ModuleId, location: string, pa
     if (gait) { matchedBy.push("走路/承重"); candidates.push(knee.tibialis, knee.lowerLegLateral, knee.ankleFoot, knee.hipPelvis, knee.hipFootControl); trainingTags.push("gait", "calf"); }
     if (runJump) { matchedBy.push("跑跳/落地"); candidates.push(knee.lateralChain, knee.ankleFoot, knee.hipPelvis, knee.hipFootControl); trainingTags.push("single-leg", "return"); }
     if (!candidates.length) candidates.push(knee.lateralChain, knee.posterior, knee.anteriorThigh, knee.patella, knee.kneeJoint, knee.ankleFoot, knee.hipPelvis);
+    if (profile === "neural") candidates.unshift(knee.neural);
+    if (profile === "irritable") candidates.unshift(knee.irritability);
   }
 
   if (moduleId === "ankle-foot") {
@@ -105,6 +128,8 @@ export function buildChiefComplaintPlan(moduleId: ModuleId, location: string, pa
     if (sole) { matchedBy.push("足底/足跟"); candidates.push(ankle.posteriorTibial, ankle.plantar, ankle.calf, ankle.midfoot, ankle.talus, ankle.toe, ankle.control); trainingTags.push("arch", "toe", "calf"); }
     if (/走路|承重|下楼|蹬地|第一步/.test(text)) { matchedBy.push("负重动作"); candidates.push(ankle.talus, ankle.midfoot, ankle.control); trainingTags.push("gait", "balance"); }
     if (!candidates.length) candidates.push(ankle.peroneal, ankle.extensors, ankle.posteriorTibial, ankle.calf, ankle.talus, ankle.fibula, ankle.midfoot, ankle.control);
+    if (profile === "neural") candidates.unshift(ankle.neural);
+    if (profile === "irritable") candidates.unshift(ankle.irritability);
   }
 
   if (moduleId === "lumbar-hip") {
@@ -118,13 +143,59 @@ export function buildChiefComplaintPlan(moduleId: ModuleId, location: string, pa
     if (neural) { matchedBy.push("神经样症状"); candidates.push(lumbarHip.neural, lumbarHip.psoas, lumbarHip.ql, lumbarHip.posterior, lumbarHip.hipJoint); trainingTags.push("core", "gait"); }
     if (/弯腰|起身|久坐|后仰|侧屈/.test(text)) { matchedBy.push("腰背动作"); candidates.push(lumbarHip.ql, lumbarHip.psoas, lumbarHip.lateral, lumbarHip.hipJoint, lumbarHip.pelvis, lumbarHip.lumbar, lumbarHip.control); trainingTags.push("core", "hinge"); }
     if (!candidates.length) candidates.push(lumbarHip.ql, lumbarHip.psoas, lumbarHip.lateral, lumbarHip.glute, lumbarHip.hipJoint, lumbarHip.pelvis, lumbarHip.control);
+    if (profile === "neural") candidates.unshift(lumbarHip.neural);
+    if (profile === "irritable") candidates.unshift(lumbarHip.irritability);
   }
 
+  if (profile === "muscle-load") matchedBy.unshift("酸痛/牵扯：优先肌肉张力与力量");
+  if (profile === "irritable") matchedBy.unshift("刺痛/胀痛或肿胀：先看局部刺激程度与原因");
+  if (profile === "neural") matchedBy.unshift("麻/电感：优先神经分布、感觉与力量");
+  if (recentInjury) matchedBy.unshift("近期明确受伤：先控制刺激与负荷");
+
+  const assessmentFocus = profile === "muscle-load"
+    ? "重点比较相关肌肉的张力、压痛、主动发力和健侧力量；仍需用动作和关节检查确认，不凭痛感直接认定肌肉来源。"
+    : profile === "irritable"
+      ? "先看外伤时间、肿胀、皮温、静息反应和负荷规律，再找过度牵拉、关节轨迹或重复摩擦等可能原因；刺痛/胀痛本身不能直接证明炎症。"
+      : profile === "neural"
+        ? "先画清麻电分布，比较感觉、肌力和神经相关动作；不反复拉到症状末端，进行性无力或大小便/会阴异常走医学评估。"
+        : "结合位置、诱发动作、局部反应、活动度和力量共同判断。";
+
   return {
-    title: `${location || "当前部位"} · ${painAction || "原主诉动作"}`,
+    title: `${side ? `${side} ` : ""}${location || "当前部位"} · ${painAction || "原主诉动作"}`,
     matchedBy: matchedBy.length ? matchedBy : ["通用主诉路径"],
     candidates: unique(candidates).slice(0, 12),
     trainingTags: [...new Set(trainingTags)],
+    profile,
+    assessmentFocus,
   };
 }
 
+export function buildHomeCare(item: TreatmentCandidate): HomeCare {
+  const title = item.title;
+  if (/外侧链|股外侧|阔筋膜|髂胫束/.test(title)) return { id: item.id, name: "大腿外侧与髋前外侧放松", groups: "2组", reps: "每组45秒", how: "用泡沫轴或手轻柔处理股外侧肌和髋前外侧，避开膝外侧骨点，不追求强痛。", observe: "做完走路或台阶更轻松，第二天没有明显加重。" };
+  if (/鹅足|缝匠|股薄|半腱|内收/.test(title)) return { id: item.id, name: "大腿内侧与鹅足肌群活动", groups: "2组", reps: "每组8个", how: "四点跪姿把一侧腿伸向侧方，臀部缓慢后坐再回来；只到轻微牵拉。", observe: "膝内侧不出现锐痛，动作后主诉不加重。" };
+  if (/胫骨前|胫骨后|足弓/.test(title)) return { id: item.id, name: "小腿前后内侧与足弓放松", groups: "2组", reps: "每组45秒", how: "用手或小球轻柔处理小腿前内侧、后内侧和足弓，一次选择一个区域。", observe: "走路落脚和足弓支撑更自然，不压出麻电感。" };
+  if (/股直|股四头/.test(title)) return { id: item.id, name: "大腿前侧拉伸", groups: "2组", reps: "每组30秒", how: "扶稳屈膝，保持骨盆不过度前倾；术后或屈膝受限时改用小幅度。", observe: "只出现大腿前侧牵拉，膝前不被挤压。" };
+  if (/腘肌|腘绳|小腿三头|腓肠|比目鱼/.test(title)) return { id: item.id, name: "后侧链分段活动", groups: "2组", reps: "每组8个", how: "分别做小幅腿后侧动态拉伸和膝碰墙活动，不把两处同时拉到末端。", observe: "膝后或小腿只有轻微牵拉，不诱发刺痛或麻电。" };
+  if (/腓骨长|腓骨肌|小腿外侧|趾长伸/.test(title)) return { id: item.id, name: "小腿外侧放松", groups: "2组", reps: "每组45秒", how: "用手或泡沫轴轻柔处理小腿外侧肌腹，避开外踝和腓骨头骨点。", observe: "踝外翻和走路更顺，不出现麻电。" };
+  if (/腰大肌|髂肌|髋前/.test(title)) return { id: item.id, name: "髋前侧活动", groups: "2组", reps: "每侧8个", how: "半跪位轻收骨盆后前移，保持腰不过度后仰。", observe: "牵拉集中在髋前，不挤压腰或腹股沟。" };
+  if (/腰方|竖脊/.test(title)) return { id: item.id, name: "腰背呼吸活动", groups: "2组", reps: "每组6次呼吸", how: "侧卧或婴儿式，用缓慢呼吸让主诉侧腰背扩张，不强压末端。", observe: "呼吸和起身更轻松，不出现向腿部扩散。" };
+  if (/臀|梨状/.test(title)) return { id: item.id, name: "臀部轻柔活动", groups: "2组", reps: "每侧8个", how: "仰卧做小幅抱膝或臀部动态拉伸，不压到麻电路径。", observe: "臀部轻微牵拉，腿部症状不向远端扩散。" };
+  return { id: item.id, name: `${title}居家放松`, groups: "2组", reps: "每组30秒", how: "只在肌腹做轻柔自我放松或舒适范围拉伸，避开肿胀、骨点和明显压痛中心。", observe: "完成后主诉不加重，第二天反应稳定。" };
+}
+
+export function candidateStrengthTags(item: TreatmentCandidate): string[] {
+  const title = item.title;
+  if (/外侧链|股外侧|阔筋膜|髂胫束/.test(title)) return ["quad", "glute"];
+  if (/鹅足|缝匠|股薄|半腱|内收/.test(title)) return ["adductor", "hamstring"];
+  if (/胫骨前|趾长伸/.test(title)) return ["dorsiflexion"];
+  if (/胫骨后|足弓/.test(title)) return ["arch"];
+  if (/股直|股四头/.test(title)) return ["quad"];
+  if (/腘肌|腘绳/.test(title)) return ["hamstring"];
+  if (/小腿三头|腓肠|比目鱼|跟腱/.test(title)) return ["calf"];
+  if (/腓骨长|腓骨肌|小腿外侧/.test(title)) return ["eversion"];
+  if (/腰大肌|髂肌|髋前/.test(title)) return ["hip-flexion", "core"];
+  if (/腰方|竖脊/.test(title)) return ["core"];
+  if (/臀/.test(title)) return ["glute"];
+  return [];
+}

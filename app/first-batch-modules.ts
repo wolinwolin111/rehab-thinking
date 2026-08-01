@@ -2,7 +2,7 @@ export type ModuleId = "knee" | "ankle-foot" | "lumbar-hip";
 
 export type TreatmentCandidate = {
   id: string;
-  type: "muscle" | "joint" | "control";
+  type: "muscle" | "joint" | "control" | "neural" | "irritability";
   title: string;
   do: string;
   watch: string;
@@ -175,6 +175,8 @@ const knee: RehabModule = {
   strengths: [
     { id: "knee-quad", title: "股四头肌与股内斜肌", how: "坐姿伸膝停住5秒，或仰卧膝后下压，与健侧比较。", observe: "发力感、抖动、保持能力和疼痛。", trainingTags: ["quad", "knee-extension"] },
     { id: "knee-hamstring", title: "腘绳肌", how: "坐着让脚跟轻压地面5秒，比较两侧后侧大腿发力。", observe: "是否明显偏弱、抽筋或由小腿代偿。", trainingTags: ["hamstring"] },
+    { id: "knee-adductor", title: "内收肌与鹅足相关肌群", how: "仰卧屈膝，用枕头夹在双膝之间轻夹5秒；再坐姿让脚跟轻向后内侧拉，比较两侧。", observe: "大腿内侧和膝内侧肌肉能否发力，是否明显偏弱或诱发熟悉疼痛。", trainingTags: ["adductor", "hamstring"] },
+    { id: "knee-tibialis", title: "胫骨前后肌与足弓控制", how: "分别比较勾脚、足弓轻抬和脚掌向内控制；用另一只脚给轻阻力。", observe: "与健侧相比是否偏弱，脚趾是否过度代偿，足弓能否保持。", trainingTags: ["dorsiflexion", "arch"] },
     { id: "knee-glute", title: "臀肌与髋控制", how: "用臀桥或侧向推墙比较两侧臀部参与。", observe: "骨盆是否稳定、腰部是否代偿。", trainingTags: ["glute", "single-leg"] },
     { id: "knee-calf", title: "小腿力量", how: "扶稳做双脚提踵；能够完成后再比较单脚。", observe: "高度、次数和患侧是否少用力。", trainingTags: ["calf", "gait"] },
   ],
@@ -193,6 +195,8 @@ const knee: RehabModule = {
       exercise("knee-quad-set", "膝伸直下压", ["quad", "knee-extension"], "3组", "每组20个", "仰卧绷紧大腿前侧，让膝后向床面靠近，每次停2秒。", "患侧能主动达到现有被动末端。", "膝下垫薄毛巾", "增加终末伸膝弹力带"),
       exercise("knee-heel-slide", "脚跟滑动", ["knee-flexion"], "3组", "每组10个", "仰卧脚跟沿床面滑向臀部，再主动伸直。", "不顶进卡住或锐痛。", "缩小范围", "在新范围停2秒"),
       exercise("knee-ankle-motion", "踝背屈＋外翻活动", ["gait", "calf"], "3组", "每组15个", "勾脚后轻向外转，感受小腿前外侧参与。", "膝部和外踝不出现锐痛。", "只做勾脚", "加轻弹力带"),
+      exercise("knee-adductor-bridge", "夹枕臀桥", ["adductor", "hamstring", "glute"], "3组", "每组12个", "双膝间夹枕头，轻夹后抬臀，再缓慢落下。", "大腿内侧、臀部共同发力，膝内侧不刺痛。", "只做轻夹枕", "增加臀桥高度或保持时间"),
+      exercise("knee-foot-control", "勾脚与足弓控制", ["dorsiflexion", "arch", "gait"], "3组", "每组12个", "先主动勾脚，再在脚掌着地时轻抬足弓，脚趾保持放松。", "小腿前内侧和足弓参与，脚趾不过度蜷缩。", "坐姿分开练两个动作", "增加轻弹力带或站姿"),
       exercise("knee-bridge", "呼吸臀桥", ["glute", "hamstring"], "3组", "每组15个", "呼气时轻收腹、抬起臀部，感受臀部和大腿后侧。", "腰部不过度顶起。", "小幅臀桥", "脚垫高或单腿"),
     ],
     rebuild: [
@@ -491,4 +495,3 @@ export function inferModule(text: string): ModuleId | "" {
   }
   return best?.id ?? "";
 }
-
