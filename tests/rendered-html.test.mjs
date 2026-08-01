@@ -28,13 +28,15 @@ test("server-renders the RehabMind workflow", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
-test("ships gated active-passive, pain-action and follow-up pathways", async () => {
-  const [modules, system] = await Promise.all([
+test("ships gated active-passive, chief-complaint and follow-up pathways", async () => {
+  const [modules, system, complaintRules] = await Promise.all([
     readFile(new URL("../app/first-batch-modules.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/rehab-system.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/chief-complaint-rules.ts", import.meta.url), "utf8"),
   ]);
   for (const name of ["膝关节", "踝关节与足部", "腰椎、骨盆与髋"]) assert.match(modules, new RegExp(name));
   for (const phrase of ["activeHow", "passiveHow", "muscleCandidates", "jointCandidates", "trainingTags", "groups", "reps", "return:"]) assert.match(modules, new RegExp(phrase));
   assert.match(system, /disabled=\{index > maxUnlocked\}/);
-  for (const phrase of ["先做主动活动", "再轻柔比较被动活动", "肌肉控制路径", "关节＋肌肉路径", "疼痛动作排查", "特殊检查", "原动作或范围改善", "不要求当场消失", "不做当场反复测试", "视频演示 · 后续上传", "第二次康复", "第三次及以后", "记录已保存到当前设备"]) assert.match(system, new RegExp(phrase));
+  for (const phrase of ["先做主动活动", "再轻柔比较被动活动", "肌肉控制路径", "关节＋肌肉路径", "疼痛动作排查", "特殊检查", "始终复测主诉", "明显改善，保留并结束", "部分改善，保留后继续", "不要求当场消失", "不做当场反复测试", "视频演示 · 后续上传", "第二次康复", "第三次及以后", "记录已保存到当前设备"]) assert.match(system, new RegExp(phrase));
+  for (const phrase of ["膝内侧", "下楼/下台阶", "大腿外侧链", "鹅足肌群", "内收肌与内侧链", "胫骨前肌、胫骨后肌与足部支撑", "髌骨活动与对位", "踝背屈、距骨与足部关节"]) assert.match(complaintRules, new RegExp(phrase));
 });
