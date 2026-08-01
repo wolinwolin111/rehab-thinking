@@ -205,3 +205,82 @@ button:disabled { cursor: not-allowed; opacity: .38; }
   .followup-simple article { grid-template-columns: 1fr; }
   .guided-toast { right: 11px; left: 11px; bottom: 11px; }
 }
+
+/* First complete joint modules */
+.form-section { margin-top: 30px; }
+.form-section > strong, .two-fields label > strong { display: block; margin-bottom: 12px; font-size: 20px; }
+.module-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.module-grid button { min-height: 108px; padding: 16px; border: 1px solid var(--line); background: white; display: grid; align-content: center; gap: 7px; text-align: left; cursor: pointer; }
+.module-grid button b { font-size: 20px; }
+.module-grid button span { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.module-grid button.selected { color: white; border-color: var(--navy); background: var(--navy); box-shadow: 6px 6px 0 var(--mint); }
+.module-grid button.selected span { color: #d9e9ec; }
+.text-action { margin-top: 12px; padding: 6px 0; border: 0; border-bottom: 1px solid var(--navy-2); color: var(--navy-2); background: transparent; font-weight: 800; cursor: pointer; }
+.two-fields { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.two-fields label { min-width: 0; }
+.two-fields .large-text { min-height: 82px; font-size: 17px; }
+.compact-options { grid-template-columns: repeat(3, 1fr); }
+.compact-options button { min-height: 58px; box-shadow: none; font-size: 16px; }
+
+.safety-list { display: grid; gap: 8px; }
+.safety-list article { min-height: 74px; padding: 10px 12px 10px 18px; border: 1px solid var(--line); background: white; display: grid; grid-template-columns: 1fr 190px; align-items: center; gap: 12px; }
+.safety-list article > strong { font-size: 18px; line-height: 1.5; }
+.safety-list article > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.safety-list button { min-height: 48px; border: 1px solid var(--line); background: white; font-weight: 850; cursor: pointer; }
+.safety-list button.selected { border-color: #76c4b0; background: var(--mint-pale); }
+.safety-list button.selected.alert { color: white; border-color: var(--red); background: var(--red); }
+
+.motion-assessment { display: grid; gap: 12px; }
+.assessment-stage { border: 1px solid var(--line); background: white; box-shadow: var(--shadow); }
+.assessment-stage header { padding: 17px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+.assessment-stage header i { width: 34px; height: 34px; color: var(--navy); background: var(--mint); display: grid; place-items: center; font-style: normal; font-weight: 900; transform: rotate(-3deg); }
+.assessment-stage header b { font-size: 22px; }
+.assessment-stage > p { margin: 0; padding: 20px 20px 8px; font-size: 19px; line-height: 1.7; }
+.assessment-stage > span { display: block; padding: 0 20px 18px; color: var(--muted); line-height: 1.6; }
+.assessment-stage.second { border-left: 6px solid var(--mint); box-shadow: none; }
+.result-options.four { margin: 0; padding: 12px 18px 18px; grid-template-columns: repeat(4, 1fr); }
+.result-options button.selected { color: white; border-color: var(--navy-2); background: var(--navy-2); }
+.route-preview { padding: 18px 20px; border-left: 6px solid var(--mint); background: var(--mint-pale); display: grid; gap: 4px; }
+.route-preview.joint { border-color: var(--yellow); background: var(--yellow-pale); }
+.route-preview b { font-size: 20px; }
+.route-preview span { line-height: 1.6; }
+.one-check > .result-options { padding: 18px; }
+.one-check > .plain-note { margin: 14px 18px 0; }
+.selected-result { padding: 0 18px 18px; color: var(--navy-2); font-weight: 800; }
+
+.finding-overview { margin-bottom: 22px; display: grid; gap: 7px; }
+.finding-overview article { padding: 15px 17px; border: 1px solid var(--line); border-left: 6px solid #aababe; background: white; display: grid; grid-template-columns: minmax(230px, .9fr) 1.1fr; align-items: center; gap: 14px; }
+.finding-overview article.active { border-left-color: var(--mint); background: var(--mint-pale); }
+.finding-overview b { font-size: 19px; }
+.finding-overview span { color: var(--muted); line-height: 1.5; }
+.pain-baseline { margin-bottom: 8px; padding: 14px 18px; color: white; background: var(--navy); display: grid; grid-template-columns: 100px 1fr; gap: 12px; }
+.pain-baseline span { color: var(--mint); font-weight: 900; }
+.pain-baseline strong { font-size: 18px; }
+.treatment-done { padding: 30px; border: 1px solid #9ccfc2; background: var(--mint-pale); text-align: center; }
+.treatment-done b { font-size: 25px; }
+.treatment-done p { margin: 10px auto 22px; max-width: 560px; line-height: 1.7; }
+.treatment-done button { min-height: 54px; padding: 10px 22px; border: 0; color: white; background: var(--navy); font-weight: 900; cursor: pointer; }
+
+.session-roadmap { margin-top: 28px; border: 1px solid var(--line); background: white; }
+.session-roadmap header { padding: 22px; color: white; background: var(--navy); }
+.session-roadmap header span { color: var(--mint); font-weight: 900; }
+.session-roadmap header h2 { margin: 6px 0 0; font-size: 26px; }
+.session-roadmap article { padding: 20px 22px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 48px 1fr; gap: 16px; }
+.session-roadmap article:last-child { border-bottom: 0; }
+.session-roadmap article i { width: 46px; height: 46px; color: var(--navy); background: var(--mint); display: grid; place-items: center; font-style: normal; font-weight: 900; }
+.session-roadmap article b { font-size: 20px; }
+.session-roadmap article p { margin: 6px 0 0; line-height: 1.7; }
+
+@media (max-width: 650px) {
+  .module-grid, .two-fields, .compact-options { grid-template-columns: 1fr; }
+  .module-grid button { min-height: 84px; }
+  .two-fields { gap: 24px; }
+  .safety-list article { grid-template-columns: 1fr; }
+  .safety-list article > div { grid-template-columns: 1fr 1fr; }
+  .assessment-stage > p { font-size: 17px; }
+  .result-options.four { grid-template-columns: 1fr 1fr; }
+  .result-options.four button:last-child { grid-column: auto; }
+  .finding-overview article { grid-template-columns: 1fr; gap: 4px; }
+  .pain-baseline { grid-template-columns: 1fr; gap: 3px; }
+  .session-roadmap header h2 { font-size: 23px; }
+}

@@ -13,7 +13,7 @@ async function render() {
   );
 }
 
-test("server-renders the complete RehabMind workflow", async () => {
+test("server-renders the RehabMind workflow", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -28,29 +28,13 @@ test("server-renders the complete RehabMind workflow", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
-test("ships a gated custom-input workflow and record-derived response rules", async () => {
-  const [library, system, rules] = await Promise.all([
-    readFile(new URL("../app/rehab-library.ts", import.meta.url), "utf8"),
+test("ships gated active-passive, pain-action and follow-up pathways", async () => {
+  const [modules, system] = await Promise.all([
+    readFile(new URL("../app/first-batch-modules.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/rehab-system.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/direction-rules.ts", import.meta.url), "utf8"),
   ]);
-  for (const name of ["颈部", "肩关节", "肘关节", "腕与手", "胸椎与肋骨", "腰部", "髋与大腿", "膝关节", "踝关节", "足部与足趾"]) {
-    assert.match(library, new RegExp(name));
-  }
-  for (const phrase of ["groups", "reps", "每组", "mobilization", "softTissue", "return:"]) {
-    assert.match(library, new RegExp(phrase));
-  }
-  assert.doesNotMatch(library, /standardDose|gentleDose|起始剂量/);
+  for (const name of ["膝关节", "踝关节与足部", "腰椎、骨盆与髋"]) assert.match(modules, new RegExp(name));
+  for (const phrase of ["activeHow", "passiveHow", "muscleCandidates", "jointCandidates", "trainingTags", "groups", "reps", "return:"]) assert.match(modules, new RegExp(phrase));
   assert.match(system, /disabled=\{index > maxUnlocked\}/);
-  assert.match(system, /不符合，按自定义症状继续/);
-  assert.match(system, /makeCustomPattern/);
-  assert.match(system, /特殊检查/);
-  assert.match(system, /视频演示 · 后续上传/);
-  assert.match(system, /不要求当场消失/);
-  assert.match(system, /不做当场反复测试/);
-  assert.match(system, /记录已保存到当前设备/);
-  for (const phrase of ["股外侧肌、阔筋膜张肌与髂胫束周围", "腘肌", "腓肠肌与比目鱼肌", "膝关节伸直方向松动", "腓骨近端松动", "终末伸膝"]) {
-    assert.match(rules, new RegExp(phrase));
-  }
-  assert.match(rules, /只保留能让伸直角度或站立伸膝马上改善/);
+  for (const phrase of ["先做主动活动", "再轻柔比较被动活动", "肌肉控制路径", "关节＋肌肉路径", "疼痛动作排查", "特殊检查", "原动作或范围改善", "不要求当场消失", "不做当场反复测试", "视频演示 · 后续上传", "第二次康复", "第三次及以后", "记录已保存到当前设备"]) assert.match(system, new RegExp(phrase));
 });
