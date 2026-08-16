@@ -7,6 +7,7 @@
  */
 
 export type ChiefActionIntake = {
+  side?: string;
   reportedActions?: Array<{ raw?: string; label?: string }>;
   customAction?: string;
   reproduction?: string;
