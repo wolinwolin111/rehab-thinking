@@ -69,3 +69,16 @@ test("a joint mobilization title names the object and direction", () => {
   };
   assert.equal(core.candidateTreatmentName(kneeFlex), "膝关节屈曲方向松动");
 });
+
+test("patella-specific detection rejects generic knee candidates that merely mention patella", () => {
+  const specific = { id: "patella-mobility-unit", type: "joint", title: "髌骨向上滑动辅助", tags: [], actionLabel: "髌骨向上滑动辅助", do: "", siteLabel: "髌骨", targetLabel: "" };
+  const generic = { id: "joint-mobilization:knee-extension", type: "joint", title: "检查髌骨、膝关节与近端腓骨", tags: [], actionLabel: "", do: "", siteLabel: "膝", targetLabel: "" };
+  assert.equal(core.isPatellaSpecificCandidate(specific), true);
+  assert.equal(core.isPatellaSpecificCandidate(generic), false);
+});
+
+test("candidateMatchesTensionLocation maps a calf location to a calf candidate", () => {
+  const calf = { id: "muscle:calf-release", type: "muscle", tags: [], siteLabel: "小腿后侧", targetLabel: "", actionLabel: "", do: "轻柔松解小腿后侧肌腹", title: "小腿后侧轻柔松解" };
+  assert.equal(core.candidateMatchesTensionLocation(calf, "小腿后侧"), true);
+  assert.equal(core.candidateMatchesTensionLocation(calf, "大腿前侧"), false);
+});

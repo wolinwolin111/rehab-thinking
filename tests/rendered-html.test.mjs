@@ -405,8 +405,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /本轮做完后主诉变轻/);
   assert.match(demo, /髌骨向上滑动/);
   assert.match(demo, /knee-patella-superior[\s\S]*髌骨向上滑动幅度/);
-  assert.match(demo, /const explicitId = \/\(\?:\^\|\[-_:\]\)patella/);
-  assert.match(demo, /const explicitDirection = \/髌骨向/);
+  assert.match(demo, /candidate-treatment-core/);
   assert.match(demo, /rm-treatment-unit-followup is-patella/);
   assert.match(demo, /patella-mobility-unit/);
   assert.match(demo, /target:patella-mobility-unit/);
