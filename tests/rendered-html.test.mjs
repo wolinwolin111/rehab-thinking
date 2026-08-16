@@ -473,7 +473,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /localStorage\.getItem\("rehabmind-complete-demo-records"\)/);
   assert.match(demo, /localStorage\.setItem\("rehabmind-complete-demo-records"/);
   assert.match(demo, /candidateIsAvailable/);
-  assert.match(demo, /candidate\.access === "self"/);
+  assert.match(demo, /candidate-safety-core/);
   assert.match(demo, /stabbingSpread/);
   assert.match(demo, /普通自助路径不安排神经松动/);
   assert.match(demo, /FUNCTION_COMPENSATIONS/);
@@ -498,7 +498,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /keyConfirmationReady && !unsupportedDescriptionRegion/);
   assert.match(demo, /intake\.symptoms\.includes\("力量不足"\)/);
   assert.match(demo, /prioritiseStrengthControl/);
-  assert.match(demo, /candidateUsesPressure/);
+  assert.match(demo, /candidateAllowedInSharpPath/);
   assert.match(demo, /intake\.stabbingPalpation === "sharp"/);
   assert.match(demo, /intake\.symptomType === "刺痛" \|\| intakeHasTenderness/);
   assert.match(demo, /轻按反应/);
