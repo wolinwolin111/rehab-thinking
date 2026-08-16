@@ -7,19 +7,23 @@ const source = await readFile(new URL("../app/muscle-tension-assessment-core.ts"
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 
-const base = { spinal: false, active: "same", localRegion: true, standardPath: true, acute: false, localPhase: "nonacute-tension", primaryLocalMotion: true, symptomType: "酸痛", discomfort: "no", familiarSymptom: "no", hasClearChiefAction: true };
+const base = { spinal: false, tissuePathwayId: "standard", symptomType: "酸痛", symptoms: [] };
 
-test("normal calf range with familiar pain still receives one muscle-tension check", () => {
-  assert.equal(core.needsMuscleTensionCheck({ ...base, discomfort: "yes" }), true);
-});
-
-test("local calf tightness can trigger the primary tension check without range loss", () => {
+test("default: a motion gets the muscle-tension check even with normal range", () => {
   assert.equal(core.needsMuscleTensionCheck(base), true);
 });
 
-test("acute local injury and unrelated normal motion do not create routine palpation", () => {
-  assert.equal(core.needsMuscleTensionCheck({ ...base, acute: true, discomfort: "yes" }), false);
-  assert.equal(core.needsMuscleTensionCheck({ ...base, primaryLocalMotion: false, symptomType: "疼痛，性质说不清" }), false);
+test("spinal, contusion, bone stress, swelling and neural symptoms skip the tension check", () => {
+  assert.equal(core.needsMuscleTensionCheck({ ...base, spinal: true }), false);
+  assert.equal(core.needsMuscleTensionCheck({ ...base, tissuePathwayId: "muscle-contusion" }), false);
+  assert.equal(core.needsMuscleTensionCheck({ ...base, tissuePathwayId: "bone-stress-suspected" }), false);
+  assert.equal(core.needsMuscleTensionCheck({ ...base, symptoms: ["肿胀或淤青"] }), false);
+  assert.equal(core.needsMuscleTensionCheck({ ...base, symptomType: "麻或电感" }), false);
+  assert.equal(core.needsMuscleTensionCheck({ ...base, symptoms: ["麻、电或感觉变化"] }), false);
+});
+
+test("tendon-load still checks tension of surrounding muscle", () => {
+  assert.equal(core.needsMuscleTensionCheck({ ...base, tissuePathwayId: "tendon-load" }), true);
 });
 
 test("confirmed tension becomes one finding per location", () => {

@@ -45,3 +45,12 @@ export function remainingPatellaDirections(
 ): PatellaDirectionId[] {
   return directionIds.filter((id) => outcomes[`motion:${id}`] !== "both-match");
 }
+
+/** 只保留受限方向的 finding，用于复测清单：复测卡只列受限方向，不列全部四方向。 */
+export function filterPatellaFindingsToLimited<T extends { id: string }>(
+  findings: readonly T[],
+  limitedIds: readonly PatellaDirectionId[],
+): T[] {
+  const limited = new Set<string>(limitedIds);
+  return findings.filter((finding) => limited.has(finding.id.replace(/^motion:/, "")));
+}
