@@ -27,3 +27,12 @@ test("combined retest labels deduplicate aliases before comparison", () => {
   assert.equal(core.canonicalActionKey("勾脚、踝背屈检查"), "ankle-dorsiflexion");
   assert.equal(core.canonicalActionKey("弯膝盖、大腿前侧拉长检查"), "knee-flexion");
 });
+
+test("patella directions kinematically relate to knee flexion and extension", () => {
+  assert.equal(core.treatmentRelatesToChief(["knee-patella-inferior"], "knee-flexion"), true);
+  assert.equal(core.treatmentRelatesToChief(["knee-patella-superior"], "knee-extension"), true);
+  assert.equal(core.treatmentRelatesToChief(["knee-patella-lateral"], "knee-flexion"), true);
+  assert.equal(core.treatmentRelatesToChief(["knee-patella-superior"], "knee-flexion"), false);
+  assert.equal(core.treatmentRelatesToChief(["ankle-dorsiflexion"], "knee-flexion"), false);
+  assert.equal(core.treatmentRelatesToChief(["knee-patella-inferior"], ""), false);
+});

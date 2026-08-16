@@ -75,6 +75,7 @@ import {
   canonicalActionIdFromAssessmentId,
   canonicalActionKey,
   dedupeAssessmentIdsByAction,
+  treatmentRelatesToChief,
 } from "./action-identity-core";
 import {
   compareFollowupScore,
@@ -110,7 +111,7 @@ import {
   type AdverseSource,
   type AdverseTiming,
 } from "./adverse-response-core";
-import { buildMuscleTensionFinding, needsMuscleTensionCheck } from "./muscle-tension-assessment-core";
+import { buildMuscleTensionFindings, needsMuscleTensionCheck } from "./muscle-tension-assessment-core";
 import {
   emptyCapabilities,
   normalizeWorkflowProfile,
@@ -121,7 +122,7 @@ import {
   type ProductMode,
 } from "./workflow-profile-core";
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
-import { limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
+import { limitedPatellaDirections, patellaMobilityUnitTitle, type PatellaDirectionId } from "./patella-mobility-core";
 import { workbenchStageStates } from "./stage-workbench-core";
 import { buildFindingGroups } from "./finding-groups-core";
 import { specialIsRelevant } from "./special-test-trigger-core";
@@ -2209,6 +2210,14 @@ const TENSION_LOCATION_OPTIONS: Record<string, string[]> = {
   "elbow-extension": ["上臂前侧", "肘前侧", "前臂前侧"],
   "wrist-flexion": ["前臂背侧", "手腕背侧"],
   "wrist-extension": ["前臂掌侧", "手腕掌侧"],
+  "thigh-front-length": ["大腿前侧", "髋前"],
+  "thigh-back-length": ["大腿后侧", "膝后"],
+  "thigh-medial-length": ["大腿内侧", "腹股沟附近"],
+  "thigh-lateral-load": ["大腿外侧", "髋外侧"],
+  "calf-dorsiflexion": ["小腿后侧"],
+  "calf-plantarflexion": ["小腿前侧"],
+  "calf-inversion": ["小腿外侧"],
+  "calf-eversion": ["小腿内侧"],
 };
 
 function tensionLocationOptions(itemId: string, context = "") {
@@ -3341,13 +3350,15 @@ export default function RehabMindCompleteDemo() {
         }
         const confirmedTension = sharedTensionLocationsForMotion(item.id, result, assessmentResults[SHARED_TENSION_ASSESSMENT_ID])
           .filter((location) => !["没有明显差别", "两侧感觉接近"].includes(location));
-        const tensionFinding = buildMuscleTensionFinding({ assessmentId: item.id, assessmentTitle: professionalAssessmentTitle(item.id, item.title), locations: confirmedTension });
-        if (tensionFinding && !items.some((finding) => finding.id === tensionFinding.id)) items.push({
-          ...tensionFinding,
-          priority: "support",
-          tags: [...(item.tags ?? []), ...confirmedTension.map((location) => `tension:${location}`)],
-          side: result.active === "left-limited" ? "左侧" : result.active === "right-limited" ? "右侧" : result.active === "both-limited" ? "两侧接近" : undefined,
-        });
+        const tensionFindings = buildMuscleTensionFindings({ assessmentId: item.id, assessmentTitle: professionalAssessmentTitle(item.id, item.title), locations: confirmedTension });
+        for (const tensionFinding of tensionFindings) {
+          if (!items.some((finding) => finding.id === tensionFinding.id)) items.push({
+            ...tensionFinding,
+            priority: "support",
+            tags: [...(item.tags ?? []), `tension:${tensionFinding.location}`],
+            side: result.active === "left-limited" ? "左侧" : result.active === "right-limited" ? "右侧" : result.active === "both-limited" ? "两侧接近" : undefined,
+          });
+        }
         if (item.pairedStrengthId && ["weak", "painful"].includes(result.pairedStrength ?? "")) {
           const professionalStrength = canAssessResistance;
           const selfKneeExtensionControl = item.id === "motion:knee-extension" && !professionalStrength;
@@ -4348,7 +4359,7 @@ export default function RehabMindCompleteDemo() {
       return {
         id: "target:patella-mobility-unit",
         finding: patellaMotionFindings[0],
-        retestFindings: patellaMotionFindings,
+        retestFindings: patellaMotionFindings.filter((finding) => limitedPatellaIds.includes(motionIdFromFinding(finding) as PatellaDirectionId)),
         candidates: [candidate],
         chain: "髌骨活动",
         retestLabel: title,
@@ -5183,7 +5194,7 @@ export default function RehabMindCompleteDemo() {
     canAssessEndFeel,
   ));
   const limitedPilotMotionItems = assessments.filter((item) => {
-    if (item.kind !== "motion" || !pilotMotionKnowledge(item.id.replace(/^motion:/, ""))) return false;
+    if (item.kind !== "motion") return false;
     const record = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? "") ?? {};
     const assessmentId = item.id.replace(/^motion:/, "");
     const primaryLocalMotion = localLimbDecision?.assessmentIds.slice(0, 2).includes(assessmentId);
@@ -5841,7 +5852,7 @@ export default function RehabMindCompleteDemo() {
     const shouldRetestChiefThisRound = !isResidualReviewStep
       && hasClearChiefAction(intake)
       && !chiefMatchesRange
-      && (activeTarget.id === "target:chief" || activeTarget.id === "target:local-limb" && (batchSingleRangeRetestsChief || localNewSourceNeedsChiefRetest))
+      && (activeTarget.id === "target:chief" || activeTarget.id === "target:local-limb" && (batchSingleRangeRetestsChief || localNewSourceNeedsChiefRetest) || treatmentRelatesToChief((activeTarget.retestFindings ?? []).map(motionIdFromFinding), chiefDirection))
       && (localNewSourceNeedsChiefRetest || !chiefImprovedDuringTreatment && !chiefRetestCompletedDuringTreatment);
     const chiefRangeDirectionId = chiefRangeFinding ? motionIdFromFinding(chiefRangeFinding) : undefined;
     // 主诉动作可能挂在 target:chief，也可能挂在大腿/小腿的局部目标。
