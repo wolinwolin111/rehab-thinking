@@ -131,7 +131,7 @@ import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxat
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
 import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate } from "./candidate-treatment-core";
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
-import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
+import { assessmentSymptomCanDriveRetest, chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
 import { candidateDirectionChain, directionChain, includesAny, orderCandidatesByChain, pilotTreatmentMatchesCandidate } from "./candidate-order-core";
 import { workbenchStageStates } from "./stage-workbench-core";
@@ -1755,12 +1755,6 @@ function assessmentObservationSentence(item: AssessmentItem, record: AssessmentR
 
 function familiarSymptomRequired(record: AssessmentRecord, hasChiefAction: boolean) {
   return !hasChiefAction && (record.discomfort === "yes" || functionDiscomfortValue(record) === "yes" || record.simple === "painful");
-}
-
-function assessmentSymptomCanDriveRetest(record: AssessmentRecord | undefined, intake: IntakeState) {
-  if (!record) return false;
-  if (hasClearChiefAction(intake)) return true;
-  return record.familiarSymptom === "yes";
 }
 
 function motionComparisonMode(regionId: string, itemId: string): MotionComparison {
