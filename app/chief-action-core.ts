@@ -8,6 +8,7 @@
 
 export type ChiefActionIntake = {
   side?: string;
+  onset?: string;
   reportedActions?: Array<{ raw?: string; label?: string }>;
   customAction?: string;
   reproduction?: string;
@@ -118,4 +119,9 @@ export function assessmentSymptomCanDriveRetest(record: RetestSymptomRecord | un
   if (!record) return false;
   if (hasClearChiefAction(intake)) return true;
   return record.familiarSymptom === "yes";
+}
+
+/** 是否急性外伤（近 7 天内 + 扭转/碰撞/拉伤机制）。 */
+export function isAcuteTrauma(intake: ChiefActionIntake) {
+  return ["今天或昨天", "2～7天"].includes(intake.onset ?? "") && ["扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤"].includes(intake.mechanism ?? "");
 }

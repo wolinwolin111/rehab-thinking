@@ -131,7 +131,7 @@ import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxat
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
 import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocus, candidateMuscleUnits, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate, selectTreatmentChainCandidates } from "./candidate-treatment-core";
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
-import { assessmentSymptomCanDriveRetest, chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
+import { assessmentSymptomCanDriveRetest, chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateRelevance } from "./candidate-scoring-core";
 import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "./trial-target-core";
 import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
@@ -1485,10 +1485,6 @@ function adaptExerciseForCurrentStage(exercise: FullExercise, currentStage: numb
     harder: exercise.how,
     startPosition: exercise.startPosition === "站立" ? "坐位" : exercise.startPosition,
   };
-}
-
-function isAcuteTrauma(intake: IntakeState) {
-  return ["今天或昨天", "2～7天"].includes(intake.onset) && ["扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤"].includes(intake.mechanism);
 }
 
 const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; observe: string }> = {
