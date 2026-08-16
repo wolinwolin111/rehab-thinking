@@ -82,3 +82,19 @@ test("candidateMatchesTensionLocation maps a calf location to a calf candidate",
   assert.equal(core.candidateMatchesTensionLocation(calf, "小腿后侧"), true);
   assert.equal(core.candidateMatchesTensionLocation(calf, "大腿前侧"), false);
 });
+
+test("selectTreatmentChainCandidates dedups and caps each candidate type", () => {
+  const candidates = [
+    { id: "m1", type: "muscle", tags: [], siteLabel: "小腿后侧", targetLabel: "", actionLabel: "", do: "", title: "小腿后侧松解" },
+    { id: "m1b", type: "muscle", tags: [], siteLabel: "小腿后侧", targetLabel: "", actionLabel: "", do: "", title: "小腿后侧松解二" },
+    { id: "j1", type: "joint", tags: [], siteLabel: "膝", targetLabel: "", actionLabel: "", do: "", title: "膝关节屈曲松动" },
+    { id: "c1", type: "control", tags: [], siteLabel: "", targetLabel: "", actionLabel: "", do: "", title: "外翻控制" },
+  ];
+  const selected = core.selectTreatmentChainCandidates(candidates);
+  assert.deepEqual(selected.map((c) => c.id), ["m1", "j1", "c1"]);
+});
+
+test("candidateMuscleUnits splits calf-front-back into two regions", () => {
+  const calfFrontBack = { id: "muscle:calf-front-back", type: "muscle", tags: [], siteLabel: "小腿前后侧", targetLabel: "", actionLabel: "", do: "", title: "小腿前后侧松解" };
+  assert.deepEqual(core.candidateMuscleUnits(calfFrontBack), ["muscle:calf-anterior", "muscle:calf-posterior"]);
+});

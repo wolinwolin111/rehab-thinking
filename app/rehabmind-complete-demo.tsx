@@ -129,7 +129,7 @@ import {
 } from "./workflow-profile-core";
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
-import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate } from "./candidate-treatment-core";
+import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocus, candidateMuscleUnits, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate, selectTreatmentChainCandidates } from "./candidate-treatment-core";
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
 import { assessmentSymptomCanDriveRetest, chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateRelevance } from "./candidate-scoring-core";
@@ -1251,17 +1251,6 @@ function firstNumber(value: string, fallback = 10) {
  * Muscle candidates are tried by relevance; joint and control candidates are
  * retained as conditional exits when the range still has not reached its goal.
  */
-function selectTreatmentChainCandidates(candidates: FullCandidate[], muscleLimit = 2) {
-  const unique = candidates.filter((candidate, index, list) =>
-    list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
-  const muscles = unique.filter((candidate) => candidate.type === "muscle").slice(0, muscleLimit);
-  const neural = unique.filter((candidate) => candidate.type === "neural").slice(0, 1);
-  const joints = unique.filter((candidate) => candidate.type === "joint").slice(0, 1);
-  const controls = unique.filter((candidate) => candidate.type === "control").slice(0, 1);
-  const other = unique.filter((candidate) => !["muscle", "neural", "joint", "control"].includes(candidate.type)).slice(0, 1);
-  return [...muscles, ...neural, ...joints, ...controls, ...other];
-}
-
 function consolidateTrialTargetsByTreatment(targets: TrialTarget[]) {
   const consolidated = targets.map((target) => ({
     ...target,
@@ -1298,13 +1287,6 @@ function consolidateTrialTargetsByTreatment(targets: TrialTarget[]) {
       }),
     }))
     .filter((target) => target.candidates.length > 0);
-}
-
-function candidateMuscleUnits(candidate: FullCandidate) {
-  if (candidate.type !== "muscle") return [candidateDedupKey(candidate)];
-  const focus = candidateDedupKey(candidate).replace(/^muscle:/, "");
-  if (focus === "calf-front-back") return ["muscle:calf-anterior", "muscle:calf-posterior"];
-  return [`muscle:${focus}`];
 }
 
 type DynamicMuscleHistoryRecord = Pick<TrialRecord, "candidateId" | "candidateTitle" | "action" | "timeBased" | "rangeOutcomes"> & {

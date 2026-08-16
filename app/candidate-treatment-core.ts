@@ -187,3 +187,23 @@ export function candidateMatchesTensionLocation(candidate: CandidateTreatmentInp
   const rule = rules.find(([locationPattern]) => locationPattern.test(location));
   return rule ? rule[1].test(source) : source.includes(location);
 }
+
+/** 候选链选取：去重后按肌肉(限量)→神经→关节→控制→其他 保留前几项。 */
+export function selectTreatmentChainCandidates<T extends CandidateTreatmentInput>(candidates: T[], muscleLimit = 2): T[] {
+  const unique = candidates.filter((candidate, index, list) =>
+    list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
+  const muscles = unique.filter((candidate) => candidate.type === "muscle").slice(0, muscleLimit);
+  const neural = unique.filter((candidate) => candidate.type === "neural").slice(0, 1);
+  const joints = unique.filter((candidate) => candidate.type === "joint").slice(0, 1);
+  const controls = unique.filter((candidate) => candidate.type === "control").slice(0, 1);
+  const other = unique.filter((candidate) => !["muscle", "neural", "joint", "control"].includes(candidate.type)).slice(0, 1);
+  return [...muscles, ...neural, ...joints, ...controls, ...other];
+}
+
+/** 候选覆盖的肌肉去重单元；小腿前后侧单元拆成前后两个标准区域。 */
+export function candidateMuscleUnits(candidate: CandidateTreatmentInput) {
+  if (candidate.type !== "muscle") return [candidateDedupKey(candidate)];
+  const focus = candidateDedupKey(candidate).replace(/^muscle:/, "");
+  if (focus === "calf-front-back") return ["muscle:calf-anterior", "muscle:calf-posterior"];
+  return [`muscle:${focus}`];
+}
