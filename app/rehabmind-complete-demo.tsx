@@ -133,6 +133,7 @@ import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocu
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
 import { assessmentSymptomCanDriveRetest, chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateRelevance } from "./candidate-scoring-core";
+import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "./trial-target-core";
 import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
 import { candidateDirectionChain, directionChain, includesAny, orderCandidatesByChain, pilotTreatmentMatchesCandidate } from "./candidate-order-core";
 import { workbenchStageStates } from "./stage-workbench-core";
@@ -1251,44 +1252,6 @@ function firstNumber(value: string, fallback = 10) {
  * Muscle candidates are tried by relevance; joint and control candidates are
  * retained as conditional exits when the range still has not reached its goal.
  */
-function consolidateTrialTargetsByTreatment(targets: TrialTarget[]) {
-  const consolidated = targets.map((target) => ({
-    ...target,
-    candidates: target.candidates.map((candidate) => ({ ...candidate, retestIds: [...(candidate.retestIds ?? [])] })),
-    retestFindings: dedupeRetestFindingsByAction([...(target.retestFindings ?? [])]),
-  }));
-  const owners = new Map<string, { targetIndex: number; candidateIndex: number }>();
-
-  consolidated.forEach((target, targetIndex) => {
-    target.candidates.forEach((candidate, candidateIndex) => {
-      const key = candidateTreatmentKey(candidate, target.finding.side);
-      const owner = owners.get(key);
-      if (!owner) {
-        owners.set(key, { targetIndex, candidateIndex });
-        return;
-      }
-      const ownerTarget = consolidated[owner.targetIndex];
-      const ownerCandidate = ownerTarget.candidates[owner.candidateIndex];
-      const mergedDirectionIds = dedupeAssessmentIdsByAction([...(ownerCandidate.retestIds ?? []), ...(candidate.retestIds ?? [])]);
-      ownerTarget.candidates[owner.candidateIndex] = { ...ownerCandidate, retestIds: mergedDirectionIds };
-      ownerTarget.retestFindings = dedupeRetestFindingsByAction([...new Map([
-        ...(ownerTarget.retestFindings ?? []),
-        ...(target.retestFindings ?? []),
-      ].filter((finding) => mergedDirectionIds.some((id) => samePhysicalAction(id, motionIdFromFinding(finding)))).map((finding) => [finding.id, finding])).values()]);
-    });
-  });
-
-  return consolidated
-    .map((target, targetIndex) => ({
-      ...target,
-      candidates: target.candidates.filter((candidate, candidateIndex) => {
-        const owner = owners.get(candidateTreatmentKey(candidate, target.finding.side));
-        return owner?.targetIndex === targetIndex && owner.candidateIndex === candidateIndex;
-      }),
-    }))
-    .filter((target) => target.candidates.length > 0);
-}
-
 type DynamicMuscleHistoryRecord = Pick<TrialRecord, "candidateId" | "candidateTitle" | "action" | "timeBased" | "rangeOutcomes"> & {
   treatmentName?: string;
 };
@@ -1319,12 +1282,6 @@ function dynamicMuscleCandidateFromRecord(record: DynamicMuscleHistoryRecord | F
 
 function optionalTreatmentSelectionKey(targetId: string, candidateId: string) {
   return `${targetId}::${candidateId}`;
-}
-
-function treatmentCanCarryAcrossProblems(candidate: FullCandidate) {
-  // One joint intervention may serve multiple linked motion directions.
-  // Carry its record forward so multi-positive ankle cases do not repeat it.
-  return ["muscle", "control", "joint", "neural"].includes(candidate.type);
 }
 
 const RESIDUAL_REVIEW_ID = "review-existing-findings";
