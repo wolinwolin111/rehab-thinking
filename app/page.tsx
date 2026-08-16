@@ -1,5 +1,5 @@
-import RehabSystem from "./rehab-system";
+import RehabMindCompleteDemo from "./rehabmind-complete-demo";
 
 export default function Page() {
-  return <RehabSystem />;
+  return <RehabMindCompleteDemo />;
 }

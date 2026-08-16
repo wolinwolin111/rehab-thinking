@@ -449,7 +449,7 @@ export const BASELINE_ASSESSMENTS: Record<string, BaselineAssessment[]> = {
         {
           id: "ankle-rom-plantarflexion",
           label: "脚尖向下",
-          instruction: "像踩油门一样向下绷脚，比较两侧。",
+          instruction: "坐稳并放松小腿，把脚背缓慢向下压，比较两侧。",
         },
         {
           id: "ankle-rom-inversion",

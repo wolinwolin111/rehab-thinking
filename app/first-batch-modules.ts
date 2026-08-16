@@ -489,9 +489,9 @@ export function inferModule(text: string): ModuleId | "" {
   const normalized = text.trim().toLowerCase();
   if (!normalized) return "";
   let best: { id: ModuleId; score: number } | null = null;
-  for (const module of FIRST_BATCH_MODULES) {
-    const score = module.keywords.reduce((total, keyword) => total + (normalized.includes(keyword) ? keyword.length : 0), 0);
-    if (score > 0 && (!best || score > best.score)) best = { id: module.id, score };
+  for (const rehabModule of FIRST_BATCH_MODULES) {
+    const score = rehabModule.keywords.reduce((total, keyword) => total + (normalized.includes(keyword) ? keyword.length : 0), 0);
+    if (score > 0 && (!best || score > best.score)) best = { id: rehabModule.id, score };
   }
   return best?.id ?? "";
 }
