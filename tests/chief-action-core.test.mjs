@@ -29,3 +29,10 @@ test("chiefActionLabel joins multiple actions", () => {
   assert.equal(core.chiefActionLabel({ ...kneeSquat, reportedActions: [{ raw: "下蹲" }, { raw: "上楼" }] }), "下蹲、上楼");
   assert.equal(core.chiefActionLabel({ reportedActions: [] }), "尚未确认");
 });
+
+test("assessmentSymptomCanDriveRetest requires a chief action or familiar symptom", () => {
+  assert.equal(core.assessmentSymptomCanDriveRetest({ familiarSymptom: "yes" }, kneeSquat), true);
+  assert.equal(core.assessmentSymptomCanDriveRetest({ familiarSymptom: "yes" }, { reportedActions: [] }), true);
+  assert.equal(core.assessmentSymptomCanDriveRetest({ familiarSymptom: "no" }, { reportedActions: [] }), false);
+  assert.equal(core.assessmentSymptomCanDriveRetest(undefined, kneeSquat), false);
+});

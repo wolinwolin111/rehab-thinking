@@ -109,3 +109,12 @@ export function chiefMotionDirectionId(intake: ChiefActionIntake, regionId: stri
   const source = [intake.actionAnalysis?.task, ...reportedActionSummary(intake), intake.forceDirection].filter(Boolean).join(" ");
   return CHIEF_MOTION_ALIASES[regionId]?.find(([, words]) => words.some((word) => source.includes(word)))?.[0];
 }
+
+export type RetestSymptomRecord = { familiarSymptom?: string };
+
+/** 该评估记录的症状是否能驱动一次复测：有明确主诉动作，或症状是熟悉的不适。 */
+export function assessmentSymptomCanDriveRetest(record: RetestSymptomRecord | undefined, intake: ChiefActionIntake) {
+  if (!record) return false;
+  if (hasClearChiefAction(intake)) return true;
+  return record.familiarSymptom === "yes";
+}
