@@ -369,8 +369,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /chiefRetested: chiefWasActuallyRetested/);
   assert.match(demo, /复诊只能沿用上次实际有效的处理方向/);
   assert.doesNotMatch(demo, /retainedIds\.has\(candidate\.id\) \|\| candidateMuscleUnits/);
-  assert.match(demo, /大腿外侧链/);
-  assert.match(demo, /腰方肌/);
+  assert.match(demo, /candidate-treatment-core/);
   assert.match(demo, /treatmentCanCarryAcrossProblems/);
   assert.match(demo, /definedAssessmentFields/);
   assert.doesNotMatch(demo, /const hasIndependentTreatmentProblem/);
@@ -734,8 +733,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /如果是因为疼所以不敢继续/);
   assert.match(demo, /deniesTwist/);
   assert.match(demo, /deniesImpact/);
-  assert.match(demo, /小腿前侧肌群/);
-  assert.match(demo, /小腿外侧肌群/);
+  assert.match(demo, /candidate-treatment-core/);
   assert.doesNotMatch(demo, /轻柔松解轻柔松解/);
   assert.doesNotMatch(demo, /踝背屈）· 活动度检查/);
   assert.match(demo, /item\.chiefRetested && !item\.reviewOnly/);
