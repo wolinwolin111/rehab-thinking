@@ -110,3 +110,18 @@ export function dedupeRetestFindingsByAction<T extends MotionFindingInput>(items
     return true;
   });
 }
+
+export type MotionSymptomRecord = {
+  discomfort?: string;
+  unableReason?: string;
+  passiveDiscomfort?: string;
+};
+
+/** 方向是否已知有不适：主诉同动作、主动/被动不适或无法完成(痛)都算。 */
+export function motionWasSymptomatic(directionId: string, assessmentResults: Record<string, MotionSymptomRecord | undefined>, chiefDirection?: string) {
+  const record = assessmentResults[`motion:${directionId}`];
+  return samePhysicalAction(chiefDirection, directionId)
+    || record?.discomfort === "yes"
+    || record?.unableReason === "pain"
+    || record?.passiveDiscomfort === "yes";
+}

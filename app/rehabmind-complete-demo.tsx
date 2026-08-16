@@ -79,6 +79,7 @@ import {
   dedupeAssessmentIdsByAction,
   dedupeRetestFindingsByAction,
   motionIdFromFinding,
+  motionWasSymptomatic,
   samePhysicalAction,
   treatmentRelatesToChief,
 } from "./action-identity-core";
@@ -1243,17 +1244,6 @@ function scoreChange(before: number, after: number) {
   const delta = before - after;
   const percent = before > 0 ? Math.round((delta / before) * 100) : null;
   return { delta, percent };
-}
-
-/** 全部关节与脊柱方向共用：已知不适的动作复测时直接记录新分数。 */
-function motionWasSymptomatic(directionId: string, assessmentResults: Record<string, AssessmentRecord>, chiefDirection?: string) {
-  const record = assessmentResults[`motion:${directionId}`];
-  // 髌骨滑动等纯被动项目没有 active 字段；它们的不适记录在
-  // passiveDiscomfort/passiveSymptomScore，不能因此在复测时退回“有没有新不适”。
-  return samePhysicalAction(chiefDirection, directionId)
-    || record?.discomfort === "yes"
-    || record?.unableReason === "pain"
-    || record?.passiveDiscomfort === "yes";
 }
 
 function resultFromScore(before: number, after: number): TrialResult {
