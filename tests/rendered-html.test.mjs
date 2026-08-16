@@ -736,7 +736,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.doesNotMatch(demo, /踝背屈）· 活动度检查/);
   assert.match(demo, /item\.chiefRetested && !item\.reviewOnly/);
   assert.match(demo, /candidateControlMotionIds/);
-  assert.match(demo, /role === "agonist"/);
+  assert.match(demo, /candidate-action-core/);
   assert.match(demo, /chiefNeedsFinalRetest/);
   assert.match(demo, /needsTreatmentFinalChiefRetest/);
   assert.match(demo, /batchedResult/);
