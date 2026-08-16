@@ -122,7 +122,7 @@ import {
   type ProductMode,
 } from "./workflow-profile-core";
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
-import { limitedPatellaDirections, patellaMobilityUnitTitle, type PatellaDirectionId } from "./patella-mobility-core";
+import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
 import { workbenchStageStates } from "./stage-workbench-core";
 import { buildFindingGroups } from "./finding-groups-core";
 import { specialIsRelevant } from "./special-test-trigger-core";
@@ -4359,7 +4359,7 @@ export default function RehabMindCompleteDemo() {
       return {
         id: "target:patella-mobility-unit",
         finding: patellaMotionFindings[0],
-        retestFindings: patellaMotionFindings.filter((finding) => limitedPatellaIds.includes(motionIdFromFinding(finding) as PatellaDirectionId)),
+        retestFindings: filterPatellaFindingsToLimited(patellaMotionFindings, limitedPatellaIds),
         candidates: [candidate],
         chain: "髌骨活动",
         retestLabel: title,
@@ -5194,23 +5194,12 @@ export default function RehabMindCompleteDemo() {
     canAssessEndFeel,
   ));
   const limitedPilotMotionItems = assessments.filter((item) => {
-    if (item.kind !== "motion") return false;
-    const record = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? "") ?? {};
-    const assessmentId = item.id.replace(/^motion:/, "");
-    const primaryLocalMotion = localLimbDecision?.assessmentIds.slice(0, 2).includes(assessmentId);
+    if (item.kind !== "motion" || item.testMode === "passive") return false;
     return needsMuscleTensionCheck({
       spinal: Boolean(item.spinal),
-      active: record.active,
-      unableReason: record.unableReason,
-      localRegion: ["thigh-local", "calf-local"].includes(region?.id ?? ""),
-      standardPath: tissuePathway.id === "standard",
-      acute: isAcuteTrauma(intake),
-      localPhase: localLimbDecision?.phase,
-      primaryLocalMotion: Boolean(primaryLocalMotion),
+      tissuePathwayId: tissuePathway.id,
       symptomType: intake.symptomType,
-      discomfort: record.discomfort,
-      familiarSymptom: record.familiarSymptom,
-      hasClearChiefAction: hasClearChiefAction(intake),
+      symptoms: intake.symptoms,
     });
   });
   const sharedTensionRequired = limitedPilotMotionItems.length > 0;

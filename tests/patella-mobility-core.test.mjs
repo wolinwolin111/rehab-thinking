@@ -41,3 +41,18 @@ test("an empty remaining set closes the patella unit", () => {
     { "motion:knee-patella-superior": "both-match" },
   ), []);
 });
+
+test("retest findings keep only the limited directions, not all four", () => {
+  const allFindings = [
+    { id: "motion:knee-patella-superior" },
+    { id: "motion:knee-patella-inferior" },
+    { id: "motion:knee-patella-medial" },
+    { id: "motion:knee-patella-lateral" },
+  ];
+  assert.deepEqual(
+    core.filterPatellaFindingsToLimited(allFindings, ["knee-patella-superior", "knee-patella-medial"]).map((f) => f.id),
+    ["motion:knee-patella-superior", "motion:knee-patella-medial"],
+  );
+  assert.deepEqual(core.filterPatellaFindingsToLimited(allFindings, ["knee-patella-superior"]).map((f) => f.id), ["motion:knee-patella-superior"]);
+  assert.deepEqual(core.filterPatellaFindingsToLimited(allFindings, []), []);
+});
