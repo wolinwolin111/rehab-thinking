@@ -71,9 +71,14 @@ import {
 } from "./assessment-answer-core";
 import { assessmentGapActionLabel, firstAssessmentGap } from "./assessment-gap-core";
 import {
+  actionIdFromFinding,
+  anyMotionIdFromFinding,
   canonicalActionIdFromAssessmentId,
   canonicalActionKey,
   dedupeAssessmentIdsByAction,
+  dedupeRetestFindingsByAction,
+  motionIdFromFinding,
+  samePhysicalAction,
   treatmentRelatesToChief,
 } from "./action-identity-core";
 import {
@@ -1260,33 +1265,6 @@ function scoreChange(before: number, after: number) {
   const delta = before - after;
   const percent = before > 0 ? Math.round((delta / before) * 100) : null;
   return { delta, percent };
-}
-
-function motionIdFromFinding(finding: Finding) {
-  return finding.id.replace(/^motion:/, "");
-}
-
-function actionIdFromFinding(finding: Finding) {
-  return canonicalActionIdFromAssessmentId(motionIdFromFinding(finding));
-}
-
-function samePhysicalAction(left?: string, right?: string) {
-  return Boolean(left && right && canonicalActionIdFromAssessmentId(left) === canonicalActionIdFromAssessmentId(right));
-}
-
-function dedupeRetestFindingsByAction(items: Finding[]) {
-  const seen = new Set<string>();
-  return items.filter((finding) => {
-    const actionId = actionIdFromFinding(finding);
-    if (seen.has(actionId)) return false;
-    seen.add(actionId);
-    return true;
-  });
-}
-
-function anyMotionIdFromFinding(finding: Finding) {
-  const match = finding.id.match(/^(?:symptom:|control:|track:|tension:)?motion:(.+)$/);
-  return match?.[1];
 }
 
 /** 全部关节与脊柱方向共用：已知不适的动作复测时直接记录新分数。 */
