@@ -128,7 +128,7 @@ import {
 } from "./workflow-profile-core";
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
-import { candidateDedupKey, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, jointTreatmentName } from "./candidate-treatment-core";
+import { candidateDedupKey, candidateMatchesTensionLocation, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate, jointTreatmentName } from "./candidate-treatment-core";
 import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
 import { candidateDirectionChain, directionChain, includesAny, orderCandidatesByChain, pilotTreatmentMatchesCandidate } from "./candidate-order-core";
 import { workbenchStageStates } from "./stage-workbench-core";
@@ -293,22 +293,7 @@ function isPatellaGroupSecondaryId(id: string) {
   return isPatellaDirectionId(id) && id !== PATELLA_GROUP_PRIMARY_ID;
 }
 
-function isPatellaSpecificCandidate(candidate?: FullCandidate) {
-  if (!candidate || candidate.type !== "joint") return false;
-  // 不能只因为通用膝关节候选的说明里提到“髌骨”就把它当成髌骨专项。
-  // 例如“检查髌骨、膝关节与近端腓骨”仍然属于膝关节伸直方向候选，
-  // 它不应显示髌骨四方向的合并复测提示。专项候选必须有明确的候选
-  // 标识，或标题/动作明确写出某个髌骨滑动方向。
-  const idSource = candidate.id;
-  const actionSource = `${candidate.title} ${candidate.actionLabel ?? ""}`;
-  const explicitId = /(?:^|[-_:])patella(?:[-_:]|$)/i.test(idSource);
-  const explicitDirection = /髌骨向(?:上|下|内|外)(?:滑动|移动|活动|辅助)|patella.*(?:superior|inferior|medial|lateral|glide|mobility|assist)/i.test(actionSource);
-  return explicitId || explicitDirection;
-}
-
-function isPatellaTreatmentCandidate(candidate?: FullCandidate) {
-  return isPatellaSpecificCandidate(candidate);
-}
+const isPatellaTreatmentCandidate = isPatellaSpecificCandidate;
 
 type AssessmentRecord = {
   active?: MotionAnswer | BilateralMotionAnswer;
@@ -1383,32 +1368,6 @@ function dynamicMuscleCandidateFromRecord(record: DynamicMuscleHistoryRecord | F
     targetLabel: `${normalizedRegion.label}紧张区域`,
     actionLabel: "轻柔肌肉松解",
   };
-}
-
-function candidateMatchesTensionLocation(candidate: FullCandidate, location: string) {
-  const source = `${candidate.siteLabel ?? ""} ${candidate.targetLabel ?? ""} ${candidate.title} ${candidate.do} ${candidate.tags.join(" ")}`;
-  const rules: Array<[RegExp, RegExp]> = [
-    [/小腿后/, /小腿后|腓肠|比目鱼|三头肌|calf|plantarflex/],
-    [/小腿前/, /小腿前|胫骨前|趾伸|dorsiflex/],
-    [/小腿外/, /小腿外|腓骨肌|evert/],
-    [/小腿内/, /小腿内|胫骨后|趾屈|invert/],
-    [/脚底|足弓/, /脚底|足底|足弓|plantar|intrinsic/],
-    [/踝前|足背/, /踝前|足背|胫骨前|dorsiflex/],
-    [/踝外|脚底外/, /踝外|小腿外|腓骨肌|evert/],
-    [/踝内|足弓内/, /踝内|小腿内|胫骨后|invert/],
-    [/大腿前/, /大腿前|股四头|股直肌|髋前|quadriceps|hip-flex/],
-    [/大腿内|腹股沟/, /大腿内|内收|鹅足|腹股沟|adductor/],
-    [/大腿后|膝后/, /大腿后|腘绳|腘肌|膝后|hamstring/],
-    [/大腿外|髋外/, /大腿外|阔筋膜|髂胫束|髋外|臀中|lateral-chain|\btfl\b/],
-    [/臀后/, /臀后|臀大|梨状|glute/],
-    [/腰侧/, /腰侧|腰方肌|腰大肌|quadratus|psoas/],
-    [/胸前|肩前/, /胸前|胸大肌|胸小肌|肩前/],
-    [/肩后|腋窝后/, /肩后|腋窝后|背阔肌|冈下肌|小圆肌/],
-    [/前臂背|手腕背/, /前臂背|手腕背|腕伸肌/],
-    [/前臂掌|手腕掌/, /前臂掌|手腕掌|屈腕肌/],
-  ];
-  const rule = rules.find(([locationPattern]) => locationPattern.test(location));
-  return rule ? rule[1].test(source) : source.includes(location);
 }
 
 function candidateControlMotionIds(candidate: FullCandidate, availableMotionIds?: string[]) {

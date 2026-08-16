@@ -150,3 +150,40 @@ export function candidateTreatmentKey(candidate: CandidateTreatmentInput, side =
   const action = candidate.actionLabel || candidateTreatmentName(candidate);
   return `${sideKey}:${candidate.type}:${site}:${action}`.replace(/\s+/g, "");
 }
+
+/** 是否髌骨专项候选：有明确 patella 标识或标题/动作写出髌骨滑动方向。 */
+export function isPatellaSpecificCandidate(candidate?: CandidateTreatmentInput) {
+  if (!candidate || candidate.type !== "joint") return false;
+  const idSource = candidate.id;
+  const actionSource = `${candidate.title} ${candidate.actionLabel ?? ""}`;
+  const explicitId = /(?:^|[-_:])patella(?:[-_:]|$)/i.test(idSource);
+  const explicitDirection = /髌骨向(?:上|下|内|外)(?:滑动|移动|活动|辅助)|patella.*(?:superior|inferior|medial|lateral|glide|mobility|assist)/i.test(actionSource);
+  return explicitId || explicitDirection;
+}
+
+/** 候选是否匹配某个紧张区域（按部位规则，回退到原文包含）。 */
+export function candidateMatchesTensionLocation(candidate: CandidateTreatmentInput, location: string) {
+  const source = `${candidate.siteLabel ?? ""} ${candidate.targetLabel ?? ""} ${candidate.title} ${candidate.do} ${candidate.tags.join(" ")}`;
+  const rules: Array<[RegExp, RegExp]> = [
+    [/小腿后/, /小腿后|腓肠|比目鱼|三头肌|calf|plantarflex/],
+    [/小腿前/, /小腿前|胫骨前|趾伸|dorsiflex/],
+    [/小腿外/, /小腿外|腓骨肌|evert/],
+    [/小腿内/, /小腿内|胫骨后|趾屈|invert/],
+    [/脚底|足弓/, /脚底|足底|足弓|plantar|intrinsic/],
+    [/踝前|足背/, /踝前|足背|胫骨前|dorsiflex/],
+    [/踝外|脚底外/, /踝外|小腿外|腓骨肌|evert/],
+    [/踝内|足弓内/, /踝内|小腿内|胫骨后|invert/],
+    [/大腿前/, /大腿前|股四头|股直肌|髋前|quadriceps|hip-flex/],
+    [/大腿内|腹股沟/, /大腿内|内收|鹅足|腹股沟|adductor/],
+    [/大腿后|膝后/, /大腿后|腘绳|腘肌|膝后|hamstring/],
+    [/大腿外|髋外/, /大腿外|阔筋膜|髂胫束|髋外|臀中|lateral-chain|\btfl\b/],
+    [/臀后/, /臀后|臀大|梨状|glute/],
+    [/腰侧/, /腰侧|腰方肌|腰大肌|quadratus|psoas/],
+    [/胸前|肩前/, /胸前|胸大肌|胸小肌|肩前/],
+    [/肩后|腋窝后/, /肩后|腋窝后|背阔肌|冈下肌|小圆肌/],
+    [/前臂背|手腕背/, /前臂背|手腕背|腕伸肌/],
+    [/前臂掌|手腕掌/, /前臂掌|手腕掌|屈腕肌/],
+  ];
+  const rule = rules.find(([locationPattern]) => locationPattern.test(location));
+  return rule ? rule[1].test(source) : source.includes(location);
+}
