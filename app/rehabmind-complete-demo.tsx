@@ -7,7 +7,6 @@ import LowerLimbLocationPicker, {
   type LowerLimbLocationSelection,
 } from "./lower-limb-location-picker";
 import {
-  DIRECTION_CHAINS,
   FULL_REGIONS,
   type FullCandidate,
   type FullExercise,
@@ -125,6 +124,7 @@ import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxat
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
 import { candidateDedupKey, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, jointTreatmentName } from "./candidate-treatment-core";
 import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
+import { candidateDirectionChain, directionChain, includesAny, orderCandidatesByChain, pilotTreatmentMatchesCandidate } from "./candidate-order-core";
 import { workbenchStageStates } from "./stage-workbench-core";
 import { buildFindingGroups } from "./finding-groups-core";
 import { specialIsRelevant } from "./special-test-trigger-core";
@@ -699,16 +699,6 @@ function motionAnswerIsLimited(value?: AssessmentRecord["active"]) {
   return ["limited", "left-limited", "right-limited", "both-limited"].includes(value ?? "");
 }
 
-function directionChain(directionId: string) {
-  return DIRECTION_CHAINS[directionId] ?? "其他相关问题";
-}
-
-function candidateDirectionChain(candidate: FullCandidate, fallback = "其他相关问题") {
-  const chains = (candidate.retestIds ?? []).map(directionChain).filter(Boolean);
-  if (chains.includes("功能动作")) return "功能动作";
-  return chains[0] ?? fallback;
-}
-
 function discomfortDecisionTags(value?: string) {
   if (!value) return [];
   if (includesAny(value, ["麻", "电"])) return ["assessment-neural", "conservative"];
@@ -718,11 +708,6 @@ function discomfortDecisionTags(value?: string) {
   return [];
 }
 
-function orderCandidatesByChain(candidates: FullCandidate[]) {
-  const chainOrder = ["矢状面·前侧链", "矢状面·后侧链", "额状面·内侧链", "额状面·外侧链", "膝伸直链", "膝屈曲链", "膝内侧链", "髋膝稳定链", "功能动作", "其他相关问题"];
-  const typeOrder: FullCandidate["type"][] = ["muscle", "control", "joint", "swelling", "neural"];
-  return [...candidates].sort((a, b) => chainOrder.indexOf(candidateDirectionChain(a)) - chainOrder.indexOf(candidateDirectionChain(b)) || typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
-}
 const SAFETY_ITEMS = [
   { id: "shape", text: "有明显错位、异常轮廓或开放伤口", note: "单纯肿胀、淤青不算明显错位" },
   { id: "vascular", text: "远端持续发白、发凉或感觉明显下降", note: "局部受伤后的淤青单独记录" },
@@ -841,10 +826,6 @@ function sideFromLocationSelections(items: LowerLimbLocationSelection[]) {
   const sides = new Set(items.map((item) => item.side).filter((side) => side === "左侧" || side === "右侧"));
   if (sides.size > 1) return "双侧/中间";
   return items[0]?.side ?? "";
-}
-
-function includesAny(text: string, words: string[]) {
-  return words.some((word) => text.includes(word));
 }
 
 function extractProvokingAction(text: string) {
@@ -1706,34 +1687,6 @@ function adaptExerciseForCurrentStage(exercise: FullExercise, currentStage: numb
     harder: exercise.how,
     startPosition: exercise.startPosition === "站立" ? "坐位" : exercise.startPosition,
   };
-}
-
-const PILOT_TREATMENT_ALIASES: Record<string, string[]> = {
-  "knee-flexion-local-muscle": ["knee-mobility-posterior", "knee-extension-muscles"],
-  "knee-proximal-fibula": ["knee-lateral-fibula"],
-  "knee-fibula-combination": ["knee-lateral-fibula"],
-  "knee-hip-control": ["knee-anterior-control", "knee-lateral-control"],
-  "knee-medial-local": ["knee-medial-pes"],
-  "knee-pes-local": ["knee-medial-pes"],
-  "knee-adductor-local": ["knee-medial-adductor"],
-  "knee-lateral-chain": ["knee-medial-lateral-chain"],
-  "knee-extension-joint": ["knee-extension-joints", "knee-medial-joint", "knee-mobility-joint"],
-  "knee-toe-extensor-response": ["knee-extension-anterior-lower-leg"],
-  "knee-extension-chain": ["knee-extension-muscles"],
-  "knee-extension-anterior-lateral": ["knee-extension-anterior-lateral"],
-  "knee-extension-posterior": ["knee-extension-posterior"],
-  "knee-extension-control": ["knee-extension-control", "knee-mobility-knee-extension-control"],
-  "ankle-swelling-management": ["ankle-lateral-swelling"],
-  "ankle-medial-calf": ["ankle-rom-medial-release", "ankle-medial-muscles"],
-  "ankle-medial-control": ["ankle-rom-inversion-control", "ankle-medial-control"],
-  "ankle-lateral-control": ["ankle-rom-eversion-control", "ankle-lateral-control"],
-  "ankle-calf-strength": ["ankle-achilles-load"],
-  "ankle-anterior-muscle": ["ankle-rom-anterior-release", "ankle-calf-anterolateral-local"],
-  "ankle-joint-followup": ["ankle-rom-sagittal-joint", "ankle-df-joint"],
-};
-
-function pilotTreatmentMatchesCandidate(hintId: string, candidateId: string) {
-  return hintId === candidateId || PILOT_TREATMENT_ALIASES[hintId]?.includes(candidateId);
 }
 
 function isAcuteTrauma(intake: IntakeState) {
