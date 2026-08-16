@@ -22,11 +22,20 @@ test("acute local injury and unrelated normal motion do not create routine palpa
   assert.equal(core.needsMuscleTensionCheck({ ...base, primaryLocalMotion: false, symptomType: "疼痛，性质说不清" }), false);
 });
 
-test("confirmed tension becomes a categorized finding even when range is normal", () => {
-  assert.deepEqual(core.buildMuscleTensionFinding({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["小腿前侧", "小腿前侧"] }), {
-    id: "tension:motion:calf-dorsiflexion",
-    title: "小腿前侧肌张力增高",
-    detail: "与另一侧轻按比较更紧或更酸；相关动作：踝背屈",
-  });
-  assert.equal(core.buildMuscleTensionFinding({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["没有明显差别"] }), null);
+test("confirmed tension becomes one finding per location", () => {
+  assert.deepEqual(core.buildMuscleTensionFindings({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["小腿前侧", "小腿前侧", "小腿后侧"] }), [
+    {
+      id: "tension:motion:calf-dorsiflexion:小腿前侧",
+      title: "小腿前侧肌张力增高",
+      detail: "与另一侧轻按比较更紧或更酸；相关动作：踝背屈",
+      location: "小腿前侧",
+    },
+    {
+      id: "tension:motion:calf-dorsiflexion:小腿后侧",
+      title: "小腿后侧肌张力增高",
+      detail: "与另一侧轻按比较更紧或更酸；相关动作：踝背屈",
+      location: "小腿后侧",
+    },
+  ]);
+  assert.deepEqual(core.buildMuscleTensionFindings({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["没有明显差别"] }), []);
 });

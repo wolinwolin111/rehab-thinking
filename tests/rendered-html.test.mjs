@@ -798,7 +798,7 @@ test("covers the 2026-08 assessment repair matrix without fallback decisions", a
   assert.match(demo, /tensionChecked\?: boolean/);
   assert.match(demo, /tensionLocations\?: string\[\]/);
   assert.match(demo, /needsMuscleTensionCheck/);
-  assert.match(demo, /buildMuscleTensionFinding/);
+  assert.match(demo, /buildMuscleTensionFindings/);
   assert.match(demo, /相关区域只检查一次/);
   assert.match(demo, /不要按骨头、关节缝或明显肿胀中心/);
   assert.match(demo, /candidateMatchesTensionLocation/);

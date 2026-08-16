@@ -55,3 +55,25 @@ export function dedupeAssessmentIdsByAction(ids: string[]) {
     return true;
   });
 }
+
+/**
+ * 处理方向 → 主诉动作方向的运动学关联。
+ *
+ * 髌骨滑动不是膝屈/伸本身，但直接影响膝关节屈伸：处理髌骨后应顺带复测
+ * 下蹲等主诉动作，而不是只复测被处理的方向本身。这张表是「影响」关系，
+ * 与上面的「同一动作别名」不同——新增关节处理与主诉的关联就往这里加一行。
+ */
+export const KINEMATIC_LINKS: Record<string, string[]> = {
+  "knee-patella-superior": ["knee-extension"],
+  "knee-patella-inferior": ["knee-flexion"],
+  "knee-patella-medial": ["knee-flexion", "knee-extension"],
+  "knee-patella-lateral": ["knee-flexion", "knee-extension"],
+};
+
+/** 处理方向里是否存在与主诉动作方向运动学关联的方向。 */
+export function treatmentRelatesToChief(treatmentDirectionIds: string[], chiefDirection: string | undefined): boolean {
+  if (!chiefDirection) return false;
+  return treatmentDirectionIds.some((id) =>
+    (KINEMATIC_LINKS[id] ?? []).some((related) =>
+      canonicalActionIdFromAssessmentId(related) === canonicalActionIdFromAssessmentId(chiefDirection)));
+}

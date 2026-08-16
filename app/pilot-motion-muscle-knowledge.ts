@@ -167,6 +167,10 @@ export const PILOT_MOTION_KNOWLEDGE: Record<PilotMotionId, PilotMotionKnowledge>
 
 const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   ...Object.fromEntries(Object.values(PILOT_MOTION_KNOWLEDGE).map((motion) => [motion.id, motion.professionalTitle])),
+  "knee-patella-superior": "髌骨向上滑动",
+  "knee-patella-inferior": "髌骨向下滑动",
+  "knee-patella-medial": "髌骨向内滑动",
+  "knee-patella-lateral": "髌骨向外滑动",
   "knee-quadriceps": "股四头肌伸膝能力检查",
   "knee-hamstring": "腘绳肌屈膝能力检查",
   "knee-posterior-chain": "髋伸与后侧链基础能力检查",

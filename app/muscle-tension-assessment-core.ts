@@ -23,12 +23,12 @@ export function needsMuscleTensionCheck(input: TensionMotionInput) {
   return familiarDiscomfort || input.primaryLocalMotion && /酸|紧|牵扯/.test(input.symptomType);
 }
 
-export function buildMuscleTensionFinding(input: { assessmentId: string; assessmentTitle: string; locations: string[] }) {
+export function buildMuscleTensionFindings(input: { assessmentId: string; assessmentTitle: string; locations: string[] }) {
   const locations = [...new Set(input.locations.filter((location) => !["没有明显差别", "两侧感觉接近"].includes(location)))];
-  if (!locations.length) return null;
-  return {
-    id: `tension:${input.assessmentId}`,
-    title: `${locations.join("、")}肌张力增高`,
+  return locations.map((location) => ({
+    id: `tension:${input.assessmentId}:${location}`,
+    title: `${location}肌张力增高`,
     detail: `与另一侧轻按比较更紧或更酸；相关动作：${input.assessmentTitle}`,
-  };
+    location,
+  }));
 }

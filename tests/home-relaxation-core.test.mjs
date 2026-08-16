@@ -76,18 +76,22 @@ test("each target carries the self-release card fields", () => {
   assert.ok(target.limit.length > 0);
 });
 
-test("unsafe scenarios hide every self-release target", () => {
+test("unsafe scenarios keep targets and add a selective-avoidance note", () => {
   const withTension = { ...safeBase, tensionLabels: ["小腿后侧肌群"] };
   assert.equal(core.buildHomeRelaxationTargets(withTension).length, 1);
-  const unsafeVariants = [
-    { tissuePathwayId: "muscle-contusion" },
-    { symptoms: ["肿胀或淤青"] },
-    { stabbingPalpation: "sharp" },
-    { symptomType: "麻或电感" },
-    { symptoms: ["麻、电或感觉变化"] },
+  const cases = [
+    { variant: { tissuePathwayId: "muscle-contusion" }, note: "避开淤青血肿中心" },
+    { variant: { tissuePathwayId: "bone-stress-suspected" }, note: "避开局限骨性压痛点" },
+    { variant: { tissuePathwayId: "tendon-load" }, note: "不要直接按压肌腱" },
+    { variant: { symptoms: ["肿胀或淤青"] }, note: "避开肿胀部位" },
+    { variant: { stabbingPalpation: "sharp" }, note: "避开刺痛点" },
+    { variant: { symptomType: "麻或电感" }, note: "避开麻电区域" },
+    { variant: { symptoms: ["麻、电或感觉变化"] }, note: "避开麻电区域" },
   ];
-  for (const variant of unsafeVariants) {
-    assert.deepEqual(core.buildHomeRelaxationTargets({ ...withTension, ...variant }), [], JSON.stringify(variant));
+  for (const { variant, note } of cases) {
+    const targets = core.buildHomeRelaxationTargets({ ...withTension, ...variant });
+    assert.equal(targets.length, 1, JSON.stringify(variant));
+    assert.ok(targets[0].limit.includes(note), `${JSON.stringify(variant)} should mention ${note}`);
   }
 });
 

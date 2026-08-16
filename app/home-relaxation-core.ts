@@ -3,8 +3,9 @@
  *
  * 训练结束后的自主放松只从四个去重来源生成：本次肌肉紧张检查确认的区域
  * （共享检查 + 逐项活动检查）、本次实际处理且有部分/明确效果的肌肉、以及
- * 当前训练动作的主要肌肉。最多保留 2～3 个，安全风险场景（撞伤/骨应力/
- * 肌腱负荷等非标准路径、肿胀淤青、清楚刺痛、麻电感）一律隐藏。
+ * 当前训练动作的主要肌肉。最多保留 2～3 个。有局部风险（肿胀淤青、清楚
+ * 刺痛、麻电感、撞伤/骨应力/肌腱负荷）时不整体隐藏，而是在卡片上追加
+ * 「选择性避开」提示。
  */
 
 export type HomeRelaxationTarget = {
@@ -38,13 +39,16 @@ export type HomeRelaxationInput = {
 /** “两侧没有明显差别”类答案不是可放松区域，须在合并时剔除。 */
 const NO_DIFFERENCE_LOCATIONS = ["没有明显差别", "两侧感觉接近"];
 
-/** 安全风险场景判断：肿胀、清楚刺痛、麻电感或非标准组织路径都不安排自主按压。 */
-export function isUnsafeForSelfRelease(input: HomeRelaxationInput): boolean {
-  return input.tissuePathwayId !== "standard"
-    || input.symptoms.includes("肿胀或淤青")
-    || input.stabbingPalpation === "sharp"
-    || input.symptomType === "麻或电感"
-    || input.symptoms.includes("麻、电或感觉变化");
+/** 根据症状/组织路径生成「选择性避开」提示；安全场景返回空字符串。 */
+export function selfReleaseAvoidanceNote(input: HomeRelaxationInput): string {
+  const notes: string[] = [];
+  if (input.tissuePathwayId === "muscle-contusion") notes.push("避开淤青血肿中心");
+  if (input.tissuePathwayId === "bone-stress-suspected") notes.push("避开局限骨性压痛点");
+  if (input.tissuePathwayId === "tendon-load") notes.push("放松周围肌腹即可，不要直接按压肌腱");
+  if (input.symptoms.includes("肿胀或淤青")) notes.push("避开肿胀部位");
+  if (input.stabbingPalpation === "sharp") notes.push("避开刺痛点");
+  if (input.symptomType === "麻或电感" || input.symptoms.includes("麻、电或感觉变化")) notes.push("避开麻电区域");
+  return notes.join("；");
 }
 
 /**
@@ -52,7 +56,6 @@ export function isUnsafeForSelfRelease(input: HomeRelaxationInput): boolean {
  * 顺序固定为紧张区域 → 有效处理肌肉 → 训练主要肌肉，去重后截取 maxTargets 个。
  */
 export function buildHomeRelaxationTargets(input: HomeRelaxationInput): HomeRelaxationTarget[] {
-  if (isUnsafeForSelfRelease(input)) return [];
   const max = input.maxTargets ?? 3;
   const merged = [...new Set([
     ...input.tensionLabels,
@@ -61,13 +64,14 @@ export function buildHomeRelaxationTargets(input: HomeRelaxationInput): HomeRela
   ])]
     .filter((location) => location.length > 0 && !NO_DIFFERENCE_LOCATIONS.includes(location))
     .slice(0, max);
+  const avoidance = selfReleaseAvoidanceNote(input);
   return merged.map((location) => ({
     id: `home-release:${location}`,
     location,
     title: `${location}自主放松`,
     dosage: "每处30～60秒，1～2轮",
     instruction: `训练结束后，在${location}的肌腹位置轻柔按压或缓慢滚动。`,
-    limit: "力度以酸胀但不超过3/10为准，避开骨点、关节缝、肿胀中心和明确痛点。",
+    limit: `力度以酸胀但不超过3/10为准，避开骨点、关节缝、肿胀中心和明确痛点。${avoidance ? ` 本次注意：${avoidance}。` : ""}`,
   }));
 }
 
