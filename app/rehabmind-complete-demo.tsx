@@ -62,11 +62,12 @@ import {
   regionRelationForMotion,
 } from "./pilot-motion-muscle-knowledge";
 import {
-  strengthAnswerForWorkflow,
-  strengthAnswerResult,
   shouldAskMotionDiscomfort,
   shouldAskPairedStrength,
   shouldCaptureUnableMotionSymptom,
+  strengthAnswerForWorkflow,
+  strengthAnswerResult,
+  strengthFindingAnswer,
   type StrengthUnableReason,
 } from "./assessment-answer-core";
 import { assessmentGapActionLabel, firstAssessmentGap } from "./assessment-gap-core";
@@ -381,14 +382,6 @@ function professionalFindingLabel(finding: Finding) {
 }
 
 /** 配对在活动度卡片里的力量结果没有独立 assessmentResults 键，需从结果标题补回。 */
-function strengthFindingAnswer(finding: Finding, records: Record<string, AssessmentRecord>): SimpleAnswer | undefined {
-  const recorded = records[finding.id]?.simple;
-  if (recorded) return recorded;
-  if (finding.title.includes("偏弱")) return "weak";
-  if (finding.title.includes("引起不适")) return "painful";
-  return undefined;
-}
-
 type TreatmentProblem = {
   id: string;
   kind: string;

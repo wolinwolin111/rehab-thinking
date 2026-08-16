@@ -37,3 +37,14 @@ export function strengthAnswerForWorkflow(answer?: StrengthAnswer, reason?: Stre
   if (answer === "unable") return "unable";
   return answer;
 }
+
+export type StrengthFindingInput = { id: string; title: string };
+
+/** 力量 finding 的答案：优先读记录，否则从标题推断（偏弱→weak、引起不适→painful）。 */
+export function strengthFindingAnswer(finding: StrengthFindingInput, records: Record<string, { simple?: string } | undefined>): StrengthAnswer | undefined {
+  const recorded = records[finding.id]?.simple;
+  if (recorded) return recorded as StrengthAnswer;
+  if (finding.title.includes("偏弱")) return "weak";
+  if (finding.title.includes("引起不适")) return "painful";
+  return undefined;
+}

@@ -31,3 +31,10 @@ test("an uncompleted motion skips questions that require a completed movement", 
   assert.equal(core.shouldCaptureUnableMotionSymptom("unable", "instruction"), false);
   assert.equal(core.shouldAskMotionDiscomfort("limited"), true);
 });
+
+test("strength finding answer reads the record then falls back to title", () => {
+  assert.equal(core.strengthFindingAnswer({ id: "strength:a", title: "发力偏弱" }, { "strength:a": { simple: "weak" } }), "weak");
+  assert.equal(core.strengthFindingAnswer({ id: "strength:a", title: "发力偏弱" }, {}), "weak");
+  assert.equal(core.strengthFindingAnswer({ id: "strength:a", title: "引起不适" }, {}), "painful");
+  assert.equal(core.strengthFindingAnswer({ id: "strength:a", title: "其他" }, {}), undefined);
+});
