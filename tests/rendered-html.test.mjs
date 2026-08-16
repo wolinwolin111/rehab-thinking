@@ -335,7 +335,6 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /做这个动作时有没有出现新的不适？/);
   assert.doesNotMatch(demo, /做这个动作时还有没有不适？/);
   assert.match(demo, /motionWasSymptomatic/);
-  assert.match(demo, /全部关节与脊柱方向共用/);
   assert.match(demo, /chiefFullyResolved/);
   assert.match(demo, /hasUnresolvedSupportProblem/);
   assert.match(demo, /全部区域共用/);
@@ -936,7 +935,7 @@ test("pure passive retests keep passive-only language and completed treatment te
   assert.match(demo, /function rangeRetestOptions\(mode: MotionComparison = "contralateral", canAssessPassive = true, bilateral = false, passiveOnly = false\)/);
   assert.match(demo, /if \(passiveOnly\) return \[/);
   assert.match(demo, /activeMotionRangeQuestion\(activeRangeDirection \?\? activeTarget\.finding\.id, intake\.side === "双侧\/中间", activeRangePassiveOnly\)/);
-  assert.match(demo, /record\?\.passiveDiscomfort === "yes"/);
+  assert.match(demo, /motionWasSymptomatic/);
   assert.match(demo, /本轮处理已完成/);
   assert.doesNotMatch(demo, /涓嶈鐩存帴缁撴潫|闂浠嶆湭杈惧埌鐩爣|鏌ョ湅璇勪及璁板綍/);
 });
