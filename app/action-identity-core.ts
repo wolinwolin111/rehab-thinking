@@ -77,3 +77,36 @@ export function treatmentRelatesToChief(treatmentDirectionIds: string[], chiefDi
     (KINEMATIC_LINKS[id] ?? []).some((related) =>
       canonicalActionIdFromAssessmentId(related) === canonicalActionIdFromAssessmentId(chiefDirection)));
 }
+
+export type MotionFindingInput = { id: string };
+
+/** 去掉 finding id 的 `motion:` 前缀，得到方向 id。 */
+export function motionIdFromFinding(finding: MotionFindingInput) {
+  return finding.id.replace(/^motion:/, "");
+}
+
+/** 从 symptom:/control:/track:/tension: 等前缀后提取 motion 方向 id。 */
+export function anyMotionIdFromFinding(finding: MotionFindingInput) {
+  const match = finding.id.match(/^(?:symptom:|control:|track:|tension:)?motion:(.+)$/);
+  return match?.[1];
+}
+
+export function actionIdFromFinding(finding: MotionFindingInput) {
+  return canonicalActionIdFromAssessmentId(motionIdFromFinding(finding));
+}
+
+/** 两个方向是否属于同一物理动作（别名归一后相等）。 */
+export function samePhysicalAction(left?: string, right?: string) {
+  return Boolean(left && right && canonicalActionIdFromAssessmentId(left) === canonicalActionIdFromAssessmentId(right));
+}
+
+/** 按物理动作去重复测 finding，保留输入元素类型。 */
+export function dedupeRetestFindingsByAction<T extends MotionFindingInput>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((finding) => {
+    const actionId = actionIdFromFinding(finding);
+    if (seen.has(actionId)) return false;
+    seen.add(actionId);
+    return true;
+  });
+}
