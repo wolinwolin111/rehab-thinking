@@ -124,6 +124,7 @@ import {
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
 import { filterPatellaFindingsToLimited, limitedPatellaDirections, patellaMobilityUnitTitle } from "./patella-mobility-core";
 import { candidateDedupKey, candidateMuscleFocus, candidateSubject, candidateTreatmentKey, candidateTreatmentName, jointTreatmentName } from "./candidate-treatment-core";
+import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
 import { workbenchStageStates } from "./stage-workbench-core";
 import { buildFindingGroups } from "./finding-groups-core";
 import { specialIsRelevant } from "./special-test-trigger-core";
@@ -706,10 +707,6 @@ function candidateDirectionChain(candidate: FullCandidate, fallback = "其他相
   const chains = (candidate.retestIds ?? []).map(directionChain).filter(Boolean);
   if (chains.includes("功能动作")) return "功能动作";
   return chains[0] ?? fallback;
-}
-
-function candidateUsesPressure(candidate: FullCandidate) {
-  return includesAny(`${candidate.title} ${candidate.do} ${candidate.observe} ${candidate.tags.join(" ")}`, ["按压", "压揉", "压迫", "加压", "重压", "深压"]);
 }
 
 function discomfortDecisionTags(value?: string) {
@@ -1709,12 +1706,6 @@ function adaptExerciseForCurrentStage(exercise: FullExercise, currentStage: numb
     harder: exercise.how,
     startPosition: exercise.startPosition === "站立" ? "坐位" : exercise.startPosition,
   };
-}
-
-function candidateIsAvailable(candidate: FullCandidate, role: UserRole) {
-  if (role === "rehab") return true;
-  if (role === "coach") return candidate.access === "self" || candidate.access === "coach";
-  return candidate.access === "self" && candidate.type !== "joint" && candidate.type !== "neural";
 }
 
 const PILOT_TREATMENT_ALIASES: Record<string, string[]> = {
@@ -3850,7 +3841,7 @@ export default function RehabMindCompleteDemo() {
       .filter((candidate) => !localLimbDecision || localLimbDecision.treatmentIds.includes(candidate.id))
       .filter((candidate) => canMobilizeJoint || (candidate.type !== "joint" && candidate.type !== "neural"))
       .filter((candidate) => !(["thigh-local", "calf-local"].includes(region.id) && isAcuteTrauma(intake) && candidate.type === "muscle"))
-      .filter((candidate) => !conservativeSharpPath || (candidate.type !== "joint" && !candidateUsesPressure(candidate)))
+      .filter((candidate) => candidateAllowedInSharpPath(candidate, conservativeSharpPath))
       .filter((candidate) => region.id !== "knee" || kneeCandidateBelongsToCurrentDecision(candidate.id, kneeDecision))
       .filter((candidate, index, list) => list.findIndex((item) => item.id === candidate.id) === index);
 
@@ -4016,7 +4007,7 @@ export default function RehabMindCompleteDemo() {
       .filter((candidate) => region.id !== "knee" || kneeCandidateAllowedInTreatmentQueue(candidate.id, kneeDecision))
       .filter((candidate) => candidateIsAvailable(candidate, intake.userRole))
       .filter((candidate) => canMobilizeJoint || (candidate.type !== "joint" && candidate.type !== "neural"))
-      .filter((candidate) => !conservativeSharpPath || (candidate.type !== "joint" && !candidateUsesPressure(candidate)))
+      .filter((candidate) => candidateAllowedInSharpPath(candidate, conservativeSharpPath))
       // 现场处理只保留能立刻复测的松解、关节或专业神经处理；肿胀单独跟踪，控制训练放到训练阶段。
       .filter((candidate) => !["swelling", "control"].includes(candidate.type))
       .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index)
