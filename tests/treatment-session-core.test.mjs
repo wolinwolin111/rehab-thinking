@@ -23,8 +23,8 @@ test("a final chief retest is required only when treatment followed the latest c
   assert.equal(core.needsTreatmentFinalChiefRetest([{ result: "same" }], false), false);
 });
 
-test("training retest appears only after an exercise answer in an immediate path", () => {
-  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: true, answeredExerciseCount: 0 }), false);
-  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: true, answeredExerciseCount: 1 }), true);
-  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: false, answeredExerciseCount: 2 }), false);
+test("training retest appears in an immediate path regardless of exercise answers", () => {
+  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: true }), true);
+  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: false }), false);
+  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: false, immediateTiming: true }), false);
 });

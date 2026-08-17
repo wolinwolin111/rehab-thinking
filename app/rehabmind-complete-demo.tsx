@@ -127,7 +127,7 @@ import {
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
 import { candidateDedupKey, candidateMuscleFocus, candidateMuscleUnits, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate } from "./candidate-treatment-core";
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
-import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
+import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateRelevance } from "./candidate-scoring-core";
 import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "./trial-target-core";
 import { buildTrialTargets } from "./build-trial-targets-core";
@@ -6656,6 +6656,7 @@ export default function RehabMindCompleteDemo() {
     const isUnspecifiedChiefTarget = !hasClearChiefAction(intake) && !isResidualReviewStep
       && (activeTarget?.id === "target:chief" || Boolean(localLimbDecision && !isBatchRangeTarget));
     const chiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
+    const chiefDirectionIds = region ? chiefMotionDirectionIds(intake, region.id) : [];
     const activeRangeWasSymptomatic = Boolean(activeRangeDirection && motionWasSymptomatic(activeRangeDirection, assessmentResults, chiefDirection));
     const activeRangeAllowsPassive = activeRangeDirection ? directionAllowsPassive(activeRangeDirection) : canAssessPassive;
     const activeRangePassiveOnly = activeAssessment?.kind === "motion" && activeAssessment.testMode === "passive";
@@ -6797,6 +6798,18 @@ export default function RehabMindCompleteDemo() {
     const worsenedRelatedAssessments = lastWorsenedTreatment
       ? Object.keys(lastWorsenedTreatment.rangeOutcomes ?? {}).map((id) => `motion:${id}`)
       : [];
+    // 统一复测主诉：处理队列走空后、进入训练前，做最后一次主诉复测。
+    // 之前只写在「队列非空」分支里，队列一空就漏掉了。
+    const finalChiefRetestFragment = chiefNeedsFinalRetest && !treatmentFinalRetestConfirmed ? <>
+      <TreatmentRoadmap completed={completedRoadmapItems} current={`统一复测${chiefActionLabel(intake)}`} upcoming={["进入训练"]} />
+      <section className="rm-treatment-final-retest">
+        <span>本轮处理已完成</span>
+        <h2>最后再做一次：{chiefActionLabel(intake)}</h2>
+        <p>只在这里统一记录本轮处理后的主诉，不在每项处理后重复询问。</p>
+        <ScoreSlider value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`最开始 ${intake.baselineScore}/10 · 上次主诉 ${lastImmediateChiefScore}/10`} />
+        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!postScoreConfirmed} onClick={() => { setTreatmentFinalRetestScore(postScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
+      </section>
+    </> : null;
     // 不再用“问题数 >= 6 且处理数 >= 3”中断流程。队列中仍有一个
     // 尚未覆盖、且由当前检查支持的处理区域时继续；只有这些区域全部
     // 覆盖后仍无变化，才在结束页停止继续扩大处理范围。
@@ -6856,6 +6869,13 @@ export default function RehabMindCompleteDemo() {
         .filter((label, index, list) => label && list.indexOf(label) === index)
         .slice(0, 4);
       const rangeChangedWithoutChiefChange = treatmentCoverage.hasRangeImprovement && !chiefImprovedDuringTreatment;
+      // 队列空且还需要最终主诉复测时，先做统一复测，再做「仍有待处理」判断。
+      if (finalChiefRetestFragment) {
+        return <section className="rm-page">
+          <StepHeading eyebrow="第4步 · 处理与即时复测" title="针对性处理" />
+          {finalChiefRetestFragment}
+        </section>;
+      }
       if (hasUnresolvedImmediateTreatmentProblem) {
         return <section className="rm-page">
           <StepHeading eyebrow="第4步 · 处理与即时复测" title="本阶段成果" />
@@ -6955,7 +6975,7 @@ export default function RehabMindCompleteDemo() {
             const rangeRecorded = Boolean(selected);
             const symptomRecorded = knownDiscomfort ? Boolean(movementScoreConfirmed[directionId]) : Boolean(discomfort) && (discomfort !== "yes" || Boolean(movementScoreConfirmed[directionId]));
             return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}>
-              <header><div><span>{samePhysicalAction(directionId, chiefDirection) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{retestShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header>
+              <header><div><span className={chiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "rm-chief-badge" : ""}>{chiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{retestShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header>
               <section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>
               {knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考处理前分数选择现在的程度</small></div><ScoreSlider compact value={movementScores[directionId] ?? 0} selected={Boolean(movementScoreConfirmed[directionId])} onChange={(value) => {
                 setMovementDiscomforts((current) => ({ ...current, [directionId]: value === 0 ? "no" : "yes" }));
@@ -7040,15 +7060,7 @@ export default function RehabMindCompleteDemo() {
           <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed} onClick={() => finishTrial(automaticResult)}>继续</button></section>
         </section>}
         <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
-      </> : chiefNeedsFinalRetest && !treatmentFinalRetestConfirmed ? <>
-        <TreatmentRoadmap completed={completedRoadmapItems} current={`统一复测${chiefActionLabel(intake)}`} upcoming={["进入训练"]} />
-        <section className="rm-treatment-final-retest">
-        <span>本轮处理已完成</span>
-        <h2>最后再做一次：{chiefActionLabel(intake)}</h2>
-        <p>只在这里统一记录本轮处理后的主诉，不在每项处理后重复询问。</p>
-        <ScoreSlider value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`最开始 ${intake.baselineScore}/10 · 上次主诉 ${lastImmediateChiefScore}/10`} />
-        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!postScoreConfirmed} onClick={() => { setTreatmentFinalRetestScore(postScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
-      </section></> : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
+      </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
     </section>;
   }
 
@@ -7072,7 +7084,6 @@ export default function RehabMindCompleteDemo() {
     const trainingNeedsChiefRetest = needsTrainingToleranceRetest({
       comparableChief: chiefScoreComparable,
       immediateTiming: tissuePathway.retestTiming === "same-session",
-      answeredExerciseCount: exercises.filter((exercise) => Boolean(exerciseFeedback[exercise.id])).length,
     });
     if (trainingReadyForFinalRetest) {
       const finalChange = scoreChange(intake.baselineScore, finalRetestScore);
@@ -7202,7 +7213,6 @@ export default function RehabMindCompleteDemo() {
     const followupTrainingNeedsChiefRetest = needsTrainingToleranceRetest({
       comparableChief: hasChiefAction,
       immediateTiming: tissuePathway.retestTiming === "same-session",
-      answeredExerciseCount: Object.keys(followupExerciseChoices).length,
     });
     const localReviewIdSet = new Set(localLimbDecision?.reviewIds ?? []);
     // 已明确恢复的项目不在下一次机械重复；上一轮没有记录到的必要基础项
@@ -7276,6 +7286,7 @@ export default function RehabMindCompleteDemo() {
     const followupSessionScore = currentRecords.at(-1)?.afterScore ?? followupScore;
     const selectedRetestIds = dedupeAssessmentIdsByAction(selectedCandidateGroup.flatMap((candidate) => followupRetestIds(candidate)));
     const followupChiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
+    const followupChiefDirectionIds = region ? chiefMotionDirectionIds(intake, region.id) : [];
     const selectedRetestActionIds = new Set(selectedRetestIds.map(canonicalActionIdFromAssessmentId));
     const liveFollowupRetestFindings = selectedRetestIds.length && selectedCandidate
       ? dedupeRetestFindingsByAction(findings
@@ -7405,7 +7416,7 @@ export default function RehabMindCompleteDemo() {
               const passiveOnly = assessments.find((item) => item.id === finding.id)?.testMode === "passive";
               const rangeRecorded = Boolean(selected);
               const symptomRecorded = knownDiscomfort ? Boolean(followupMovementScoreConfirmed[directionId]) : Boolean(discomfort) && (discomfort !== "yes" || Boolean(followupMovementScoreConfirmed[directionId]));
-              return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}><header><div><span>动作 {index + 1}</span><strong>{followupShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header><section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setFollowupMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>{knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考上次分数选择现在的程度</small></div><ScoreSlider compact value={followupMovementScores[directionId] ?? 0} selected={Boolean(followupMovementScoreConfirmed[directionId])} onChange={(value) => {
+              return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}><header><div><span className={followupChiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "rm-chief-badge" : ""}>{followupChiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{followupShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header><section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setFollowupMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>{knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考上次分数选择现在的程度</small></div><ScoreSlider compact value={followupMovementScores[directionId] ?? 0} selected={Boolean(followupMovementScoreConfirmed[directionId])} onChange={(value) => {
                 setFollowupMovementDiscomforts((current) => ({ ...current, [directionId]: value === 0 ? "no" : "yes" }));
                 setFollowupMovementScores((current) => ({ ...current, [directionId]: value }));
                 setFollowupMovementScoreConfirmed((current) => ({ ...current, [directionId]: true }));

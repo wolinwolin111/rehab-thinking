@@ -24,7 +24,8 @@ export function needsTreatmentFinalChiefRetest(records: SessionTreatmentRecord[]
 export function needsTrainingToleranceRetest(input: {
   comparableChief: boolean;
   immediateTiming: boolean;
-  answeredExerciseCount: number;
 }) {
-  return input.comparableChief && input.immediateTiming && input.answeredExerciseCount > 0;
+  // 训练结束后的整体主诉复测：只要有可比的主诉分且本场同条件复测，
+  // 就触发一次，不再要求「答了训练反馈」——普通用户可能只做动作没点反馈。
+  return input.comparableChief && input.immediateTiming;
 }
