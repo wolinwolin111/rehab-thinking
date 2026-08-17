@@ -3618,19 +3618,9 @@ export default function RehabMindCompleteDemo() {
     const records = trialRecords.filter((item) => item.chiefRetested && !item.reviewOnly);
     return records.length ? records[records.length - 1].afterScore : intake.baselineScore;
   }, [trialRecords, intake.baselineScore]);
-  const chiefDirectionForScore = region ? chiefMotionDirectionId(intake, region.id) : undefined;
-  const latestChiefRangeScore = chiefDirectionForScore
-    ? [...trialRecords].reverse()
-      .flatMap((record) => Object.entries(record.rangeScores ?? {}))
-      .find(([directionId]) => samePhysicalAction(directionId, chiefDirectionForScore))?.[1]
-    : undefined;
-  // A local-length retest can capture the same physical action as the chief
-  // complaint without setting `chiefRetested` on its record. Keep that score
-  // in the live chief ledger so a real improvement is not rendered as a
-  // range-only change.
-  const lastImmediateChiefScore = typeof latestChiefRangeScore === "number"
-    ? latestChiefRangeScore
-    : recordedImmediateChiefScore;
+  // 主诉分数只来自显式的主诉复测记录（chiefRetested）。复测方向活动范围时
+  // 顺手记的症状分属于「范围分数」，不参与主诉台账——否则主诉没复测、分数却在跳。
+  const lastImmediateChiefScore = recordedImmediateChiefScore;
   // 主诉在本次处理阶段只需要先复测一次。只有真的保存过主诉复测后，
   // 后续处理才可以跳过逐项主诉询问；“后面还有候选”本身不能算复测完成，
   // 否则肿胀管理后第一块肌肉就会被错误地直接跳到下一项。
@@ -4871,7 +4861,10 @@ export default function RehabMindCompleteDemo() {
     const rangeDiscomforts = Object.fromEntries(directionIds.map((directionId) => [directionId, movementDiscomforts[directionId]])) as Record<string, YesNo>;
     const rangeScores = Object.fromEntries(directionIds.map((directionId) => [directionId, movementDiscomforts[directionId] === "yes" ? movementScores[directionId] : 0])) as Record<string, number>;
     const outcomes = Object.values(rangeOutcomes);
-    const beforeScore = activeTarget.id === "target:chief" || chiefScoreCapturedInRange || shouldRetestChiefThisRound ? lastChiefScore : intake.baselineScore;
+    // 范围记录用该方向最新分，主诉比较用当前主诉分——两个基准彻底分开，
+    // 不能像以前那样在非主诉方向复测时回退到最初 baseline。
+    const rangeBeforeScore = targetScoreBeforeRetest(activeTarget);
+    const chiefBeforeScore = lastChiefScore;
     const rangeChiefScore = chiefScoreCapturedInRange && chiefRangeDirectionId
       ? movementScores[chiefRangeDirectionId]
       : undefined;
@@ -4879,7 +4872,7 @@ export default function RehabMindCompleteDemo() {
     // 避免“疼痛改善＋活动度改善”点击继续时把 undefined 带入后续队列。
     const recordedChiefScore = typeof rangeChiefScore === "number" && Number.isFinite(rangeChiefScore)
       ? rangeChiefScore
-      : typeof postScore === "number" && Number.isFinite(postScore) ? postScore : beforeScore;
+      : typeof postScore === "number" && Number.isFinite(postScore) ? postScore : chiefBeforeScore;
     // 楼梯、下蹲、走路等主诉动作没有唯一的关节方向，批量复测页会
     // 单独显示主诉分数条。只要该分数条确实被记录，就必须写入主诉台账，
     // 不能因为没有 chiefDirection 或队列在本轮重排后变成 support target
@@ -4891,15 +4884,15 @@ export default function RehabMindCompleteDemo() {
       && !chiefRetestCompletedDuringTreatment,
     );
     const chiefWasActuallyRetested = (shouldRetestChiefThisRound || chiefScoreShownAndRecorded) && postScoreConfirmed || chiefScoreCapturedInRange;
-    const scoreResult = chiefWasActuallyRetested ? resultFromScore(beforeScore, recordedChiefScore) : "same";
+    const scoreResult = chiefWasActuallyRetested ? resultFromScore(chiefBeforeScore, recordedChiefScore) : "same";
     const hasProgress = outcomes.some((outcome) => ["both-match", "passive-match-active-limited", "better-passive-limited"].includes(outcome));
     const allResolved = outcomes.every((outcome) => outcome === "both-match");
     const anyWorse = outcomes.some((outcome) => outcome === "worse");
     const result: TrialResult = scoreResult === "worse" || anyWorse ? "worse" : allResolved ? "better" : hasProgress || scoreResult === "better" ? "partial" : "same";
     const priorImprovingTreatmentCount = trialRecords.filter((record) => !record.reviewOnly && !record.retestOnly && record.chiefRetested && record.afterScore < record.beforeScore).length;
     const responseRole = classifyTreatmentResponse({
-      beforeScore,
-      afterScore: chiefWasActuallyRetested ? recordedChiefScore : beforeScore,
+      beforeScore: chiefWasActuallyRetested ? chiefBeforeScore : rangeBeforeScore,
+      afterScore: chiefWasActuallyRetested ? recordedChiefScore : rangeBeforeScore,
       result,
       chiefRetested: chiefWasActuallyRetested,
       rangeImproved: hasProgress,
@@ -4927,8 +4920,8 @@ export default function RehabMindCompleteDemo() {
       rangeOutcomes,
       rangeDiscomforts,
       rangeScores,
-      beforeScore,
-      afterScore: chiefWasActuallyRetested ? recordedChiefScore : beforeScore,
+      beforeScore: chiefWasActuallyRetested ? chiefBeforeScore : rangeBeforeScore,
+      afterScore: chiefWasActuallyRetested ? recordedChiefScore : rangeBeforeScore,
       result,
       movement: result === "better" ? "smoother" : result === "worse" ? "worse" : "same",
       retestOnly: carryoverOnly,
@@ -4987,7 +4980,7 @@ export default function RehabMindCompleteDemo() {
     } else {
       advanceToNextTrialTarget();
     }
-    setPostScore(["better", "partial"].includes(result) ? recordedChiefScore : beforeScore);
+    setPostScore(["better", "partial"].includes(result) ? recordedChiefScore : chiefBeforeScore);
     setMovementResponse("");
     setMovementResponses({});
     setMovementDiscomforts({});

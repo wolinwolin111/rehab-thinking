@@ -28,7 +28,7 @@ test("muscle-tension check: default true except spinal/contusion/bone-stress/swe
   for (const [spinal, pathway, symptomType, symptoms] of product([false, true], pathways, symptomTypes, symptomSets)) {
     const got = tension.needsMuscleTensionCheck({ spinal, tissuePathwayId: pathway, symptomType, symptoms });
     const isNeural = symptomType === "麻或电感" || symptoms.includes("麻、电或感觉变化");
-    const expected = !(spinal || pathway === "muscle-contusion" || pathway === "bone-stress-suspected" || symptoms.includes("肿胀或淤青") || isNeural);
+    const expected = !(spinal || pathway === "muscle-contusion" || pathway === "bone-stress-suspected" || isNeural);
     assert.equal(got, expected, JSON.stringify({ spinal, pathway, symptomType, symptoms }));
   }
 });

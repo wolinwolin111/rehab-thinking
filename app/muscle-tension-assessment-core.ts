@@ -4,19 +4,18 @@ export type TensionMotionInput = {
   tissuePathwayId?: string;
   /** 症状性质；麻电不按压。 */
   symptomType: string;
-  /** 症状表现；肿胀淤青、麻电不按压。 */
+  /** 症状表现；麻电不按压，肿胀/淤青不整卡跳过（只避开肿胀中心）。 */
   symptoms?: string[];
 };
 
 /**
  * 肌肉紧张检查默认进行，只在「按压有风险或无意义」的窄例外里跳过：
- * 脊柱、撞伤、骨应力、明显肿胀、麻电。其余场景（含活动范围正常但有不适）
- * 都做一次统一紧张检查。
+ * 脊柱、撞伤、骨应力、麻电。肿胀/淤青不再整卡跳过——只避开肿胀中心本身，
+ * 周围肌腹（如崴脚后的小腿前后内外侧）仍要比较，否则会漏掉代偿性紧张。
  */
 export function needsMuscleTensionCheck(input: TensionMotionInput) {
   if (input.spinal) return false;
   if (input.tissuePathwayId === "muscle-contusion" || input.tissuePathwayId === "bone-stress-suspected") return false;
-  if ((input.symptoms ?? []).includes("肿胀或淤青")) return false;
   if (input.symptomType === "麻或电感" || (input.symptoms ?? []).includes("麻、电或感觉变化")) return false;
   return true;
 }
