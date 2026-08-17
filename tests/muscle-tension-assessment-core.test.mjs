@@ -13,13 +13,16 @@ test("default: a motion gets the muscle-tension check even with normal range", (
   assert.equal(core.needsMuscleTensionCheck(base), true);
 });
 
-test("spinal, contusion, bone stress, swelling and neural symptoms skip the tension check", () => {
+test("spinal, contusion, bone stress and neural symptoms skip the tension check", () => {
   assert.equal(core.needsMuscleTensionCheck({ ...base, spinal: true }), false);
   assert.equal(core.needsMuscleTensionCheck({ ...base, tissuePathwayId: "muscle-contusion" }), false);
   assert.equal(core.needsMuscleTensionCheck({ ...base, tissuePathwayId: "bone-stress-suspected" }), false);
-  assert.equal(core.needsMuscleTensionCheck({ ...base, symptoms: ["肿胀或淤青"] }), false);
   assert.equal(core.needsMuscleTensionCheck({ ...base, symptomType: "麻或电感" }), false);
   assert.equal(core.needsMuscleTensionCheck({ ...base, symptoms: ["麻、电或感觉变化"] }), false);
+});
+
+test("swelling no longer skips the whole check — surrounding muscle is still compared", () => {
+  assert.equal(core.needsMuscleTensionCheck({ ...base, symptoms: ["肿胀或淤青"] }), true);
 });
 
 test("tendon-load still checks tension of surrounding muscle", () => {
