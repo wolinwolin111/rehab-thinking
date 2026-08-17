@@ -2348,6 +2348,9 @@ export default function RehabMindCompleteDemo() {
   const [trainingReadyForFinalRetest, setTrainingReadyForFinalRetest] = useState(false);
   const [finalRetestScore, setFinalRetestScore] = useState(0);
   const [finalRetestConfirmed, setFinalRetestConfirmed] = useState(false);
+  const [functionRetestCompletion, setFunctionRetestCompletion] = useState<"complete" | "unable" | "">("");
+  const [functionRetestUnableReason, setFunctionRetestUnableReason] = useState<FunctionUnableReason | "">("");
+  const [finalFunctionRetests, setFinalFunctionRetests] = useState<Record<string, { completion: "" | "complete" | "unable"; unableReason?: FunctionUnableReason; control?: "stable" | "compensated" | "unsure"; score?: number }>>({});
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [recordsOpen, setRecordsOpen] = useState(false);
   const [toast, setToast] = useState("");
@@ -4810,6 +4813,8 @@ export default function RehabMindCompleteDemo() {
     setMovementDiscomforts({});
     setMovementScores({});
     setMovementScoreConfirmed({});
+    setFunctionRetestCompletion("");
+    setFunctionRetestUnableReason("");
     setPostDiscomfort("");
     setPostScoreConfirmed(false);
     setReadyToRetest(false);
@@ -6636,7 +6641,13 @@ export default function RehabMindCompleteDemo() {
   function renderTreatment() {
     const beforeScore = activeTarget ? targetScoreBeforeRetest(activeTarget) : intake.baselineScore;
     const change = scoreChange(beforeScore, postScore);
-    const automaticResult = resultFromScore(beforeScore, postScore);
+    // 功能动作 target：评估时「做不完」，复测时额外问「能否完成」。
+    const functionUnableAtAssessment = Boolean(activeTarget?.finding.id.startsWith("function:")
+      && assessmentResults[activeTarget.finding.id]?.functionCompletion === "unable");
+    // 从「做不完」到「能完成」算改善；疼痛分没变时也记为 partial。
+    const automaticResult = functionUnableAtAssessment && functionRetestCompletion === "complete" && resultFromScore(beforeScore, postScore) === "same"
+      ? "partial"
+      : resultFromScore(beforeScore, postScore);
     const isTimeBasedTarget = activeCandidate?.type === "swelling";
     const isBatchRangeTarget = Boolean(activeCandidate?.retestIds?.length && activeRetestFindings.length);
     const isRangeTarget = Boolean(activeTarget?.finding.id.startsWith("motion:"));
@@ -7050,13 +7061,22 @@ export default function RehabMindCompleteDemo() {
                 }}>继续</button></section>
         </section> : <section className="rm-retest">
           <header><span>复测动作</span><h2>{retestActionTitle}</h2></header>
+          {functionUnableAtAssessment ? <section className="rm-motion-answer-block">
+            <h3>现在这个动作能完成了吗？</h3>
+            <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
+            <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
+            {functionRetestCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
+              <h3>主要是什么原因？</h3>
+              <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestUnableReason === value ? "is-selected" : ""} onClick={() => setFunctionRetestUnableReason(value)}>{label}</button>)}</div>
+            </section> : null}
+          </section> : null}
           {postScoreConfirmed ? <div className="rm-track">
             <div><span>处理前</span><b>{beforeScore}<small>/10</small></b><i style={{ "--dot": `${beforeScore * 10}%` } as CSSProperties} /></div>
             <div className="rm-track-change"><strong>{change.delta > 0 ? `下降 ${change.delta} 分` : change.delta < 0 ? `上升 ${Math.abs(change.delta)} 分` : "分数未变"}</strong><span>{change.percent !== null ? `${change.percent > 0 ? "+" : ""}${change.percent}%` : "不计算比例"}</span></div>
             <div><span>处理后</span><b>{postScore}<small>/10</small></b><i style={{ "--dot": `${postScore * 10}%` } as CSSProperties} /></div>
           </div> : null}
           <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label={isStrengthSymptomTarget ? "现在的发力不适程度" : "现在的不适程度"} context={`处理前 ${beforeScore}/10`} />
-          <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed} onClick={() => finishTrial(automaticResult)}>继续</button></section>
+          <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed || (functionUnableAtAssessment && (!functionRetestCompletion || (functionRetestCompletion === "unable" && !functionRetestUnableReason)))} onClick={() => finishTrial(automaticResult)}>继续</button></section>
         </section>}
         <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
       </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
@@ -7087,20 +7107,42 @@ export default function RehabMindCompleteDemo() {
     if (trainingReadyForFinalRetest) {
       const finalChange = scoreChange(intake.baselineScore, finalRetestScore);
       const finalResult = finalRetestConfirmed ? resultFromScore(intake.baselineScore, finalRetestScore) : "same";
+      const allFunctionRetestsComplete = chiefFunctionLabels.every((label) => {
+        const r = finalFunctionRetests[label];
+        if (!r || !r.completion || typeof r.score !== "number") return false;
+        if (r.completion === "unable" && !r.unableReason) return false;
+        if (r.completion === "complete" && !r.control) return false;
+        return true;
+      });
+      const overallComplete = finalRetestConfirmed && allFunctionRetestsComplete;
       return <section className="rm-page rm-overall-retest-page">
         <StepHeading eyebrow="第5步 · 结束前复测" title="最后再看一次整体变化" />
+        {chiefFunctionLabels.length ? <section className="rm-overall-retest-functions">
+          <header><span>主诉功能动作</span><strong>逐个确认能否完成、稳定和不适</strong></header>
+          {chiefFunctionLabels.map((label) => {
+            const r = finalFunctionRetests[label] ?? { completion: "", score: undefined };
+            const set = (patch: Partial<typeof r>) => setFinalFunctionRetests((c) => ({ ...c, [label]: { ...(c[label] ?? {}), ...patch } }));
+            return <article key={label}>
+              <div className="rm-retest-field-title"><strong>{label}</strong><small>有代偿也算能完成</small></div>
+              <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, text]) => <button type="button" key={value} className={r.completion === value ? "is-selected" : ""} onClick={() => set({ completion: value })}>{text}</button>)}</div>
+              {r.completion === "unable" ? <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, text]) => <button type="button" key={value} className={r.unableReason === value ? "is-selected" : ""} onClick={() => set({ unableReason: value })}>{text}</button>)}</div> : null}
+              {r.completion === "complete" ? <div className="rm-result-grid is-two">{([["stable", "动作稳定"], ["compensated", "有晃动或借力"], ["unsure", "看不出来"]] as const).map(([value, text]) => <button type="button" key={value} className={r.control === value ? "is-selected" : ""} onClick={() => set({ control: value })}>{text}</button>)}</div> : null}
+              <ScoreSlider compact value={r.score ?? 0} selected={typeof r.score === "number"} onChange={(value) => set({ score: value })} label="现在的不适程度" />
+            </article>;
+          })}
+        </section> : null}
         <section className="rm-overall-retest-action">
           <span>{hasClearChiefAction(intake) ? "再做一次" : "再感受一次"}</span>
           <h2>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : chiefComplaintLabel(intake)}</h2>
           <p>{hasClearChiefAction(intake) ? "按最开始的方式完成一次，不额外增加速度、负重或次数。" : "按最开始记录的位置和感觉，判断现在的主要不适。"}</p>
         </section>
-        <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} />
+        <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} />
         {finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
           <span>本次整体结果</span>
           <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
           <p>{finalResult === "better" ? "本次方向有帮助，按当前训练版本继续。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "本次没有明显变化，先不进阶；持续不变时建议线下评估。"}</p>
         </section> : null}
-        <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!finalRetestConfirmed} onClick={() => { setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>完成并查看总结</button></div>
+        <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => { setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>完成并查看总结</button></div>
       </section>;
     }
     return <section className="rm-page">

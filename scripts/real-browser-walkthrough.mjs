@@ -126,11 +126,15 @@ for (let i = 0; i < 400; i++) {
     }
   }
   if (!acted) {
-    const range = page.locator('input[type=range]').first();
-    if ((await range.count()) && (await range.inputValue()) === "0") {
-      await range.fill("4").catch(() => {});
-      await page.waitForTimeout(300);
-      mark("SLIDER"); console.log("  SLIDER"); acted = true;
+    const ranges = page.locator('input[type=range]');
+    for (let k = 0; k < (await ranges.count()); k++) {
+      const range = ranges.nth(k);
+      if ((await range.inputValue()) === "0") {
+        await range.fill("4").catch(() => {});
+        await page.waitForTimeout(300);
+        mark("SLIDER"); console.log("  SLIDER"); acted = true;
+        break;
+      }
     }
   }
   if (!acted) {
