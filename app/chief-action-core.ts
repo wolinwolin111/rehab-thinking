@@ -120,6 +120,15 @@ export function chiefMotionDirectionIds(intake: ChiefActionIntake, regionId: str
   return [...new Set(matches)];
 }
 
+/** 返回「映射不到单一关节方向」的功能主诉动作（走路、下蹲、上下楼梯、跑跳落地等）。 */
+export function chiefFunctionActionLabels(intake: ChiefActionIntake, regionId: string): string[] {
+  if (!hasClearChiefAction(intake)) return [];
+  const words = (CHIEF_MOTION_ALIASES[regionId] ?? []).flatMap(([, w]) => w);
+  return reportedActionSummary(intake)
+    .filter((action): action is string => Boolean(action))
+    .filter((action) => !words.some((w) => action.includes(w) || w.includes(action)));
+}
+
 export type RetestSymptomRecord = { familiarSymptom?: string };
 
 /** 该评估记录的症状是否能驱动一次复测：有明确主诉动作，或症状是熟悉的不适。 */
