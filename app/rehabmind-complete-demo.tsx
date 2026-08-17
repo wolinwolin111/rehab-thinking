@@ -6468,6 +6468,17 @@ export default function RehabMindCompleteDemo() {
             {motionFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{motionFallback.action}</p><small>{motionFallback.fallback}</small></div> : null}
           </section> : null}
 
+          {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
+            <h3>转到最大范围时，有没有牵拉、卡住或不适？</h3>
+            <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
+              ? { ...latestRecord, discomfort: value }
+              : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
+            {record.discomfort === "yes" ? renderSymptomDetails("刚才这个动作有多不舒服？") : null}
+          </section> : shouldCaptureUnableMotionSymptom(record.active, record.unableReason) ? <section className="rm-motion-answer-block is-symptom">
+            <h3>记录刚才让你停下来的不适</h3>
+            {renderSymptomDetails("刚才这个动作有多不舒服？")}
+          </section> : null}
+
           {item.pairedStrengthId && shouldAskPairedStrength(record.active) ? <section className="rm-motion-answer-block is-strength">
             <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "同一个动作：保持 3～5 秒看力量"}</h3>
             <p className="rm-choice-hint">{pairedCheckUsesResistance
@@ -6515,17 +6526,6 @@ export default function RehabMindCompleteDemo() {
                 <ScoreSlider compact value={record.pairedStrengthScore ?? 0} selected={typeof record.pairedStrengthScore === "number"} onChange={(pairedStrengthScore) => updateAssessment(item.id, { pairedStrengthScore })} label="持续保持时有多不舒服？" />
               </> : null}
             </section> : null}
-          </section> : null}
-
-          {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>转到最大范围时，有没有牵拉、卡住或不适？</h3>
-            <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
-              ? { ...latestRecord, discomfort: value }
-              : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
-            {record.discomfort === "yes" ? renderSymptomDetails("刚才这个动作有多不舒服？") : null}
-          </section> : shouldCaptureUnableMotionSymptom(record.active, record.unableReason) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>记录刚才让你停下来的不适</h3>
-            {renderSymptomDetails("刚才这个动作有多不舒服？")}
           </section> : null}
 
           {!canAssessPassive && ["limited", "excessive", "unable"].includes(record.active ?? "") ? <p className="rm-passive-reminder">有专业人员协助时，可以补充被动活动检查；现在先记录主动活动，后续安排相关肌肉处理和主动控制。</p> : null}
