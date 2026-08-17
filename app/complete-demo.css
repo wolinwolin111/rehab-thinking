@@ -577,7 +577,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-batch-range-list article { width: 100%; min-width: 0; padding: 20px 22px; border: 1px solid var(--rm-line); background: var(--rm-paper); }
 .rm-batch-range-list article.is-complete { border-color: #b8dccc; background: #f7fcf9; }
 .rm-batch-range-list article > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.rm-batch-range-list article > header > div { min-width: 0; display: grid; gap: 3px; }
+.rm-batch-range-list article > header > div { min-width: 0; display: grid; gap: 3px; justify-items: start; }
 .rm-batch-range-list article > header span { color: var(--rm-blue); font-size: 12px; font-weight: 900; }
 .rm-batch-range-list article > header span.rm-chief-badge { padding: 2px 4px; color: #fff; background: #b45309; border-radius: 8px; font-size: 13px; font-weight: 800; line-height: 1.4; }
 .rm-batch-range-list article > header strong { overflow: hidden; text-overflow: ellipsis; font-size: 18px; white-space: nowrap; }
