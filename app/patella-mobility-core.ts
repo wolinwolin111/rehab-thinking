@@ -33,6 +33,11 @@ export function limitedPatellaDirections(results: Record<string, PatellaPassiveR
   return PATELLA_DIRECTION_IDS.filter((id) => results[`motion:${id}`]?.passive === "limited");
 }
 
+/** 是否髌骨四方向之一。 */
+export function isPatellaDirectionId(id: string) {
+  return (PATELLA_DIRECTION_IDS as readonly string[]).includes(id);
+}
+
 /** 面向用户的处理标题：把受限方向拼成「髌骨向上、向内滑动辅助」。 */
 export function patellaMobilityUnitTitle(directionIds: readonly PatellaDirectionId[]): string {
   return `髌骨${directionIds.map((id) => PATELLA_DIRECTION_LABELS[id]).join("、")}滑动辅助`;
