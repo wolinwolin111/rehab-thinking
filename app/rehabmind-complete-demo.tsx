@@ -2876,7 +2876,7 @@ export default function RehabMindCompleteDemo() {
             score: result.symptomScore,
             tags: [
               ...(item.pairedStrengthTags ?? []),
-              ...discomfortDecisionTags(result.discomfortType),
+              ...discomfortDecisionTags(result.pairedStrengthType),
             ],
             note: item.explain,
             side: result.active === "left-limited" ? "左侧" : result.active === "right-limited" ? "右侧" : result.active === "both-limited" ? "两侧接近" : undefined,
@@ -2959,7 +2959,7 @@ export default function RehabMindCompleteDemo() {
         ? professionalStrength ? "同动作抗阻力量偏弱" : "同动作主动保持较差"
         : professionalStrength ? "同动作抗阻时会引起同样的不适" : "同动作保持时会引起同样的不适";
       motionFinding.detail = [motionFinding.detail, strengthText].filter(Boolean).join("；");
-      motionFinding.tags = Array.from(new Set([...motionFinding.tags, ...(item.pairedStrengthTags ?? []), ...discomfortDecisionTags(result.discomfortType)]));
+      motionFinding.tags = Array.from(new Set([...motionFinding.tags, ...(item.pairedStrengthTags ?? []), ...discomfortDecisionTags(result.discomfortType), ...discomfortDecisionTags(result.pairedStrengthType)]));
     });
     if (intake.symptoms.includes("肿胀或淤青")) items.push({ id: "track:swelling", title: `肿胀：${intake.swellingLocation || "位置待补充"}`, detail: "稍后和下次比较这一部位的范围与轮廓，不要求当场消失", priority: "track", tags: ["肿胀"] });
     if (intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压")) items.push({ id: "track:tender", title: `按压痛：${intake.tendernessLocation || "位置待补充"}`, detail: "不反复重压，下一次在同一位置轻柔比较", priority: "track", tags: ["压痛"] });
@@ -3028,12 +3028,12 @@ export default function RehabMindCompleteDemo() {
          passiveEndFeel: undefined,
          passiveDiscomfort: undefined,
          passiveSymptomScore: undefined,
-        // 活动度和力量使用同一个动作，也共用同一份不适记录。
-        discomfortType: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.discomfortType : undefined,
-        symptomScore: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.symptomScore : undefined,
+         // 活动度疼痛和保持疼痛分开记录：保持检查用 pairedStrength 自己的字段。
+        discomfortType: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.pairedStrengthType : undefined,
+        symptomScore: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.pairedStrengthScore : undefined,
         tensionLocations: undefined,
         tensionChecked: undefined,
-        discomfortLocations: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? (record.discomfortLocations ?? []).map((location) => location.location) : [],
+        discomfortLocations: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? (record.pairedStrengthLocations ?? []).map((location) => location.location) : [],
         control: undefined,
       });
       return workflowItems;
@@ -6040,7 +6040,7 @@ export default function RehabMindCompleteDemo() {
         </div> : null}
 
         {(intake.symptomType === "刺痛" || intakeHasTenderness) && showIntakeQuestion("刺痛出现范围", "轻按反应") ? <div className="rm-form-block rm-stabbing-check">
-          {intake.symptomType === "刺痛" && (showAllIntakeFields || nextMissingField === "刺痛出现范围") ? <><div className="rm-label"><span>刺痛还会在什么时候出现？</span></div><PillOptions options={["只有刚才那个动作", "好几个动作都会", "不活动时也会", "说不清"]} value={({ single: "只有刚才那个动作", multiple: "好几个动作都会", rest: "不活动时也会", unsure: "说不清", "": "" } as const)[intake.stabbingSpread]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingSpread: ({ "只有刚才那个动作": "single", "好几个动作都会": "multiple", "不活动时也会": "rest", "说不清": "unsure" } as const)[value] ?? "" })} columns={2} /></> : null}
+          {intake.symptomType === "刺痛" && ((showAllIntakeFields && needsStabbingSpread) || nextMissingField === "刺痛出现范围") ? <><div className="rm-label"><span>刺痛还会在什么时候出现？</span></div><PillOptions options={["只有刚才那个动作", "好几个动作都会", "不活动时也会", "说不清"]} value={({ single: "只有刚才那个动作", multiple: "好几个动作都会", rest: "不活动时也会", unsure: "说不清", "": "" } as const)[intake.stabbingSpread]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingSpread: ({ "只有刚才那个动作": "single", "好几个动作都会": "multiple", "不活动时也会": "rest", "说不清": "unsure" } as const)[value] ?? "" })} columns={2} /></> : null}
           {showAllIntakeFields || nextMissingField === "轻按反应" ? <><div className="rm-label"><span>在刚才最不舒服的位置轻按一次，会出现什么？</span></div><PillOptions options={["清楚的刺痛", "钝痛或酸胀", "没有明显感觉", "没有尝试"]} value={({ sharp: "清楚的刺痛", dull: "钝痛或酸胀", none: "没有明显感觉", "not-tried": "没有尝试", "": "" } as const)[intake.stabbingPalpation]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingPalpation: ({ "清楚的刺痛": "sharp", "钝痛或酸胀": "dull", "没有明显感觉": "none", "没有尝试": "not-tried" } as const)[value] ?? "" })} columns={2} /></> : null}
         </div> : null}
 
@@ -6485,18 +6485,36 @@ export default function RehabMindCompleteDemo() {
                 pairedStrengthLocations: undefined,
                 pairedStrengthType: undefined,
                 pairedStrengthScore: undefined,
-                discomfort: value === "painful" ? "yes" : record.discomfort,
               })} />
             {record.pairedStrength === "unable" ? <div className="rm-strength-unable">
               <h4>主要卡在哪里？</h4>
               <div className="rm-result-grid is-three">{([[
                 "pain", "一用力就不适"], ["weak", "完全使不上力"], ["control", "找不到发力感觉"], ["instruction", "不知道怎么做"], ["no-helper", "身边没人协助"], ["fear", "担心会加重"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.pairedStrengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
                   pairedStrengthUnableReason: value,
-                  discomfort: value === "pain" ? "yes" : record.discomfort,
                 })}>{label}</button>)}</div>
               {pairedStrengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{pairedStrengthFallback.action}</p><small>{pairedStrengthFallback.fallback}</small></div> : null}
             </div> : null}
-            {strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? <p className="rm-reused-symptom">下面只记录一次这个动作的不适位置、性质和分数。</p> : null}
+            {strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? <section className="rm-motion-answer-block is-symptom rm-strength-symptom">
+              <h3>持续保持时，哪里不舒服？</h3>
+              <LowerLimbLocationPicker
+                compact
+                mode="assessment"
+                maxSelections={2}
+                allowedAreaIds={assessmentLocationAreas(item.id)}
+                value={record.pairedStrengthLocations ?? []}
+                initialRegionId={region?.id}
+                initialSide={record.worseSide && record.worseSide !== "两侧接近" ? record.worseSide : intake.side}
+                initialLocation={record.pairedStrengthLocation || intake.location}
+                onChange={(pairedStrengthLocations) => updateAssessment(item.id, {
+                  pairedStrengthLocations,
+                  pairedStrengthLocation: locationSelectionsLabel(pairedStrengthLocations),
+                })}
+              />
+              {(record.pairedStrengthLocations?.length ?? 0) > 0 ? <>
+                <label className="rm-assessment-feeling"><span>持续保持时是什么感觉？</span><select value={record.pairedStrengthType ?? ""} onChange={(event) => updateAssessment(item.id, { pairedStrengthType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
+                <ScoreSlider compact value={record.pairedStrengthScore ?? 0} selected={typeof record.pairedStrengthScore === "number"} onChange={(pairedStrengthScore) => updateAssessment(item.id, { pairedStrengthScore })} label="持续保持时有多不舒服？" />
+              </> : null}
+            </section> : null}
           </section> : null}
 
           {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
@@ -6641,11 +6659,10 @@ export default function RehabMindCompleteDemo() {
   function renderTreatment() {
     const beforeScore = activeTarget ? targetScoreBeforeRetest(activeTarget) : intake.baselineScore;
     const change = scoreChange(beforeScore, postScore);
-    // 功能动作 target：评估时「做不完」，复测时额外问「能否完成」。
-    const functionUnableAtAssessment = Boolean(activeTarget?.finding.id.startsWith("function:")
-      && assessmentResults[activeTarget.finding.id]?.functionCompletion === "unable");
-    // 从「做不完」到「能完成」算改善；疼痛分没变时也记为 partial。
-    const automaticResult = functionUnableAtAssessment && functionRetestCompletion === "complete" && resultFromScore(beforeScore, postScore) === "same"
+    // 功能动作 target：处理后对所有功能动作都问「能否完成」（松解/松动能改善「做不做得了」）。
+    const isFunctionTarget = Boolean(activeTarget?.finding.id.startsWith("function:"));
+    // 从「做不了」到「能完成」算改善；疼痛分没变时也记为 partial。
+    const automaticResult = isFunctionTarget && functionRetestCompletion === "complete" && resultFromScore(beforeScore, postScore) === "same"
       ? "partial"
       : resultFromScore(beforeScore, postScore);
     const isTimeBasedTarget = activeCandidate?.type === "swelling";
@@ -7061,7 +7078,7 @@ export default function RehabMindCompleteDemo() {
                 }}>继续</button></section>
         </section> : <section className="rm-retest">
           <header><span>复测动作</span><h2>{retestActionTitle}</h2></header>
-          {functionUnableAtAssessment ? <section className="rm-motion-answer-block">
+          {isFunctionTarget ? <section className="rm-motion-answer-block">
             <h3>现在这个动作能完成了吗？</h3>
             <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
             <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
@@ -7076,7 +7093,7 @@ export default function RehabMindCompleteDemo() {
             <div><span>处理后</span><b>{postScore}<small>/10</small></b><i style={{ "--dot": `${postScore * 10}%` } as CSSProperties} /></div>
           </div> : null}
           <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label={isStrengthSymptomTarget ? "现在的发力不适程度" : "现在的不适程度"} context={`处理前 ${beforeScore}/10`} />
-          <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed || (functionUnableAtAssessment && (!functionRetestCompletion || (functionRetestCompletion === "unable" && !functionRetestUnableReason)))} onClick={() => finishTrial(automaticResult)}>继续</button></section>
+          <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed || (isFunctionTarget && (!functionRetestCompletion || (functionRetestCompletion === "unable" && !functionRetestUnableReason)))} onClick={() => finishTrial(automaticResult)}>继续</button></section>
         </section>}
         <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
       </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
