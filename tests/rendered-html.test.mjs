@@ -226,15 +226,15 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /有专业人员协助时，可以补充被动活动检查/);
   assert.match(demo, /与另一个方向相比怎么样/);
   assert.match(demo, /这个动作完成得怎么样/);
-  assert.match(demo, /刚才活动或发力时，有没有不适/);
-  assert.match(demo, /同一个动作：看主动保持/);
+  assert.match(demo, /转到最大范围时，有没有牵拉、卡住或不适/);
+  assert.match(demo, /同一个动作：保持 3～5 秒看力量/);
   assert.match(demo, /膝后能不能像另一边一样压向床面/);
   assert.match(demo, /把同一条薄毛巾先后放在两侧膝后/);
   assert.match(demo, /再将整条腿抬离床面约10厘米/);
   assert.match(demo, /保持稳定｜抬起后膝盖仍笔直/);
   assert.match(demo, /控制偏弱｜膝盖弯曲、抖动或下落/);
   assert.match(demo, /同一个动作：检查抗阻力量/);
-  assert.match(demo, /不需要别人压，也不需要自己用手加阻力/);
+  assert.match(demo, /不需要别人压，也不需要自己加阻力/);
   assert.match(demo, /由检查者沿刚才动作的反方向逐渐施加轻阻力/);
   assert.match(demo, /是什么让你停下来/);
   assert.match(demo, /因疼痛或不适未完成，真实活动范围暂时无法判断/);
@@ -421,7 +421,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(styles, /\.rm-shell\.is-intake-step/);
   assert.match(styles, /\.rm-two-columns\.is-guided-single/);
   assert.match(demo, /pairedStrengthId/);
-  assert.match(demo, /同一个动作：看主动保持/);
+  assert.match(demo, /同一个动作：保持 3～5 秒看力量/);
   assert.match(demo, /pairedStrengthLocations/);
   assert.match(demo, /pairedStrengthUnableReason/);
   assert.match(demo, /strengthUnableReason/);

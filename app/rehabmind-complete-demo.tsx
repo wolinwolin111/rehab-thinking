@@ -127,7 +127,7 @@ import {
 import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
 import { candidateDedupKey, candidateMuscleFocus, candidateMuscleUnits, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate } from "./candidate-treatment-core";
 import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
-import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
+import { chiefActionLabel, chiefActionSource, chiefFunctionActionLabels, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
 import { candidateRelevance } from "./candidate-scoring-core";
 import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "./trial-target-core";
 import { buildTrialTargets } from "./build-trial-targets-core";
@@ -1532,7 +1532,7 @@ const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; obs
   "hip-external-rotation": { title: "小腿向内摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向内摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
 
   "knee-extension": { title: "把膝盖绷直", how: "仰卧，两条腿放平，脚跟位置保持一致。先绷紧一侧大腿前侧，把膝盖后方向床面压，再换另一侧。", observe: "比较两侧膝后离床面的空隙，以及哪一侧更难向下压。" },
-  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边弯得更少；动作会不会引起不适。" },
+  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边弯得更少；转到最大范围时会不会牵拉或卡住。" },
   "knee-quadriceps": { title: "把膝盖伸直的力量", how: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。", observe: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。" },
   "knee-hamstring": { title: "脚跟向后拉的力量", how: "坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。", observe: "哪边更难发力；大腿后侧是否容易抽筋；用力时哪里不舒服。" },
   "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
@@ -1549,10 +1549,10 @@ const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; obs
   "knee-patella-medial": { title: "髌骨向内移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向内推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
   "knee-patella-lateral": { title: "髌骨向外移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向外推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
 
-  "ankle-dorsiflexion": { title: "把脚背向上勾", how: "坐稳，脚跟放在地上。先做没有不适的一边，再把另一边脚背慢慢向小腿靠近。", observe: "只比较两件事：哪边勾得更少；动作会不会引起不适。" },
-  "ankle-plantarflexion": { title: "踝关节主动跖屈", how: "坐稳，小腿放松。先做没有不适的一边，再把另一边脚背缓慢向下压。", observe: "只比较两件事：哪边活动范围更小；动作会不会引起不适。" },
-  "ankle-inversion": { title: "把脚掌转向内侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢转向身体中间。", observe: "只比较两件事：哪边转得更少；动作会不会引起不适。" },
-  "ankle-eversion": { title: "把脚掌转向外侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢向外转。", observe: "只比较两件事：哪边转得更少；动作会不会引起不适。" },
+  "ankle-dorsiflexion": { title: "把脚背向上勾", how: "坐稳，脚跟放在地上。先做没有不适的一边，再把另一边脚背慢慢向小腿靠近。", observe: "只比较两件事：哪边勾得更少；转到最大范围时会不会牵拉或卡住。" },
+  "ankle-plantarflexion": { title: "踝关节主动跖屈", how: "坐稳，小腿放松。先做没有不适的一边，再把另一边脚背缓慢向下压。", observe: "只比较两件事：哪边活动范围更小；转到最大范围时会不会牵拉或卡住。" },
+  "ankle-inversion": { title: "把脚掌转向内侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢转向身体中间。", observe: "只比较两件事：哪边转得更少；转到最大范围时会不会牵拉或卡住。" },
+  "ankle-eversion": { title: "把脚掌转向外侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢向外转。", observe: "只比较两件事：哪边转得更少；转到最大范围时会不会牵拉或卡住。" },
   "ankle-great-toe-extension": { title: "大脚趾向上抬", how: "脚掌放松，用手轻轻把大脚趾向上抬。", observe: "与另一侧相比；大脚趾或足底哪里不舒服。" },
   "ankle-toe-flexion": { title: "脚趾弯曲和伸直", how: "脚跟着地，先把脚趾全部抬起，再轻轻放下和弯曲。", observe: "脚趾能否分别控制；哪里不舒服；是否只有某个脚趾受限。" },
   "ankle-dorsiflexor": { title: "勾脚力量", how: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。", observe: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。" },
@@ -1667,7 +1667,7 @@ function professionalAssessmentCopy(id: string, how: string, observe: string) {
     .replaceAll("会不会不舒服", "是否诱发症状")
     .replaceAll("与另一侧相比", "与对侧比较")
     .replaceAll("哪边", "哪侧")
-    .replaceAll("动作会不会引起不适", "主动活动是否诱发症状");
+    .replaceAll("转到最大范围时会不会牵拉或卡住", "主动活动到最大范围时是否诱发症状");
   return { how: professionalHow, observe: professionalObserve };
 }
 
@@ -4819,6 +4819,11 @@ export default function RehabMindCompleteDemo() {
     setTreatmentFinalRetestConfirmed(false);
   }
 
+  // 功能主诉动作（走路/下蹲/上下楼梯/跑跳落地等映射不到单一方向的动作），
+  // 处理与复测都要和方向型主诉分开对待。
+  const chiefFunctionLabels = region ? chiefFunctionActionLabels(intake, region.id) : [];
+  const hasChiefFunctionAction = chiefFunctionLabels.length > 0;
+
   function finishRangeBatch() {
     if (!activeTarget || !activeCandidate || !activeRetestFindings.length) return;
     const chiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
@@ -4836,7 +4841,7 @@ export default function RehabMindCompleteDemo() {
     );
     const shouldRetestChiefThisRound = !isResidualReviewStep
       && hasClearChiefAction(intake)
-      && !chiefMatchesRange
+      && (!chiefMatchesRange || hasChiefFunctionAction)
       && (activeTarget.id === "target:chief" || activeTarget.id === "target:local-limb" && (batchSingleRangeRetestsChief || localNewSourceNeedsChiefRetest) || treatmentRelatesToChief((activeTarget.retestFindings ?? []).map(motionIdFromFinding), chiefDirection))
       && (localNewSourceNeedsChiefRetest || !chiefImprovedDuringTreatment && !chiefRetestCompletedDuringTreatment);
     const chiefRangeDirectionId = chiefRangeFinding ? motionIdFromFinding(chiefRangeFinding) : undefined;
@@ -6375,7 +6380,7 @@ export default function RehabMindCompleteDemo() {
 
     const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = intake.examSetup === "professional-other"
       ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
-      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "发力不适｜一用力就出现症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
+      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
     const options: Array<[SimpleAnswer, string]> = item.kind === "strength"
       ? ["thigh-local", "calf-local"].includes(region?.id ?? "")
         ? localLimbStrengthOptions
@@ -6394,7 +6399,7 @@ export default function RehabMindCompleteDemo() {
       || record.active === "unable";
     const pairedCheckOptions: Array<[SimpleAnswer, string]> = pairedCheckUsesResistance
       ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
-      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "发力不适｜一用力就出现症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
+      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
     const motionFallback = item.kind === "motion" ? motionUnableGuidance(item, record.unableReason) : null;
     const pairedStrengthFallback = item.pairedStrengthId ? strengthUnableGuidance(item, record.pairedStrengthUnableReason, pairedCheckUsesResistance) : null;
     const strengthFallback = item.kind === "strength" ? strengthUnableGuidance(item, record.strengthUnableReason, canAssessResistance) : null;
@@ -6459,12 +6464,12 @@ export default function RehabMindCompleteDemo() {
           </section> : null}
 
           {item.pairedStrengthId && shouldAskPairedStrength(record.active) ? <section className="rm-motion-answer-block is-strength">
-            <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "同一个动作：看主动保持"}</h3>
+            <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "同一个动作：保持 3～5 秒看力量"}</h3>
             <p className="rm-choice-hint">{pairedCheckUsesResistance
               ? "由检查者沿刚才动作的反方向逐渐施加轻阻力，保持3～5秒并比较两侧；不要突然用力。"
               : isSelfKneeExtension
                 ? "先把膝盖绷直，再将整条腿抬离床面约10厘米，保持3秒后放下；左右各做一次，不需要别人按压。"
-                : "不需要别人压，也不需要自己用手加阻力。两侧同时保持刚才的位置3～5秒，看是否容易掉下、抖动或提前结束。"}</p>
+                : "不需要别人压，也不需要自己加阻力。在刚才的位置持续保持 3～5 秒，看会不会掉下、发抖，或越用力越疼。"}</p>
             {record.active === "unable" && !pairedCheckUsesResistance ? <p className="rm-passive-reminder">刚才没有完成主动活动，这一步可以跳过，不要为了测试强行完成。</p> : null}
             <AnswerChoiceGrid options={isSelfKneeExtension
               ? [["normal", "保持稳定｜抬起后膝盖仍笔直"], ["weak", "控制偏弱｜膝盖弯曲、抖动或下落"], ["painful", "发力不适｜抬腿时出现症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]] as Array<[SimpleAnswer, string]>
@@ -6490,7 +6495,7 @@ export default function RehabMindCompleteDemo() {
           </section> : null}
 
           {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>刚才活动或发力时，有没有不适？</h3>
+            <h3>转到最大范围时，有没有牵拉、卡住或不适？</h3>
             <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
               ? { ...latestRecord, discomfort: value }
               : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
@@ -6678,7 +6683,7 @@ export default function RehabMindCompleteDemo() {
     });
     const shouldRetestChiefInBatch = !isResidualReviewStep
       && hasClearChiefAction(intake)
-      && !chiefMatchesRange
+      && (!chiefMatchesRange || hasChiefFunctionAction)
       // 局部大腿/小腿的活动复测通常不是主诉动作本身（例如局部拉长
       // 复测对应“下蹲”主诉）。首个局部处理单元必须同时记录主诉分数，
       // 否则用户明明选了“疼痛下降”，后续仍会显示为“原来的不适未变”。
@@ -6857,13 +6862,7 @@ export default function RehabMindCompleteDemo() {
       // chief score also dropped in the same batch.
       const hasUnresolvedRangeProgress = trialRecords.some((record) =>
         Object.values(record.rangeOutcomes ?? {}).some((outcome) => outcome !== "both-match"));
-      const hasUnresolvedImmediateTreatmentProblem = !treatmentFinalRetestConfirmed
-        // A queue can be empty after a partial local-limb trial even though
-        // the finding is still unresolved. Keep the user in an explicit
-        // continuation state instead of falling through to a completion card.
-        // This also covers a dynamically rebuilt knee queue whose next unit
-        // has not appeared in the same render yet.
-        && (unresolvedImmediateLedgerProblems.length > 0 || unresolvedLedgerProblem || hasUnresolvedRangeProgress);
+      const hasUnresolvedImmediateTreatmentProblem = unresolvedImmediateLedgerProblems.length > 0 || unresolvedLedgerProblem || hasUnresolvedRangeProgress;
       const unresolvedImmediateLabels = unresolvedImmediateLedgerProblems
         .map((entry) => treatmentProblems.find((problem) => problem.id === entry.id)?.title ?? entry.id)
         .filter((label, index, list) => label && list.indexOf(label) === index)
@@ -6958,7 +6957,7 @@ export default function RehabMindCompleteDemo() {
           <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("partial", false, undefined, true, true)}>完成并继续</button></div>
          </section> : !showingRetest && activeTarget.id === "target:chief" && (chiefImprovedDuringTreatment || chiefRetestCompletedDuringTreatment) && !isBatchRangeTarget ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("same", false, undefined, false, true)}>完成这项处理，继续下一项</button></div> : !showingRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={prepareRetest}>{isResidualReviewStep ? "开始复查" : noRetestNeededAfterLatestResult ? "完成并继续下一项" : activeCandidateGroup.length > 1 ? "本轮处理完成，统一复测" : isRangeTarget ? singleRangeRetestsChief ? "处理完成，复测主诉和活动范围" : "处理完成，复测活动范围" : isStrengthSymptomTarget ? "处理完成，复测发力" : hasClearChiefAction(intake) ? "处理完成，复测原来的动作" : "处理完成，复测这个动作"}</button></div> : intake.side === "双侧/中间" ? <section className="rm-retest rm-bilateral-retest"><header><span>感受反馈</span><h2>和刚才比，双侧的疼痛或轻松感有变化吗？</h2></header><div className="rm-result-grid">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([value,label]) => <button type="button" key={value} onClick={() => { setBilateralNeedsReferral(value === "worse"); finishTrial(value); }}>{label}</button>)}</div><p>没有变化时继续检查支持的其他处理；更重时立即停止。</p></section> : isBatchRangeTarget ? <section className={`rm-retest rm-batch-range-retest rm-followup-retest ${isPatellaCombinedUnit ? "is-combined-patella" : ""}`}>
            {isPatellaCombinedUnit ? <header className="rm-combined-retest-header"><span>同一处理单元 · 完成后立即复测</span><h2>刚才受限的髌骨方向</h2><small>只复测刚才标记受限的方向，并记录活动范围和不适。</small></header> : null}
-           {shouldRetestChiefInBatch ? <header><span>复测动作</span><h2>{chiefActionLabel(intake)}</h2><strong>处理前 {beforeScore}/10</strong></header> : null}
+           {shouldRetestChiefInBatch ? <header><span>复测动作</span><h2>{hasChiefFunctionAction ? chiefFunctionLabels.join("、") : chiefActionLabel(intake)}</h2><strong>处理前 {beforeScore}/10</strong></header> : null}
           {shouldRetestChiefInBatch ? <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${beforeScore}/10`} /> : null}
           <section className="rm-followup-range-check">
           <header className="rm-retest-checklist-header"><div><span>复测清单</span><strong>{activeRetestFindings.length}个相关动作</strong></div><small>每个动作只记录一次：先看活动范围，再记录不适程度。</small></header>
