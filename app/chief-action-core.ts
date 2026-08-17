@@ -107,9 +107,17 @@ const CHIEF_MOTION_ALIASES: Record<string, Array<[string, string[]]>> = {
 };
 
 export function chiefMotionDirectionId(intake: ChiefActionIntake, regionId: string) {
-  if (!hasClearChiefAction(intake)) return undefined;
+  return chiefMotionDirectionIds(intake, regionId)[0];
+}
+
+/** 返回主诉动作映射到的全部关节方向（多主诉动作可映射多个方向）。 */
+export function chiefMotionDirectionIds(intake: ChiefActionIntake, regionId: string): string[] {
+  if (!hasClearChiefAction(intake)) return [];
   const source = [intake.actionAnalysis?.task, ...reportedActionSummary(intake), intake.forceDirection].filter(Boolean).join(" ");
-  return CHIEF_MOTION_ALIASES[regionId]?.find(([, words]) => words.some((word) => source.includes(word)))?.[0];
+  const matches = (CHIEF_MOTION_ALIASES[regionId] ?? [])
+    .filter(([, words]) => words.some((word) => source.includes(word)))
+    .map(([id]) => id);
+  return [...new Set(matches)];
 }
 
 export type RetestSymptomRecord = { familiarSymptom?: string };

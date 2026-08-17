@@ -25,6 +25,12 @@ test("chiefMotionDirectionId maps a single knee motion to its direction", () => 
   assert.equal(core.chiefMotionDirectionId(kneeSquat, "unknown-region"), undefined);
 });
 
+test("chiefMotionDirectionIds returns all directions for multi-action chief", () => {
+  const multi = { ...kneeSquat, reportedActions: [{ raw: "勾脚" }, { raw: "内翻" }], actionAnalysis: { task: "勾脚" } };
+  assert.deepEqual(core.chiefMotionDirectionIds(multi, "ankle-foot"), ["ankle-dorsiflexion", "ankle-inversion"]);
+  assert.deepEqual(core.chiefMotionDirectionIds(kneeSquat, "unknown-region"), []);
+});
+
 test("chiefActionLabel joins multiple actions", () => {
   assert.equal(core.chiefActionLabel({ ...kneeSquat, reportedActions: [{ raw: "下蹲" }, { raw: "上楼" }] }), "下蹲、上楼");
   assert.equal(core.chiefActionLabel({ reportedActions: [] }), "尚未确认");
