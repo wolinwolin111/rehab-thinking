@@ -121,3 +121,25 @@ test("a clear chief action yields a chief target when chief candidates exist", (
 test("an empty findings list returns an empty queue", () => {
   assert.deepEqual(core.buildTrialTargets(makeContext({ findings: [] })), []);
 });
+
+test("a direction chief (勾脚) keeps the chief direction in the chief target retest findings", () => {
+  const ankleRegion = {
+    id: "ankle-foot", shortName: "踝足", mobilityInterventions: [],
+    candidateGroups: [{ candidates: [
+      { id: "muscle:calf-release", title: "小腿后侧肌腹轻柔松解", type: "muscle", access: "self", do: "轻柔松解", observe: "轻柔", retest: "复测", tags: ["calf", "dorsiflexion", "plantarflexion"], retestIds: ["ankle-dorsiflexion", "ankle-plantarflexion"], siteLabel: "小腿后侧", targetLabel: "", actionLabel: "轻柔松解" },
+      { id: "muscle:lateral-release", title: "小腿外侧肌腹轻柔松解", type: "muscle", access: "self", do: "轻柔松解", observe: "轻柔", retest: "复测", tags: ["peroneal", "inversion", "eversion"], retestIds: ["ankle-inversion", "ankle-eversion"], siteLabel: "小腿外侧", targetLabel: "", actionLabel: "轻柔松解" },
+    ]}],
+  };
+  const tags = ["dorsiflexion", "plantarflexion", "inversion", "eversion"];
+  const ankleFindings = ["ankle-dorsiflexion", "ankle-plantarflexion", "ankle-inversion", "ankle-eversion"].map((id, idx) => ({ id: `motion:${id}`, priority: "support", title: `踝${id}`, side: "右侧", tags: [tags[idx], "motion"] }));
+  const ctx = makeContext({
+    region: ankleRegion,
+    findings: ankleFindings,
+    intake: { ...makeContext().intake, reportedActions: [{ raw: "勾脚", label: "勾脚" }], actionAnalysis: { task: "勾脚", category: "", function: "", load: "", direction: "" } },
+  });
+  const targets = core.buildTrialTargets(ctx);
+  const chief = targets.find((t) => t.id === "target:chief");
+  assert.ok(chief, "chief target should exist for a direction chief");
+  const hasChiefInRetest = (chief.retestFindings ?? []).some((f) => f.id === "motion:ankle-dorsiflexion");
+  assert.ok(hasChiefInRetest, "chief direction must stay in retestFindings so it is labeled 主诉动作 in the batch retest");
+});
