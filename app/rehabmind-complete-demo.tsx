@@ -6955,7 +6955,7 @@ export default function RehabMindCompleteDemo() {
             const rangeRecorded = Boolean(selected);
             const symptomRecorded = knownDiscomfort ? Boolean(movementScoreConfirmed[directionId]) : Boolean(discomfort) && (discomfort !== "yes" || Boolean(movementScoreConfirmed[directionId]));
             return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}>
-              <header><div><span>动作 {index + 1}</span><strong>{retestShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header>
+              <header><div><span>{samePhysicalAction(directionId, chiefDirection) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{retestShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header>
               <section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>
               {knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考处理前分数选择现在的程度</small></div><ScoreSlider compact value={movementScores[directionId] ?? 0} selected={Boolean(movementScoreConfirmed[directionId])} onChange={(value) => {
                 setMovementDiscomforts((current) => ({ ...current, [directionId]: value === 0 ? "no" : "yes" }));
