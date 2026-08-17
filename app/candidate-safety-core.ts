@@ -16,12 +16,12 @@ export type CandidateSafetyInput = {
   tags: string[];
 };
 
-function includesAny(text: string, words: string[]) {
+function safetyIncludesAny(text: string, words: string[]) {
   return words.some((word) => text.includes(word));
 }
 
 export function candidateUsesPressure(candidate: CandidateSafetyInput) {
-  return includesAny(`${candidate.title} ${candidate.do} ${candidate.observe} ${candidate.tags.join(" ")}`, ["按压", "压揉", "压迫", "加压", "重压", "深压"]);
+  return safetyIncludesAny(`${candidate.title} ${candidate.do} ${candidate.observe} ${candidate.tags.join(" ")}`, ["按压", "压揉", "压迫", "加压", "重压", "深压"]);
 }
 
 export function candidateIsAvailable(candidate: CandidateSafetyInput, role: string) {
