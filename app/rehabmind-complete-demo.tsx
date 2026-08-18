@@ -2185,13 +2185,16 @@ export default function RehabMindCompleteDemo() {
   const [movementDiscomforts, setMovementDiscomforts] = useState<Record<string, YesNo>>({});
   const [movementScores, setMovementScores] = useState<Record<string, number>>({});
   const [movementScoreConfirmed, setMovementScoreConfirmed] = useState<Record<string, boolean>>({});
-  const { exerciseFeedback, setExerciseFeedback, openExercise, setOpenExercise } = useTrainingFlow();
-  const [trainingComplete, setTrainingComplete] = useState(false);
+  const {
+    exerciseFeedback, setExerciseFeedback,
+    openExercise, setOpenExercise,
+    trainingComplete, setTrainingComplete,
+    trainingReadyForFinalRetest, setTrainingReadyForFinalRetest,
+    finalRetestScore, setFinalRetestScore,
+    finalRetestConfirmed, setFinalRetestConfirmed,
+  } = useTrainingFlow();
   const [treatmentFinalRetestScore, setTreatmentFinalRetestScore] = useState(0);
   const [treatmentFinalRetestConfirmed, setTreatmentFinalRetestConfirmed] = useState(false);
-  const [trainingReadyForFinalRetest, setTrainingReadyForFinalRetest] = useState(false);
-  const [finalRetestScore, setFinalRetestScore] = useState(0);
-  const [finalRetestConfirmed, setFinalRetestConfirmed] = useState(false);
   const {
     functionRetestCompletion, setFunctionRetestCompletion,
     functionRetestUnableReason, setFunctionRetestUnableReason,
