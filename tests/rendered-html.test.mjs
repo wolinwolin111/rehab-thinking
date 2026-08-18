@@ -585,8 +585,8 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /text\.toLowerCase\(\)\.includes\("pain"\)/);
   assert.match(demo, /疼痛，性质说不清/);
   assert.match(demo, /painQualityConfirmed/);
-  assert.match(demo, /你更接近哪一种感觉/);
-  assert.match(demo, /还是说不清/);
+  assert.doesNotMatch(demo, /你更接近哪一种感觉/);
+  assert.doesNotMatch(demo, /还是说不清/);
   assert.match(demo, /inferPilotRegions/);
   assert.match(demo, /本版一次只评估一个主要问题/);
   assert.match(demo, /maxSelections=\{3\}/);

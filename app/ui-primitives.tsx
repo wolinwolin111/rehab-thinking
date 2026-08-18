@@ -6,7 +6,7 @@ export function TreatmentRoadmap({ completed, current, upcoming }: { completed: 
     <header><span>本次流程</span><b>已完成 {completed.length} 项</b></header>
     <div className="rm-roadmap-stage is-done">
       <span className="rm-roadmap-status">已完成</span>
-      <ul>{completed.length ? completed.slice(-4).map((item) => <li key={item.label}><i>✓</i><span>{item.label}{item.summary ? <em>{item.summary}</em> : null}</span></li>) : <li><i>✓</i>评估检查</li>}</ul>
+      <ul>{completed.length ? completed.slice(-4).map((item) => <li key={item.label}><i>✓</i><span>{item.label}{item.summary ? <small>{item.summary}</small> : null}</span></li>) : <li><i>✓</i>评估检查</li>}</ul>
     </div>
     <div className="rm-roadmap-stage is-current">
       <span className="rm-roadmap-status">正在做</span>

@@ -488,6 +488,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-roadmap-stage.is-done ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
 .rm-roadmap-stage.is-done ul li { display: flex; align-items: center; gap: 8px; color: #415168; font-size: 13px; }
 .rm-roadmap-stage.is-done ul li i { width: 22px; height: 22px; border-radius: 50%; color: #fff; background: #27825c; display: grid; place-items: center; font-size: 11px; font-style: normal; flex-shrink: 0; }
+.rm-roadmap-stage.is-done ul li small { margin-left: 6px; color: var(--rm-muted); font-size: 12px; font-weight: 400; }
 .rm-roadmap-stage.is-current { border: 2px solid #2d62dc; background: #eef3ff; box-shadow: 0 10px 24px rgba(45, 98, 220, .14); }
 .rm-roadmap-stage.is-current .rm-roadmap-status { color: #2d62dc; }
 .rm-roadmap-stage.is-current strong { color: #153eaa; font-size: 19px; line-height: 1.45; }
