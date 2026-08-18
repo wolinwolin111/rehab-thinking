@@ -3,12 +3,19 @@ import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, us
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
 export function TreatmentRoadmap({ completed, current, upcoming }: { completed: string[]; current: string; upcoming: string[] }) {
   return <section className="rm-treatment-roadmap">
-    <header><div><span>本次流程</span></div><b>已完成 {completed.length} 项</b></header>
-    <ol>
-      <li className="is-done"><i>✓</i><div><span>已完成</span><section>{completed.length ? completed.slice(-4).map((label) => <b key={label}>{label}</b>) : <b>评估检查</b>}</section></div></li>
-      <li className="is-current"><i>现在</i><div><span>正在做</span><strong>{current}</strong></div></li>
-      <li className="is-next"><i>{upcoming.length}</i><div><span>接下来</span><section>{upcoming.length ? upcoming.map((label, index) => <b key={`${label}:${index}`}><em>{index + 1}</em>{label}</b>) : <b><em>1</em>针对性训练</b>}</section></div></li>
-    </ol>
+    <header><span>本次流程</span><b>已完成 {completed.length} 项</b></header>
+    <div className="rm-roadmap-stage is-done">
+      <span className="rm-roadmap-status">已完成</span>
+      <ul>{completed.length ? completed.slice(-4).map((label) => <li key={label}><i>✓</i>{label}</li>) : <li><i>✓</i>评估检查</li>}</ul>
+    </div>
+    <div className="rm-roadmap-stage is-current">
+      <span className="rm-roadmap-status">正在做</span>
+      <strong>{current}</strong>
+    </div>
+    <div className="rm-roadmap-stage is-next">
+      <span className="rm-roadmap-status">接下来</span>
+      <ol>{upcoming.length ? upcoming.map((label, index) => <li key={`${label}:${index}`}><em>{index + 1}</em>{label}</li>) : <li><em>1</em>针对性训练</li>}</ol>
+    </div>
   </section>;
 }
 
@@ -113,7 +120,12 @@ export function ScoreHistory({ scores, condition }: { scores: number[]; conditio
 }
 
 export function StepHeading({ eyebrow, title, note, current, total }: { eyebrow: string; title: string; note?: string; current?: number; total?: number }) {
-  return <header className="rm-heading"><div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}</div>{typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}</header>;
+  const stepMatch = eyebrow.match(/第(\d+)步/);
+  const stepNum = stepMatch ? Number(stepMatch[1]) : null;
+  return <header className="rm-heading">
+    <div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}{stepNum ? <div className="rm-step-progress" aria-label={`第${stepNum}步，共6步`}>{[1, 2, 3, 4, 5, 6].map((n) => <i key={n} className={n < stepNum ? "is-done" : n === stepNum ? "is-current" : ""} />)}</div> : null}</div>
+    {typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}
+  </header>;
 }
 
 /** 阶段过渡页：展示下一阶段的编号、标题、说明和操作按钮。 */

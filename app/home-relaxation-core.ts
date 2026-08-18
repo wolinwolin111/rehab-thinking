@@ -70,7 +70,7 @@ export function buildHomeRelaxationTargets(input: HomeRelaxationInput): HomeRela
     location,
     title: `${location}自主放松`,
     dosage: "每处30～60秒，1～2轮",
-    instruction: `训练结束后，在${location}的肌腹位置轻柔按压或缓慢滚动。`,
+    instruction: `训练结束后，在${location}找到紧绷或发酸的地方，轻轻按压或慢慢滚动。`,
     limit: avoidance ? `本次注意：${avoidance}。` : "力度以酸胀但不超过3/10为准。",
   }));
 }
