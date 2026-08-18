@@ -90,16 +90,17 @@ test("ships a complete nine-region assessment and intervention library", async (
 });
 
 test("keeps NRS history, gated steps, local records and repeat-rehab paths", async () => {
-  const [demoComponent, uiSource, page, layout, styles, content, locationPicker] = await Promise.all([
+  const [demoComponent, uiSource, nextSessionSource, page, layout, styles, content, locationPicker] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/next-session-card.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${uiSource}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${nextSessionSource}\n${coreSource}`;
 
   assert.match(page, /rehabmind-complete-demo/);
   assert.match(page, /<RehabMindCompleteDemo\s*\/>/);

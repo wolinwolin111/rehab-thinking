@@ -115,3 +115,26 @@ export function ScoreHistory({ scores, condition }: { scores: number[]; conditio
 export function StepHeading({ eyebrow, title, note, current, total }: { eyebrow: string; title: string; note?: string; current?: number; total?: number }) {
   return <header className="rm-heading"><div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}</div>{typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}</header>;
 }
+
+/** 阶段过渡页：展示下一阶段的编号、标题、说明和操作按钮。 */
+export function StageTransition({ number, title, message, button, onContinue, onBack }: {
+  number: string;
+  title: string;
+  message: string;
+  button: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  return <section className="rm-stage-transition" aria-live="polite">
+    <div className="rm-stage-transition-number">{number}</div>
+    <div className="rm-stage-transition-copy">
+      <span>下一阶段</span>
+      <h1>{title}</h1>
+      <p>{message}</p>
+    </div>
+    <div className="rm-stage-transition-actions">
+      <button type="button" onClick={onBack}>返回查看</button>
+      <button type="button" className="rm-primary" onClick={onContinue}>{button}</button>
+    </div>
+  </section>;
+}
