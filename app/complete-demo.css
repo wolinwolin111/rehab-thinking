@@ -152,6 +152,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-symptom-group summary::before { content: "▸ "; color: var(--rm-blue); }
 .rm-symptom-group[open] summary::before { content: "▾ "; }
 .rm-symptom-group .rm-options { padding: 0 14px 14px; }
+.rm-symptom-group.is-flat strong { display: block; padding: 12px 14px 6px; color: #415168; font-size: 14px; font-weight: 800; }
 .rm-exercise-alt { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #f8fafc; }
 .rm-exercise-alt summary { padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 800; color: var(--rm-blue); list-style: none; }
 .rm-exercise-alt summary::-webkit-details-marker { display: none; }

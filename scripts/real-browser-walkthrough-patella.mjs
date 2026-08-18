@@ -87,7 +87,7 @@ for (let i = 0; i < 200; i++) {
         const range = page.locator('input[type=range]').first();
         if (await range.count() && (await range.inputValue()) === "0") { await range.fill("4").catch(() => {}); await page.waitForTimeout(250); mark("RNG"); console.log(`[${i}] SLIDER | ${h1}`); acted = true; }
         else {
-          const goal = page.getByRole("button", { name: /恢复日常活动/ }).first();
+          const goal = page.getByRole("button", { name: /恢复正常生活/ }).first();
           if (await goal.count() && !((await goal.getAttribute("class")) || "").includes("is-selected")) { await goal.click(); await page.waitForTimeout(250); mark("目标"); console.log(`[${i}] 目标 | ${h1}`); acted = true; }
           else {
             const noImg = page.getByRole("button", { name: "没有做影像", exact: true }).first();

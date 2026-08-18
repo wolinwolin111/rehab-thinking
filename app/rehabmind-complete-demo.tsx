@@ -555,13 +555,21 @@ const SYMPTOM_TYPE_GROUPS = [
 const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足", "麻、电或感觉变化"];
 const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
 const PRIOR_CARE_OPTIONS = ["看过医生", "拍过片", "用过膏药", "做过针灸或理疗", "用过冰敷"];
-const GOALS = [
+const GOALS_SELF = [
   { level: 1, title: "先消肿止痛", short: "让肿胀和静息不适先稳定下来" },
   { level: 2, title: "疼痛明显减轻", short: "做动作时不再那么疼" },
   { level: 3, title: "恢复日常活动", short: "走路、上下楼梯、穿衣和拿取" },
   { level: 4, title: "恢复中低强度运动", short: "跑步、健身、瑜伽或球类（无对抗）" },
   { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
 ];
+const GOALS_PRO = [
+  { level: 1, title: "急性反应减轻", short: "先让肿胀和静息不适稳定" },
+  { level: 2, title: "基础症状改善", short: "疼痛或异常感觉明显减轻" },
+  { level: 3, title: "恢复正常生活", short: "走路、楼梯、穿衣和拿取" },
+  { level: 4, title: "恢复一般运动", short: "跑步、健身、瑜伽或球类" },
+  { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
+];
+const GOALS = GOALS_SELF;
 const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:knee-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
   "function:ankle-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
@@ -932,7 +940,7 @@ function inferImagingFromDescription(text: string) {
 }
 
 function getGoalLabel(level: number) {
-  return GOALS.find((goal) => goal.level === level)?.title ?? "尚未确认";
+  return GOALS_PRO.find((goal) => goal.level === level)?.title ?? "尚未确认";
 }
 
 function forceDirectionOptions(regionId: string) {
@@ -5665,7 +5673,7 @@ export default function RehabMindCompleteDemo() {
 
         <section className="rm-professional-section">
           <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的内容保留为空，不代替患者做判断。</p></div></header>
-          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div>
+          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title} className="rm-symptom-group is-flat"><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div>
           {showAllIntakeFields && (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适") ? <div className="rm-professional-subfield"><div className="rm-label"><span>疼痛性质补充</span><b>仍然分不清可以保留“说不清”</b></div><PillOptions options={["酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "还是说不清"]} value={intake.painQualityConfirmed ? (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适" ? "还是说不清" : intake.symptomType) : ""} onChange={(value) => invalidateAfterIntake({ ...intake, symptomType: value === "还是说不清" ? "疼痛，性质说不清" : value, painQualityConfirmed: true })} columns={3} /></div> : null}
           <div className="rm-label rm-professional-symptom-label"><span>伴随表现</span><b>可多选；没有就选“没有以上情况”</b></div>
           <div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={professionalSymptoms.includes(symptom) ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms(professionalSymptoms.includes(symptom) ? professionalSymptoms.filter((item) => item !== symptom) : [...professionalSymptoms, symptom])}><i>{professionalSymptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms([])}><i>{confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "✓" : ""}</i>没有以上情况</button></div>
@@ -5691,7 +5699,7 @@ export default function RehabMindCompleteDemo() {
           <button type="button" className={intake.actionSelectionConfirmed && !professionalActionSummary.length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={() => updateReportedActions([], "")}>说不清或没有固定动作</button>
         </section>
 
-        {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
+        {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
 
         <section className="rm-professional-section">
           <header><span>06</span><div><h2>本次检查条件</h2><p>先说明由谁操作、能够完成哪些专业检查，后续评估会按此开放。</p></div></header>
@@ -6919,6 +6927,7 @@ export default function RehabMindCompleteDemo() {
   }
 
   function renderTraining() {
+    const displayGoals = isThinkingMode && !workflowProfile.isStudy ? GOALS_PRO : GOALS_SELF;
     const trainingHasWorsened = exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
     const worsenedExercise = exercises.find((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
     const worsenedExerciseAssessmentIds = worsenedExercise
@@ -6974,7 +6983,7 @@ export default function RehabMindCompleteDemo() {
       {tissuePathway.id !== "standard" ? <section className="rm-training-hold"><span>{tissuePathway.title}</span><strong>{tissuePathway.trainingStages[0]}</strong><p>{tissuePathway.trainingStages.join(" → ")}</p></section> : null}
       {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低刺激基础活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
       {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低刺激基础活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
-      <div className="rm-stage-line">{GOALS.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div>
+      <div className="rm-stage-line">{displayGoals.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div>
 
 
       {(effectiveFocusLabels.length || effectiveControlLabels.length) ? <section className="rm-effective-home-focus">
@@ -7024,7 +7033,7 @@ export default function RehabMindCompleteDemo() {
 
       {trainingHasWorsened ? <section className="rm-training-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
 
-      <section className="rm-next-stage"><span>下一阶段</span><h2>{exerciseStage < intake.goal ? GOALS.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。</p></section>
+      <section className="rm-next-stage"><span>下一阶段</span><h2>{exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。</p></section>
 
       {!trainingHasWorsened ? <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(3)}>返回处理记录</button><button type="button" className="rm-primary" onClick={() => {
         if (!exercises.length || tissuePathway.retestTiming !== "same-session" || !trainingNeedsChiefRetest) {
