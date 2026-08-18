@@ -1,7 +1,14 @@
-import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialRecordBuildInput } from "./trial-record-types";
+import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialRecordBuildInput, type TrialResult } from "./trial-record-types";
 
 function isCompletedRangeRetestAnswer(value: RangeRetestAnswer | undefined): value is CompletedRangeRetestAnswer {
   return value !== undefined && value !== "";
+}
+
+/** 前后分数比较：下降 better、上升 worse、相同 same。 */
+export function resultFromScore(before: number, after: number): TrialResult {
+  if (after < before) return "better";
+  if (after > before) return "worse";
+  return "same";
 }
 
 /**

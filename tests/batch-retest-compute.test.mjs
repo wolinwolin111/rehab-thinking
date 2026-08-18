@@ -1,0 +1,60 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import ts from "typescript";
+
+async function loadBundle(paths) {
+  const parts = [];
+  for (let i = 0; i < paths.length; i++) {
+    const src = await readFile(new URL(paths[i], import.meta.url), "utf8");
+    let out = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+    out = out.replace(/import\s*\{[^}]*\}\s*from\s*"[^"]*";?/g, "");
+    if (i < paths.length - 1) out = out.replace(/export\s+/g, "");
+    parts.push(out);
+  }
+  return import(`data:text/javascript;base64,${Buffer.from(parts.join("\n")).toString("base64")}`);
+}
+
+const core = await loadBundle([
+  "../app/treatment-response-core.ts",
+  "../app/trial-record-builder.ts",
+  "../app/batch-retest-compute.ts",
+]);
+
+test("all ranges resolved with chief drop yields better partial-contribution", () => {
+  const { result, responseRole } = core.computeBatchResult({
+    chiefBeforeScore: 5,
+    recordedChiefScore: 2,
+    chiefWasActuallyRetested: true,
+    rangeBeforeScore: 5,
+    outcomes: ["both-match"],
+    priorImprovingTreatmentCount: 0,
+  });
+  assert.equal(result, "better");
+  assert.equal(responseRole, "partial-contribution");
+});
+
+test("chief unchanged but range improved yields partial range-contribution", () => {
+  const { result, responseRole } = core.computeBatchResult({
+    chiefBeforeScore: 5,
+    recordedChiefScore: 5,
+    chiefWasActuallyRetested: true,
+    rangeBeforeScore: 5,
+    outcomes: ["better-passive-limited"],
+    priorImprovingTreatmentCount: 0,
+  });
+  assert.equal(result, "partial");
+  assert.equal(responseRole, "range-contribution");
+});
+
+test("any worse range outcome yields worse", () => {
+  const { result } = core.computeBatchResult({
+    chiefBeforeScore: 5,
+    recordedChiefScore: 3,
+    chiefWasActuallyRetested: true,
+    rangeBeforeScore: 5,
+    outcomes: ["both-match", "worse"],
+    priorImprovingTreatmentCount: 0,
+  });
+  assert.equal(result, "worse");
+});

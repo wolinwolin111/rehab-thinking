@@ -5,7 +5,8 @@ import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransiti
 import { NextSessionCard } from "./next-session-card";
 import { type FunctionUnableReason, useFunctionRetestState } from "./use-function-retest";
 import { type ExerciseFeedback, useTrainingFlow } from "./use-training-flow";
-import { buildTrialRecords } from "./trial-record-builder";
+import { buildTrialRecords, resultFromScore } from "./trial-record-builder";
+import { computeBatchResult } from "./batch-retest-compute";
 import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "./trial-record-types";
 import LowerLimbLocationPicker, {
   makeLowerLimbLocationSelection,
@@ -1190,12 +1191,6 @@ function scoreChange(before: number, after: number) {
   const delta = before - after;
   const percent = before > 0 ? Math.round((delta / before) * 100) : null;
   return { delta, percent };
-}
-
-function resultFromScore(before: number, after: number): TrialResult {
-  if (after < before) return "better";
-  if (after > before) return "worse";
-  return "same";
 }
 
 function firstNumber(value: string, fallback = 10) {
@@ -4707,18 +4702,13 @@ export default function RehabMindCompleteDemo() {
       && !chiefRetestCompletedDuringTreatment,
     );
     const chiefWasActuallyRetested = (shouldRetestChiefThisRound || chiefScoreShownAndRecorded) && postScoreConfirmed || chiefScoreCapturedInRange;
-    const scoreResult = chiefWasActuallyRetested ? resultFromScore(chiefBeforeScore, recordedChiefScore) : "same";
-    const hasProgress = outcomes.some((outcome) => ["both-match", "passive-match-active-limited", "better-passive-limited"].includes(outcome));
-    const allResolved = outcomes.every((outcome) => outcome === "both-match");
-    const anyWorse = outcomes.some((outcome) => outcome === "worse");
-    const result: TrialResult = scoreResult === "worse" || anyWorse ? "worse" : allResolved ? "better" : hasProgress || scoreResult === "better" ? "partial" : "same";
     const priorImprovingTreatmentCount = trialRecords.filter((record) => !record.reviewOnly && !record.retestOnly && record.chiefRetested && record.afterScore < record.beforeScore).length;
-    const responseRole = classifyTreatmentResponse({
-      beforeScore: chiefWasActuallyRetested ? chiefBeforeScore : rangeBeforeScore,
-      afterScore: chiefWasActuallyRetested ? recordedChiefScore : rangeBeforeScore,
-      result,
-      chiefRetested: chiefWasActuallyRetested,
-      rangeImproved: hasProgress,
+    const { result, responseRole } = computeBatchResult({
+      chiefBeforeScore,
+      recordedChiefScore,
+      chiefWasActuallyRetested,
+      rangeBeforeScore,
+      outcomes,
       priorImprovingTreatmentCount,
     });
 
