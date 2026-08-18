@@ -142,6 +142,16 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-options { display: grid; grid-template-columns: repeat(var(--columns, 2), 1fr); gap: 7px; }
 .rm-options button { min-height: 54px; padding: 8px 11px; border: 1px solid var(--rm-line); background: white; font-size: 14px; font-weight: 750; cursor: pointer; }
 .rm-options button.is-selected { color: white; border-color: var(--rm-blue); background: var(--rm-blue); }
+.rm-symptom-group { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #fff; }
+.rm-symptom-group summary { padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 800; list-style: none; }
+.rm-symptom-group summary::-webkit-details-marker { display: none; }
+.rm-symptom-group summary::before { content: "▸ "; color: var(--rm-blue); }
+.rm-symptom-group[open] summary::before { content: "▾ "; }
+.rm-symptom-group .rm-options { padding: 0 14px 14px; }
+.rm-exercise-alt { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #f8fafc; }
+.rm-exercise-alt summary { padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 800; color: var(--rm-blue); list-style: none; }
+.rm-exercise-alt summary::-webkit-details-marker { display: none; }
+.rm-exercise-alt p { margin: 0; padding: 0 14px 12px; color: var(--rm-ink); font-size: 13px; line-height: 1.5; }
 .rm-role-choice .rm-options button, .rm-exam-setup-choice .rm-options button, .rm-spine-mode-choice .rm-options button { padding: 13px 15px; display: grid; gap: 4px; text-align: left; }
 .rm-role-choice .rm-options strong, .rm-exam-setup-choice .rm-options strong, .rm-spine-mode-choice .rm-options strong { font-size: 16px; }
 .rm-role-choice .rm-options small, .rm-exam-setup-choice .rm-options small, .rm-spine-mode-choice .rm-options small { color: var(--rm-muted); font-size: 12px; font-weight: 650; }

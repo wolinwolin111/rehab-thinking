@@ -547,8 +547,10 @@ const ONSETS = ["今天或昨天", "2～7天", "1～6周", "超过6周", "反复
 const MECHANISMS = ["没有明确受伤", "扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤", "逐渐出现", "其他"];
 const SYMPTOM_TYPES = ["疼痛，性质说不清", "酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"];
 const SYMPTOM_TYPE_GROUPS = [
-  { title: "疼痛或牵扯感", options: ["疼痛，性质说不清", "酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷"] },
-  { title: "其他异常感觉", options: ["挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"] },
+  { title: "疼痛", options: ["酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响"] },
+  { title: "麻、电感", options: ["麻或电感"] },
+  { title: "无力、不稳", options: ["无力或不稳"] },
+  { title: "说不清", options: ["疼痛，性质说不清", "说不清的不适"] },
 ];
 const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足", "麻、电或感觉变化"];
 const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
@@ -5663,7 +5665,7 @@ export default function RehabMindCompleteDemo() {
 
         <section className="rm-professional-section">
           <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的内容保留为空，不代替患者做判断。</p></div></header>
-          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title}><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div>
+          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div>
           {showAllIntakeFields && (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适") ? <div className="rm-professional-subfield"><div className="rm-label"><span>疼痛性质补充</span><b>仍然分不清可以保留“说不清”</b></div><PillOptions options={["酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "还是说不清"]} value={intake.painQualityConfirmed ? (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适" ? "还是说不清" : intake.symptomType) : ""} onChange={(value) => invalidateAfterIntake({ ...intake, symptomType: value === "还是说不清" ? "疼痛，性质说不清" : value, painQualityConfirmed: true })} columns={3} /></div> : null}
           <div className="rm-label rm-professional-symptom-label"><span>伴随表现</span><b>可多选；没有就选“没有以上情况”</b></div>
           <div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={professionalSymptoms.includes(symptom) ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms(professionalSymptoms.includes(symptom) ? professionalSymptoms.filter((item) => item !== symptom) : [...professionalSymptoms, symptom])}><i>{professionalSymptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms([])}><i>{confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "✓" : ""}</i>没有以上情况</button></div>
@@ -5830,7 +5832,7 @@ export default function RehabMindCompleteDemo() {
           />
         </> : null}
 
-        {showIntakeQuestion("不适感觉") ? <div className="rm-form-block rm-symptom-type-groups"><div className="rm-label"><span>最接近哪种感觉</span></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title}><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || intakeHasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div> : null}
+        {showIntakeQuestion("不适感觉") ? <div className="rm-form-block rm-symptom-type-groups"><div className="rm-label"><span>最接近哪种感觉</span></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || intakeHasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div> : null}
 
         {showIntakeQuestion("疼痛性质") ? <div className="rm-form-block rm-pain-quality-choice">
           <div className="rm-label"><span>你更接近哪一种感觉？</span><b>如果还是分不清，可以保留“说不清”</b></div>
