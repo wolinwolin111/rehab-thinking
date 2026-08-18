@@ -90,17 +90,18 @@ test("ships a complete nine-region assessment and intervention library", async (
 });
 
 test("keeps NRS history, gated steps, local records and repeat-rehab paths", async () => {
-  const [demoComponent, uiSource, nextSessionSource, page, layout, styles, content, locationPicker] = await Promise.all([
+  const [demoComponent, uiSource, nextSessionSource, trialRecordBuilderSource, page, layout, styles, content, locationPicker] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/next-session-card.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${uiSource}\n${nextSessionSource}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${nextSessionSource}\n${trialRecordBuilderSource}\n${coreSource}`;
 
   assert.match(page, /rehabmind-complete-demo/);
   assert.match(page, /<RehabMindCompleteDemo\s*\/>/);
@@ -910,13 +911,17 @@ test("chief function answers are not overwritten and dynamic treatment queues ke
 });
 
 test("symptom locations are collected immediately and single-direction retests feed the joint gate", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const [demo, trialRecordBuilderSource] = await Promise.all([
+    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
+  ]);
+  const combined = `${demo}\n${trialRecordBuilderSource}`;
   const intakeQueue = demo.slice(demo.indexOf("const intakeMissingFields"), demo.indexOf("].filter(([missing]) => missing)", demo.indexOf("const intakeMissingFields")));
   assert.ok(intakeQueue.indexOf('"目前情况"') < intakeQueue.indexOf('"肿胀位置"'));
   assert.ok(intakeQueue.indexOf('"肿胀位置"') < intakeQueue.indexOf('"诱发场景"'));
   assert.ok(intakeQueue.indexOf('"按压痛位置"') < intakeQueue.indexOf('"诱发场景"'));
   assert.match(demo, /const singleRangeDirectionId = activeRetestFindings\.length === 1/);
-  assert.match(demo, /rangeOutcomes: hasSingleRangeEvidence && singleRangeDirectionId/);
+  assert.match(combined, /rangeOutcomes: hasSingleRangeEvidence && singleRangeDirectionId/);
   assert.match(demo, /nextRangeCandidateType\(movementResponse, activeRangeAllowsPassive && canMobilizeJoint\)/);
   assert.match(coreSource, /const directionRetestRecords = trialRecords\.filter\(\(trial\) =>/);
   assert.match(coreSource, /const latestDirectionOutcome = \[\.\.\.trialRecords\]\.reverse\(\)/);

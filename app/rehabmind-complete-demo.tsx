@@ -5,6 +5,8 @@ import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransiti
 import { NextSessionCard } from "./next-session-card";
 import { type FunctionUnableReason, useFunctionRetestState } from "./use-function-retest";
 import { type ExerciseFeedback, useTrainingFlow } from "./use-training-flow";
+import { buildTrialRecords } from "./trial-record-builder";
+import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "./trial-record-types";
 import LowerLimbLocationPicker, {
   makeLowerLimbLocationSelection,
   type LowerLimbAreaId,
@@ -147,7 +149,6 @@ import { motionNeedsPassive } from "./motion-assessment-core";
 import { assessmentRecordComplete } from "./assessment-record-complete-core";
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5;
-type YesNo = "yes" | "no";
 type UserRole = "" | "general" | "coach" | "rehab";
 type ExamSetup = "" | "self" | "professional-other";
 type SpineAssessmentMode = "" | "guided" | "reference";
@@ -159,14 +160,11 @@ type SimpleAnswer = "normal" | "present" | "weak" | "painful" | "positive" | "un
 type FunctionCompletion = "complete" | "unable" | "skip";
 type FunctionControl = "stable" | "compensated" | "unsure";
 type FamiliarSymptomAnswer = "yes" | "no" | "unsure";
-type TrialResult = "better" | "partial" | "same" | "worse";
 type FollowupReviewAnswer = "better" | "same" | "worse" | "unknown" | "unable";
 type FollowupNewSymptomAnswer = "" | "no" | "yes";
 type FollowupExerciseChoice = "reduce" | "hold" | "progress" | "worse";
 type AssessmentKind = "motion" | "strength" | "function" | "special";
 type MotionComparison = "contralateral" | "opposite-direction" | "midline";
-type RangeRetestAnswer = "" | "both-match" | "passive-match-active-limited" | "better-passive-limited" | "passive-limited" | "worse";
-type CompletedRangeRetestAnswer = Exclude<RangeRetestAnswer, "">;
 
 function isCompletedRangeRetestAnswer(value: RangeRetestAnswer | undefined): value is CompletedRangeRetestAnswer {
   return value !== undefined && value !== "";
@@ -400,42 +398,6 @@ type RetestPlan = {
   candidateId: string;
   directionIds: string[];
 };
-
-type TrialRecord = {
-  candidateId: string;
-  treatmentKey?: string;
-  treatmentSide?: string;
-  candidateTitle: string;
-  treatmentName?: string;
-  action?: string;
-  targetId: string;
-  targetTitle?: string;
-  measurement?: "score" | "range" | "time" | "deferred";
-  rangeOutcome?: CompletedRangeRetestAnswer;
-  rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>;
-  rangeDiscomforts?: Record<string, YesNo>;
-  rangeScores?: Record<string, number>;
-  beforeScore: number;
-  afterScore: number;
-  result: TrialResult;
-  movement: "smoother" | "same" | "worse";
-  timeBased?: boolean;
-  /** 同次康复中该处理已经做过；本条只记录它对另一个问题的复测结果。 */
-  retestOnly?: boolean;
-  reviewOnly?: boolean;
-  /** 多项内容一起完成后统一复测，结果只能说明这一组相关，不能归因到其中某一项。 */
-  batchedResult?: boolean;
-  /** 同组里的配合处理；改善优先归到首项，配合项只保留为相关线索。 */
-  supportingOnly?: boolean;
-  /** 这一条处理后同时复测了主诉动作，afterScore 可更新当前主诉分数。 */
-  chiefRetested?: boolean;
-  reusedFromTargetTitle?: string;
-  /** 用来识别连续两次完全相同的复测动作；中间没有新处理时直接沿用结果。 */
-  retestActionKey?: string;
-  /** 区分部分贡献、关键完成和组合解决，不能只按下降分数排名。 */
-  responseRole?: TreatmentResponseRole;
-};
-
 
 type FollowupStage = "review" | "treatment" | "training" | "summary";
 type TransitionTarget = "assessment" | "treatment" | "training" | "summary";
@@ -4595,34 +4557,36 @@ export default function RehabMindCompleteDemo() {
       priorImprovingTreatmentCount,
       timeBased: timeBased || deferredRetest,
     });
-    setTrialRecords((current) => [...current, ...recordCandidates.map((candidate, index): TrialRecord => ({
-      candidateId: candidate.id,
-      treatmentKey: candidateTreatmentKey(candidate, activeTarget.finding.side ?? intake.side),
-      treatmentSide: activeTarget.finding.side ?? intake.side,
-      candidateTitle: candidateTreatmentName(candidate),
-      treatmentName: candidateTreatmentName(candidate),
-      action: candidateAction(candidate, activeControlMotionIds),
+    const treatmentSide = activeTarget.finding.side ?? intake.side;
+    const records = buildTrialRecords({
+      candidates: recordCandidates.map((candidate) => ({
+        id: candidate.id,
+        candidateTitle: candidateTreatmentName(candidate),
+        treatmentName: candidateTreatmentName(candidate),
+        treatmentKey: candidateTreatmentKey(candidate, treatmentSide),
+        action: candidateAction(candidate, activeControlMotionIds),
+      })),
+      carryoverOnly,
+      beforeScore,
+      recordedAfterScore,
+      result,
+      timeBased,
+      deferredRetest,
+      hasSingleRangeEvidence,
+      singleRangeDirectionId,
+      singleRangeDiscomfort,
+      singleRangeScore,
+      movementResponse,
+      chiefWasActuallyRetested,
+      responseRole,
+      priorTreatmentTitle: priorTreatmentRecord?.targetTitle,
+      retestActionKey: canonicalRetestAction(recordRetestLabel),
+      treatmentSide,
       targetId: activeTarget.id,
       targetTitle: activeTarget.finding.title,
-      measurement: deferredRetest ? "deferred" : timeBased ? "time" : hasSingleRangeEvidence ? "range" : "score",
-      rangeOutcome: hasSingleRangeEvidence && isCompletedRangeRetestAnswer(movementResponse) ? movementResponse : undefined,
-      rangeOutcomes: hasSingleRangeEvidence && singleRangeDirectionId && isCompletedRangeRetestAnswer(movementResponse) ? { [singleRangeDirectionId]: movementResponse } : undefined,
-      rangeDiscomforts: hasSingleRangeEvidence && singleRangeDirectionId && singleRangeDiscomfort ? { [singleRangeDirectionId]: singleRangeDiscomfort } : undefined,
-      rangeScores: hasSingleRangeEvidence && singleRangeDirectionId && typeof singleRangeScore === "number" ? { [singleRangeDirectionId]: singleRangeScore } : undefined,
-      beforeScore,
-      afterScore: recordedAfterScore,
-      result,
-      movement: result === "better" ? "smoother" : result === "worse" ? "worse" : "same",
-      timeBased,
-      retestOnly: carryoverOnly,
-      reviewOnly: candidate.id === RESIDUAL_REVIEW_ID,
-      batchedResult: recordCandidates.length > 1,
-      supportingOnly: recordCandidates.length > 1 && index > 0,
-      chiefRetested: chiefWasActuallyRetested,
-      reusedFromTargetTitle: carryoverOnly ? priorTreatmentRecord?.targetTitle : undefined,
-      retestActionKey: deferredRetest || timeBased ? undefined : canonicalRetestAction(recordRetestLabel),
-      responseRole: recordCandidates.length > 1 && index > 0 ? "not-immediately-testable" : responseRole,
-    }))]);
+      residualReviewId: RESIDUAL_REVIEW_ID,
+    });
+    setTrialRecords((current) => [...current, ...records]);
     const requestedNextIndex = nextCandidateType
       ? activeTarget.candidates.findIndex((candidate, index) => index > activeGroupEndIndex && candidate.type === nextCandidateType)
       : -1;
