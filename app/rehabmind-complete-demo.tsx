@@ -1963,11 +1963,14 @@ function chiefFunctionAssessmentId(intake: IntakeState, regionId: string) {
   if (regionId === "knee") {
     if (includesAny(source, ["下楼", "下台阶"])) return "function:knee-step-down";
     if (includesAny(source, ["上楼", "上台阶"])) return "function:knee-step-up";
-    if (includesAny(source, ["下蹲", "蹲起", "坐站"])) return "function:knee-squat";
+    if (includesAny(source, ["下蹲", "蹲起", "坐站", "深蹲"])) return "function:knee-squat";
+    if (includesAny(source, ["单腿", "单脚站", "站稳"])) return "function:knee-single-leg";
   }
   if (regionId === "ankle-foot") {
     if (includesAny(source, ["走路", "步行", "承重"])) return "function:ankle-weight-bearing";
     if (includesAny(source, ["提踵", "踮脚", "蹬地"])) return "function:ankle-heel-raise";
+    if (includesAny(source, ["跑", "跳", "落地"])) return "function:ankle-hop";
+    if (includesAny(source, ["单腿", "单脚站"])) return "function:ankle-single-leg";
   }
   return "";
 }
@@ -2162,6 +2165,9 @@ export default function RehabMindCompleteDemo() {
   } = useTrainingFlow();
   const [treatmentFinalRetestScore, setTreatmentFinalRetestScore] = useState(0);
   const [treatmentFinalRetestConfirmed, setTreatmentFinalRetestConfirmed] = useState(false);
+  // 方向型主诉动作的统一复测分数（与功能型主诉动作的 postScore 分开记录）。
+  const [directionChiefRetestScore, setDirectionChiefRetestScore] = useState(0);
+  const [directionChiefRetestConfirmed, setDirectionChiefRetestConfirmed] = useState(false);
   const {
     functionRetestCompletion, setFunctionRetestCompletion,
     functionRetestUnableReason, setFunctionRetestUnableReason,
@@ -2323,26 +2329,36 @@ export default function RehabMindCompleteDemo() {
       })
       .sort((a, b) => b.relevance - a.relevance || a.originalIndex - b.originalIndex);
     const selectedFunctionEntries = (() => {
-      if (!workflowProfile.isGuided) return rankedFunctionEntries.slice(0, intake.goal >= 4 ? 3 : 2);
-      const chiefMatch = rankedFunctionEntries.find((entry) => entry.relevance > 0);
-      if (chiefMatch) return [chiefMatch];
-      const progressionIds = region.id === "thigh-local"
-        ? ["thigh-walk", "thigh-sit-stand", "thigh-jog"]
-        : region.id === "calf-local"
-          ? ["calf-walk", "calf-heel-raise", "calf-jog"]
-      : region.id === "knee"
-        ? ["knee-squat", "knee-single-leg", "knee-single-leg-squat"]
-        : region.id === "ankle-foot"
-          ? ["ankle-weight-bearing", "ankle-squat", "ankle-single-leg"]
-          : [];
-      const progression = progressionIds
-        .map((id) => rankedFunctionEntries.find((entry) => entry.item.id === id))
-        .filter((entry): entry is (typeof rankedFunctionEntries)[number] => Boolean(entry));
-      if (!progression.length) return rankedFunctionEntries.slice(0, 1);
-      const visible = [progression[0]];
-      const firstResult = functionSimpleAnswer(assessmentResults[`function:${progression[0].item.id}`] ?? {});
-      if (firstResult === "normal" && progression[1]) visible.push(progression[1]);
-      return visible;
+      const chiefFunctionId = chiefFunctionAssessmentId(intake, region.id).replace(/^function:/, "");
+      const chiefEntry = chiefFunctionId ? rankedFunctionEntries.find((entry) => entry.item.id === chiefFunctionId) : undefined;
+      let picked = !workflowProfile.isGuided
+        ? rankedFunctionEntries.slice(0, intake.goal >= 4 ? 3 : 2)
+        : (() => {
+            const chiefMatch = rankedFunctionEntries.find((entry) => entry.relevance > 0);
+            if (chiefMatch) return [chiefMatch];
+            const progressionIds = region.id === "thigh-local"
+              ? ["thigh-walk", "thigh-sit-stand", "thigh-jog"]
+              : region.id === "calf-local"
+                ? ["calf-walk", "calf-heel-raise", "calf-jog"]
+                : region.id === "knee"
+                  ? ["knee-squat", "knee-single-leg", "knee-single-leg-squat"]
+                  : region.id === "ankle-foot"
+                    ? ["ankle-weight-bearing", "ankle-squat", "ankle-single-leg"]
+                    : [];
+            const progression = progressionIds
+              .map((id) => rankedFunctionEntries.find((entry) => entry.item.id === id))
+              .filter((entry): entry is (typeof rankedFunctionEntries)[number] => Boolean(entry));
+            if (!progression.length) return rankedFunctionEntries.slice(0, 1);
+            const visible = [progression[0]];
+            const firstResult = functionSimpleAnswer(assessmentResults[`function:${progression[0].item.id}`] ?? {});
+            if (firstResult === "normal" && progression[1]) visible.push(progression[1]);
+            return visible;
+          })();
+      // 主诉功能动作（走路/上下楼梯/提踵/跑跳落地等）即使评分不在前列，也强制纳入检查。
+      if (chiefEntry && !picked.some((entry) => entry.item.id === chiefEntry.item.id)) {
+        picked = [chiefEntry, ...picked];
+      }
+      return picked;
     })();
     const makeFunctionAssessment = (item: FullRegion["functions"][number]): AssessmentItem => {
       const copy = assessmentCopy(item.id, item.how, item.observe);
@@ -6671,14 +6687,31 @@ export default function RehabMindCompleteDemo() {
       : [];
     // 统一复测主诉：处理队列走空后、进入训练前，做最后一次主诉复测。
     // 之前只写在「队列非空」分支里，队列一空就漏掉了。
+    const hasFunctionChief = chiefFunctionLabels.length > 0;
+    const hasDirectionChief = chiefDirectionIds.length > 0;
+    const directionLabels = chiefDirectionIds.map((directionId) => assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId).join("、");
+    const finalRetestComplete = (
+      (!hasFunctionChief || (functionRetestCompletion && (functionRetestCompletion === "complete" || functionRetestUnableReason) && postScoreConfirmed))
+      && (!hasDirectionChief || directionChiefRetestConfirmed)
+    );
     const finalChiefRetestFragment = chiefNeedsFinalRetest && !treatmentFinalRetestConfirmed ? <>
       <TreatmentRoadmap completed={completedRoadmapItems} current={`统一复测${chiefActionLabel(intake)}`} upcoming={["进入训练"]} />
       <section className="rm-treatment-final-retest">
         <span>本轮处理已完成</span>
-        <h2>最后再做一次：{chiefActionLabel(intake)}</h2>
+        <h2>最后再做一次</h2>
         <p>只在这里统一记录本轮处理后的主诉，不在每项处理后重复询问。</p>
-        <ScoreSlider value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`最开始 ${intake.baselineScore}/10 · 上次主诉 ${lastImmediateChiefScore}/10`} />
-        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!postScoreConfirmed} onClick={() => { setTreatmentFinalRetestScore(postScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
+        {hasFunctionChief ? <section className="rm-motion-answer-block">
+          <h3>{chiefFunctionLabels.join("、")}现在能完成了吗？</h3>
+          <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
+          <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
+          {functionRetestCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
+            <h3>主要是什么原因？</h3>
+            <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestUnableReason === value ? "is-selected" : ""} onClick={() => setFunctionRetestUnableReason(value)}>{label}</button>)}</div>
+          </section> : null}
+          <ScoreSlider value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label={`${chiefFunctionLabels.join("、")}现在的不适程度`} context={`最开始 ${intake.baselineScore}/10`} />
+        </section> : null}
+        {hasDirectionChief ? <ScoreSlider value={directionChiefRetestScore} selected={directionChiefRetestConfirmed} onChange={(value) => { setDirectionChiefRetestScore(value); setDirectionChiefRetestConfirmed(true); }} label={`${directionLabels}现在的不适程度`} context={`最开始 ${intake.baselineScore}/10`} /> : null}
+        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!finalRetestComplete} onClick={() => { setTreatmentFinalRetestScore(hasFunctionChief ? postScore : directionChiefRetestScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
       </section>
     </> : null;
     // 不再用“问题数 >= 6 且处理数 >= 3”中断流程。队列中仍有一个

@@ -754,7 +754,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /chiefWasActuallyRetested/);
   assert.match(demo, /shouldRetestChiefInBatch/);
   assert.match(demo, /本次流程/);
-  assert.match(demo, /最后再做一次：/);
+  assert.match(demo, /最后再做一次/);
   assert.match(styles, /\.rm-assessment-summary/);
   assert.match(styles, /\.rm-treatment-roadmap/);
   assert.match(styles, /\.rm-treatment-final-retest/);
