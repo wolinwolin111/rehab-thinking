@@ -6138,6 +6138,10 @@ export default function RehabMindCompleteDemo() {
         <article><span>你最开始说的</span><strong>{intake.description}</strong></article>
         <section className="rm-finding-board"><header><span>本次发现的问题</span><strong>{discovered.length + tracking.length}项</strong></header>{assessmentFindingGroups.length ? <div>{assessmentFindingGroups.map((group) => <section key={group.key} className={`is-${group.key}`}><header><i aria-hidden="true" /><div><strong>{group.label}</strong><span>{group.items.length}项</span></div></header><ul>{group.items.map((finding) => findingRow(finding, group.short))}</ul></section>)}</div> : <p>本次没有找到需要现场处理的明确问题。</p>}</section>
         {tissuePathway.id !== "standard" ? <section className="rm-route-note"><span>{tissuePathway.title}</span><h2>{tissuePathway.immediateActions[0]}</h2><p>{tissuePathway.blockedActions[0]}</p></section> : null}
+        {(intake.priorCare ?? []).some((item) => ["用过口服药", "做过针灸或理疗"].includes(item)) ? <section className="rm-route-note"><span>既往处理提示</span><h2>{[
+          (intake.priorCare ?? []).includes("用过口服药") ? "吃过止痛或消炎药，疼痛分可能比实际偏轻，以做动作时的真实感受为准" : "",
+          (intake.priorCare ?? []).includes("做过针灸或理疗") ? "之前做过松解或理疗，这次可换位置、加长时间或换方法，仍无变化再考虑其他处理" : "",
+        ].filter(Boolean).join("；")}</h2></section> : null}
         {assessmentNeedsReferral ? <section className="rm-route-note is-waiting">
           <span>先不要继续自助处理</span>
           <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
