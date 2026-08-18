@@ -6539,10 +6539,12 @@ export default function RehabMindCompleteDemo() {
     const activeDisplay = displayCandidate
       ? treatmentDisplay(displayCandidate, region?.name || intake.location || "当前部位", intake.swellingLocation, activeTreatmentSide)
       : null;
-    const completedRoadmapItems = trialRecords
-      .filter((record) => !record.reviewOnly && !record.retestOnly)
-      .map((record) => record.treatmentName ?? record.candidateTitle)
-      .filter((label, index, list) => list.indexOf(label) === index);
+    const completedRoadmapItems = [
+      ...trialRecords
+        .filter((record) => !record.reviewOnly && !record.retestOnly)
+        .map((record) => record.treatmentName ?? record.candidateTitle),
+      ...(readyToRetest && activeCandidate ? [candidateTreatmentName(activeCandidate)] : []),
+    ].filter((label, index, list) => list.indexOf(label) === index);
     const carryoverOnly = activeNewCandidates.length === 0 && activeGroupPriorRecords.length > 0;
     const carryoverRetestTitle = isBatchRangeTarget
       ? activeRetestFindings.map(retestShortTitle).join("、")
@@ -6987,7 +6989,9 @@ export default function RehabMindCompleteDemo() {
           <button type="button" className="rm-exercise-summary" aria-expanded={open} onClick={() => setOpenExercise(open ? "" : exercise.id)}><i>{index + 1}</i><span><small>{exercise.startPosition}</small><strong>{exercise.title}</strong></span><b>{exercise.sets} · {exercise.reps}</b><em>{open ? "收起" : "查看做法"}</em></button>
           {open ? <div className="rm-exercise-detail">
             {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : <div className="rm-demo-strip is-training"><div><i>1</i><span>起始</span></div><b>→</b><div><i>2</i><span>发力</span></div><b>→</b><div><i>3</i><span>回位</span></div></div>}
-            <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div><div><dt>做不了</dt><dd>{exercise.easier}</dd></div><div><dt>太轻松</dt><dd>{exercise.harder}</dd></div></dl>
+            <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
+            <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
+            <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
             <section className="rm-first-set"><header><span>第一组做完后，选一个最接近的情况</span><strong>{feedbackAdvice(exercise)}</strong></header><div className="rm-feedback-quick">{([
               ["reduce", "做不了或动作变形"],
               ["hold", "难度正合适"],
