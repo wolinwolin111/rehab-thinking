@@ -1,12 +1,12 @@
 import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
-export function TreatmentRoadmap({ completed, current, upcoming }: { completed: string[]; current: string; upcoming: string[] }) {
+export function TreatmentRoadmap({ completed, current, upcoming }: { completed: Array<{ label: string; summary?: string }>; current: string; upcoming: string[] }) {
   return <section className="rm-treatment-roadmap">
     <header><span>本次流程</span><b>已完成 {completed.length} 项</b></header>
     <div className="rm-roadmap-stage is-done">
       <span className="rm-roadmap-status">已完成</span>
-      <ul>{completed.length ? completed.slice(-4).map((label) => <li key={label}><i>✓</i>{label}</li>) : <li><i>✓</i>评估检查</li>}</ul>
+      <ul>{completed.length ? completed.slice(-4).map((item) => <li key={item.label}><i>✓</i><span>{item.label}{item.summary ? <em>{item.summary}</em> : null}</span></li>) : <li><i>✓</i>评估检查</li>}</ul>
     </div>
     <div className="rm-roadmap-stage is-current">
       <span className="rm-roadmap-status">正在做</span>

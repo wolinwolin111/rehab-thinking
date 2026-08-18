@@ -547,10 +547,8 @@ const ONSETS = ["今天或昨天", "2～7天", "1～6周", "超过6周", "反复
 const MECHANISMS = ["没有明确受伤", "扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤", "逐渐出现", "其他"];
 const SYMPTOM_TYPES = ["疼痛，性质说不清", "酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"];
 const SYMPTOM_TYPE_GROUPS = [
-  { title: "疼痛", options: ["酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响"] },
-  { title: "麻、电感", options: ["麻或电感"] },
-  { title: "无力、不稳", options: ["无力或不稳"] },
-  { title: "说不清", options: ["疼痛，性质说不清", "说不清的不适"] },
+  { title: "疼痛", options: ["酸痛", "胀痛", "刺痛", "疼痛，性质说不清"] },
+  { title: "其他异常感觉", options: ["烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"] },
 ];
 const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足", "麻、电或感觉变化"];
 const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
@@ -5855,7 +5853,7 @@ export default function RehabMindCompleteDemo() {
           />
         </> : null}
 
-        {showIntakeQuestion("不适感觉") ? <div className="rm-form-block rm-symptom-type-groups"><div className="rm-label"><span>最接近哪种感觉</span></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || intakeHasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div> : null}
+        {showIntakeQuestion("不适感觉") ? <div className="rm-form-block rm-symptom-type-groups"><div className="rm-label"><span>最接近哪种感觉</span><b>选择一个即可</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || intakeHasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div> : null}
 
         {showIntakeQuestion("疼痛性质") ? <div className="rm-form-block rm-pain-quality-choice">
           <div className="rm-label"><span>你更接近哪一种感觉？</span><b>如果还是分不清，可以保留“说不清”</b></div>
@@ -6130,7 +6128,7 @@ export default function RehabMindCompleteDemo() {
           <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
           <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
         </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
-        <div className="rm-page-actions three"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>返回检查</button><button type="button" onClick={editCompletedAssessment}>修改评估</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
+        <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
       </section>;
     }
     const isChiefFunctionAssessment = item.kind === "function"
@@ -6564,12 +6562,22 @@ export default function RehabMindCompleteDemo() {
     const activeDisplay = displayCandidate
       ? treatmentDisplay(displayCandidate, region?.name || intake.location || "当前部位", intake.swellingLocation, activeTreatmentSide)
       : null;
+    const roadmapSummary = (record: { rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>; chiefRetested?: boolean; afterScore: number; beforeScore: number }): string => {
+      const parts: string[] = [];
+      for (const [directionId, outcome] of Object.entries(record.rangeOutcomes ?? {})) {
+        const title = assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId;
+        const label = outcome === "both-match" ? "范围恢复" : outcome === "worse" ? "范围更差" : "范围改善";
+        parts.push(`${title}${label}`);
+      }
+      if (record.chiefRetested && record.afterScore < record.beforeScore) parts.push(`不适降 ${record.beforeScore - record.afterScore} 分`);
+      return parts.join("、");
+    };
     const completedRoadmapItems = [
       ...trialRecords
         .filter((record) => !record.reviewOnly && !record.retestOnly)
-        .map((record) => record.treatmentName ?? record.candidateTitle),
-      ...(readyToRetest && activeCandidate ? [candidateTreatmentName(activeCandidate)] : []),
-    ].filter((label, index, list) => list.indexOf(label) === index);
+        .map((record) => ({ label: record.treatmentName ?? record.candidateTitle, summary: roadmapSummary(record) })),
+      ...(readyToRetest && activeCandidate ? [{ label: candidateTreatmentName(activeCandidate), summary: "" }] : []),
+    ].filter((item, index, list) => list.findIndex((entry) => entry.label === item.label) === index);
     const carryoverOnly = activeNewCandidates.length === 0 && activeGroupPriorRecords.length > 0;
     const carryoverRetestTitle = isBatchRangeTarget
       ? activeRetestFindings.map(retestShortTitle).join("、")
@@ -7231,10 +7239,20 @@ export default function RehabMindCompleteDemo() {
       else if (outcome === "worse") parts.push(`${title}比处理前更差`);
       return parts;
     }, []);
+    const roadmapSummary = (record: { rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>; chiefRetested?: boolean; afterScore: number; beforeScore: number }): string => {
+      const parts: string[] = [];
+      for (const [directionId, outcome] of Object.entries(record.rangeOutcomes ?? {})) {
+        const title = assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId;
+        const label = outcome === "both-match" ? "范围恢复" : outcome === "worse" ? "范围更差" : "范围改善";
+        parts.push(`${title}${label}`);
+      }
+      if (record.chiefRetested && record.afterScore < record.beforeScore) parts.push(`不适降 ${record.beforeScore - record.afterScore} 分`);
+      return parts.join("、");
+    };
     const followupCompletedLabels = currentRecords
       .filter((record) => !record.reviewOnly && !record.retestOnly)
-      .map((record) => record.treatmentName ?? record.candidateTitle)
-      .filter((label, index, list) => list.indexOf(label) === index);
+      .map((record) => ({ label: record.treatmentName ?? record.candidateTitle, summary: roadmapSummary(record) }))
+      .filter((item, index, list) => list.findIndex((entry) => entry.label === item.label) === index);
     const followupCurrentRoadmapItem = followupReadyToRetest
       ? `复测${followupRetestFindings.length ? followupRetestFindings.map(followupShortTitle).join("、") : (selectedDisplay?.action ?? "当前处理")}`
       : selectedDisplay ? `${selectedDisplay.site}：${selectedDisplay.action}` : "选择下一项处理";
