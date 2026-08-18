@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
-import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StepHeading, TreatmentRoadmap } from "./ui-primitives";
+import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransition, StepHeading, TreatmentRoadmap } from "./ui-primitives";
 import LowerLimbLocationPicker, {
   makeLowerLimbLocationSelection,
   type LowerLimbAreaId,
@@ -2137,22 +2137,6 @@ function strengthRelatedMotionId(strengthItemId: string) {
     "strength:calf-evertor-strength": "motion:calf-eversion",
   };
   return map[strengthItemId] ?? "";
-}
-
-function StageTransition({ target, onContinue, onBack }: { target: TransitionTarget; onContinue: () => void; onBack: () => void }) {
-  const content = STAGE_TRANSITIONS[target];
-  return <section className="rm-stage-transition" aria-live="polite">
-    <div className="rm-stage-transition-number">{content.number}</div>
-    <div className="rm-stage-transition-copy">
-      <span>下一阶段</span>
-      <h1>{content.title}</h1>
-      <p>{content.message}</p>
-    </div>
-    <div className="rm-stage-transition-actions">
-      <button type="button" onClick={onBack}>返回查看</button>
-      <button type="button" className="rm-primary" onClick={onContinue}>{content.button}</button>
-    </div>
-  </section>;
 }
 
 function NextSessionCard({ recommendation, nextSessionNumber, completedAt, onStart, onReportWorsening }: { recommendation: NextSessionRecommendation; nextSessionNumber: number; completedAt?: string; onStart?: () => void; onReportWorsening?: () => void }) {
@@ -7697,7 +7681,7 @@ export default function RehabMindCompleteDemo() {
         <section className={`rm-readonly-banner ${reviewStepEditable ? "is-editing" : ""}`}><div><span>{reviewStepEditable ? "修改评估" : "只读回看"}</span><strong>{reviewStepEditable ? "只有答案改变，后续处理才会重新生成" : "这里不会改变当前进度"}</strong></div><button type="button" onClick={() => { setReviewStep(null); setReviewStepEditable(false); }}>返回当前步骤</button></section>
         <div className={reviewStepEditable ? "rm-review-editable-content" : "rm-readonly-content"}>{renderStepContent(reviewStep)}</div>
       </> : transitionTarget
-        ? <StageTransition target={transitionTarget} onBack={() => setTransitionTarget(null)} onContinue={continueStageTransition} />
+        ? <StageTransition {...STAGE_TRANSITIONS[transitionTarget]} onBack={() => setTransitionTarget(null)} onContinue={continueStageTransition} />
         : renderStepContent(step)}</section>
 
       <aside className={`rm-case-aside ${summaryOpen ? "is-open" : ""}`}>
