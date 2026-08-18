@@ -1957,22 +1957,36 @@ function retestConditionLabel(intake: IntakeState) {
   return hasClearChiefAction(intake) ? chiefActionLabel(intake) : "当前主要症状（没有固定动作）";
 }
 
-function chiefFunctionAssessmentId(intake: IntakeState, regionId: string) {
-  if (!hasClearChiefAction(intake)) return "";
+function chiefFunctionAssessmentIds(intake: IntakeState, regionId: string): string[] {
+  if (!hasClearChiefAction(intake)) return [];
   const source = [intake.actionAnalysis?.task, ...reportedActionSummary(intake), intake.forceDirection].filter(Boolean).join(" ");
+  const ids: string[] = [];
   if (regionId === "knee") {
-    if (includesAny(source, ["下楼", "下台阶"])) return "function:knee-step-down";
-    if (includesAny(source, ["上楼", "上台阶"])) return "function:knee-step-up";
-    if (includesAny(source, ["下蹲", "蹲起", "坐站", "深蹲"])) return "function:knee-squat";
-    if (includesAny(source, ["单腿", "单脚站", "站稳"])) return "function:knee-single-leg";
+    if (includesAny(source, ["下楼", "下台阶"])) ids.push("function:knee-step-down");
+    if (includesAny(source, ["上楼", "上台阶"])) ids.push("function:knee-step-up");
+    if (includesAny(source, ["下蹲", "蹲起", "坐站", "深蹲"])) ids.push("function:knee-squat");
+    if (includesAny(source, ["单腿", "单脚站", "站稳"])) ids.push("function:knee-single-leg");
   }
   if (regionId === "ankle-foot") {
-    if (includesAny(source, ["走路", "步行", "承重"])) return "function:ankle-weight-bearing";
-    if (includesAny(source, ["提踵", "踮脚", "蹬地"])) return "function:ankle-heel-raise";
-    if (includesAny(source, ["跑", "跳", "落地"])) return "function:ankle-hop";
-    if (includesAny(source, ["单腿", "单脚站"])) return "function:ankle-single-leg";
+    if (includesAny(source, ["走路", "步行", "承重"])) ids.push("function:ankle-weight-bearing");
+    if (includesAny(source, ["提踵", "踮脚", "蹬地"])) ids.push("function:ankle-heel-raise");
+    if (includesAny(source, ["跑", "跳", "落地"])) ids.push("function:ankle-hop");
+    if (includesAny(source, ["单腿", "单脚站"])) ids.push("function:ankle-single-leg");
   }
-  return "";
+  return [...new Set(ids)];
+}
+
+/** 功能动作的负荷强度分级：低负荷优先，goal 低时只挑基础动作。 */
+const FUNCTION_LOAD_ORDER: Record<string, number> = {
+  "ankle-weight-bearing": 1, "thigh-walk": 1, "calf-walk": 1,
+  "knee-step-down": 2, "knee-step-up": 2, "knee-squat": 2, "thigh-sit-stand": 2, "ankle-knee-wall": 2, "ankle-squat": 2,
+  "ankle-heel-raise": 3, "calf-heel-raise": 3, "thigh-bridge-check": 3, "knee-heel-raise": 3,
+  "ankle-single-leg": 4, "knee-single-leg": 4, "knee-single-leg-squat": 4, "thigh-single-leg": 4, "calf-single-leg": 4,
+  "ankle-hop": 5, "thigh-jog": 5, "calf-jog": 5,
+};
+
+function chiefFunctionAssessmentId(intake: IntakeState, regionId: string) {
+  return chiefFunctionAssessmentIds(intake, regionId)[0] ?? "";
 }
 
 function chiefFunctionRecordFromIntake(intake: IntakeState): AssessmentRecord {
@@ -2329,36 +2343,44 @@ export default function RehabMindCompleteDemo() {
       })
       .sort((a, b) => b.relevance - a.relevance || a.originalIndex - b.originalIndex);
     const selectedFunctionEntries = (() => {
-      const chiefFunctionId = chiefFunctionAssessmentId(intake, region.id).replace(/^function:/, "");
-      const chiefEntry = chiefFunctionId ? rankedFunctionEntries.find((entry) => entry.item.id === chiefFunctionId) : undefined;
-      let picked = !workflowProfile.isGuided
-        ? rankedFunctionEntries.slice(0, intake.goal >= 4 ? 3 : 2)
-        : (() => {
-            const chiefMatch = rankedFunctionEntries.find((entry) => entry.relevance > 0);
-            if (chiefMatch) return [chiefMatch];
-            const progressionIds = region.id === "thigh-local"
-              ? ["thigh-walk", "thigh-sit-stand", "thigh-jog"]
-              : region.id === "calf-local"
-                ? ["calf-walk", "calf-heel-raise", "calf-jog"]
-                : region.id === "knee"
-                  ? ["knee-squat", "knee-single-leg", "knee-single-leg-squat"]
-                  : region.id === "ankle-foot"
-                    ? ["ankle-weight-bearing", "ankle-squat", "ankle-single-leg"]
-                    : [];
-            const progression = progressionIds
-              .map((id) => rankedFunctionEntries.find((entry) => entry.item.id === id))
-              .filter((entry): entry is (typeof rankedFunctionEntries)[number] => Boolean(entry));
-            if (!progression.length) return rankedFunctionEntries.slice(0, 1);
-            const visible = [progression[0]];
-            const firstResult = functionSimpleAnswer(assessmentResults[`function:${progression[0].item.id}`] ?? {});
-            if (firstResult === "normal" && progression[1]) visible.push(progression[1]);
-            return visible;
-          })();
-      // 主诉功能动作（走路/上下楼梯/提踵/跑跳落地等）即使评分不在前列，也强制纳入检查。
-      if (chiefEntry && !picked.some((entry) => entry.item.id === chiefEntry.item.id)) {
-        picked = [chiefEntry, ...picked];
+      if (!workflowProfile.isGuided) {
+        const maxCount = intake.goal >= 4 ? 3 : 2;
+        const chiefIds = chiefFunctionAssessmentIds(intake, region.id)
+          .map((id) => id.replace(/^function:/, ""))
+          .sort((a, b) => (FUNCTION_LOAD_ORDER[a] ?? 99) - (FUNCTION_LOAD_ORDER[b] ?? 99));
+        const picked: Array<(typeof rankedFunctionEntries)[number]> = [];
+        // 1. 主诉功能动作优先，按负荷强度从低到高渐进挑选。
+        for (const id of chiefIds) {
+          if (picked.length >= maxCount) break;
+          const entry = rankedFunctionEntries.find((item) => item.item.id === id);
+          if (entry && !picked.some((item) => item.item.id === id)) picked.push(entry);
+        }
+        // 2. 空位再按评分补基础功能动作（走路承重等）。
+        for (const entry of rankedFunctionEntries) {
+          if (picked.length >= maxCount) break;
+          if (!picked.some((item) => item.item.id === entry.item.id)) picked.push(entry);
+        }
+        return picked;
       }
-      return picked;
+      const chiefMatch = rankedFunctionEntries.find((entry) => entry.relevance > 0);
+      if (chiefMatch) return [chiefMatch];
+      const progressionIds = region.id === "thigh-local"
+        ? ["thigh-walk", "thigh-sit-stand", "thigh-jog"]
+        : region.id === "calf-local"
+          ? ["calf-walk", "calf-heel-raise", "calf-jog"]
+          : region.id === "knee"
+            ? ["knee-squat", "knee-single-leg", "knee-single-leg-squat"]
+            : region.id === "ankle-foot"
+              ? ["ankle-weight-bearing", "ankle-squat", "ankle-single-leg"]
+              : [];
+      const progression = progressionIds
+        .map((id) => rankedFunctionEntries.find((entry) => entry.item.id === id))
+        .filter((entry): entry is (typeof rankedFunctionEntries)[number] => Boolean(entry));
+      if (!progression.length) return rankedFunctionEntries.slice(0, 1);
+      const visible = [progression[0]];
+      const firstResult = functionSimpleAnswer(assessmentResults[`function:${progression[0].item.id}`] ?? {});
+      if (firstResult === "normal" && progression[1]) visible.push(progression[1]);
+      return visible;
     })();
     const makeFunctionAssessment = (item: FullRegion["functions"][number]): AssessmentItem => {
       const copy = assessmentCopy(item.id, item.how, item.observe);
