@@ -11,8 +11,14 @@ const ASSESSMENT_ACTION_ALIASES: Record<string, string> = {
   "thigh-front-length": "knee-flexion",
 };
 
+const ASSESSMENT_ID_PREFIX = /^(?:motion|function|strength|symptom|control|track|tension):/;
+
+/** 剥掉所有已知类型前缀（支持 symptom:motion:xxx 复合前缀），得到裸动作 id，再归一化别名。 */
 export function canonicalActionIdFromAssessmentId(value: string) {
-  const id = value.replace(/^(motion|function|strength|symptom|control):/, "");
+  let id = value;
+  while (ASSESSMENT_ID_PREFIX.test(id)) {
+    id = id.replace(ASSESSMENT_ID_PREFIX, "");
+  }
   return ASSESSMENT_ACTION_ALIASES[id] ?? id;
 }
 
@@ -35,7 +41,7 @@ export function canonicalActionKey(value: string): string {
   const parts = value.split(/[、；\n]+/).map((part) => part.trim()).filter(Boolean);
   if (parts.length > 1) return [...new Set(parts.map(canonicalActionKey))].sort().join("|");
   const fromId = canonicalActionIdFromAssessmentId(value);
-  if (fromId !== value.replace(/^(motion|function|strength|symptom|control):/, "")) return fromId;
+  if (fromId !== value.replace(ASSESSMENT_ID_PREFIX, "")) return fromId;
   return canonicalActionIdFromLabel(value) ?? value
     .replaceAll("下台阶", "下楼梯")
     .replaceAll("台阶下降", "下楼梯")
@@ -92,7 +98,7 @@ export function anyMotionIdFromFinding(finding: MotionFindingInput) {
 }
 
 export function actionIdFromFinding(finding: MotionFindingInput) {
-  return canonicalActionIdFromAssessmentId(motionIdFromFinding(finding));
+  return canonicalActionIdFromAssessmentId(finding.id);
 }
 
 /** 两个方向是否属于同一物理动作（别名归一后相等）。 */

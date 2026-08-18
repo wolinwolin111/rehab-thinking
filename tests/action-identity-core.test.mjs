@@ -36,3 +36,16 @@ test("patella directions kinematically relate to knee flexion and extension", ()
   assert.equal(core.treatmentRelatesToChief(["ankle-dorsiflexion"], "knee-flexion"), false);
   assert.equal(core.treatmentRelatesToChief(["knee-patella-inferior"], ""), false);
 });
+
+test("composite and extra prefixes normalize to the same physical action", () => {
+  assert.equal(core.canonicalActionIdFromAssessmentId("symptom:motion:knee-flexion"), "knee-flexion");
+  assert.equal(core.canonicalActionIdFromAssessmentId("track:motion:knee-flexion"), "knee-flexion");
+  assert.equal(core.canonicalActionIdFromAssessmentId("tension:motion:knee-flexion"), "knee-flexion");
+  assert.equal(core.canonicalActionIdFromAssessmentId("motion:knee-flexion"), "knee-flexion");
+});
+
+test("actionIdFromFinding strips composite prefixes for dedup", () => {
+  assert.equal(core.actionIdFromFinding({ id: "symptom:motion:knee-flexion" }), "knee-flexion");
+  assert.equal(core.actionIdFromFinding({ id: "motion:knee-flexion" }), "knee-flexion");
+  assert.equal(core.samePhysicalAction("symptom:motion:knee-flexion", "motion:knee-flexion"), true);
+});

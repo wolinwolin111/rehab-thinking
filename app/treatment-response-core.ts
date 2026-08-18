@@ -44,5 +44,7 @@ export function resolvedTreatmentCombination<T extends { treatmentKey?: string; 
   const completionIndex = records.findLastIndex((record) => ["key-completion", "independent-completion"].includes(record.responseRole ?? ""));
   if (completionIndex < 0) return [];
   const relevant = records.slice(0, completionIndex + 1).filter((record) => ["partial-contribution", "key-completion", "independent-completion"].includes(record.responseRole ?? ""));
-  return relevant.filter((record, index, list) => list.findIndex((item) => (item.treatmentKey ?? item.candidateId) === (record.treatmentKey ?? record.candidateId)) === index);
+  // 去重键优先 treatmentKey、回退 candidateId；调用方须保证同一次处理在所有记录里使用一致的键，否则会重复计数。
+  const identityKey = (record: T) => record.treatmentKey ?? record.candidateId;
+  return relevant.filter((record, index, list) => list.findIndex((item) => identityKey(item) === identityKey(record)) === index);
 }
