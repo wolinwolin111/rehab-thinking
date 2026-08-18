@@ -229,7 +229,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /有专业人员协助时，可以补充被动活动检查/);
   assert.match(demo, /与另一个方向相比怎么样/);
   assert.match(demo, /这个动作完成得怎么样/);
-  assert.match(demo, /转到最大范围时，有没有牵拉、卡住或不适/);
+  assert.match(demo, /活动到最大范围时，有没有牵拉、卡住或不适/);
   assert.match(demo, /同一个动作：保持 3～5 秒看力量/);
   assert.match(demo, /膝后能不能像另一边一样压向床面/);
   assert.match(demo, /把同一条薄毛巾先后放在两侧膝后/);

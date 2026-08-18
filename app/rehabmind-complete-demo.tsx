@@ -1474,7 +1474,7 @@ const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; obs
   "hip-external-rotation": { title: "小腿向内摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向内摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
 
   "knee-extension": { title: "把膝盖绷直", how: "仰卧，两条腿放平，脚跟位置保持一致。先绷紧一侧大腿前侧，把膝盖后方向床面压，再换另一侧。", observe: "比较两侧膝后离床面的空隙，以及哪一侧更难向下压。" },
-  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边弯得更少；转到最大范围时会不会牵拉或卡住。" },
+  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
   "knee-quadriceps": { title: "把膝盖伸直的力量", how: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。", observe: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。" },
   "knee-hamstring": { title: "脚跟向后拉的力量", how: "坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。", observe: "哪边更难发力；大腿后侧是否容易抽筋；用力时哪里不舒服。" },
   "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
@@ -1491,10 +1491,10 @@ const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; obs
   "knee-patella-medial": { title: "髌骨向内移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向内推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
   "knee-patella-lateral": { title: "髌骨向外移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向外推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
 
-  "ankle-dorsiflexion": { title: "把脚背向上勾", how: "坐稳，脚跟放在地上。先做没有不适的一边，再把另一边脚背慢慢向小腿靠近。", observe: "只比较两件事：哪边勾得更少；转到最大范围时会不会牵拉或卡住。" },
-  "ankle-plantarflexion": { title: "踝关节主动跖屈", how: "坐稳，小腿放松。先做没有不适的一边，再把另一边脚背缓慢向下压。", observe: "只比较两件事：哪边活动范围更小；转到最大范围时会不会牵拉或卡住。" },
-  "ankle-inversion": { title: "把脚掌转向内侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢转向身体中间。", observe: "只比较两件事：哪边转得更少；转到最大范围时会不会牵拉或卡住。" },
-  "ankle-eversion": { title: "把脚掌转向外侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢向外转。", observe: "只比较两件事：哪边转得更少；转到最大范围时会不会牵拉或卡住。" },
+  "ankle-dorsiflexion": { title: "把脚背向上勾", how: "坐稳，脚跟放在地上。先做没有不适的一边，再把另一边脚背慢慢向小腿靠近。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
+  "ankle-plantarflexion": { title: "踝关节主动跖屈", how: "坐稳，小腿放松。先做没有不适的一边，再把另一边脚背缓慢向下压。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
+  "ankle-inversion": { title: "把脚掌转向内侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢转向身体中间。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
+  "ankle-eversion": { title: "把脚掌转向外侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢向外转。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
   "ankle-great-toe-extension": { title: "大脚趾向上抬", how: "脚掌放松，用手轻轻把大脚趾向上抬。", observe: "与另一侧相比；大脚趾或足底哪里不舒服。" },
   "ankle-toe-flexion": { title: "脚趾弯曲和伸直", how: "脚跟着地，先把脚趾全部抬起，再轻轻放下和弯曲。", observe: "脚趾能否分别控制；哪里不舒服；是否只有某个脚趾受限。" },
   "ankle-dorsiflexor": { title: "勾脚力量", how: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。", observe: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。" },
@@ -1609,7 +1609,7 @@ function professionalAssessmentCopy(id: string, how: string, observe: string) {
     .replaceAll("会不会不舒服", "是否诱发症状")
     .replaceAll("与另一侧相比", "与对侧比较")
     .replaceAll("哪边", "哪侧")
-    .replaceAll("转到最大范围时会不会牵拉或卡住", "主动活动到最大范围时是否诱发症状");
+    .replaceAll("活动到最大范围时会不会牵拉或卡住", "主动活动到最大范围时是否诱发症状");
   return { how: professionalHow, observe: professionalObserve };
 }
 
@@ -6272,7 +6272,7 @@ export default function RehabMindCompleteDemo() {
           </section> : null}
 
           {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>转到最大范围时，有没有牵拉、卡住或不适？</h3>
+            <h3>活动到最大范围时，有没有牵拉、卡住或不适？</h3>
             <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
               ? { ...latestRecord, discomfort: value }
               : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
