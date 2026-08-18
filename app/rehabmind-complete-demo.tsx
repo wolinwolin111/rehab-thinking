@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
 import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransition, StepHeading, TreatmentRoadmap } from "./ui-primitives";
 import { NextSessionCard } from "./next-session-card";
+import { type FunctionUnableReason, useFunctionRetestState } from "./use-function-retest";
 import LowerLimbLocationPicker, {
   makeLowerLimbLocationSelection,
   type LowerLimbAreaId,
@@ -156,7 +157,6 @@ type PassiveEndFeel = "soft" | "elastic" | "firm" | "hard" | "painful" | "unknow
 type SimpleAnswer = "normal" | "present" | "weak" | "painful" | "positive" | "unable" | "skip";
 type FunctionCompletion = "complete" | "unable" | "skip";
 type FunctionControl = "stable" | "compensated" | "unsure";
-type FunctionUnableReason = "pain" | "weak" | "fear" | "instruction";
 type FamiliarSymptomAnswer = "yes" | "no" | "unsure";
 type TrialResult = "better" | "partial" | "same" | "worse";
 type FollowupReviewAnswer = "better" | "same" | "worse" | "unknown" | "unable";
@@ -2199,9 +2199,11 @@ export default function RehabMindCompleteDemo() {
   const [trainingReadyForFinalRetest, setTrainingReadyForFinalRetest] = useState(false);
   const [finalRetestScore, setFinalRetestScore] = useState(0);
   const [finalRetestConfirmed, setFinalRetestConfirmed] = useState(false);
-  const [functionRetestCompletion, setFunctionRetestCompletion] = useState<"complete" | "unable" | "">("");
-  const [functionRetestUnableReason, setFunctionRetestUnableReason] = useState<FunctionUnableReason | "">("");
-  const [finalFunctionRetests, setFinalFunctionRetests] = useState<Record<string, { completion: "" | "complete" | "unable"; unableReason?: FunctionUnableReason; control?: "stable" | "compensated" | "unsure"; score?: number }>>({});
+  const {
+    functionRetestCompletion, setFunctionRetestCompletion,
+    functionRetestUnableReason, setFunctionRetestUnableReason,
+    finalFunctionRetests, setFinalFunctionRetests,
+  } = useFunctionRetestState();
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [recordsOpen, setRecordsOpen] = useState(false);
   const [toast, setToast] = useState("");
