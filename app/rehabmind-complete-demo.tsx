@@ -554,10 +554,10 @@ const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足"
 const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
 const PRIOR_CARE_OPTIONS = ["看过医生", "拍过片", "用过膏药", "做过针灸或理疗", "用过冰敷"];
 const GOALS = [
-  { level: 1, title: "急性反应减轻", short: "先让肿胀和静息不适稳定" },
-  { level: 2, title: "基础症状改善", short: "疼痛或异常感觉明显减轻" },
-  { level: 3, title: "恢复正常生活", short: "走路、楼梯、穿衣和拿取" },
-  { level: 4, title: "恢复一般运动", short: "跑步、健身、瑜伽或球类" },
+  { level: 1, title: "先消肿止痛", short: "让肿胀和静息不适先稳定下来" },
+  { level: 2, title: "疼痛明显减轻", short: "做动作时不再那么疼" },
+  { level: 3, title: "恢复日常活动", short: "走路、上下楼梯、穿衣和拿取" },
+  { level: 4, title: "恢复中低强度运动", short: "跑步、健身、瑜伽或球类（无对抗）" },
   { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
 ];
 const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
@@ -6283,12 +6283,12 @@ export default function RehabMindCompleteDemo() {
           </section> : null}
 
           {item.pairedStrengthId && shouldAskPairedStrength(record.active) ? <section className="rm-motion-answer-block is-strength">
-            <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "同一个动作：保持 3～5 秒看力量"}</h3>
+            <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "停住不动，看稳不稳"}</h3>
             <p className="rm-choice-hint">{pairedCheckUsesResistance
               ? "由检查者沿刚才动作的反方向逐渐施加轻阻力，保持3～5秒并比较两侧；不要突然用力。"
               : isSelfKneeExtension
                 ? "先把膝盖绷直，再将整条腿抬离床面约10厘米，保持3秒后放下；左右各做一次，不需要别人按压。"
-                : "不需要别人压，也不需要自己加阻力。在刚才的位置持续保持 3～5 秒，看会不会掉下、发抖，或越用力越疼。"}</p>
+                : "在能不疼的最大范围处停住，看会不会发抖或往下掉。"}</p>
             {record.active === "unable" && !pairedCheckUsesResistance ? <p className="rm-passive-reminder">刚才没有完成主动活动，这一步可以跳过，不要为了测试强行完成。</p> : null}
             <AnswerChoiceGrid options={isSelfKneeExtension
               ? [["normal", "保持稳定｜抬起后膝盖仍笔直"], ["weak", "控制偏弱｜膝盖弯曲、抖动或下落"], ["painful", "发力不适｜抬腿时出现症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]] as Array<[SimpleAnswer, string]>
