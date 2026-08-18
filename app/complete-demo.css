@@ -77,6 +77,10 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-heading span { color: var(--rm-blue); font-size: 13px; font-weight: 850; letter-spacing: .08em; }
 .rm-heading h1 { max-width: 700px; margin: 7px 0 0; font-size: clamp(32px, 3vw, 40px); line-height: 1.18; letter-spacing: -.045em; }
 .rm-heading p { max-width: 670px; margin: 11px 0 0; color: var(--rm-muted); font-size: 16px; line-height: 1.7; }
+.rm-step-progress { margin-top: 10px; display: flex; gap: 6px; }
+.rm-step-progress i { width: 28px; height: 6px; border-radius: 3px; background: #dde4ee; display: block; }
+.rm-step-progress i.is-done { background: #27825c; }
+.rm-step-progress i.is-current { background: var(--rm-blue); }
 .rm-heading > b { flex: 0 0 auto; min-width: 62px; height: 62px; padding: 0 8px; color: var(--rm-blue); border: 1px solid #a7baf0; background: var(--rm-blue-soft); display: grid; place-items: center; font: 800 25px/1 "Roboto Condensed", ui-monospace, monospace; transform: rotate(2deg); }
 .rm-heading > b small { margin-left: 2px; font-size: 14px; }
 
