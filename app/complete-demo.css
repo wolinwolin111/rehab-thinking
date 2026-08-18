@@ -1,6 +1,6 @@
 :root {
   --rm-ink: #17262c;
-  --rm-muted: #5e6d72;
+  --rm-muted: #4c5a60;
   --rm-paper: #f4f7f5;
   --rm-white: #ffffff;
   --rm-blue: #2958d6;
@@ -20,6 +20,13 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
+/* 键盘焦点可见性：统一用醒目的蓝环，替代浏览器默认轮廓。 */
+:focus-visible { outline: 3px solid var(--rm-blue); outline-offset: 2px; border-radius: 6px; }
+button:focus:not(:focus-visible), summary:focus:not(:focus-visible) { outline: none; }
+
+/* 术语解释：虚线加下划线，悬停显示完整释义。 */
+.rm-term { border-bottom: 1px dashed var(--rm-muted); cursor: help; }
 html { background: var(--rm-paper); scroll-behavior: smooth; }
 body { margin: 0; color: var(--rm-ink); background: var(--rm-paper); font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif; font-size: 17px; }
 button, input, textarea, select { font: inherit; }
@@ -152,6 +159,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-symptom-group summary::before { content: "▸ "; color: var(--rm-blue); }
 .rm-symptom-group[open] summary::before { content: "▾ "; }
 .rm-symptom-group .rm-options { padding: 0 14px 14px; }
+.rm-symptom-group.is-flat strong { display: block; padding: 12px 14px 6px; color: #415168; font-size: 14px; font-weight: 800; }
 .rm-exercise-alt { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #f8fafc; }
 .rm-exercise-alt summary { padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 800; color: var(--rm-blue); list-style: none; }
 .rm-exercise-alt summary::-webkit-details-marker { display: none; }

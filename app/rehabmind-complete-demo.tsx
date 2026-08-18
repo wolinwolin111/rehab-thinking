@@ -555,13 +555,21 @@ const SYMPTOM_TYPE_GROUPS = [
 const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足", "麻、电或感觉变化"];
 const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
 const PRIOR_CARE_OPTIONS = ["看过医生", "拍过片", "用过膏药", "做过针灸或理疗", "用过冰敷"];
-const GOALS = [
+const GOALS_SELF = [
   { level: 1, title: "先消肿止痛", short: "让肿胀和静息不适先稳定下来" },
   { level: 2, title: "疼痛明显减轻", short: "做动作时不再那么疼" },
   { level: 3, title: "恢复日常活动", short: "走路、上下楼梯、穿衣和拿取" },
   { level: 4, title: "恢复中低强度运动", short: "跑步、健身、瑜伽或球类（无对抗）" },
   { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
 ];
+const GOALS_PRO = [
+  { level: 1, title: "急性反应减轻", short: "先让肿胀和静息不适稳定" },
+  { level: 2, title: "基础症状改善", short: "疼痛或异常感觉明显减轻" },
+  { level: 3, title: "恢复正常生活", short: "走路、楼梯、穿衣和拿取" },
+  { level: 4, title: "恢复一般运动", short: "跑步、健身、瑜伽或球类" },
+  { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
+];
+const GOALS = GOALS_SELF;
 const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:knee-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
   "function:ankle-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
@@ -932,7 +940,7 @@ function inferImagingFromDescription(text: string) {
 }
 
 function getGoalLabel(level: number) {
-  return GOALS.find((goal) => goal.level === level)?.title ?? "尚未确认";
+  return GOALS_PRO.find((goal) => goal.level === level)?.title ?? "尚未确认";
 }
 
 function forceDirectionOptions(regionId: string) {
@@ -2130,6 +2138,8 @@ export default function RehabMindCompleteDemo() {
   // 避免前一项（尤其肿胀管理）退出队列后，旧的数字下标越过后续处理。
   const [pendingTrialAdvance, setPendingTrialAdvance] = useState<PendingQueueAdvance | null>(null);
   const [candidateIndex, setCandidateIndex] = useState(0);
+  // 处理撤销：保存每次 finishTrial 前的快照，撤销时恢复。
+  const [finishSnapshots, setFinishSnapshots] = useState<Array<{ trialRecords: TrialRecord[]; trialTargetIndex: number; candidateIndex: number; pendingTrialAdvance: PendingQueueAdvance | null }>>([]);
   const [selectedOptionalCandidateIds, setSelectedOptionalCandidateIds] = useState<string[]>([]);
   const [bilateralNeedsReferral, setBilateralNeedsReferral] = useState(false);
   const [midpointDecisionDone, setMidpointDecisionDone] = useState(false);
@@ -4514,6 +4524,17 @@ export default function RehabMindCompleteDemo() {
     return previous?.afterScore ?? target.finding.score ?? intake.baselineScore;
   }
 
+  function undoLastFinish() {
+    const snapshot = finishSnapshots[finishSnapshots.length - 1];
+    if (!snapshot) return;
+    setTrialRecords(snapshot.trialRecords);
+    setTrialTargetIndex(snapshot.trialTargetIndex);
+    setCandidateIndex(snapshot.candidateIndex);
+    setPendingTrialAdvance(snapshot.pendingTrialAdvance);
+    setFinishSnapshots((current) => current.slice(0, -1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function finishTrial(result: TrialResult, timeBased = false, nextCandidateType?: FullCandidate["type"], finishTarget = false, deferredRetest = false) {
     if (!activeTarget || !activeCandidate) return;
     const beforeScore = targetScoreBeforeRetest(activeTarget);
@@ -4583,6 +4604,7 @@ export default function RehabMindCompleteDemo() {
       targetTitle: activeTarget.finding.title,
       residualReviewId: RESIDUAL_REVIEW_ID,
     });
+    setFinishSnapshots((current) => [...current, { trialRecords, trialTargetIndex, candidateIndex, pendingTrialAdvance }]);
     setTrialRecords((current) => [...current, ...records]);
     const requestedNextIndex = nextCandidateType
       ? activeTarget.candidates.findIndex((candidate, index) => index > activeGroupEndIndex && candidate.type === nextCandidateType)
@@ -4721,6 +4743,7 @@ export default function RehabMindCompleteDemo() {
       ...activeRetestFindings.map((finding) => assessments.find((item) => item.id === finding.id)?.title ?? finding.title),
     ];
     const batchRetestKey = canonicalRetestAction(batchRetestLabels.join("、"));
+    setFinishSnapshots((current) => [...current, { trialRecords, trialTargetIndex, candidateIndex, pendingTrialAdvance }]);
     setTrialRecords((current) => [...current, ...recordCandidates.map((candidate, index): TrialRecord => ({
       candidateId: candidate.id,
       treatmentKey: candidateTreatmentKey(candidate, activeTarget.finding.side ?? intake.side),
@@ -5665,7 +5688,7 @@ export default function RehabMindCompleteDemo() {
 
         <section className="rm-professional-section">
           <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的内容保留为空，不代替患者做判断。</p></div></header>
-          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div>
+          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title} className="rm-symptom-group is-flat"><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div>
           {showAllIntakeFields && (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适") ? <div className="rm-professional-subfield"><div className="rm-label"><span>疼痛性质补充</span><b>仍然分不清可以保留“说不清”</b></div><PillOptions options={["酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "还是说不清"]} value={intake.painQualityConfirmed ? (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适" ? "还是说不清" : intake.symptomType) : ""} onChange={(value) => invalidateAfterIntake({ ...intake, symptomType: value === "还是说不清" ? "疼痛，性质说不清" : value, painQualityConfirmed: true })} columns={3} /></div> : null}
           <div className="rm-label rm-professional-symptom-label"><span>伴随表现</span><b>可多选；没有就选“没有以上情况”</b></div>
           <div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={professionalSymptoms.includes(symptom) ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms(professionalSymptoms.includes(symptom) ? professionalSymptoms.filter((item) => item !== symptom) : [...professionalSymptoms, symptom])}><i>{professionalSymptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms([])}><i>{confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "✓" : ""}</i>没有以上情况</button></div>
@@ -5691,7 +5714,7 @@ export default function RehabMindCompleteDemo() {
           <button type="button" className={intake.actionSelectionConfirmed && !professionalActionSummary.length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={() => updateReportedActions([], "")}>说不清或没有固定动作</button>
         </section>
 
-        {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
+        {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
 
         <section className="rm-professional-section">
           <header><span>06</span><div><h2>本次检查条件</h2><p>先说明由谁操作、能够完成哪些专业检查，后续评估会按此开放。</p></div></header>
@@ -6107,7 +6130,7 @@ export default function RehabMindCompleteDemo() {
           <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
           <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
         </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
-        <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>返回检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
+        <div className="rm-page-actions three"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>返回检查</button><button type="button" onClick={editCompletedAssessment}>修改评估</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
       </section>;
     }
     const isChiefFunctionAssessment = item.kind === "function"
@@ -6902,7 +6925,7 @@ export default function RehabMindCompleteDemo() {
           <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label={isStrengthSymptomTarget ? "现在的发力不适程度" : "现在的不适程度"} context={`处理前 ${beforeScore}/10`} />
           <section className={`rm-auto-result is-${postScoreConfirmed ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!postScoreConfirmed ? "请选择复测分数" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!postScoreConfirmed || (isFunctionTarget && (!functionRetestCompletion || (functionRetestCompletion === "unable" && !functionRetestUnableReason)))} onClick={() => finishTrial(automaticResult)}>继续</button></section>
         </section>}
-        <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
+        <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}{finishSnapshots.length ? <button type="button" onClick={undoLastFinish}>撤销上一步</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
       </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
     </section>;
   }
@@ -6919,6 +6942,7 @@ export default function RehabMindCompleteDemo() {
   }
 
   function renderTraining() {
+    const displayGoals = isThinkingMode && !workflowProfile.isStudy ? GOALS_PRO : GOALS_SELF;
     const trainingHasWorsened = exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
     const worsenedExercise = exercises.find((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
     const worsenedExerciseAssessmentIds = worsenedExercise
@@ -6947,7 +6971,7 @@ export default function RehabMindCompleteDemo() {
             const r = finalFunctionRetests[label] ?? { completion: "", score: undefined };
             const set = (patch: Partial<typeof r>) => setFinalFunctionRetests((c) => ({ ...c, [label]: { ...(c[label] ?? {}), ...patch } }));
             return <article key={label}>
-              <div className="rm-retest-field-title"><strong>{label}</strong><small>有代偿也算能完成</small></div>
+              <div className="rm-retest-field-title"><strong>{label}</strong><small>有<span className="rm-term" title="借力、姿势不标准地完成，也算完成">代偿</span>也算能完成</small></div>
               <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, text]) => <button type="button" key={value} className={r.completion === value ? "is-selected" : ""} onClick={() => set({ completion: value })}>{text}</button>)}</div>
               {r.completion === "unable" ? <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, text]) => <button type="button" key={value} className={r.unableReason === value ? "is-selected" : ""} onClick={() => set({ unableReason: value })}>{text}</button>)}</div> : null}
               {r.completion === "complete" ? <div className="rm-result-grid is-two">{([["stable", "动作稳定"], ["compensated", "有晃动或借力"], ["unsure", "看不出来"]] as const).map(([value, text]) => <button type="button" key={value} className={r.control === value ? "is-selected" : ""} onClick={() => set({ control: value })}>{text}</button>)}</div> : null}
@@ -6974,7 +6998,7 @@ export default function RehabMindCompleteDemo() {
       {tissuePathway.id !== "standard" ? <section className="rm-training-hold"><span>{tissuePathway.title}</span><strong>{tissuePathway.trainingStages[0]}</strong><p>{tissuePathway.trainingStages.join(" → ")}</p></section> : null}
       {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低刺激基础活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
       {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低刺激基础活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
-      <div className="rm-stage-line">{GOALS.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div>
+      <div className="rm-stage-line">{displayGoals.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div>
 
 
       {(effectiveFocusLabels.length || effectiveControlLabels.length) ? <section className="rm-effective-home-focus">
@@ -7024,7 +7048,7 @@ export default function RehabMindCompleteDemo() {
 
       {trainingHasWorsened ? <section className="rm-training-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
 
-      <section className="rm-next-stage"><span>下一阶段</span><h2>{exerciseStage < intake.goal ? GOALS.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。</p></section>
+      <section className="rm-next-stage"><span>下一阶段</span><h2>{exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。</p></section>
 
       {!trainingHasWorsened ? <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(3)}>返回处理记录</button><button type="button" className="rm-primary" onClick={() => {
         if (!exercises.length || tissuePathway.retestTiming !== "same-session" || !trainingNeedsChiefRetest) {
