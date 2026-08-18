@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransition, StepHeading, TreatmentRoadmap } from "./ui-primitives";
 import { NextSessionCard } from "./next-session-card";
 import { type FunctionUnableReason, useFunctionRetestState } from "./use-function-retest";
+import { type ExerciseFeedback, useTrainingFlow } from "./use-training-flow";
 import LowerLimbLocationPicker, {
   makeLowerLimbLocationSelection,
   type LowerLimbAreaId,
@@ -435,13 +436,6 @@ type TrialRecord = {
   responseRole?: TreatmentResponseRole;
 };
 
-
-type ExerciseFeedback = {
-  completed: number;
-  formChanged: boolean;
-  symptom: "better" | "same" | "worse";
-  reserve: number;
-};
 
 type FollowupStage = "review" | "treatment" | "training" | "summary";
 type TransitionTarget = "assessment" | "treatment" | "training" | "summary";
@@ -2191,8 +2185,7 @@ export default function RehabMindCompleteDemo() {
   const [movementDiscomforts, setMovementDiscomforts] = useState<Record<string, YesNo>>({});
   const [movementScores, setMovementScores] = useState<Record<string, number>>({});
   const [movementScoreConfirmed, setMovementScoreConfirmed] = useState<Record<string, boolean>>({});
-  const [exerciseFeedback, setExerciseFeedback] = useState<Record<string, ExerciseFeedback>>({});
-  const [openExercise, setOpenExercise] = useState<string>("");
+  const { exerciseFeedback, setExerciseFeedback, openExercise, setOpenExercise } = useTrainingFlow();
   const [trainingComplete, setTrainingComplete] = useState(false);
   const [treatmentFinalRetestScore, setTreatmentFinalRetestScore] = useState(0);
   const [treatmentFinalRetestConfirmed, setTreatmentFinalRetestConfirmed] = useState(false);
