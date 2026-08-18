@@ -329,7 +329,7 @@ function applyObservationStatuses(input: KneeDecisionInput, problems: KneeProble
     const canRemainImproved = ["chief-symptom", "motion-symptom"].includes(problem.kind);
     return {
       ...problem,
-      status: resolved ? "resolved" as const : improved && canRemainImproved && !hasUnresolvedMetric ? "improved" as const : improved && canRemainImproved ? "improved" as const : "still-present" as const,
+      status: resolved ? "resolved" as const : improved && canRemainImproved ? "improved" as const : "still-present" as const,
     };
   });
 }
@@ -619,7 +619,9 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
       relatedActionIds: unique([...unit.relatedActionIds, ...anteriorLateralCombination.relatedActionIds]),
       sourceCaseIds: unique([...unit.sourceCaseIds, ...anteriorLateralCombination.sourceCaseIds]),
     } : unit)
-    .filter((unit) => unit.permission === "all" || input.role === "rehab" || unit.permission === "coach-rehab");
+    .filter((unit) => unit.permission === "all"
+      || (unit.permission === "coach-rehab" && ["coach", "rehab"].includes(input.role))
+      || (unit.permission === "rehab-only" && input.role === "rehab"));
 }
 
 export function buildKneeAssessmentChecks(input: KneeDecisionInput, problems: KneeProblem[], treatmentUnits: KneeTreatmentUnit[] = []) {

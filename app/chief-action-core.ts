@@ -126,7 +126,7 @@ export function chiefFunctionActionLabels(intake: ChiefActionIntake, regionId: s
   const words = (CHIEF_MOTION_ALIASES[regionId] ?? []).flatMap(([, w]) => w);
   return reportedActionSummary(intake)
     .filter((action): action is string => Boolean(action))
-    .filter((action) => !words.some((w) => action.includes(w) || w.includes(action)));
+    .filter((action) => !words.some((w) => action.includes(w)));
 }
 
 export type RetestSymptomRecord = { familiarSymptom?: string };

@@ -42,3 +42,15 @@ test("assessmentSymptomCanDriveRetest requires a chief action or familiar sympto
   assert.equal(core.assessmentSymptomCanDriveRetest({ familiarSymptom: "no" }, { reportedActions: [] }), false);
   assert.equal(core.assessmentSymptomCanDriveRetest(undefined, kneeSquat), false);
 });
+
+test("short actions like 转头/举手/抬腿 are not filtered out by function action detection", () => {
+  // "转头" should not be excluded just because "向左转头" is a direction word in neck
+  const neck = { ...kneeSquat, reportedActions: [{ raw: "转头" }], actionAnalysis: { task: "转头" } };
+  assert.deepEqual(core.chiefFunctionActionLabels(neck, "neck"), ["转头"]);
+  // "举手" should not be excluded by "向前举手" in shoulder
+  const shoulder = { ...kneeSquat, reportedActions: [{ raw: "举手" }], actionAnalysis: { task: "举手" } };
+  assert.deepEqual(core.chiefFunctionActionLabels(shoulder, "shoulder"), ["举手"]);
+  // "抬腿" should not be excluded by "抬腿伸膝" in thigh-local
+  const thigh = { ...kneeSquat, reportedActions: [{ raw: "抬腿" }], actionAnalysis: { task: "抬腿" } };
+  assert.deepEqual(core.chiefFunctionActionLabels(thigh, "thigh-local"), ["抬腿"]);
+});

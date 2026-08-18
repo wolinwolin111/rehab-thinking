@@ -90,15 +90,16 @@ test("ships a complete nine-region assessment and intervention library", async (
 });
 
 test("keeps NRS history, gated steps, local records and repeat-rehab paths", async () => {
-  const [demoComponent, page, layout, styles, content, locationPicker] = await Promise.all([
+  const [demoComponent, uiSource, page, layout, styles, content, locationPicker] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${coreSource}`;
 
   assert.match(page, /rehabmind-complete-demo/);
   assert.match(page, /<RehabMindCompleteDemo\s*\/>/);
@@ -560,13 +561,14 @@ test("a new follow-up symptom invalidates the old complaint-derived state", asyn
 });
 
 test("covers the full-positive, bilateral, no-action and extreme-input pilot rules", async () => {
-  const [demoComponent, content, styles, outcome] = await Promise.all([
+  const [demoComponent, uiSource, content, styles, outcome] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/stage-outcome-sections.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${coreSource}`;
 
   // Intake fallbacks and typo tolerance.
   assert.match(demo, /说不清 \/ 没有固定动作/);

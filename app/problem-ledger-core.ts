@@ -62,7 +62,7 @@ export function emptyTreatmentMessage(entries: LedgerEntry[]) {
   };
   if (entries.some((entry) => entry.destination === "medical-review")) return {
     title: "先完成医学确认",
-    detail: "当前问题不进入普通肌肉松解或训练路径。",
+    detail: "当前问题不进入普通肌肉松解；训练按低负荷顺序（无痛走路 → 基础功能负荷）安排。",
     action: "保存当前记录",
   };
   if (entries.some((entry) => entry.destination === "later-review")) return {
@@ -74,6 +74,11 @@ export function emptyTreatmentMessage(entries: LedgerEntry[]) {
     title: "进入针对性训练",
     detail: "当前主要是力量或动作控制问题，不需要反复进行即时复测。",
     action: "开始针对性训练",
+  };
+  if (entries.some((entry) => entry.destination === "treatment")) return {
+    title: "仍有待处理问题",
+    detail: "已进入处理路径的问题尚未达到目标，请继续完成剩余处理或复测。",
+    action: "继续处理",
   };
   return {
     title: "本次没有发现明确异常",
