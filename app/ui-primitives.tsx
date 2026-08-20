@@ -1,4 +1,5 @@
 import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { scoreGuideLabel } from "./score-guide-copy";
 
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
 export function TreatmentRoadmap({ completed, current, upcoming }: { completed: Array<{ label: string; summary?: string }>; current: string; upcoming: string[] }) {
@@ -103,11 +104,12 @@ export function ScoreSlider({ value, onChange, label, context, compact = false, 
   };
   const draft = currentDraft.value;
   const displayedValue = draft;
+  const hasDisplayedScore = selected || currentDraft.dirty;
   return <section className={`rm-score ${compact ? "is-compact" : ""} ${selected && !currentDraft.dirty ? "is-recorded" : ""}`}>
     <div className="rm-score-head"><div><span>{label}</span>{context ? <strong>{context}</strong> : null}</div><output>{selected || currentDraft.dirty ? displayedValue : "—"}<small>/10</small></output></div>
     <input aria-label={label} type="range" min="0" max="10" step="1" value={displayedValue} onInput={handleSliderChange} onChange={commitDraft} onBlur={commitDraft} onPointerUp={commitDraft} onMouseUp={commitDraft} onTouchEnd={commitDraft} onKeyDown={handleSliderKeyDown} style={{ "--score": `${displayedValue * 10}%` } as CSSProperties} />
-    <div className="rm-score-scale"><span>0 · 没有疼痛或不适</span><span>10 · 极重，无法继续当前动作</span></div>
-    <div className="rm-score-guide"><span><b>1～3</b>轻微，基本不影响动作</span><span><b>4～6</b>明显，会影响动作</span><span><b>7～9</b>很重，难以继续</span></div>
+    <div className="rm-score-scale"><span>0 · 没有疼痛或不适</span><span>10 · 能想象到的最严重</span></div>
+    <p className="rm-score-guide" aria-live="polite">{hasDisplayedScore ? `${displayedValue}/10 · ${scoreGuideLabel(displayedValue)}` : "拖动后显示当前程度"}</p>
     <p className="rm-score-status">{selected && !currentDraft.dirty ? "已记录" : "拖动后松手即可记录"}</p>
   </section>;
 }

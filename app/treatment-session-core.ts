@@ -4,6 +4,7 @@ export type SessionTreatmentRecord = {
   reviewOnly?: boolean;
   retestOnly?: boolean;
   timeBased?: boolean;
+  activityWorsened?: boolean;
 };
 
 function isActualTreatment(record: SessionTreatmentRecord) {
@@ -11,7 +12,7 @@ function isActualTreatment(record: SessionTreatmentRecord) {
 }
 
 export function treatmentMustStop(records: SessionTreatmentRecord[]) {
-  return records.some((record) => isActualTreatment(record) && record.result === "worse");
+  return records.some((record) => isActualTreatment(record) && (record.result === "worse" || record.activityWorsened));
 }
 
 export function needsTreatmentFinalChiefRetest(records: SessionTreatmentRecord[], comparableChief: boolean) {
@@ -23,9 +24,10 @@ export function needsTreatmentFinalChiefRetest(records: SessionTreatmentRecord[]
 
 export function needsTrainingToleranceRetest(input: {
   comparableChief: boolean;
+  completionStatusChief?: boolean;
   immediateTiming: boolean;
 }) {
-  // 训练结束后的整体主诉复测：只要有可比的主诉分且本场同条件复测，
-  // 就触发一次，不再要求「答了训练反馈」——普通用户可能只做动作没点反馈。
-  return input.comparableChief && input.immediateTiming;
+  // 普通主诉做同条件复测；首次只尝试过但没完成的功能动作，做能力状态复核。
+  // 两者都不要求伪造一个不存在的疼痛分数。
+  return Boolean((input.comparableChief || input.completionStatusChief) && input.immediateTiming);
 }

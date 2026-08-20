@@ -14,6 +14,7 @@ export type CoverageRecord = {
   directionIds?: string[];
   /** A range result can improve even when the chief score is also recorded. */
   rangeImproved?: boolean;
+  activityWorsened?: boolean;
   reviewOnly?: boolean;
   retestOnly?: boolean;
   timeBased?: boolean;
@@ -66,7 +67,7 @@ export function summarizeTreatmentCoverage(records: CoverageRecord[], candidates
   // is correctly classified as partial-contribution, but the range still has
   // to remain visible as an unresolved problem until it reaches the target.
   const hasRangeImprovement = attempts.some((record) => record.rangeImproved || record.responseRole === "range-contribution");
-  const hasWorsened = attempts.some((record) => record.result === "worse" || record.responseRole === "worsened");
+  const hasWorsened = attempts.some((record) => record.result === "worse" || record.responseRole === "worsened" || record.activityWorsened);
 
   let decision: TreatmentCoverageDecision;
   if (!attempts.length) decision = "no-treatment";

@@ -55,11 +55,14 @@ export function kneeExerciseIdsForDecision(decision: KneeDecisionOutput | null) 
 }
 
 export function kneeTreatmentInstruction(unit: KneeTreatmentUnit) {
+  const hasAnteriorEvidence = /大腿前侧|股直肌|股四头肌/.test(`${unit.site} ${unit.action}`);
   const instructions: Record<string, string> = {
     "knee-swelling-management": "休息时垫高小腿，在不增加疼痛的范围内缓慢活动膝盖10～20次；减少当天会让肿胀明显增加的负重。",
     "knee-medial-soft-tissue": "先在膝内下方的鹅足相关肌肉区域，找到刚才检查时更紧或更酸的位置，用手轻柔按揉30～60秒；避开明确刺痛点。",
     "knee-medial-adductor": "在大腿内侧找到检查时更紧或更酸的内收肌区域，用手轻柔按揉30～60秒；避开膝内侧明确刺痛点。",
-    "knee-lateral-chain": "在髋外侧和大腿外侧找到刚才检查时更紧或更酸的区域，用手或泡沫轴轻柔处理30～60秒；不要沿髂胫束整条重压。",
+    "knee-lateral-chain": hasAnteriorEvidence
+      ? "在大腿前侧、髋外侧和大腿外侧找到刚才检查时明确更紧或更酸的区域，分别轻柔处理30～60秒；避开髌骨、髌腱和明确刺痛点，不要沿髂胫束整条重压。"
+      : "在髋外侧和大腿外侧找到刚才检查时更紧或更酸的区域，用手或泡沫轴轻柔处理30～60秒；不要沿髂胫束整条重压。",
     "knee-extension-lateral-chain": "在髋外侧和大腿外侧找到刚才检查时更紧或更酸的区域，用手或泡沫轴轻柔处理30～60秒；不要沿髂胫束整条重压。",
     "knee-extension-anterior-lateral": "先处理检查中明确紧张的区域：大腿前侧/股直肌与外侧链可在同一轮完成，每处轻柔处理30～60秒；避开髌骨、髌腱和明确刺痛点。",
     "knee-anterior-thigh-rectus-femoris": "在大腿前侧找到检查时明确紧张或按压不舒服的区域，用手或泡沫轴轻柔处理30～60秒；避开髌骨和髌腱。",

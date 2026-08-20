@@ -233,6 +233,18 @@ test("each mapped knee unit supplies its own instruction instead of inheriting l
   assert.equal(kneeRetestInstruction(unit), "只复测本轮受影响的动作：弯膝。");
 });
 
+test("a merged anterior-lateral unit keeps the instruction aligned with its displayed site", () => {
+  const unit = {
+    id: "knee-lateral-chain",
+    site: "大腿前侧与外侧链",
+    action: "轻柔松解检查中明确紧张的股直肌、大腿前侧或外侧链区域",
+  };
+  const instruction = kneeTreatmentInstruction(unit);
+  assert.match(instruction, /大腿前侧/);
+  assert.match(instruction, /髋外侧和大腿外侧/);
+  assert.doesNotMatch(instruction, /只在髋外侧和大腿外侧/);
+});
+
 test("medial knee treatment keeps pes before a separate adductor unit", () => {
   assert.match(adapterSource, /先在膝内下方的鹅足相关肌肉区域/);
   assert.match(adapterSource, /"knee-medial-adductor": "在大腿内侧找到检查时更紧或更酸的内收肌区域/);

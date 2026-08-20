@@ -44,6 +44,36 @@ test("a function check completes when completion, control and discomfort are pre
   ), false);
 });
 
+test("a bilateral function or strength check needs a project-level side comparison", async () => {
+  const core = await corePromise;
+  assert.equal(core.assessmentRecordComplete(
+    { kind: "function" },
+    { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "no" },
+    false,
+    true,
+  ), false);
+  assert.equal(core.assessmentRecordComplete(
+    { kind: "function" },
+    { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "no", bilateralComparison: "两侧接近" },
+    false,
+    true,
+  ), true);
+  assert.equal(core.assessmentRecordComplete(
+    { kind: "strength" },
+    { simple: "normal", bilateralComparison: "左侧更差" },
+    false,
+    true,
+  ), true);
+});
+
+test("a bilateral motion with paired strength also needs its own side comparison", async () => {
+  const core = await corePromise;
+  const item = { kind: "motion", pairedStrengthId: "strength:knee-quadriceps" };
+  const record = { active: "right-limited", discomfort: "no", pairedStrength: "weak" };
+  assert.equal(core.assessmentRecordComplete(item, record, false, true), false);
+  assert.equal(core.assessmentRecordComplete(item, { ...record, bilateralComparison: "右侧更差" }, false, true), true);
+});
+
 test("a strength check needs an unable reason when unable", async () => {
   const core = await corePromise;
   assert.equal(core.assessmentRecordComplete({ kind: "strength" }, { simple: "weak" }, false), true);

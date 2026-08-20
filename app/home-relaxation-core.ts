@@ -32,12 +32,15 @@ export type HomeRelaxationInput = {
   effectiveMuscleLabels: string[];
   /** 当前训练动作的主要肌肉区域标签。 */
   trainingMuscleLabels: string[];
-  /** 最多保留的目标数量，默认 3。 */
-  maxTargets?: number;
 };
 
 /** “两侧没有明显差别”类答案不是可放松区域，须在合并时剔除。 */
-const NO_DIFFERENCE_LOCATIONS = ["没有明显差别", "两侧感觉接近"];
+const NO_DIFFERENCE_LOCATIONS = ["没有明显差别", "两侧感觉接近", "暂不判断"];
+
+function splitSideLocation(location: string) {
+  const match = location.match(/^(左侧|右侧)[｜|·](.+)$/);
+  return match ? { side: match[1], region: match[2] } : { side: undefined, region: location };
+}
 
 /** 根据症状/组织路径生成「选择性避开」提示；安全场景返回空字符串。 */
 export function selfReleaseAvoidanceNote(input: HomeRelaxationInput): string {
@@ -53,17 +56,40 @@ export function selfReleaseAvoidanceNote(input: HomeRelaxationInput): string {
 
 /**
  * 合并四类来源并按标准区域去重，生成居家自主放松卡片。
- * 顺序固定为紧张区域 → 有效处理肌肉 → 训练主要肌肉，去重后截取 maxTargets 个。
+ * 顺序固定为紧张区域 → 有效处理肌肉 → 训练主要肌肉；不按位置数量硬截断，
+ * 只通过来源去重和风险过滤控制重复与不安全目标。
  */
 export function buildHomeRelaxationTargets(input: HomeRelaxationInput): HomeRelaxationTarget[] {
-  const max = input.maxTargets ?? 3;
-  const merged = [...new Set([
+  const candidates = [
     ...input.tensionLabels,
     ...input.effectiveMuscleLabels,
     ...input.trainingMuscleLabels,
-  ])]
-    .filter((location) => location.length > 0 && !NO_DIFFERENCE_LOCATIONS.includes(location))
-    .slice(0, max);
+  ].filter((location) => location.length > 0 && !NO_DIFFERENCE_LOCATIONS.includes(location));
+  const merged: string[] = [];
+  for (const location of candidates) {
+    const current = splitSideLocation(location);
+    const sameLocationIndex = merged.findIndex((existing) => {
+      const parsed = splitSideLocation(existing);
+      return parsed.region === current.region && parsed.side === current.side;
+    });
+    if (sameLocationIndex >= 0) continue;
+    if (current.side) {
+      const genericIndex = merged.findIndex((existing) => {
+        const parsed = splitSideLocation(existing);
+        return !parsed.side && parsed.region === current.region;
+      });
+      if (genericIndex >= 0) {
+        merged[genericIndex] = location;
+        continue;
+      }
+    } else if (merged.some((existing) => {
+      const parsed = splitSideLocation(existing);
+      return Boolean(parsed.side) && parsed.region === current.region;
+    })) {
+      continue;
+    }
+    merged.push(location);
+  }
   const avoidance = selfReleaseAvoidanceNote(input);
   return merged.map((location) => ({
     id: `home-release:${location}`,

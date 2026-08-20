@@ -14,6 +14,10 @@ test("a worsening treatment stops both first and follow-up session executors", (
   assert.equal(core.treatmentMustStop([{ result: "worse", reviewOnly: true }]), false);
 });
 
+test("activity worsening stops treatment even when the chief score improved", () => {
+  assert.equal(core.treatmentMustStop([{ result: "partial", activityWorsened: true }]), true);
+});
+
 test("a final chief retest is required only when treatment followed the latest chief score", () => {
   assert.equal(core.needsTreatmentFinalChiefRetest([{ result: "partial", chiefRetested: true }], true), false);
   assert.equal(core.needsTreatmentFinalChiefRetest([
@@ -27,4 +31,8 @@ test("training retest appears in an immediate path regardless of exercise answer
   assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: true }), true);
   assert.equal(core.needsTrainingToleranceRetest({ comparableChief: true, immediateTiming: false }), false);
   assert.equal(core.needsTrainingToleranceRetest({ comparableChief: false, immediateTiming: true }), false);
+});
+
+test("completion-status chief action still gets a final ability review", () => {
+  assert.equal(core.needsTrainingToleranceRetest({ comparableChief: false, completionStatusChief: true, immediateTiming: true }), true);
 });

@@ -7,6 +7,7 @@
  */
 
 import { chromium } from "playwright-core";
+import assert from "node:assert/strict";
 
 const URL = process.env.WALKTHROUGH_URL ?? "http://localhost:3000/";
 const browser = await chromium.launch({ channel: "msedge", headless: true });
@@ -46,10 +47,20 @@ await page.locator('[aria-label="右侧 · 膝内侧关节线"]').click();
 await page.waitForTimeout(400);
 
 const recent = [];
+const trainingFeedbackDone = new Set();
+let locationScreenshotsTaken = false;
 const mark = (a) => { recent.push(a); if (recent.length > 10) recent.shift(); };
 
 for (let i = 0; i < 400; i++) {
   const h1 = await snap();
+  if (process.env.WALKTHROUGH_SCREENSHOT && !locationScreenshotsTaken && h1.includes("肌肉紧张度对比")) {
+    await page.screenshot({ path: ".tmp-muscle-location-desktop.png", fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: ".tmp-muscle-location-mobile.png", fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    locationScreenshotsTaken = true;
+    console.log("已保存肌肉区域定位卡桌面/移动端截图");
+  }
   if (h1.includes("今天需要做的训练")) {
     const c = await page.content();
     console.log(`[${i}] 训练页 | 含[针对性自主放松]: ${c.includes("针对性自主放松")} | 含[训练结束后]: ${c.includes("训练结束后")}`);
@@ -91,8 +102,14 @@ for (let i = 0; i < 400; i++) {
       } else {
         // 网格单选：按「每个 .rm-result-grid 容器」各答一次，避免同一题互切、也覆盖多方向复测
         let gridClicked = false;
+        const locationCard = page.locator(".rm-muscle-location-card").first();
+        if (await locationCard.count() && !(await locationCard.isDisabled().catch(() => false)) && !((await locationCard.getAttribute("class")) || "").includes("is-selected")) {
+          const t = (await locationCard.textContent()).trim().slice(0, 20);
+          await locationCard.click().catch(() => {}); await page.waitForTimeout(300);
+          mark("LOCATION:" + t); console.log(`[${i}] LOCATION | ${t}`); gridClicked = true;
+        }
         const grids = page.locator(".rm-result-grid");
-        for (let gi = 0; gi < (await grids.count()); gi++) {
+        if (!gridClicked) for (let gi = 0; gi < (await grids.count()); gi++) {
           const btns = grids.nth(gi).locator("button");
           let selected = false;
           for (let b = 0; b < (await btns.count()); b++) {
@@ -115,6 +132,7 @@ for (let i = 0; i < 400; i++) {
             [() => page.getByRole("button", { name: "动作基本稳定", exact: true }).first(), "稳定"],
             [() => page.getByRole("button", { name: /保持稳定/ }).first(), "保持稳定"],
             [() => page.getByRole("button", { name: "没有不适", exact: true }).first(), "无不适"],
+            [() => page.getByRole("button", { name: "暂时说不清位置", exact: true }).first(), "位置暂不判断"],
             [() => page.getByRole("button", { name: "没有明显差别", exact: true }).first(), "无明显差别"],
             [() => page.getByRole("button", { name: /可以继续评估|继续评估/ }).first(), "可以继续评估"],
           ];
@@ -122,6 +140,54 @@ for (let i = 0; i < 400; i++) {
             if (await clickLocator(mk(), label)) { mark(label); acted = true; break; }
           }
         }
+      }
+    }
+  }
+  if (!acted) {
+    if (h1.includes("本次康复完成")) {
+      const transitionButton = page.getByRole("button", { name: /查看本次康复总结/ }).last();
+      if (await transitionButton.count() && !(await transitionButton.isDisabled().catch(() => false))) {
+        await transitionButton.click().catch(() => {});
+        await page.waitForTimeout(500);
+        mark("SUMMARY_TRANSITION"); console.log(`[${i}] 进入总结 | ${h1}`); acted = true;
+      }
+    }
+  }
+  if (!acted) {
+    if (h1.includes("今天需要做的训练")) {
+      const exerciseSummaries = page.locator(".rm-exercise-summary");
+      const nextTrainingIndex = Array.from({ length: await exerciseSummaries.count() }, (_, index) => index)
+        .find((index) => !trainingFeedbackDone.has(index));
+      if (nextTrainingIndex !== undefined) {
+        const summary = exerciseSummaries.nth(nextTrainingIndex);
+        if ((await summary.getAttribute("aria-expanded")) !== "true") {
+          await summary.click().catch(() => {});
+          await page.waitForTimeout(300);
+          mark("OPEN_TRAINING"); console.log(`[${i}] 打开训练动作 ${nextTrainingIndex + 1} | ${h1}`); acted = true;
+        } else {
+          const feedbackSection = page.locator(".rm-feedback-quick").first();
+          if (await feedbackSection.count() && !(await feedbackSection.locator("button.is-selected").count())) {
+            await feedbackSection.locator("button").first().click().catch(() => {});
+            await page.waitForTimeout(300);
+            trainingFeedbackDone.add(nextTrainingIndex);
+            mark("TRAINING_FEEDBACK"); console.log(`[${i}] 训练反馈 ${nextTrainingIndex + 1} | ${h1}`); acted = true;
+          }
+        }
+      }
+    }
+  }
+  if (!acted) {
+    // 训练完成前每个动作都必须留下第一组即时反馈；逐卡选择一次，
+    // 这样走读脚本与产品的“未反馈不能结束”规则保持一致。
+    const feedbackSections = page.locator(".rm-feedback-quick");
+    for (let fi = 0; fi < (await feedbackSections.count()); fi++) {
+      const section = feedbackSections.nth(fi);
+      if (await section.locator("button.is-selected").count()) continue;
+      const feedbackButton = section.locator("button").first();
+      if (await feedbackButton.count()) {
+        await feedbackButton.click().catch(() => {});
+        await page.waitForTimeout(300);
+        mark("TRAINING_FEEDBACK"); console.log(`[${i}] 训练反馈 | ${h1}`); acted = true; break;
       }
     }
   }
@@ -166,4 +232,6 @@ console.log("含[针对性自主放松]:", body.includes("针对性自主放松"
 console.log("含[有效处理]:", body.includes("有效处理"));
 console.log("含[活动范围变化]:", body.includes("活动范围变化"));
 console.log("浏览器运行时错误数:", runtimeErrors.length, runtimeErrors.slice(0, 3));
+assert.match(h1, /本次康复总结/, `真实流程未到达总结页，当前 h1：${h1}`);
+assert.equal(runtimeErrors.length, 0, `浏览器运行时出现错误：${runtimeErrors.join(" | ")}`);
 await browser.close();

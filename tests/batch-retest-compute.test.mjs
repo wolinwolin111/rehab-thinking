@@ -47,8 +47,8 @@ test("chief unchanged but range improved yields partial range-contribution", () 
   assert.equal(responseRole, "range-contribution");
 });
 
-test("any worse range outcome yields worse", () => {
-  const { result } = core.computeBatchResult({
+test("pain improves but activity worsens yields a mixed stop result", () => {
+  const { result, responseRole, activityWorsened } = core.computeBatchResult({
     chiefBeforeScore: 5,
     recordedChiefScore: 3,
     chiefWasActuallyRetested: true,
@@ -56,5 +56,21 @@ test("any worse range outcome yields worse", () => {
     outcomes: ["both-match", "worse"],
     priorImprovingTreatmentCount: 0,
   });
+  assert.equal(result, "partial");
+  assert.equal(responseRole, "worsened");
+  assert.equal(activityWorsened, true);
+});
+
+test("activity worsening without symptom improvement remains worse", () => {
+  const { result, responseRole, activityWorsened } = core.computeBatchResult({
+    chiefBeforeScore: 5,
+    recordedChiefScore: 5,
+    chiefWasActuallyRetested: true,
+    rangeBeforeScore: 5,
+    outcomes: ["both-match", "worse"],
+    priorImprovingTreatmentCount: 0,
+  });
   assert.equal(result, "worse");
+  assert.equal(responseRole, "worsened");
+  assert.equal(activityWorsened, true);
 });

@@ -12,7 +12,7 @@ export type RehabSessionSummary = {
   startedScore?: number;
   endingScore?: number;
   reviewResults: Array<{ id: string; label: string; result: SessionTrend }>;
-  treatments: Array<{ id: string; label: string; result: "better" | "partial" | "same" | "worse"; responseRole?: SavedTreatmentResponseRole }>;
+  treatments: Array<{ id: string; label: string; result: "better" | "partial" | "same" | "worse"; activityWorsened?: boolean; responseRole?: SavedTreatmentResponseRole }>;
   effectiveCombination?: string[];
   continuedEffectiveTreatments: string[];
   stoppedTreatments: string[];

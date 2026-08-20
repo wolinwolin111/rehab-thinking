@@ -428,6 +428,16 @@ test("vague ankle discomfort keeps the short dorsiflexion and eversion screen", 
   assert.deepEqual(queue.slice(0, 2), ["motion:ankle-dorsiflexion", "motion:ankle-eversion"]);
 });
 
+test("the user-facing foot-bottom eversion wording prioritizes the eversion screen", () => {
+  const queue = rankPilotAssessmentIds({
+    ...baseInput,
+    regionIds: ["ankle-foot"],
+    locations: ["外踝"],
+    currentTask: "脚底向外转",
+  }, ["motion:ankle-dorsiflexion", "motion:ankle-inversion", "motion:ankle-eversion"]);
+  assert.equal(queue[0], "motion:ankle-eversion");
+});
+
 test("treatment units deduplicate the same site and ignore unknown findings", () => {
   const findings = [
     { id: "motion:knee-extension", result: "limited" },

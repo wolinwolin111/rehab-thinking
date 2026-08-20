@@ -33,16 +33,32 @@ test("confirmed tension becomes one finding per location", () => {
   assert.deepEqual(core.buildMuscleTensionFindings({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["小腿前侧", "小腿前侧", "小腿后侧"] }), [
     {
       id: "tension:motion:calf-dorsiflexion:小腿前侧",
-      title: "小腿前侧肌张力增高",
-      detail: "与另一侧轻按比较更紧或更酸；相关动作：踝背屈",
+      title: "小腿前侧按压反应更明显",
+      detail: "两侧轻按时该区域更酸或更胀；仅作为辅助证据，相关动作：踝背屈",
       location: "小腿前侧",
     },
     {
       id: "tension:motion:calf-dorsiflexion:小腿后侧",
-      title: "小腿后侧肌张力增高",
-      detail: "与另一侧轻按比较更紧或更酸；相关动作：踝背屈",
+      title: "小腿后侧按压反应更明显",
+      detail: "两侧轻按时该区域更酸或更胀；仅作为辅助证据，相关动作：踝背屈",
       location: "小腿后侧",
     },
   ]);
+  assert.deepEqual(core.buildMuscleTensionFindings({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["小腿前侧"], professional: true })[0], {
+    id: "tension:motion:calf-dorsiflexion:小腿前侧",
+    title: "小腿前侧张力或按压阻力增高",
+    detail: "与另一侧比较张力或按压阻力增高；相关动作：踝背屈",
+    location: "小腿前侧",
+  });
   assert.deepEqual(core.buildMuscleTensionFindings({ assessmentId: "motion:calf-dorsiflexion", assessmentTitle: "踝背屈", locations: ["没有明显差别"] }), []);
+});
+
+test("bilateral tension keeps the side on the finding instead of treating the region as global", () => {
+  const findings = core.buildMuscleTensionFindings({
+    assessmentId: "shared:pilot-muscle-tension",
+    assessmentTitle: "膝关节伸直",
+    locations: ["左侧｜大腿前侧", "右侧｜大腿前侧"],
+  });
+  assert.deepEqual(findings.map((finding) => finding.side), ["左侧", "右侧"]);
+  assert.deepEqual(findings.map((finding) => finding.location), ["大腿前侧", "大腿前侧"]);
 });

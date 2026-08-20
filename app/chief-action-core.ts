@@ -92,11 +92,11 @@ const CHIEF_MOTION_ALIASES: Record<string, Array<[string, string[]]>> = {
   ],
   "ankle-foot": [
     ["ankle-dorsiflexion", ["勾脚", "脚背向上", "踝背屈"]], ["ankle-plantarflexion", ["脚背向下", "踩油门", "踮脚", "跖屈"]],
-    ["ankle-inversion", ["脚掌向内", "内翻"]], ["ankle-eversion", ["脚掌向外", "外翻"]],
+    ["ankle-inversion", ["脚掌向内", "脚底向内", "内翻"]], ["ankle-eversion", ["脚掌向外", "脚底向外", "脚底向外转", "外翻"]],
   ],
   "calf-local": [
     ["calf-dorsiflexion", ["勾脚", "脚背向上", "踝背屈"]], ["calf-plantarflexion", ["脚背向下", "跖屈", "提踵", "蹬地"]],
-    ["calf-inversion", ["脚掌向内", "内翻"]], ["calf-eversion", ["脚掌向外", "外翻"]],
+    ["calf-inversion", ["脚掌向内", "脚底向内", "内翻"]], ["calf-eversion", ["脚掌向外", "脚底向外", "脚底向外转", "外翻"]],
   ],
   "thigh-local": [
     ["thigh-front-length", ["弯膝", "屈膝", "脚跟靠近臀部", "大腿前侧拉长"]],
