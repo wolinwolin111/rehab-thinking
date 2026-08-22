@@ -23,3 +23,23 @@ test("multiple current locations remain separate clauses", () => {
   const segments = core.currentComplaintSegments("右脚踝走路疼；左膝下楼也疼；右小腿偶尔发麻。");
   assert.equal(segments.length, 3);
 });
+
+test("explicit current comparison extracts the priority side", () => {
+  assert.equal(core.extractComplaintPrioritySide("两个膝盖都疼，下楼时右侧更明显。"), "右侧");
+  assert.equal(core.extractComplaintPrioritySide("左右两侧都有不适，左边厉害一些。"), "左侧");
+  assert.equal(core.extractComplaintPrioritySide("上下楼都难受，右膝症状更重。"), "右侧");
+});
+
+test("comparison against the other side keeps the first side as priority", () => {
+  assert.equal(core.extractComplaintPrioritySide("右侧比左侧更明显。"), "右侧");
+  assert.equal(core.extractComplaintPrioritySide("左侧比右侧更明显。"), "左侧");
+});
+
+test("historical side complaints do not win over the current one", () => {
+  assert.equal(core.extractComplaintPrioritySide("以前右侧疼过，现在左侧更明显。"), "左侧");
+});
+
+test("no comparative wording yields no prefill", () => {
+  assert.equal(core.extractComplaintPrioritySide("两个膝盖都疼。"), undefined);
+  assert.equal(core.extractComplaintPrioritySide("两侧没有哪侧更明显。"), undefined);
+});
