@@ -4,11 +4,18 @@
  */
 export function scoreGuideLabel(score: number): string {
   const normalized = Math.min(10, Math.max(0, Math.round(score)));
-  if (normalized === 0) return "没有疼痛或不适";
-  if (normalized <= 2) return "刚有一点感觉";
-  if (normalized <= 4) return "轻微痛感";
-  if (normalized <= 6) return "明显难受";
-  if (normalized <= 8) return "很痛";
-  if (normalized === 9) return "接近最严重";
-  return "能想象到的最严重";
+  const labels = [
+    "没有疼痛或不适",
+    "几乎没有感觉",
+    "很轻微",
+    "轻微不适",
+    "有些明显",
+    "中等程度",
+    "比较明显",
+    "明显难受",
+    "很痛",
+    "接近最严重",
+    "能想象到的最严重",
+  ];
+  return labels[normalized];
 }
