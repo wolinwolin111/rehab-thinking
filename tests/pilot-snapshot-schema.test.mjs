@@ -3,11 +3,17 @@ import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
 
+const contractsSource = await readFile(new URL("../app/pilot-case-contracts.ts", import.meta.url), "utf8");
 const source = await readFile(new URL("../app/pilot-snapshot-schema.ts", import.meta.url), "utf8");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const schema = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+function strip(code, keepExports = false) {
+  let out = ts.transpileModule(code, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText.replace(/import\s*\{[\s\S]*?\}\s*from\s*"[^"]*";?/g, "");
+  if (!keepExports) out = out.replace(/export\s+/g, "");
+  return out;
+}
+const bundle = `${strip(contractsSource)}\n${strip(source, true)}`;
+const schema = await import(`data:text/javascript;base64,${Buffer.from(bundle).toString("base64")}`);
 
 function makeSnapshot(overrides = {}) {
   return {

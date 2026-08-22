@@ -13,6 +13,7 @@ import {
   type SaveProgressResult,
 } from "./pilot-case-contracts";
 import { buildPilotCaseView, type PilotCaseView } from "./pilot-case-view";
+import { assertAndStampPilotSnapshotSchemaVersion } from "./pilot-snapshot-schema";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -179,7 +180,10 @@ export class PilotCaseService {
     const caseId = this.createId();
     const publicCode = this.createPublicCode();
     const now = this.now();
-    const snapshotPayload = serializePilotPayload(input.initialSnapshot ?? {}, "initialSnapshot");
+    const snapshotPayload = serializePilotPayload(
+      assertAndStampPilotSnapshotSchemaVersion(input.initialSnapshot ?? {}, "initialSnapshot"),
+      "initialSnapshot",
+    );
     const eventPayload = JSON.stringify({ source: "case_creation" });
     const versions = this.dependencies.versions;
     const caseRecord: PilotCaseRecord = {
@@ -239,7 +243,10 @@ export class PilotCaseService {
     const versions = this.dependencies.versions;
     const now = this.now();
     const eventId = input.eventId ?? this.createId();
-    const snapshotPayload = serializePilotPayload(input.snapshot, "snapshot");
+    const snapshotPayload = serializePilotPayload(
+      assertAndStampPilotSnapshotSchemaVersion(input.snapshot, "snapshot"),
+      "snapshot",
+    );
     const eventPayload = serializePilotPayload(input.eventPayload, "eventPayload");
 
     return this.dependencies.repository.saveProgress({

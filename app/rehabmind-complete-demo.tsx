@@ -77,8 +77,10 @@ import { getPilotInviteToken } from "./pilot-invite-client";
 import { createLocalCaseId, savedRecordIdentity } from "./local-case-identity";
 import { clearLocalCaseRecords, clearLocalDraft, loadLocalCaseRecords, loadLocalDraft, saveLocalCaseRecords, saveLocalDraft } from "./local-case-store";
 import { createPilotDraftPersistenceController } from "./pilot-persistence-controller";
+import { pickStageAdvanceEvent } from "./stage-event-core";
 import { contentFingerprint, decidePilotRestoreSource } from "./pilot-sync-core";
-import { migratePilotSnapshot, PILOT_SNAPSHOT_SCHEMA_VERSION } from "./pilot-snapshot-schema";
+import { migratePilotSnapshot } from "./pilot-snapshot-schema";
+import { PILOT_SNAPSHOT_SCHEMA_VERSION } from "./pilot-case-contracts";
 import { PilotFeedbackPanel } from "./pilot-feedback-panel";
 import { PilotConflictPanel } from "./pilot-conflict-panel";
 import type { PilotFeedbackDraft } from "./pilot-feedback-context";
@@ -2242,6 +2244,9 @@ export default function RehabMindCompleteDemo() {
   const draftPersistenceRef = useRef<ReturnType<typeof createPilotDraftPersistenceController<PilotDraftEnvelope>> | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const pilotSaveQueuesRef = useRef<Record<string, Promise<void>>>({});
+  // AUDIT-02：阶段推进事件的已发清单（按案例）与上一阶段游标。
+  const stageEventSeenRef = useRef<Record<string, string[]>>({});
+  const lastStageForEventsRef = useRef<number>(-1);
 
   const pilotConsentRef = useRef<PilotConsentRecord | null>(null);
   const [pilotConsentGateOpen, setPilotConsentGateOpen] = useState(false);
@@ -2487,7 +2492,7 @@ export default function RehabMindCompleteDemo() {
     };
   }
 
-  function enqueuePilotRecordSync(record: SavedDemoRecord) {
+  function enqueuePilotRecordSync(record: SavedDemoRecord, options?: { eventType?: string }) {
     if (!record.snapshot) return;
     // PRIV-01：未同意试用条款前，任何记录都只保存在本机，不创建远端案例。
     const consentRecord = pilotConsentRef.current;
@@ -2532,7 +2537,7 @@ export default function RehabMindCompleteDemo() {
           access,
           snapshot: currentSnapshot,
           eventId: `session-save:${access.caseId}:${contentFingerprint(currentSnapshot)}`,
-          eventType: "session_saved",
+          eventType: options?.eventType ?? "session_saved",
           eventPayload: {
             raw: { complaint: latestRecord.complaint },
             parsed: { localCaseId: identity, legacyCaseKey: latestRecord.caseKey, status: latestRecord.status, step: currentSnapshot.step },
@@ -2572,6 +2577,26 @@ export default function RehabMindCompleteDemo() {
       });
     pilotSaveQueuesRef.current[identity] = task;
   }
+
+  // AUDIT-02：阶段首次推进时向服务器时间线写入对应字典事件，
+  // 让一个案例能按序复原「输入→确认→评估→处理→训练」的推进轨迹。
+  useEffect(() => {
+    if (reviewStep !== null) return;
+    if (!pilotConsentRef.current) return;
+    const active = [...savedRecordsRef.current].reverse().find((item) => item.pilotCaseId);
+    if (!active) {
+      lastStageForEventsRef.current = step;
+      return;
+    }
+    const identity = savedRecordIdentity(active);
+    const seen = (stageEventSeenRef.current[identity] ??= []);
+    let cursor = lastStageForEventsRef.current;
+    if (cursor < 0) cursor = step; // 首次挂载不回放历史阶段
+    lastStageForEventsRef.current = step;
+    const eventType = pickStageAdvanceEvent({ prev: cursor, next: step, seen });
+    if (!eventType) return;
+    enqueuePilotRecordSync(active, { eventType });
+  }, [step, reviewStep]);
 
   const region = useMemo<FullRegion | undefined>(() => FULL_REGIONS.find((item) => item.id === intake.regionId), [intake.regionId]);
   const workflowProfile = useMemo(() => intake.productMode

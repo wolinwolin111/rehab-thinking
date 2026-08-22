@@ -40,7 +40,7 @@ const FOCUS_STEPS: FocusStep[] = [
   {
     eyebrow: "按顺序推进",
     title: "跟着流程逐步记录",
-    description: "流程栏会显示当前阶段和可以回看的内容。每一步都保留记录，不需要一次把整套评估完成。",
+    description: "流程栏会显示当前阶段和可以回看的内容。填写内容会自动保存在本机浏览器；按右上角「保存」才会同步到服务器案例。不需要一次完成整套评估。",
     targetLabel: "康复流程",
     targetKeys: ["flow", "flow-mobile"],
     placement: "right",

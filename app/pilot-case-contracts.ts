@@ -173,6 +173,9 @@ export class PilotCaseConflictError extends PilotCaseError {
 
 export const MAX_PILOT_PAYLOAD_BYTES = 1_000_000;
 
+/** REL-01：快照数据结构版本的唯一事实来源；不兼容载荷在服务层被拒绝。 */
+export const PILOT_SNAPSHOT_SCHEMA_VERSION = 1;
+
 function objectDepth(value: unknown, depth = 0): number {
   if (!value || typeof value !== "object") return depth;
   const children = Array.isArray(value) ? value : Object.values(value as Record<string, unknown>);

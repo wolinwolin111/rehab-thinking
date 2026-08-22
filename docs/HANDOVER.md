@@ -133,7 +133,9 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 1. 按发布手册（`docs/pilot-release-readiness-execution-runbook.md`）在新环境重跑全部阻断项
 2. 人工走读 ×2（普通用户 + 专业人员视角）
 3. 双侧全链路回归：mix10 走读需先补 TENS-01 相关交互处理（见 §6 已知问题）
-4. 测试数据清点（admin purge 可用）
+4. 测试数据清点：**日常不做任何自动清理**；试用结束由产品明确指示后，用 `POST /api/pilot/admin/purge` 带 `createdBefore=<结束时刻>` 一次性全量清除并归档输出
+
+**VPS 发布操作**（REL-02 固化）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
 
 ### 阶段 3：开放粉丝群 + 观察
 
