@@ -90,19 +90,21 @@ test("ships a complete nine-region assessment and intervention library", async (
 });
 
 test("keeps NRS history, gated steps, local records and repeat-rehab paths", async () => {
-  const [demoComponent, uiSource, scoreGuideSource, nextSessionSource, trialRecordBuilderSource, page, layout, styles, content, locationPicker] = await Promise.all([
+  const [demoComponent, uiSource, scoreGuideSource, nextSessionSource, trialRecordBuilderSource, recordFlowSource, workflowSource, page, layout, styles, content, locationPicker] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/score-guide-copy.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/next-session-card.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/treatment-record-flow-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/workflow-state-core.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${nextSessionSource}\n${trialRecordBuilderSource}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${nextSessionSource}\n${trialRecordBuilderSource}\n${recordFlowSource}\n${workflowSource}\n${coreSource}`;
 
   assert.match(page, /rehabmind-complete-demo/);
   assert.match(page, /<RehabMindCompleteDemo\s*\/>/);
@@ -478,15 +480,14 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /disabled=\{!available\}/);
   assert.match(demo, /!assessmentReadyForTreatment \|\| assessmentNeedsReferral/);
   assert.match(demo, /const targetFinished = finishTarget[\s\S]*activityWorsened/);
-  assert.match(demo, /const nextIndex = result === "worse" \|\| activityWorsened \? -1/);
+  assert.match(demo, /resolveTreatmentQueueAdvance\(/);
   assert.match(demo, /const hasChiefAction = chiefScoreComparable && chiefWasRecorded/);
   assert.match(demo, /followupNeedsTreatmentFinalRetest/);
   assert.match(demo, /followupScoreConfirmed\?: boolean/);
   assert.match(demo, /followupScoreConfirmed: false/);
 
-  // Records remain on the current device and seed the next rehabilitation visit.
-  assert.match(demo, /localStorage\.getItem\("rehabmind-complete-demo-records"\)/);
-  assert.match(demo, /localStorage\.setItem\("rehabmind-complete-demo-records"/);
+  // Local records are covered by the repository contract tests; this suite only checks the page contract.
+  assert.match(demo, /eventId: `session-save:\$\{access\.caseId\}:\$\{contentFingerprint\(currentSnapshot\)\}`/);
   assert.match(demo, /candidateIsAvailable/);
   assert.match(demo, /candidate-safety-core/);
   assert.match(demo, /stabbingSpread/);
@@ -574,15 +575,17 @@ test("a new follow-up symptom invalidates the old complaint-derived state", asyn
 });
 
 test("covers the full-positive, bilateral, no-action and extreme-input pilot rules", async () => {
-  const [demoComponent, uiSource, scoreGuideSource, content, styles, outcome] = await Promise.all([
+  const [demoComponent, uiSource, scoreGuideSource, recordFlowSource, chiefHistorySource, content, styles, outcome] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/score-guide-copy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/treatment-record-flow-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../app/stage-outcome-sections.tsx", import.meta.url), "utf8"),
   ]);
-  const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${coreSource}`;
+  const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${recordFlowSource}\n${chiefHistorySource}\n${coreSource}`;
 
   // Intake fallbacks and typo tolerance.
   assert.match(demo, /说不清 \/ 没有固定动作/);
@@ -720,7 +723,8 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /onPointerUp=\{commitDraft\}/);
   assert.match(demo, /onTouchEnd=\{commitDraft\}/);
   assert.match(demo, /scoreGuideLabel\(displayedValue\)/);
-  assert.match(demo, /刚有一点感觉/);
+  assert.match(demo, /几乎没有感觉/);
+  assert.match(demo, /中等程度/);
   assert.match(demo, /明显难受/);
   assert.match(demo, /能想象到的最严重/);
   assert.doesNotMatch(demo, /基本不影响动作/);
@@ -762,7 +766,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /candidate-treatment-core/);
   assert.doesNotMatch(demo, /轻柔松解轻柔松解/);
   assert.doesNotMatch(demo, /踝背屈）· 活动度检查/);
-  assert.match(demo, /item\.chiefRetested && !item\.reviewOnly/);
+  assert.match(demo, /hasRecordedChiefRetest\(trialRecords\)/);
   assert.match(demo, /candidateControlMotionIds/);
   assert.match(demo, /candidate-action-core/);
   assert.match(demo, /chiefNeedsFinalRetest/);
@@ -770,7 +774,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /batchedResult/);
   assert.match(demo, /chiefStillSymptomatic/);
   assert.match(demo, /chiefImprovedDuringTreatment/);
-  assert.match(demo, /item\.chiefRetested && !item\.reviewOnly/);
+  assert.match(demo, /hasRecordedChiefRetest\(trialRecords\)/);
   assert.match(demo, /chiefWasActuallyRetested/);
   assert.match(demo, /shouldRetestChiefInBatch/);
   assert.match(demo, /本次流程/);
@@ -941,13 +945,14 @@ test("chief function answers are not overwritten and dynamic treatment queues ke
   assert.match(demo, /const \[pendingTrialAdvance, setPendingTrialAdvance\] = useState<PendingQueueAdvance \| null>\(null\)/);
   assert.match(demo, /function advanceToNextTrialTarget\(rebuildFromQueue = false\)/);
   assert.match(demo, /pendingTrialAdvance !== null/);
-  assert.match(demo, /resolveDynamicQueueAdvance\(trialTargetIndex, trialTargets\.map\(targetKey\), pendingTrialAdvance\)/);
+  assert.match(demo, /resolveDynamicQueueAdvanceForTargets\(trialTargetIndex, trialTargets, pendingTrialAdvance\)/);
 });
 
 test("symptom locations are collected immediately and single-direction retests feed the joint gate", async () => {
-  const [demo, trialRecordBuilderSource] = await Promise.all([
+  const [demo, trialRecordBuilderSource, chiefHistorySource] = await Promise.all([
     readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8"),
   ]);
   const combined = `${demo}\n${trialRecordBuilderSource}`;
   const intakeQueue = demo.slice(demo.indexOf("const intakeMissingFields"), demo.indexOf("].filter(([missing]) => missing)", demo.indexOf("const intakeMissingFields")));
@@ -961,7 +966,8 @@ test("symptom locations are collected immediately and single-direction retests f
   assert.match(coreSource, /const latestDirectionOutcome = \[\.\.\.trialRecords\]\.reverse\(\)/);
   assert.match(coreSource, /\["better-passive-limited", "passive-limited"\]\.includes\(latestDirectionOutcome/);
   assert.match(demo, /if \(candidate\.type === "swelling"\) return Boolean\(prior\)/);
-  assert.match(demo, /const chiefRetestCompletedDuringTreatment = trialRecords\.some\(\(record\) =>/);
+  assert.match(chiefHistorySource, /export function hasRecordedChiefRetest/);
+  assert.match(demo, /hasRecordedChiefRetest\(trialRecords\)/);
   assert.doesNotMatch(demo, /record\.chiefRetested && !record\.reviewOnly\) \|\| hasPendingTreatmentAfterCurrent/);
   assert.doesNotMatch(demo, /const symptomLocationField = pending\.field === "目前情况"/);
 });
@@ -1052,10 +1058,14 @@ test("only shows the key-confirmation action after intake is complete", async ()
 });
 
 test("the problem ledger separates a recorded retest from a resolved problem", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const [demo, ledgerCore] = await Promise.all([
+    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/treatment-ledger-core.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(demo, /“已经复测”不等于“已经解决”/);
-  assert.match(demo, /record\.chiefRetested && record\.afterScore === 0/);
-  assert.match(demo, /outcome === "both-match"/);
+  assert.match(demo, /completedProblemIdsFromTreatmentRecords\(trialRecords, latestRangeOutcomes\)/);
+  assert.match(ledgerCore, /record\.chiefRetested && record\.afterScore === 0/);
+  assert.match(ledgerCore, /outcome === "both-match"/);
   assert.doesNotMatch(demo, /Object\.keys\(record\.rangeOutcomes \?\? \{\}\)\.map\(\(id\) => `motion:\$\{id\}`\)\]\)\);/);
   assert.match(demo, /const hasUnresolvedRangeProgress = trialRecords\.some\(\(record\) =>/);
   assert.match(demo, /Object\.values\(record\.rangeOutcomes \?\? \{\}\)\.some\(\(outcome\) => outcome !== "both-match"\)/);

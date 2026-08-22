@@ -17,8 +17,10 @@ const decisionSource = (await readFile(new URL("../app/local-limb-decision-core.
 const decisionOutput = ts.transpileModule(decisionSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const decisionCore = await import(`data:text/javascript;base64,${Buffer.from(decisionOutput).toString("base64")}`);
 const historyCore = await loadModule("../app/rehab-session-history.ts");
+const identityCore = await loadModule("../app/local-case-identity.ts");
 const regionSource = await readFile(new URL("../app/local-limb-regions.ts", import.meta.url), "utf8");
 const demoSource = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+const chiefHistorySource = await readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8");
 
 const base = {
   onset: "1～6周", mechanism: "逐渐出现", symptomType: "牵扯或紧绷",
@@ -99,7 +101,10 @@ test("session history appends sessions, updates duplicates, and exposes score tr
 test("formal demo stores one case with append-only session summaries and restores navigation state", () => {
   assert.match(demoSource, /sessionHistory\?: RehabSessionSummary\[\]/);
   assert.match(demoSource, /upsertSessionSummary\(sessionHistory, sessionSummary\)/);
-  assert.match(demoSource, /savedRecords\.filter\(\(item\) => item\.caseKey !== caseKey/);
+  const firstCase = identityCore.createLocalCaseId();
+  const secondCase = identityCore.createLocalCaseId();
+  assert.notEqual(firstCase, secondCase);
+  assert.equal(identityCore.savedRecordIdentity({ localCaseId: firstCase, caseKey: "same complaint" }), firstCase);
   assert.match(demoSource, /setSessionHistory\(snapshot\.sessionHistory \?\? record\.sessionHistory \?\? \[\]\)/);
   assert.match(demoSource, /setReadyToRetest\(snapshot\.readyToRetest \?\? false\)/);
   assert.match(demoSource, /setFollowupReadyToRetest\(snapshot\.followupReadyToRetest \?\? false\)/);
@@ -116,7 +121,8 @@ test("follow-up summaries translate paired strength ids into user-facing titles"
 });
 
 test("local treatment asks for the chief score only once so a later source cannot block retest", () => {
-  assert.match(demoSource, /const localNewSourceNeedsChiefRetest = Boolean\(localLimbDecision[\s\S]*!trialRecords\.some\(\(record\) => record\.chiefRetested && !record\.reviewOnly\)\)/);
+  assert.match(chiefHistorySource, /export function hasRecordedChiefRetest/);
+  assert.match(demoSource, /const localNewSourceNeedsChiefRetest = Boolean\(localLimbDecision[\s\S]*!hasRecordedChiefRetest\(trialRecords\)/);
   assert.match(demoSource, /const shouldRetestChiefThisRound = [\s\S]*localNewSourceNeedsChiefRetest/);
   assert.match(demoSource, /activeTarget\?\.id === "target:local-limb" && \(singleRangeRetestsChief \|\| localNewSourceNeedsChiefRetest\)/);
 });

@@ -7,11 +7,15 @@
  */
 
 import { chromium } from "playwright-core";
+import { mkdir, writeFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { agreePilotConsent, dismissOnboarding, pilotScenarioUrl } from "./real-browser-test-helpers.mjs";
 
-const URL = process.env.WALKTHROUGH_URL ?? "http://localhost:3000/";
+const URL = pilotScenarioUrl();
+const COMPLAINT = process.env.WALKTHROUGH_COMPLAINT ?? "右膝下楼时内侧刺痛，有三个月了";
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const page = await browser.newPage();
+  try {
 const runtimeErrors = [];
 page.on("pageerror", (error) => runtimeErrors.push(`pageerror:${error}`));
 page.on("console", (msg) => { if (msg.type() === "error") runtimeErrors.push(`console:${msg.text()}`); });
@@ -34,7 +38,9 @@ async function clickLocator(locator, label) {
 }
 
 await page.goto(URL, { waitUntil: "networkidle", timeout: 30000 });
-await page.locator("textarea").fill("右膝下楼时内侧刺痛，有三个月了");
+await agreePilotConsent(page);
+await dismissOnboarding(page);
+await page.locator("textarea").fill(COMPLAINT);
 await page.getByRole("button", { name: "帮我整理" }).click();
 await page.waitForTimeout(900);
 await page.getByRole("button", { name: /自助康复/ }).click();
@@ -48,11 +54,74 @@ await page.waitForTimeout(400);
 
 const recent = [];
 const trainingFeedbackDone = new Set();
+const worseningMode = process.env.WALKTHROUGH_WORSEN === "1";
+const noChangeMode = process.env.WALKTHROUGH_NO_CHANGE === "1";
+const activityBetterMode = process.env.WALKTHROUGH_ACTIVITY_BETTER === "1";
+const mixedWorseningMode = process.env.WALKTHROUGH_MIXED_WORSEN === "1";
+const walkthroughEvidenceMode = activityBetterMode
+  ? "queue-03-activity-better"
+  : mixedWorseningMode
+    ? "queue-04-mixed-worsening"
+    : noChangeMode
+      ? "queue-02-no-change"
+      : null;
+let worseningCaptured = false;
+let noChangeCaptured = false;
+let noChangeOutcomeObserved = false;
+let activityBetterCaptured = false;
+let activityBetterOutcomeObserved = false;
+let mixedWorseningCaptured = false;
+let mixedWorseningOutcomeObserved = false;
+let focusedReassessmentObserved = false;
 let locationScreenshotsTaken = false;
 const mark = (a) => { recent.push(a); if (recent.length > 10) recent.shift(); };
 
 for (let i = 0; i < 400; i++) {
   const h1 = await snap();
+  // TIME-01：首次进入评估阶段时强制刷新，验证未完成草稿能恢复到同一阶段
+  if (process.env.WALKTHROUGH_TIME01 === "1" && !globalThis.__time01Done && h1.includes("评估检查")) {
+    globalThis.__time01Done = true;
+    console.log(`[${i}] TIME-01 刷新触发 | ${h1}`);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2000);
+    const restoredH1 = await snap();
+    console.log(`[${i}] TIME-01 刷新后 H1: ${restoredH1}`);
+    if (!restoredH1.includes("评估检查")) {
+      console.log(`[${i}] TIME-01 观察：刷新后落在「${restoredH1}」，非过渡页本身——需核对答案是否保留、是否存在位置回退`);
+    }
+  }
+  if (noChangeMode && noChangeCaptured) {
+    const currentTreatmentText = ((await page.locator(".rm-retest:visible").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+    if (/分数未变|与处理前相同|下降 0 分|主诉未同步改变|本次试处理没有改变主诉/.test(currentTreatmentText)) noChangeOutcomeObserved = true;
+  }
+  if (activityBetterMode && activityBetterCaptured) {
+    const currentTreatmentText = ((await page.locator(".rm-retest:visible").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+    if (/活动表现有变化|活动范围有改善|原来的不适暂未明显改变|有改善|未达到比较目标/.test(currentTreatmentText)) activityBetterOutcomeObserved = true;
+  }
+  if (mixedWorseningMode && mixedWorseningCaptured) {
+    const currentBody = ((await page.locator("main").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+    if (/疼痛评分下降，但活动表现变差|活动表现变差|处理已暂停/.test(currentBody)) mixedWorseningOutcomeObserved = true;
+  }
+  if (activityBetterMode && activityBetterCaptured && activityBetterOutcomeObserved && h1.includes("针对性处理")) {
+    console.log(`[${i}] 已捕获活动改善与主诉分数不变的复测结果，停止本次走读`);
+    break;
+  }
+  if (noChangeMode && noChangeCaptured && noChangeOutcomeObserved && h1.includes("针对性处理")) {
+    console.log(`[${i}] 已捕获复测分数不变的结果，停止本次走读`);
+    break;
+  }
+  if (noChangeMode && noChangeCaptured && h1.includes("本阶段成果")) {
+    const summaryText = ((await page.locator("main").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+    noChangeOutcomeObserved = noChangeOutcomeObserved || /下降 0 分|主诉未同步改变|本次试处理没有改变主诉|分数未变/.test(summaryText);
+    if (noChangeOutcomeObserved) {
+      console.log(`[${i}] 已在本阶段成果捕获复测分数不变的结果，停止本次走读`);
+      break;
+    }
+  }
+  if (mixedWorseningMode && mixedWorseningCaptured && mixedWorseningOutcomeObserved) {
+    console.log(`[${i}] 已捕获疼痛改善但活动变差的停止结果，停止本次走读`);
+    break;
+  }
   if (process.env.WALKTHROUGH_SCREENSHOT && !locationScreenshotsTaken && h1.includes("肌肉紧张度对比")) {
     await page.screenshot({ path: ".tmp-muscle-location-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
@@ -70,13 +139,73 @@ for (let i = 0; i < 400; i++) {
     console.log(`[${i}] 总结页 | 含[针对性自主放松]: ${c.includes("针对性自主放松")}`);
   }
   let acted = false;
+  if (worseningMode) {
+    const loopBody = ((await page.locator("main").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+    if (/只复查相关内容|待重新评估|处理后加重|本次处理已暂停|确认加重后的变化|症状或活动表现变差/.test(loopBody)) focusedReassessmentObserved = true;
+    if (focusedReassessmentObserved && await page.locator(".rm-focused-reassessment:visible").count()) {
+      console.log(`[${i}] 已进入聚焦复查入口 | ${h1}`);
+      break;
+    }
+    const retestSlider = page.locator(".rm-retest:visible input[type=range]").first();
+    if (!worseningCaptured && h1.includes("针对性处理") && await retestSlider.count()) {
+      await retestSlider.fill("8");
+      await page.waitForTimeout(300);
+      worseningCaptured = true;
+      mark("处理后加重");
+      console.log(`[${i}] 处理复测故意提高评分 | ${h1}`);
+      acted = true;
+    }
+    if (!acted && h1.includes("本次处理已暂停")) {
+      const confirmWorsening = page.getByRole("button", { name: /确认加重后的变化/ }).first();
+      if (await confirmWorsening.count() && !await confirmWorsening.isDisabled().catch(() => true)) {
+        await confirmWorsening.click();
+        await page.waitForTimeout(500);
+        focusedReassessmentObserved = true;
+        mark("确认加重后的变化");
+        console.log(`[${i}] 确认加重并进入复查 | ${h1}`);
+        acted = true;
+      }
+    }
+    if (!acted && /更不舒服$/.test(h1)) {
+      const adverseSlider = page.locator(".rm-adverse-page input[type=range]").first();
+      const adverseScore = page.locator(".rm-adverse-page .rm-score").first();
+      if (await adverseSlider.count() && !((await adverseScore.getAttribute("class")) || "").includes("is-recorded")) {
+        await adverseSlider.fill("8");
+        await page.waitForTimeout(250);
+        mark("确认停止后评分");
+        acted = true;
+      }
+      if (!acted) {
+        for (const label of ["是，逐渐回落", "位置没变", "感觉没变", "没有"]) {
+          const answer = page.getByRole("button", { name: label, exact: true }).first();
+          if (await answer.count() && !((await answer.getAttribute("class")) || "").includes("is-selected")) {
+            await answer.click();
+            await page.waitForTimeout(180);
+            mark(`异常变化：${label}`);
+            acted = true;
+            break;
+          }
+        }
+      }
+      if (!acted) {
+        const confirm = page.getByRole("button", { name: "确认并继续", exact: true }).first();
+        if (await confirm.count() && !await confirm.isDisabled().catch(() => true)) {
+          await confirm.click();
+          await page.waitForTimeout(450);
+          mark("进入聚焦复查");
+          focusedReassessmentObserved = true;
+          acted = true;
+        }
+      }
+    }
+  }
   // select 需用 selectOption，不能 click
   const sel = page.locator("select").first();
-  if ((await sel.count()) && !(await sel.inputValue())) {
+  if (!acted && (await sel.count()) && !(await sel.inputValue())) {
     await sel.selectOption({ index: 1 }).catch(() => {});
     await page.waitForTimeout(300);
     mark("SELECT"); console.log(`[${i}] SELECT | ${h1}`); acted = true;
-  } else {
+  } else if (!acted) {
     // 多实例同文案按钮：点第一个未选中的「没有」/「没有不适」（安全问答、多方向复测不适）
     let multiClicked = false;
     for (const label of ["没有", "没有不适"]) {
@@ -192,6 +321,63 @@ for (let i = 0; i < 400; i++) {
     }
   }
   if (!acted) {
+    if (noChangeMode && !noChangeCaptured && h1.includes("针对性处理")) {
+      const retest = page.locator(".rm-retest:visible input[type=range]").first();
+      if (await retest.count()) {
+        const retestBody = ((await page.locator(".rm-retest:visible").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+        const before = retestBody.match(/处理前\s*(\d+)\s*\/10/)?.[1];
+        if (before !== undefined) {
+          await retest.fill(before);
+          await page.waitForTimeout(300);
+          noChangeCaptured = true;
+          const outcomeText = ((await page.locator(".rm-auto-result:visible").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+          noChangeOutcomeObserved = /分数未变|与处理前相同|无变化|下降 0 分/.test(outcomeText);
+          mark("处理后无变化");
+          console.log(`[${i}] 处理复测故意保持原分数 ${before}/10`);
+          acted = true;
+        }
+      }
+    }
+  }
+  if (!acted) {
+    if (activityBetterMode && !activityBetterCaptured && h1.includes("针对性处理")) {
+      const retest = page.locator(".rm-retest:visible").first();
+      const improvedRange = retest.getByRole("button", { name: /部分改善|有所改善/ }).first();
+      if (await improvedRange.count() && !await improvedRange.isDisabled().catch(() => true)) {
+        await improvedRange.click();
+        const retestText = ((await retest.textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+        const before = retestText.match(/处理前\s*(\d+)\s*\/10/)?.[1];
+        const score = retest.locator('input[type="range"]').first();
+        if (await score.count() && before !== undefined) await score.fill(before);
+        await page.waitForTimeout(300);
+        const outcomeText = ((await retest.locator(".rm-auto-result:visible").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+        activityBetterOutcomeObserved = /活动表现有变化|活动范围有改善|有改善|未达到比较目标/.test(outcomeText);
+        activityBetterCaptured = true;
+        mark("活动改善但主诉不变");
+        console.log(`[${i}] 处理复测记录活动改善，主诉分数保持 ${before ?? "原值"}/10`);
+        acted = true;
+      }
+    }
+  }
+  if (!acted) {
+    if (mixedWorseningMode && !mixedWorseningCaptured && h1.includes("针对性处理")) {
+      const retest = page.locator(".rm-retest:visible").first();
+      const worseRange = retest.getByRole("button", { name: /^变差/ }).first();
+      if (await worseRange.count() && !await worseRange.isDisabled().catch(() => true)) {
+        await worseRange.click();
+        const retestText = ((await retest.textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
+        const before = Number(retestText.match(/处理前\s*(\d+)\s*\/10/)?.[1] ?? 5);
+        const score = retest.locator('input[type="range"]').first();
+        if (await score.count()) await score.fill(String(Math.max(0, before - 1)));
+        await page.waitForTimeout(300);
+        mixedWorseningCaptured = true;
+        mark("疼痛改善但活动变差");
+        console.log(`[${i}] 处理复测记录活动变差，主诉分数下降为 ${Math.max(0, before - 1)}/10`);
+        acted = true;
+      }
+    }
+  }
+  if (!acted) {
     const ranges = page.locator('input[type=range]');
     for (let k = 0; k < (await ranges.count()); k++) {
       const range = ranges.nth(k);
@@ -232,6 +418,52 @@ console.log("含[针对性自主放松]:", body.includes("针对性自主放松"
 console.log("含[有效处理]:", body.includes("有效处理"));
 console.log("含[活动范围变化]:", body.includes("活动范围变化"));
 console.log("浏览器运行时错误数:", runtimeErrors.length, runtimeErrors.slice(0, 3));
-assert.match(h1, /本次康复总结/, `真实流程未到达总结页，当前 h1：${h1}`);
+if (worseningMode) {
+  assert.equal(worseningCaptured, true, "没有在处理复测阶段故意制造加重结果");
+  assert.equal(focusedReassessmentObserved, true, "处理加重后没有出现停止或聚焦复查证据");
+  assert.doesNotMatch(h1, /今天需要做的训练|本次康复总结/, `处理加重不应直接进入训练或总结：${h1}`);
+  assert.match(body, /处理后加重|待重新评估|只复查相关内容|重新评估/);
+} else if (noChangeMode) {
+  assert.equal(noChangeCaptured, true, "没有在第一项处理的复测阶段故意保持原分数");
+  noChangeOutcomeObserved = noChangeOutcomeObserved || /下降 0 分|主诉未同步改变|分数未变|无变化/.test(body);
+  assert.equal(noChangeOutcomeObserved, true, "复测或总结页面没有显示分数未变的结果");
+  assert.match(body, /下降 0 分|主诉未同步改变|分数未变|无变化|换下一项|本阶段成果|训练与居家方案/, "无变化后没有留下继续处理或观察出口");
+} else if (activityBetterMode) {
+  assert.equal(activityBetterCaptured, true, "没有在处理复测阶段记录活动改善且主诉分数不变");
+  activityBetterOutcomeObserved = activityBetterOutcomeObserved || /活动表现有变化|活动范围有改善|原来的不适暂未明显改变|有改善|未达到比较目标/.test(body);
+  assert.equal(activityBetterOutcomeObserved, true, "页面没有显示活动改善与主诉未同步改善的分离结果");
+  assert.match(body, /活动表现有变化|活动范围有改善|原来的不适暂未明显改变|有改善|未达到比较目标|本阶段成果|本次康复总结/);
+} else if (mixedWorseningMode) {
+  assert.equal(mixedWorseningCaptured, true, "没有在处理复测阶段记录活动变差且主诉分数下降");
+  mixedWorseningOutcomeObserved = mixedWorseningOutcomeObserved || /疼痛评分下降，但活动表现变差|活动表现变差|处理已暂停/.test(body);
+  assert.equal(mixedWorseningOutcomeObserved, true, "页面没有显示疼痛改善但活动恶化的停止出口");
+  assert.match(body, /疼痛评分下降，但活动表现变差|活动表现变差|处理已暂停/);
+} else {
+  assert.match(h1, /本次康复总结/, `真实流程未到达总结页，当前 h1：${h1}`);
+}
 assert.equal(runtimeErrors.length, 0, `浏览器运行时出现错误：${runtimeErrors.join(" | ")}`);
-await browser.close();
+if (walkthroughEvidenceMode) {
+  const evidenceDir = "artifacts/quality/walkthrough";
+  await mkdir(evidenceDir, { recursive: true });
+  await writeFile(`${evidenceDir}/${walkthroughEvidenceMode}.json`, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    mode: walkthroughEvidenceMode,
+    captured: walkthroughEvidenceMode === "queue-03-activity-better"
+      ? activityBetterCaptured
+      : walkthroughEvidenceMode === "queue-04-mixed-worsening"
+        ? mixedWorseningCaptured
+        : noChangeCaptured,
+    outcomeObserved: walkthroughEvidenceMode === "queue-03-activity-better"
+      ? activityBetterOutcomeObserved
+      : walkthroughEvidenceMode === "queue-04-mixed-worsening"
+        ? mixedWorseningOutcomeObserved
+        : noChangeOutcomeObserved,
+    finalHeading: h1,
+    runtimeErrors,
+  }, null, 2), "utf8");
+  console.log(`走读证据已写入 ${evidenceDir}/${walkthroughEvidenceMode}.json`);
+}
+if (worseningMode) await page.screenshot({ path: ".tmp-b-treatment-worsening.png", fullPage: true });
+} finally {
+  await browser.close();
+}
