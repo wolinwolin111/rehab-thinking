@@ -7,26 +7,35 @@
  */
 
 import { chromium } from "playwright-core";
+import { agreePilotConsent, dismissOnboarding, pilotScenarioUrl } from "./real-browser-test-helpers.mjs";
 
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const page = await browser.newPage();
+  try {
 const runtimeErrors = [];
 page.on("pageerror", (error) => runtimeErrors.push(`pageerror:${error}`));
 page.on("console", (msg) => { if (msg.type() === "error") runtimeErrors.push(`console:${msg.text()}`); });
 
 const snap = () => page.locator("h1").first().textContent().catch(() => "(无)");
 const NEXT = /下一步|选好了|进入关键确认|开始评估|查看评估结果|评估完成|完成并继续|处理完成|开始复测|记录本轮|查看训练|完成当前安排|继续填写影像结论|保存，开始评估|下一个检查|完成这项检查|开始处理并复测|^继续$|进入训练|开始训练|保存并继续|进入关键确认|打开检查|评估完成，进入处理|检查相关肌肉|完成触诊/;
+const hasJointCapability = process.env.PATELLA_JOINT !== "0";
+const patellaAssessmentCardCounts = [];
+const patellaTreatmentTitles = [];
 
-await page.goto("http://localhost:3000/", { waitUntil: "networkidle", timeout: 30000 });
+await page.goto(pilotScenarioUrl("http://localhost:3000/"), { waitUntil: "networkidle", timeout: 30000 });
+await agreePilotConsent(page);
+await dismissOnboarding(page);
 await page.locator("textarea").fill("右膝下楼时髌骨周围刺痛，有三个月了");
 await page.getByRole("button", { name: "帮我整理" }).click();
 await page.waitForTimeout(900);
 await page.getByRole("button", { name: /康复思路模式/ }).click();
 await page.waitForTimeout(800);
+await page.getByRole("button", { name: /下一步/ }).click();
+await page.waitForTimeout(800);
 await page.getByRole("button", { name: /协助他人检查/ }).click();
 await page.waitForTimeout(800);
 // 声明能力：被动活动度 / 基础触诊 / 关节处理
-for (const cap of ["被动活动度", "基础触诊", "关节处理"]) {
+for (const cap of ["被动活动度", "基础触诊", ...(hasJointCapability ? ["关节处理"] : [])]) {
   const b = page.getByRole("button", { name: cap, exact: true }).first();
   if (await b.count() && !((await b.getAttribute("class")) || "").includes("is-selected")) { await b.click(); await page.waitForTimeout(250); }
 }
@@ -48,8 +57,15 @@ async function clickUnselected(label) {
 
 for (let i = 0; i < 200; i++) {
   const h1 = await snap();
+  if (h1.includes("髌骨四方向被动活动")) {
+    const count = await page.locator(".rm-patella-direction").count();
+    patellaAssessmentCardCounts.push(count);
+    console.log(`[${i}] 髌骨方向卡数: ${count}`);
+  }
   if (h1.includes("针对性处理")) {
     const c = await page.content();
+    const titles = await page.locator(".rm-treatment-card .rm-treatment-action h2").allTextContents();
+    patellaTreatmentTitles.push(...titles.map((title) => title.trim()).filter(Boolean));
     console.log(`[${i}] 处理页 | 含[滑动辅助]: ${c.includes("滑动辅助")} | 含[patella-mobility-unit]: ${c.includes("patella-mobility-unit")} | 含[髌骨向上]: ${c.includes("髌骨向上")}`);
   }
   let acted = false;
@@ -69,10 +85,14 @@ for (let i = 0; i < 200; i++) {
     if (await limited.count() && !((await limited.getAttribute("class")) || "").includes("is-selected")) {
       await limited.click().catch(() => {}); await page.waitForTimeout(250); mark("患侧偏小"); console.log(`[${i}] 患侧偏小 | ${h1}`); acted = true;
     } else {
+      const noDifference = page.locator("button:visible").filter({ hasText: "没有明显差别" }).first();
+      if (await noDifference.count() && !((await noDifference.getAttribute("class")) || "").includes("is-selected")) {
+        await noDifference.click(); await page.waitForTimeout(250); mark("肌肉无明显差别"); console.log(`[${i}] 肌肉无明显差别 | ${h1}`); acted = true;
+      }
       // 网格单选（含髌骨四方向）
       const grids = page.locator(".rm-result-grid");
-      let gClicked = false;
-      for (let gi = 0; gi < (await grids.count()); gi++) {
+      let gClicked = acted;
+      for (let gi = 0; gi < (await grids.count()) && !gClicked; gi++) {
         const btns = grids.nth(gi).locator("button");
         let any = false;
         for (let b = 0; b < (await btns.count()); b++) { if (((await btns.nth(b).getAttribute("class")) || "").includes("is-selected")) { any = true; break; } }
@@ -117,10 +137,27 @@ for (let i = 0; i < 200; i++) {
 
 const finalH1 = await snap();
 const body = await page.content();
+await page.screenshot({ path: hasJointCapability ? ".tmp-patella.png" : ".tmp-patella-no-joint.png", fullPage: true });
 console.log("\n=== 终点 h1:", finalH1);
 console.log("含[patella-mobility-unit]:", body.includes("patella-mobility-unit"));
 console.log("含[滑动辅助]:", body.includes("滑动辅助"));
 console.log("含[髌骨向上]:", body.includes("髌骨向上"));
 console.log("含[本阶段成果]:", body.includes("本阶段成果"));
+console.log("髌骨方向卡数:", patellaAssessmentCardCounts.join(","));
+console.log("髌骨处理标题:", [...new Set(patellaTreatmentTitles)].join(" | "));
+console.log("关节处理能力:", hasJointCapability ? "已声明" : "未声明");
 console.log("浏览器运行时错误数:", runtimeErrors.length, runtimeErrors.slice(0, 3));
-await browser.close();
+if (!patellaAssessmentCardCounts.includes(4)) throw new Error(`髌骨场景未实际渲染四张方向卡：${patellaAssessmentCardCounts.join(",")}`);
+const patellaTreatmentTitlesOnly = patellaTreatmentTitles.filter((title) => /髌骨向(?:上|下|内|外)滑动辅助/.test(title));
+const uniquePatellaTreatmentTitles = [...new Set(patellaTreatmentTitlesOnly)];
+if (hasJointCapability && (uniquePatellaTreatmentTitles.length !== 1 || uniquePatellaTreatmentTitles[0] !== "髌骨向上滑动辅助")) {
+  throw new Error(`髌骨场景处理卡方向不符合预期：${uniquePatellaTreatmentTitles.join(" | ")}`);
+}
+if (!hasJointCapability && uniquePatellaTreatmentTitles.length) throw new Error(`未声明关节处理能力却生成髌骨处理卡：${uniquePatellaTreatmentTitles.join(" | ")}`);
+if (uniquePatellaTreatmentTitles.some((title) => /髌骨向下|髌骨向内|髌骨向外/.test(title))) throw new Error("髌骨场景错误生成了其他方向处理卡");
+if (!/针对性处理|处理复测|本阶段成果|今天需要做的训练|本次康复完成/.test(finalH1)) throw new Error(`髌骨场景未到达处理或明确结果出口：${finalH1}`);
+if (hasJointCapability && !body.includes("髌骨向上")) throw new Error("髌骨场景缺少实际方向结果文本");
+if (runtimeErrors.length) throw new Error(`浏览器运行时出现错误：${runtimeErrors.join(" | ")}`);
+} finally {
+  await browser.close();
+}

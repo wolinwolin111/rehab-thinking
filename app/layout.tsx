@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 import "./complete-demo.css";
+import "./rm-visual-theme.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const incomingHeaders = await headers();

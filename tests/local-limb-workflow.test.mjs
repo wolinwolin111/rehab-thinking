@@ -74,9 +74,10 @@ test("location picker keeps one main region while allowing several precise compl
   const source = await readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8");
   assert.match(source, /id: "thigh"[^\n]+regionId: "thigh-local"/);
   assert.match(source, /id: "calf"[^\n]+regionId: "calf-local"/);
-  assert.match(source, /mode === "complaint" \? 1/);
-  assert.match(source, /const sameMainArea = value\.every/);
-  assert.match(source, /if \(!sameMainArea\)/);
+  assert.doesNotMatch(source, /mode === "complaint" \? 1/);
+  assert.match(source, /mode === "complaint"/);
+  assert.match(source, /const mixesMainAreas = value\.some/);
+  assert.match(source, /if \(mixesMainAreas\)/);
   assert.match(source, /onChange\(\[\.\.\.value, nextItem\]\)/);
 });
 

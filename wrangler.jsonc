@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rehabmind",
+  "account_id": "3a848f1a661933e85ab569606ef3ffdf",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-15",
+  "workers_dev": true,
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rehabmind-preview",
+      "database_id": "5e51ff35-77f2-471d-998b-1804f8a30d0c",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}

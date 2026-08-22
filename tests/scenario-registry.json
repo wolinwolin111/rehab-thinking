@@ -1,0 +1,155 @@
+[
+  {
+    "scenarioId": "UX-01-onboarding",
+    "ruleIds": ["UX-01"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/known-defects/ux-regression.spec.ts",
+    "titlePattern": "UX-01 聚焦教程逐步完成、可跳过并能重新打开",
+    "tags": ["target", "visual-adjacent"]
+  },
+  {
+    "scenarioId": "UX-01-primary-entry",
+    "ruleIds": ["UX-01", "CONTENT-01"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/known-defects/ux-regression.spec.ts",
+    "titlePattern": "UX-01 页面关键入口具有可操作尺寸",
+    "tags": ["target", "visual"]
+  },
+  {
+    "scenarioId": "UX-01-score-slider",
+    "ruleIds": ["UX-01", "TEST-08"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/known-defects/ux-regression.spec.ts",
+    "titlePattern": "页面的关键评分滑条从未选择状态开始",
+    "tags": ["target", "visual"]
+  },
+  {
+    "scenarioId": "INT-05-chief-progression",
+    "ruleIds": ["INT-05"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "INT-05 主诉动作先独立检查",
+    "tags": ["p0"]
+  },
+  {
+    "scenarioId": "INT-07-multi-action-queue",
+    "ruleIds": ["INT-07"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "INT-07 多个功能动作分别进入独立评估队列",
+    "tags": ["p0"]
+  },
+  {
+    "scenarioId": "SAFE-04-neural-safety",
+    "ruleIds": ["SAFE-04"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "SAFE-04 麻电和感觉变化进入专业确认出口",
+    "tags": ["p0"]
+  },
+  {
+    "scenarioId": "MIX-03-safety-priority",
+    "ruleIds": ["MIX-03"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "MIX-03 疼痛、肿胀和麻电同时出现时安全确认优先",
+    "tags": ["p0"]
+  },
+  {
+    "scenarioId": "PERM-04-capability-revoke",
+    "ruleIds": ["PERM-04"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "PERM-04 取消被动活动能力后关节处理旧入口失效",
+    "tags": ["p0"]
+  },
+  {
+    "scenarioId": "SAVE-01-local-draft-refresh",
+    "ruleIds": ["SAVE-01", "DATA-01"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/persistence.spec.ts",
+    "titlePattern": "SAVE-01 输入后自动保存本机草稿",
+    "tags": ["p0", "persistence"]
+  },
+  {
+    "scenarioId": "RET-02-different-action-isolation",
+    "ruleIds": ["RET-02"],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "RET-02 不同活动动作分别完成处理后复测",
+    "tags": ["p0", "decision", "retest"]
+  },
+  {
+    "scenarioId": "MIX-06-functional-pain-with-normal-range",
+    "ruleIds": ["MIX-06"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/divergent/decision-combinations.spec.ts",
+    "titlePattern": "MIX-06 活动接近健侧但功能动作仍疼痛",
+    "tags": ["divergent", "decision"]
+  },
+  {
+    "scenarioId": "MIX-07-limited-range-without-pain",
+    "ruleIds": ["MIX-07"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/divergent/decision-combinations.spec.ts",
+    "titlePattern": "MIX-07 活动受限但没有疼痛",
+    "tags": ["divergent", "decision"]
+  },
+  {
+    "scenarioId": "MIX-02-swelling-without-fixed-pain-action",
+    "ruleIds": ["MIX-02"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/divergent/swelling-and-queue.spec.ts",
+    "titlePattern": "MIX-02 只有肿胀没有固定疼痛动作",
+    "tags": ["divergent", "decision", "observation"]
+  },
+  {
+    "scenarioId": "MIX-11-mixed-normal-unknown-abnormal",
+    "ruleIds": ["MIX-11"],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/divergent/swelling-and-queue.spec.ts",
+    "titlePattern": "MIX-11 正常、未知和异常结果混合",
+    "tags": ["divergent", "decision", "mixed-results"]
+  },
+  {
+    "scenarioId": "VISUAL-home-layout",
+    "ruleIds": ["UX-01", "CONTENT-01"],
+    "priority": "P1",
+    "evidenceType": "visual",
+    "script": "tests/browser/visual/critical-layout.spec.ts",
+    "titlePattern": "首页聚焦式教程与症状入口",
+    "tags": ["visual", "layout"]
+  },
+  {
+    "scenarioId": "VISUAL-assessment-queue-layout",
+    "ruleIds": ["INT-07", "UX-03"],
+    "priority": "P1",
+    "evidenceType": "visual",
+    "script": "tests/browser/visual/critical-layout.spec.ts",
+    "titlePattern": "评估队列保留多个独立功能动作",
+    "tags": ["visual", "layout", "decision"]
+  },
+  {
+    "scenarioId": "VISUAL-home-mobile-layout",
+    "ruleIds": ["UX-03"],
+    "priority": "P1",
+    "evidenceType": "visual",
+    "script": "tests/browser/visual/critical-layout.spec.ts",
+    "titlePattern": "移动端首页不产生横向溢出",
+    "tags": ["visual", "mobile"]
+  }
+]

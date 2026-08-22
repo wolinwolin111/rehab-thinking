@@ -25,8 +25,8 @@ export function canonicalActionIdFromAssessmentId(value: string) {
 const LABEL_ACTION_ALIASES: Array<[string, RegExp]> = [
   ["ankle-dorsiflexion", /勾脚|脚背(?:向上|靠近小腿)|踝(?:关节)?背屈/],
   ["ankle-plantarflexion", /脚背向下|脚掌向下压|踝(?:关节)?跖屈/],
-  ["ankle-inversion", /脚掌向内|踝(?:关节)?内翻/],
-  ["ankle-eversion", /脚掌向外|踝(?:关节)?外翻/],
+  ["ankle-inversion", /脚(?:掌|底)向内|踝(?:关节)?内翻/],
+  ["ankle-eversion", /脚(?:掌|底)向外|踝(?:关节)?外翻/],
   ["knee-flexion", /弯膝|屈膝|膝(?:关节)?弯曲|脚跟靠近臀部|大腿前侧拉长/],
   ["knee-extension", /绷直膝盖|伸直膝盖|膝(?:关节)?伸直/],
   ["step-down", /下楼梯|下台阶|台阶下降/],
@@ -106,6 +106,19 @@ export function samePhysicalAction(left?: string, right?: string) {
   return Boolean(left && right && canonicalActionIdFromAssessmentId(left) === canonicalActionIdFromAssessmentId(right));
 }
 
+/**
+ * 从按动作 id 保存的记录中读取一个物理动作的值。
+ *
+ * 同一动作可能先后由不同模块写成 `ankle-eversion`、`calf-eversion`，
+ * 或带有 `motion:` 前缀。决策层读取历史时不能只做对象的精确索引，
+ * 否则页面已经记录的复测会在台账里重新变成“未完成”。
+ */
+export function valueForPhysicalAction<T>(values: Record<string, T> | undefined, actionId?: string): T | undefined {
+  if (!values || !actionId) return undefined;
+  if (Object.hasOwn(values, actionId)) return values[actionId];
+  return Object.entries(values).find(([key]) => samePhysicalAction(key, actionId))?.[1];
+}
+
 /** 按物理动作去重复测 finding，保留输入元素类型。 */
 export function dedupeRetestFindingsByAction<T extends MotionFindingInput>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -125,7 +138,7 @@ export type MotionSymptomRecord = {
 
 /** 方向是否已知有不适：主诉同动作、主动/被动不适或无法完成(痛)都算。 */
 export function motionWasSymptomatic(directionId: string, assessmentResults: Record<string, MotionSymptomRecord | undefined>, chiefDirection?: string) {
-  const record = assessmentResults[`motion:${directionId}`];
+  const record = valueForPhysicalAction(assessmentResults, `motion:${directionId}`);
   return samePhysicalAction(chiefDirection, directionId)
     || record?.discomfort === "yes"
     || record?.unableReason === "pain"

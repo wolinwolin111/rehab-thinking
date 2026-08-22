@@ -74,3 +74,17 @@ test("all six capability bits are normalized across all 64 combinations", () => 
     if (!caps.passiveRange || !caps.jointMobilization) assert.equal(profile.canMobilizeJoint, false);
   }
 });
+
+test("joint mobilization capability requires passive range and clears when passive is removed", () => {
+  const blocked = core.toggleCapability(core.emptyCapabilities(), "jointMobilization");
+  assert.equal(blocked.accepted, false);
+  assert.equal(blocked.capabilities.jointMobilization, false);
+  const withPassive = core.toggleCapability(core.emptyCapabilities(), "passiveRange");
+  const enabled = core.toggleCapability(withPassive.capabilities, "jointMobilization");
+  assert.equal(enabled.accepted, true);
+  assert.equal(enabled.capabilities.jointMobilization, true);
+  const cleared = core.toggleCapability(enabled.capabilities, "passiveRange");
+  assert.equal(cleared.capabilities.passiveRange, false);
+  assert.equal(cleared.capabilities.jointMobilization, false);
+  assert.match(cleared.message ?? "", /被动活动度/);
+});

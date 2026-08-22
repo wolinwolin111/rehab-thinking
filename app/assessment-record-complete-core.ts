@@ -6,7 +6,7 @@
  * 队列推进与专业工作台共用。依赖三个已抽取 core 的字段推导，只读取最小结构字段。
  */
 
-import { strengthAnswerForWorkflow, strengthAnswerResult, type StrengthAnswer, type StrengthUnableReason } from "./assessment-answer-core";
+import { strengthAnswerResult, type StrengthAnswer, type StrengthUnableReason } from "./assessment-answer-core";
 import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "./function-assessment-core";
 import { activeMotionRecordComplete, motionNeedsPassive, passiveMotionRecordComplete } from "./motion-assessment-core";
 
@@ -23,6 +23,7 @@ export type AssessmentCompleteRecord = {
   simple?: StrengthAnswer;
   functionUnableReason?: string;
   worseSide?: string;
+  bilateralComparison?: string;
   compensations?: string[];
   discomfortLocation?: string;
   discomfortType?: string;
@@ -60,7 +61,7 @@ export function assessmentRecordComplete(
     if (completion === "skip") return true;
     if (completion === "unable" && !record.functionUnableReason) return false;
     if (completion === "complete" && (!control || !discomfort)) return false;
-    if (bilateral && (record.functionUnableReason === "weak" || control === "compensated" || discomfort === "yes") && !record.worseSide) return false;
+    if (bilateral && !record.bilateralComparison && !record.worseSide) return false;
     if (control === "compensated" && !record.compensations?.length) return false;
     if (completion === "unable" && record.functionUnableReason !== "pain") return true;
     if (completion === "unable" || discomfort === "yes") return Boolean(record.discomfortLocation?.trim() && record.discomfortType && typeof record.symptomScore === "number" && (!requireFamiliarity || record.familiarSymptom));
@@ -69,7 +70,7 @@ export function assessmentRecordComplete(
   if (item.kind !== "motion") {
     if (!record.simple) return false;
     if (item.kind === "strength" && record.simple === "unable" && !record.strengthUnableReason) return false;
-    if (bilateral && ["weak", "present", "painful"].includes(strengthAnswerForWorkflow(record.simple, record.strengthUnableReason) ?? record.simple) && !record.worseSide) return false;
+    if (bilateral && record.simple !== "skip" && !record.bilateralComparison && !record.worseSide) return false;
     if (item.kind === "strength" && strengthAnswerResult(record.simple, record.strengthUnableReason) === "painful") return Boolean(record.discomfortLocation?.trim() && record.discomfortType && typeof record.symptomScore === "number" && (!requireFamiliarity || record.familiarSymptom));
     return true;
   }
@@ -78,6 +79,7 @@ export function assessmentRecordComplete(
   const motionCanContinueToStrength = record.active !== "unable";
   if (item.pairedStrengthId && motionCanContinueToStrength && !record.pairedStrength) return false;
   if (item.pairedStrengthId && motionCanContinueToStrength && record.pairedStrength === "unable" && !record.pairedStrengthUnableReason) return false;
+  if (bilateral && item.pairedStrengthId && record.pairedStrength && record.pairedStrength !== "normal" && !record.bilateralComparison && !record.worseSide) return false;
   if (item.pairedStrengthId && strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful") {
     if (record.discomfort !== "yes" || !record.discomfortLocation?.trim() || !record.discomfortType || typeof record.symptomScore !== "number") return false;
   }

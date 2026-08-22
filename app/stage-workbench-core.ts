@@ -21,6 +21,8 @@ export type WorkbenchStageInput = {
   trialRecordCount: number;
   /** 训练是否已完成。 */
   trainingComplete: boolean;
+  /** 训练方案已保存但本次未执行。 */
+  trainingPlanSaved?: boolean;
   /** 已安排训练动作数。 */
   exerciseCount: number;
   /** 当前是否处于总结阶段。 */
@@ -37,7 +39,7 @@ export function workbenchStageStates(input: WorkbenchStageInput): string[] {
     input.assessmentFlowComplete ? "已完成" : `${input.completedAssessmentCount}/${input.totalAssessmentCount}`,
     input.unresolvedProblemCount > 0 ? `${input.unresolvedProblemCount}项` : "待评估",
     input.trialRecordCount > 0 ? `${input.trialRecordCount}条记录` : "待开始",
-    input.trainingComplete ? "已完成" : input.exerciseCount > 0 ? `${input.exerciseCount}项` : "待安排",
+    input.trainingComplete ? "已完成" : input.trainingPlanSaved ? "已保存，未执行" : input.exerciseCount > 0 ? `${input.exerciseCount}项` : "待安排",
     input.isSummaryStep ? "已完成" : "待完成",
   ];
 }

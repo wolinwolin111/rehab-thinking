@@ -13,6 +13,7 @@ test("calf motion names share the same physical ankle action", () => {
   assert.equal(core.canonicalActionIdFromAssessmentId("calf-dorsiflexion"), "ankle-dorsiflexion");
   assert.equal(core.canonicalActionKey("勾脚"), "ankle-dorsiflexion");
   assert.equal(core.canonicalActionKey("踝背屈检查"), "ankle-dorsiflexion");
+  assert.equal(core.canonicalActionKey("脚底向外转"), "ankle-eversion");
   assert.deepEqual(core.dedupeAssessmentIdsByAction(["calf-dorsiflexion", "ankle-dorsiflexion"]), ["calf-dorsiflexion"]);
 });
 
@@ -48,4 +49,12 @@ test("actionIdFromFinding strips composite prefixes for dedup", () => {
   assert.equal(core.actionIdFromFinding({ id: "symptom:motion:knee-flexion" }), "knee-flexion");
   assert.equal(core.actionIdFromFinding({ id: "motion:knee-flexion" }), "knee-flexion");
   assert.equal(core.samePhysicalAction("symptom:motion:knee-flexion", "motion:knee-flexion"), true);
+});
+
+test("historical action maps read aliases as the same physical action", () => {
+  const values = { "motion:calf-eversion": "both-match", "motion:knee-flexion": "passive-limited" };
+  assert.equal(core.valueForPhysicalAction(values, "motion:ankle-eversion"), "both-match");
+  assert.equal(core.valueForPhysicalAction(values, "ankle-eversion"), "both-match");
+  assert.equal(core.valueForPhysicalAction(values, "motion:knee-extension"), undefined);
+  assert.equal(core.motionWasSymptomatic("ankle-eversion", { "motion:calf-eversion": { discomfort: "yes" } }), true);
 });

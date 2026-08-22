@@ -80,7 +80,7 @@ test("assessment uses professional page titles and one shared tension screen", a
   const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
   assert.match(demo, /professionalAssessmentTitle\(item\.id, item\.title\)/);
   assert.match(demo, /SHARED_TENSION_ASSESSMENT_ID/);
-  assert.match(demo, /相关肌肉紧张度检查/);
+  assert.match(demo, /肌肉紧张度对比/);
   assert.match(demo, /相关区域只检查一次/);
   assert.match(demo, /记录被动活动的终末感/);
   assert.match(demo, /PASSIVE_END_FEEL_OPTIONS/);

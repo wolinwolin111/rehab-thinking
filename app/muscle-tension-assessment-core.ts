@@ -20,12 +20,21 @@ export function needsMuscleTensionCheck(input: TensionMotionInput) {
   return true;
 }
 
-export function buildMuscleTensionFindings(input: { assessmentId: string; assessmentTitle: string; locations: string[] }) {
-  const locations = [...new Set(input.locations.filter((location) => !["没有明显差别", "两侧感觉接近"].includes(location)))];
-  return locations.map((location) => ({
+export function buildMuscleTensionFindings(input: { assessmentId: string; assessmentTitle: string; locations: string[]; professional?: boolean }) {
+  const locations = [...new Set(input.locations.filter((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)))];
+  return locations.map((location) => {
+    const sideMatch = location.match(/^(左侧|右侧)[｜|·](.+)$/);
+    const side = sideMatch?.[1] as "左侧" | "右侧" | undefined;
+    const region = sideMatch?.[2] ?? location;
+    const displayLocation = side ? `${side}·${region}` : region;
+    return {
     id: `tension:${input.assessmentId}:${location}`,
-    title: `${location}肌张力增高`,
-    detail: `与另一侧轻按比较更紧或更酸；相关动作：${input.assessmentTitle}`,
-    location,
-  }));
+    title: input.professional ? `${displayLocation}张力或按压阻力增高` : `${displayLocation}按压反应更明显`,
+    detail: input.professional
+      ? `${side ? `${side}与另一侧比较，` : "与另一侧比较"}张力或按压阻力增高；相关动作：${input.assessmentTitle}`
+      : `${side ? `${side}按压时` : "两侧轻按时"}该区域更酸或更胀；仅作为辅助证据，相关动作：${input.assessmentTitle}`,
+    location: region,
+    ...(side ? { side } : {}),
+  };
+  });
 }

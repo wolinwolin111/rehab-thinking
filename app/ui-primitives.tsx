@@ -1,12 +1,13 @@
 import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { scoreGuideLabel } from "./score-guide-copy";
 
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
-export function TreatmentRoadmap({ completed, current, upcoming }: { completed: string[]; current: string; upcoming: string[] }) {
+export function TreatmentRoadmap({ completed, current, upcoming }: { completed: Array<{ label: string; summary?: string }>; current: string; upcoming: string[] }) {
   return <section className="rm-treatment-roadmap">
     <header><span>本次流程</span><b>已完成 {completed.length} 项</b></header>
     <div className="rm-roadmap-stage is-done">
       <span className="rm-roadmap-status">已完成</span>
-      <ul>{completed.length ? completed.slice(-4).map((label) => <li key={label}><i>✓</i>{label}</li>) : <li><i>✓</i>评估检查</li>}</ul>
+      <ul>{completed.length ? completed.slice(-4).map((item) => <li key={item.label}><i>✓</i><span>{item.label}{item.summary ? <small>{item.summary}</small> : null}</span></li>) : <li><i>✓</i>评估检查</li>}</ul>
     </div>
     <div className="rm-roadmap-stage is-current">
       <span className="rm-roadmap-status">正在做</span>
@@ -103,11 +104,12 @@ export function ScoreSlider({ value, onChange, label, context, compact = false, 
   };
   const draft = currentDraft.value;
   const displayedValue = draft;
+  const hasDisplayedScore = selected || currentDraft.dirty;
   return <section className={`rm-score ${compact ? "is-compact" : ""} ${selected && !currentDraft.dirty ? "is-recorded" : ""}`}>
     <div className="rm-score-head"><div><span>{label}</span>{context ? <strong>{context}</strong> : null}</div><output>{selected || currentDraft.dirty ? displayedValue : "—"}<small>/10</small></output></div>
     <input aria-label={label} type="range" min="0" max="10" step="1" value={displayedValue} onInput={handleSliderChange} onChange={commitDraft} onBlur={commitDraft} onPointerUp={commitDraft} onMouseUp={commitDraft} onTouchEnd={commitDraft} onKeyDown={handleSliderKeyDown} style={{ "--score": `${displayedValue * 10}%` } as CSSProperties} />
-    <div className="rm-score-scale"><span>0 · 没有疼痛或不适</span><span>10 · 极重，无法继续当前动作</span></div>
-    <div className="rm-score-guide"><span><b>1～3</b>轻微，基本不影响动作</span><span><b>4～6</b>明显，会影响动作</span><span><b>7～9</b>很重，难以继续</span></div>
+    <div className="rm-score-scale"><span>0 · 没有疼痛或不适</span><span>10 · 能想象到的最严重</span></div>
+    <p className="rm-score-guide" aria-live="polite">{hasDisplayedScore ? `${displayedValue}/10 · ${scoreGuideLabel(displayedValue)}` : "拖动后显示当前程度"}</p>
     <p className="rm-score-status">{selected && !currentDraft.dirty ? "已记录" : "拖动后松手即可记录"}</p>
   </section>;
 }
@@ -119,10 +121,10 @@ export function ScoreHistory({ scores, condition }: { scores: number[]; conditio
   </section>;
 }
 
-export function StepHeading({ eyebrow, title, note, current, total }: { eyebrow: string; title: string; note?: string; current?: number; total?: number }) {
+export function StepHeading({ eyebrow, title, note, current, total, tutorialTarget }: { eyebrow: string; title: string; note?: string; current?: number; total?: number; tutorialTarget?: string }) {
   const stepMatch = eyebrow.match(/第(\d+)步/);
   const stepNum = stepMatch ? Number(stepMatch[1]) : null;
-  return <header className="rm-heading">
+  return <header className="rm-heading" data-rehabmind-tutorial={tutorialTarget}>
     <div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}{stepNum ? <div className="rm-step-progress" aria-label={`第${stepNum}步，共6步`}>{[1, 2, 3, 4, 5, 6].map((n) => <i key={n} className={n < stepNum ? "is-done" : n === stepNum ? "is-current" : ""} />)}</div> : null}</div>
     {typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}
   </header>;

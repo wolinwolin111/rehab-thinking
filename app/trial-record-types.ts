@@ -8,10 +8,16 @@ export type RangeRetestAnswer = "" | "both-match" | "passive-match-active-limite
 
 export type CompletedRangeRetestAnswer = Exclude<RangeRetestAnswer, "">;
 
+export type FunctionRetestCompletion = "complete" | "unable";
+export type FunctionRetestMode = "ordinary" | "completion-status";
+
 export type TrialRecord = {
   candidateId: string;
   treatmentKey?: string;
   treatmentSide?: string;
+  /** 双侧同一处理单元的实际执行侧别；结果仍按侧别另存。 */
+  treatmentSides?: string[];
+  sideResults?: Record<string, "better" | "same" | "worse">;
   candidateTitle: string;
   treatmentName?: string;
   action?: string;
@@ -26,6 +32,8 @@ export type TrialRecord = {
   afterScore: number;
   result: TrialResult;
   movement: "smoother" | "same" | "worse";
+  /** 活动表现单独变差；可与主诉分数下降同时存在，不能被压成单一趋势。 */
+  activityWorsened?: boolean;
   timeBased?: boolean;
   /** 同次康复中该处理已经做过；本条只记录它对另一个问题的复测结果。 */
   retestOnly?: boolean;
@@ -39,6 +47,10 @@ export type TrialRecord = {
   reusedFromTargetTitle?: string;
   /** 用来识别连续两次完全相同的复测动作；中间没有新处理时直接沿用结果。 */
   retestActionKey?: string;
+  /** 功能动作首次状态与处理后状态；能力复核不能伪装成分数前后比较。 */
+  functionBaselineCompletion?: FunctionRetestCompletion;
+  functionAfterCompletion?: FunctionRetestCompletion;
+  functionRetestMode?: FunctionRetestMode;
   /** 区分部分贡献、关键完成和组合解决，不能只按下降分数排名。 */
   responseRole?: TreatmentResponseRole;
 };
@@ -59,6 +71,7 @@ export type TrialRecordBuildInput = {
   beforeScore: number;
   recordedAfterScore: number;
   result: TrialResult;
+  activityWorsened?: boolean;
   timeBased: boolean;
   deferredRetest: boolean;
   hasSingleRangeEvidence: boolean;
@@ -67,10 +80,15 @@ export type TrialRecordBuildInput = {
   singleRangeScore?: number;
   movementResponse: RangeRetestAnswer;
   chiefWasActuallyRetested: boolean;
+  functionBaselineCompletion?: FunctionRetestCompletion;
+  functionAfterCompletion?: FunctionRetestCompletion;
+  functionRetestMode?: FunctionRetestMode;
   responseRole: TreatmentResponseRole;
   priorTreatmentTitle?: string;
   retestActionKey?: string;
   treatmentSide: string;
+  treatmentSides?: string[];
+  sideResults?: Record<string, "better" | "same" | "worse">;
   targetId: string;
   targetTitle: string;
   residualReviewId: string;

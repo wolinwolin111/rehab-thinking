@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const audit = fs.readFileSync(path.join(root, "scripts", "real-browser-flow-audit.mjs"), "utf8");
+const ankleWalkthrough = fs.readFileSync(path.join(root, "scripts", "real-browser-walkthrough-ankle.mjs"), "utf8");
 const guide = fs.readFileSync(path.join(root, "docs", "real-browser-flow-audit.md"), "utf8");
 const demo = fs.readFileSync(path.join(root, "app", "rehabmind-complete-demo.tsx"), "utf8");
 
@@ -33,4 +34,24 @@ test("real browser audit protects the merged patella group and latest score", ()
   assert.match(demo, /rm-treatment-unit-followup is-patella/);
   assert.match(demo, /homeRelaxationTargets/);
   assert.match(demo, /训练结束后/);
+});
+
+test("real browser audit protects the direction-baseline and summary score contract", () => {
+  assert.match(guide, /脚底向外转/);
+  assert.match(guide, /初次6分 → 结束复测2分/);
+  assert.match(demo, /activeMotionRecordComplete\(record, false\)/);
+  assert.match(demo, /retestBaselineModeFromEvidence\(chiefBaselineEvidence\)/);
+  assert.match(demo, /targetChiefRetestAllowed/);
+  assert.match(demo, /chiefScoreRetestBlocked/);
+});
+
+test("ankle walkthrough keeps the acute-sprain end-to-end contract", () => {
+  assert.match(ankleWalkthrough, /昨晚崴了右脚/);
+  assert.match(ankleWalkthrough, /右侧 · 外踝 \/ 前外侧/);
+  assert.match(ankleWalkthrough, /患侧偏小/);
+  assert.match(ankleWalkthrough, /训练完成，整体复测/);
+  assert.match(ankleWalkthrough, /保存本次记录/);
+  assert.match(ankleWalkthrough, /assert\.equal\(runtimeErrors\.length, 0/);
+  assert.match(ankleWalkthrough, /assert\.equal\(savedSummary, true/);
+  assert.match(guide, /崴脚自动走读脚本维护/);
 });

@@ -14,6 +14,8 @@ export type TrialTargetCandidate = CandidateTreatmentInput & { retestIds?: strin
 export type TrialTargetInput = {
   id: string;
   finding: { side?: string };
+  /** 双侧合并目标保留原始侧别，页面按一个处理单元展示，执行与复测仍按侧记录。 */
+  findingSides?: string[];
   candidates: TrialTargetCandidate[];
   retestFindings?: MotionFindingInput[];
   optionalCandidates?: TrialTargetCandidate[];
@@ -28,9 +30,10 @@ export function treatmentCanCarryAcrossProblems(candidate: CandidateTreatmentInp
   return ["muscle", "control", "joint", "neural"].includes(candidate.type);
 }
 
-export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(targets: T[]): T[] {
+export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(targets: T[], mergeAcrossSides = false): T[] {
   const consolidated = targets.map((target) => ({
     ...target,
+    findingSides: Array.from(new Set([...(target.findingSides ?? []), target.finding.side].filter(Boolean))),
     candidates: target.candidates.map((candidate) => ({ ...candidate, retestIds: [...(candidate.retestIds ?? [])] })),
     retestFindings: dedupeRetestFindingsByAction([...(target.retestFindings ?? [])]),
   }));
@@ -38,7 +41,7 @@ export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(t
 
   consolidated.forEach((target, targetIndex) => {
     target.candidates.forEach((candidate, candidateIndex) => {
-      const key = candidateTreatmentKey(candidate, target.finding.side);
+      const key = candidateTreatmentKey(candidate, mergeAcrossSides ? "" : target.finding.side);
       const owner = owners.get(key);
       if (!owner) {
         owners.set(key, { targetIndex, candidateIndex });
@@ -48,6 +51,7 @@ export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(t
       const ownerCandidate = ownerTarget.candidates[owner.candidateIndex];
       const mergedDirectionIds = dedupeAssessmentIdsByAction([...(ownerCandidate.retestIds ?? []), ...(candidate.retestIds ?? [])]);
       ownerTarget.candidates[owner.candidateIndex] = { ...ownerCandidate, retestIds: mergedDirectionIds };
+      ownerTarget.findingSides = Array.from(new Set([...(ownerTarget.findingSides ?? []), ...(target.findingSides ?? [])]));
       ownerTarget.retestFindings = dedupeRetestFindingsByAction([...new Map([
         ...(ownerTarget.retestFindings ?? []),
         ...(target.retestFindings ?? []),
@@ -59,7 +63,7 @@ export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(t
     .map((target, targetIndex) => ({
       ...target,
       candidates: target.candidates.filter((candidate, candidateIndex) => {
-        const owner = owners.get(candidateTreatmentKey(candidate, target.finding.side));
+        const owner = owners.get(candidateTreatmentKey(candidate, mergeAcrossSides ? "" : target.finding.side));
         return owner?.targetIndex === targetIndex && owner.candidateIndex === candidateIndex;
       }),
     }))

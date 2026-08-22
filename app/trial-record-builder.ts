@@ -17,16 +17,18 @@ export function resultFromScore(before: number, after: number): TrialResult {
  */
 export function buildTrialRecords(input: TrialRecordBuildInput): TrialRecord[] {
   const {
-    candidates, carryoverOnly, beforeScore, recordedAfterScore, result, timeBased, deferredRetest,
+    candidates, carryoverOnly, beforeScore, recordedAfterScore, result, activityWorsened, timeBased, deferredRetest,
     hasSingleRangeEvidence, singleRangeDirectionId, singleRangeDiscomfort, singleRangeScore,
-    movementResponse, chiefWasActuallyRetested, responseRole, priorTreatmentTitle,
-    retestActionKey, treatmentSide, targetId, targetTitle, residualReviewId,
+    movementResponse, chiefWasActuallyRetested, functionBaselineCompletion, functionAfterCompletion, functionRetestMode, responseRole, priorTreatmentTitle,
+    retestActionKey, treatmentSide, treatmentSides, sideResults, targetId, targetTitle, residualReviewId,
   } = input;
 
   return candidates.map((candidate, index): TrialRecord => ({
     candidateId: candidate.id,
     treatmentKey: candidate.treatmentKey,
     treatmentSide,
+    treatmentSides,
+    sideResults,
     candidateTitle: candidate.candidateTitle,
     treatmentName: candidate.treatmentName,
     action: candidate.action,
@@ -40,13 +42,17 @@ export function buildTrialRecords(input: TrialRecordBuildInput): TrialRecord[] {
     beforeScore,
     afterScore: recordedAfterScore,
     result,
-    movement: result === "better" ? "smoother" : result === "worse" ? "worse" : "same",
+    movement: activityWorsened ? "worse" : result === "better" ? "smoother" : result === "worse" ? "worse" : "same",
+    activityWorsened,
     timeBased,
     retestOnly: carryoverOnly,
     reviewOnly: candidate.id === residualReviewId,
     batchedResult: candidates.length > 1,
     supportingOnly: candidates.length > 1 && index > 0,
     chiefRetested: chiefWasActuallyRetested,
+    functionBaselineCompletion,
+    functionAfterCompletion,
+    functionRetestMode,
     reusedFromTargetTitle: carryoverOnly ? priorTreatmentTitle : undefined,
     retestActionKey: deferredRetest || timeBased ? undefined : retestActionKey,
     responseRole: candidates.length > 1 && index > 0 ? "not-immediately-testable" : responseRole,

@@ -293,7 +293,6 @@ function applyObservationStatuses(input: KneeDecisionInput, problems: KneeProble
     if (!observedMetrics.length) return problem;
 
     let improved = false;
-    let hasUnresolvedMetric = false;
     let resolved = observedMetrics.length === problem.metrics.length;
     for (const metric of observedMetrics) {
       const value = latestValueForMetric(metric);
@@ -302,25 +301,21 @@ function applyObservationStatuses(input: KneeDecisionInput, problems: KneeProble
         if (value === 0) improved = true;
         else {
           resolved = false;
-          hasUnresolvedMetric = true;
           if (typeof baseline === "number" && value < baseline) improved = true;
         }
       } else if (["active-range", "passive-range"].includes(metric)) {
         if (value === "matches") improved = true;
         else {
           resolved = false;
-          hasUnresolvedMetric = true;
         }
       } else if (metric === "control") {
         if (value === "stable") improved = true;
         else {
           resolved = false;
-          hasUnresolvedMetric = true;
           if (value === "improved") improved = true;
         }
       } else {
         resolved = false;
-        hasUnresolvedMetric = true;
       }
     }
     // 疼痛分数下降但尚未到 0，可以作为“主诉改善”留到最后统一复测。

@@ -144,8 +144,8 @@ function taskPriority(id: string, input: PilotIntakeInput) {
   if (/提踵|蹬地/.test(task) && id === "function:ankle-heel-raise") return 75;
   if (/脚背向下|踩油门|跖屈|向下压/.test(task) && id === "motion:ankle-plantarflexion") return 85;
   if (/勾脚|脚背向上|背屈/.test(task) && id === "motion:ankle-dorsiflexion") return 85;
-  if (/脚掌向外|外翻/.test(task) && id === "motion:ankle-eversion") return 85;
-  if (/脚掌向内|内翻/.test(task) && id === "motion:ankle-inversion") return 85;
+  if (/脚(?:掌|底)向外|外翻/.test(task) && id === "motion:ankle-eversion") return 85;
+  if (/脚(?:掌|底)向内|内翻/.test(task) && id === "motion:ankle-inversion") return 85;
   if (/跑|冲刺|迈步|弯腰/.test(task) && id === "motion:thigh-back-length") return 85;
   if (/踢|起身|下蹲|弯膝/.test(task) && id === "motion:thigh-front-length") return 85;
   if (/夹腿|侧移|变向/.test(task) && id === "motion:thigh-medial-length") return 85;

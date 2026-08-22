@@ -39,3 +39,13 @@ test("consolidateTrialTargetsByTreatment merges same-treatment targets and dedup
   // 同区域同侧合并后，方向 id 归并为 calf-plantarflexion 与 ankle-plantarflexion 同一物理动作
   assert.ok(result[0].candidates[0].retestIds.includes("ankle-plantarflexion") || result[0].candidates[0].retestIds.includes("calf-plantarflexion"));
 });
+
+test("bilateral mode merges one treatment card but preserves both execution sides", () => {
+  const targets = [
+    { id: "target:left", finding: { side: "左侧" }, candidates: [muscle] },
+    { id: "target:right", finding: { side: "右侧" }, candidates: [{ ...muscle, id: "muscle:calf-posterior-release-right" }] },
+  ];
+  const result = core.consolidateTrialTargetsByTreatment(targets, true);
+  assert.equal(result.length, 1);
+  assert.deepEqual(result[0].findingSides, ["左侧", "右侧"]);
+});

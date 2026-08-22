@@ -54,6 +54,36 @@ export function emptyCapabilities(): CapabilitySet {
   };
 }
 
+export type CapabilityToggleResult = {
+  capabilities: CapabilitySet;
+  accepted: boolean;
+  message?: string;
+};
+
+/**
+ * Keep capability dependencies in one place so the intake UI cannot show a
+ * procedure as selected when its evidence prerequisite is absent.
+ */
+export function toggleCapability(capabilities: CapabilitySet, key: CapabilityKey): CapabilityToggleResult {
+  if (key === "jointMobilization" && !capabilities.passiveRange && !capabilities.jointMobilization) {
+    return {
+      capabilities,
+      accepted: false,
+      message: "先选择“被动活动度”，才能开放“关节处理”。",
+    };
+  }
+  const next = { ...capabilities, [key]: !capabilities[key] };
+  if (key === "passiveRange" && !next.passiveRange && next.jointMobilization) {
+    next.jointMobilization = false;
+    return {
+      capabilities: next,
+      accepted: true,
+      message: "已取消“关节处理”：需要保留“被动活动度”能力。",
+    };
+  }
+  return { capabilities: next, accepted: true };
+}
+
 function normalizedCapabilities(input?: Partial<CapabilitySet>): CapabilitySet {
   const next = emptyCapabilities();
   for (const key of CAPABILITY_KEYS) next[key] = input?.[key] === true;

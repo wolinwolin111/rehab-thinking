@@ -1,5 +1,27 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787245854378,
+      "tag": "0000_worried_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787289494265,
+      "tag": "0001_ambiguous_killraven",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787312149424,
+      "tag": "0002_stale_silhouette",
+      "breakpoints": true
+    }
+  ]
 }

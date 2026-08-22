@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rehabmind-local",
+  "main": "worker/index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "PILOT_ADMIN_KEY": "local-rehabmind-admin"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rehabmind-local",
+      "database_id": "00000000-0000-4000-8000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}

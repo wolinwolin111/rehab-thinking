@@ -32,6 +32,10 @@
 - `rehabmind-rebuild/work/`：代码走读和实施记录，不重复定义正式规则。
 - `rehabmind-rebuild/09-visual-assessment-plan.md`：视觉 AI 预留方案，当前不接入。
 - `rehabmind-rebuild/10-knee-ankle-action-image-prompts.md` 与 `11-action-image-inventory.md`：动作图资产。
+- `real-browser-coverage-matrix.md`：设计规则、真实场景、当前证据和覆盖缺口矩阵，不定义新的产品规则。
+- `rehabmind-test-plan.md`：当前测试分层、组合场景、执行节奏和发布门槛总计划。
+- `rehabmind-quality-remediation-register.md`：设计、实现、测试与部署问题的整改编号、优先级、验收标准和状态。
+- `rehabmind-quality-remediation-implementation-plan.md`：全部整改项的施工步骤、依赖、迁移、测试、验收和交接要求。
 - `clinical-record-joint-map.md`、`remaining-joint-record-map.md`：原始资料总结，仅用于追溯候选来源。
 - `archive/`：旧版长文档和讨论历史，不参与当前决策。
 

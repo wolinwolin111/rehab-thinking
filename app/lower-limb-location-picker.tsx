@@ -259,11 +259,13 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
       onChange(value.filter((item) => item.id !== id));
       return;
     }
-    const selectionLimit = maxSelections ?? (mode === "complaint" ? 1 : mode === "assessment" ? 2 : Number.POSITIVE_INFINITY);
+    // 位置数量不是流程数量的上限。后续决策会按处理单元去重，不能在输入层
+    // 把双侧或多个精确位置截掉。保留可选 prop 只是兼容旧调用方，默认不设硬上限。
+    const selectionLimit = maxSelections ?? Number.POSITIVE_INFINITY;
+    const mixesMainAreas = value.some((item) => item.regionId !== nextItem.regionId);
     if (mode === "complaint") {
-      const sameMainArea = value.every((item) => item.side === nextItem.side && item.regionId === nextItem.regionId);
-      if (!sameMainArea) {
-        setSelectionNotice("已切换主要部位，之前标记的位置已替换。");
+      if (mixesMainAreas) {
+        setSelectionNotice("一次只评估一个主要大部位；已切换到新的大部位，之前的位置已清除。");
         onChange([nextItem]);
         return;
       }
@@ -273,6 +275,10 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
       }
       setSelectionNotice("");
       onChange([...value, nextItem]);
+      return;
+    }
+    if (mixesMainAreas) {
+      setSelectionNotice("同一项检查不能混入不同主要大部位，请先删除其他大部位的位置。");
       return;
     }
     if (value.length >= selectionLimit) {

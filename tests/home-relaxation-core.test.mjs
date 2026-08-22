@@ -23,7 +23,6 @@ test("merges tension, effective treatment, and training muscles with dedup acros
     tensionLabels: ["小腿后侧肌群", "大腿前侧肌群"],
     effectiveMuscleLabels: ["小腿后侧肌群", "大腿外侧链"],
     trainingMuscleLabels: ["大腿前侧肌群", "小腿外侧肌群"],
-    maxTargets: 10,
   });
   assert.deepEqual(
     targets.map((target) => target.location),
@@ -39,27 +38,36 @@ test("dedups repeated labels inside a single source", () => {
   assert.deepEqual(targets.map((target) => target.location), ["小腿后侧肌群"]);
 });
 
-test("caps at the default maximum of 3 targets", () => {
+test("dedups a generic treatment label with its side-specific tension result", () => {
+  const targets = core.buildHomeRelaxationTargets({
+    ...safeBase,
+    tensionLabels: ["右侧｜大腿前侧肌群"],
+    effectiveMuscleLabels: ["大腿前侧肌群"],
+  });
+  assert.deepEqual(targets.map((target) => target.location), ["右侧｜大腿前侧肌群"]);
+});
+
+test("does not hard-cap distinct relaxation targets", () => {
   const targets = core.buildHomeRelaxationTargets({
     ...safeBase,
     tensionLabels: ["a", "b", "c", "d", "e"],
   });
-  assert.equal(targets.length, 3);
+  assert.equal(targets.length, 5);
 });
 
-test("honours an explicit maxTargets", () => {
+test("legacy maxTargets input does not truncate the knowledge output", () => {
   const targets = core.buildHomeRelaxationTargets({
     ...safeBase,
     tensionLabels: ["a", "b", "c", "d"],
     maxTargets: 2,
   });
-  assert.equal(targets.length, 2);
+  assert.equal(targets.length, 4);
 });
 
 test("drops no-difference sentinel locations", () => {
   const targets = core.buildHomeRelaxationTargets({
     ...safeBase,
-    tensionLabels: ["没有明显差别", "两侧感觉接近", "小腿后侧肌群"],
+    tensionLabels: ["没有明显差别", "两侧感觉接近", "暂不判断", "小腿后侧肌群"],
   });
   assert.deepEqual(targets.map((target) => target.location), ["小腿后侧肌群"]);
 });

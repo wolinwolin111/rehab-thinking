@@ -49,3 +49,11 @@ test("worsening always stops before another coverage direction", () => {
   ], [{ treatmentKey: "calf-back" }]);
   assert.equal(state.decision, "stop-worsened");
 });
+
+test("activity worsening stops coverage even when the score result is partial", () => {
+  const state = core.summarizeTreatmentCoverage([
+    { treatmentKey: "thigh-front", result: "partial", responseRole: "worsened", activityWorsened: true },
+  ], [{ treatmentKey: "calf-back" }]);
+  assert.equal(state.decision, "stop-worsened");
+  assert.equal(state.hasWorsened, true);
+});

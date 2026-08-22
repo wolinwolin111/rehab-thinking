@@ -31,6 +31,12 @@ test("chiefMotionDirectionIds returns all directions for multi-action chief", ()
   assert.deepEqual(core.chiefMotionDirectionIds(kneeSquat, "unknown-region"), []);
 });
 
+test("ankle eversion user-facing aliases map to the same physical direction", () => {
+  const intake = { ...kneeSquat, reportedActions: [{ raw: "脚底向外转" }], actionAnalysis: { task: "脚底向外转" } };
+  assert.deepEqual(core.chiefMotionDirectionIds(intake, "ankle-foot"), ["ankle-eversion"]);
+  assert.deepEqual(core.chiefMotionDirectionIds(intake, "calf-local"), ["calf-eversion"]);
+});
+
 test("chiefActionLabel joins multiple actions", () => {
   assert.equal(core.chiefActionLabel({ ...kneeSquat, reportedActions: [{ raw: "下蹲" }, { raw: "上楼" }] }), "下蹲、上楼");
   assert.equal(core.chiefActionLabel({ reportedActions: [] }), "尚未确认");
