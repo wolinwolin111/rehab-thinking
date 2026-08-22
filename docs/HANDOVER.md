@@ -113,7 +113,7 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 
 ### 阶段 1：数据层迁移到 VPS ✅ 已完成（2026-08-23）
 
-**正式入口：`https://66.154.101.204/RehabMind/`**（裸根 `/` 亦可达同一应用）
+**正式入口：`https://66.154.101.204/RehabMind/`**（裸根 `/` 已改为 308 跳转到此——单一内容入口，老书签不断；`/assets/` 与 `/api/pilot/` 管线直通保持不变）
 
 > 前缀实现说明：vinext 的 `basePath` 只烙进资产清单、路由挂载未实现（前缀页面 404），因此前缀由 nginx 完成——`location /RehabMind/ { proxy_pass http://127.0.0.1:3100/; }` 剥前缀转发，应用的根级绝对引用（/assets/、/api/pilot/、favicon/og 图）由同名 location 直通，两个入口均完整可用。
 
