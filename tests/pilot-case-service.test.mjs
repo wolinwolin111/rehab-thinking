@@ -10,17 +10,22 @@ async function loadService() {
   const serviceSource = await readFile(new URL("../app/pilot-case-service.ts", import.meta.url), "utf8");
   const contract = ts.transpileModule(contractSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/export\s+/g, "");
   const timeline = ts.transpileModule(timelineSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/s, "")
+    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
     .replace(/export\s+/g, "");
   const view = ts.transpileModule(viewSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
     .replace(/import \{[\s\S]*?\} from \"\.\/pilot-case-contracts\";\s*/s, "")
     .replace(/import \{[\s\S]*?\} from \"\.\/pilot-timeline\";\s*/s, "")
     .replace(/export\s+/g, "");
   const service = ts.transpileModule(serviceSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from \"\.\/pilot-case-contracts\";\s*/s, "")
-    .replace(/import \{[\s\S]*?\} from \"\.\/pilot-case-view\";\s*/s, "")
+    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
+    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-view";\s*/s, "")
+    .replace(/import \{[\s\S]*?\} from "\.\/pilot-snapshot-schema";\s*/s, "")
     .replace(/export\s+/g, "");
-  const bundle = `${contract}\n${timeline}\n${view}\n${service}\nexport { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError };`;
+  const schemaSource = await readFile(new URL("../app/pilot-snapshot-schema.ts", import.meta.url), "utf8");
+  const schema = ts.transpileModule(schemaSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
+    .replace(/export\s+/g, "");
+  const bundle = `${contract}\n${timeline}\n${view}\n${schema}\n${service}\nexport { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidationError };`;
   const bundleUrl = `data:text/javascript;base64,${Buffer.from(bundle).toString("base64")}`;
   return import(bundleUrl);
 }
@@ -98,7 +103,7 @@ class MemoryRepository {
   }
 }
 
-const { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError } = await loadService();
+const { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidationError } = await loadService();
 
 function makeService() {
   const repository = new MemoryRepository();
@@ -125,8 +130,14 @@ test("createCase stores an anonymous case, snapshot, initial event, and only ret
   assert.equal(access.publicCode.startsWith("CODE-"), true);
   assert.equal(record.accessTokenHash, `hash:${access.accessToken}`);
   assert.equal(record.accessToken, undefined);
-  assert.deepEqual(repository.snapshots.get(access.caseId).payload, JSON.stringify({ step: "症状信息" }));
+  const storedFirstPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
+  assert.equal(storedFirstPayload.step, "症状信息");
+  assert.equal(storedFirstPayload.schemaVersion, 1);
   assert.equal([...repository.events.values()][0].type, "case_created");
+  // REL-01：入库载荷补烙显式 schema 版本（缺失视为 v1）。
+  const storedPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
+  assert.equal(storedPayload.schemaVersion, 1);
+  assert.deepEqual({ ...storedPayload, schemaVersion: undefined }, { step: "症状信息", schemaVersion: undefined });
 });
 
 test("replaying one client creation id returns the same case instead of creating a duplicate", async () => {
@@ -315,4 +326,28 @@ test("deleteCase marks the case inactive and appends a deletion event", async ()
   assert.equal(deletion?.source, "user");
   await assert.rejects(service.readCase({ caseId: access.caseId, accessToken: access.accessToken }));
   await assert.rejects(service.deleteCase({ caseId: access.caseId, accessToken: access.accessToken }));
+});
+
+test("REL-01: future snapshot schema versions are rejected before storage", async () => {
+  const { service, repository } = makeService();
+  const access = await service.createCase({ initialSnapshot: { step: "症状信息" } });
+  await assert.rejects(
+    service.saveProgress({
+      caseId: access.caseId,
+      accessToken: access.accessToken,
+      expectedRevision: 0,
+      snapshot: { schemaVersion: 999, step: "评估检查" },
+      eventType: "assessment_answered",
+      eventPayload: {},
+    }),
+    (error) => error instanceof PilotCaseValidationError && /schema version 999/.test(error.message),
+  );
+  assert.equal(repository.snapshots.size, 1);
+});
+
+test("REL-01: pilot app version stays in lockstep with package.json", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const releaseSource = await readFile(new URL("../app/pilot-release.ts", import.meta.url), "utf8");
+  const expected = `rehabmind-pilot-app-${pkg.version}`;
+  assert.match(releaseSource, new RegExp(`appVersion:\\s*"${expected}"`));
 });
