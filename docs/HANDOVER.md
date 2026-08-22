@@ -111,16 +111,18 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 
 ## 4. 后续工作路线图（按依赖顺序）
 
-### 阶段 1：数据层迁移到 VPS（预计 1~2 天）
+### 阶段 1：数据层迁移到 VPS ✅ 已完成（2026-08-23）
 
-Repository 接口抽象已就位，迁移只动边界：
+实际落地形态（与原计划差异见括号）：
 
-1. **新实现** `db/sqlite-pilot-case-repository.ts`：用 `better-sqlite3` 实现同一接口（schema 是 SQLite 方言，`drizzle/0000-0002` 迁移 SQL 基本可复用；注意本地实测外键无 ON DELETE 子句，参照 `hardDeleteCases` 的显式多表删除写法）
-2. **env 解耦**：`app/api/pilot/_shared.ts` 中三处 `await import("cloudflare:workers")` 改为平台无关注入（构造函数传 env 或 `process.env` 读取）
-3. **启动方式**：`npm run build && npm run start`（vinext 的 Node 服务模式）或自写极简 HTTP 壳；pm2 托管 + 开机自启
-4. **nginx**：加 server block——静态资源 `dist/client` + API 反代到 Node 端口（建议 3100，避开 80/443/8080/3098）
-5. **Secrets**：`PILOT_INVITE_TOKEN`、`PILOT_ADMIN_KEY`、`PILOT_INVITE_EXPIRES_AT` 写入服务器环境变量（`.env` 文件 chmod 600）
-6. **迁移验证**：5 条集成测试指向新环境全绿 + 全量门禁
+1. ~~better-sqlite3 新实现~~ ✅ `db/sqlite-pilot-case-repository.ts`，与 D1 版同一接口；原生模块经 `createRequire` 运行时加载（绕开打包器内联 .node 失效问题）
+2. ~~env 解耦~~ ✅ `app/api/pilot/_shared.ts#getPilotEnv`：Workers 读 bindings / Node 读 process.env，动态 specifier 防打包解析
+3. **运行方式**：pm2 托管 `npm run start`（vinext Node 模式），应用监听 127.0.0.1:3100；ecosystem.config.cjs 自读 `.env`
+4. **nginx**：RehabGuide 已按产品决定下线（service 停用、/opt/rehabguide 已删）；RehabMind 接管 443 IP 站点根路径，`location /api/pilot/` 最长前缀代理与 Clinic 的 `/api/` 重定向共存；`client_max_body_size 4m` 让大载荷守卫在应用层按合同返回 413 JSON
+5. **Secrets**：`~/rehabmind/app-src/.env`（chmod 600），含 PILOT_INVITE_TOKEN / PILOT_ADMIN_KEY / PILOT_INVITE_EXPIRES_AT(90天) / PILOT_SQLITE_PATH / PORT=3100；本地副本在开发机 `%TEMP%` 外的 `D:\Study\codex\project\.tmp-deploy-secrets.txt`——**请转移进密码管理器**
+6. **验证**：集成套件 5/5 全绿指向 https://66.154.101.204 （真 TLS 校验，无豁免）；页面 SSR 标题与六步导航正常；Clinic(/clinic/) 与 /mobile/ 未受影响
+
+部署脚本存档：`scripts/vps-recon*.sh`、`vps-deploy-setup.sh`（解包+npm ci+迁移）、nginx 配置以服务器 `/etc/nginx/sites-enabled/combined.conf.bak-*` 与仓库内 `docs/HANDOVER.md` 本节描述为准。
 
 ### 阶段 2：发布验收（半天）
 

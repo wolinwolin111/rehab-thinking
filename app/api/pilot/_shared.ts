@@ -16,6 +16,29 @@ import { createRateLimiter } from "../../rate-limit-core";
 export const pilotCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
 export const pilotWriteLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 
+type PilotRuntimeEnv = {
+  PILOT_ADMIN_KEY?: string;
+  PILOT_INVITE_TOKEN?: string;
+  PILOT_INVITE_EXPIRES_AT?: string;
+  PILOT_INVITE_REVOKED?: string;
+  PILOT_DB_DRIVER?: string;
+  PILOT_SQLITE_PATH?: string;
+};
+
+/**
+ * 平台无关的环境读取：Cloudflare Workers 读 bindings，Node/VPS 读 process.env。
+ * specifier 拼接 + @vite-ignore 防止打包器把 cloudflare:workers 静态解析进 Node 产物。
+ */
+export async function getPilotEnv(): Promise<PilotRuntimeEnv> {
+  try {
+    const specifier = ["cloudflare", "workers"].join(":");
+    const mod: { env?: PilotRuntimeEnv } = await import(/* @vite-ignore */ specifier);
+    return mod.env ?? (process.env as PilotRuntimeEnv);
+  } catch {
+    return process.env as PilotRuntimeEnv;
+  }
+}
+
 export function clientIpKey(request: Request): string {
   const connectingIp = request.headers.get("cf-connecting-ip");
   if (connectingIp) return connectingIp;
@@ -29,14 +52,10 @@ export async function enforceRateLimit(
   limiter: ReturnType<typeof createRateLimiter>,
   request: Request,
 ): Promise<Response | null> {
-  try {
-    const { env } = await import("cloudflare:workers");
-    const configuredKey = String((env as unknown as { PILOT_ADMIN_KEY?: string }).PILOT_ADMIN_KEY ?? "").trim();
-    const provided = request.headers.get("x-pilot-admin-key")?.trim() ?? "";
-    if (configuredKey && provided && provided === configuredKey) return null;
-  } catch {
-    // 环境不可用时按普通流量限流。
-  }
+  const env = await getPilotEnv();
+  const configuredKey = String(env.PILOT_ADMIN_KEY ?? "").trim();
+  const provided = request.headers.get("x-pilot-admin-key")?.trim() ?? "";
+  if (configuredKey && provided && provided === configuredKey) return null;
   const decision = limiter(clientIpKey(request));
   if (decision.allowed) return null;
   return Response.json(
@@ -46,6 +65,12 @@ export async function enforceRateLimit(
 }
 
 export async function createPilotCaseRepository() {
+  const env = await getPilotEnv();
+  if (String(env.PILOT_DB_DRIVER ?? "").trim().toLowerCase() === "sqlite") {
+    const { SqlitePilotCaseRepository } = await import("@/db/sqlite-pilot-case-repository");
+    const databasePath = String(env.PILOT_SQLITE_PATH ?? "").trim() || "./data/rehabmind.sqlite";
+    return SqlitePilotCaseRepository.open(databasePath);
+  }
   const [{ getDb }, { D1PilotCaseRepository }] = await Promise.all([
     import("@/db"),
     import("@/db/pilot-case-repository"),
@@ -61,12 +86,7 @@ export async function createPilotCaseService() {
 }
 
 export async function requirePilotInvite(request: Request): Promise<Response | null> {
-  const { env } = await import("cloudflare:workers");
-  const runtimeEnv = env as unknown as {
-    PILOT_INVITE_TOKEN?: string;
-    PILOT_INVITE_EXPIRES_AT?: string;
-    PILOT_INVITE_REVOKED?: string;
-  };
+  const runtimeEnv = await getPilotEnv();
   const validation = await validatePilotInvite(
     request.headers.get("x-pilot-invite-token"),
     {
@@ -172,8 +192,8 @@ export function optionalNonNegativeInteger(value: unknown, field: string) {
 }
 
 export async function requirePilotAdmin(request: Request): Promise<Response | null> {
-  const { env } = await import("cloudflare:workers");
-  const configuredKey = String((env as unknown as { PILOT_ADMIN_KEY?: string }).PILOT_ADMIN_KEY ?? "").trim();
+  const env = await getPilotEnv();
+  const configuredKey = String(env.PILOT_ADMIN_KEY ?? "").trim();
   if (!configuredKey) {
     return Response.json({ error: "Admin access is not configured" }, { status: 503 });
   }
