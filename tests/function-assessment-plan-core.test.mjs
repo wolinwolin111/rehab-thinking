@@ -74,3 +74,25 @@ test("guided progression opens the next load only after a normal first result", 
   });
   assert.deepEqual(progressed.map((item) => item.id), ["knee-squat", "knee-single-leg"]);
 });
+
+test("guided explicit chief action opens the next function only after the chief is normal", () => {
+  const initial = core.selectFunctionAssessmentPlan({
+    ...base,
+    regionId: "knee",
+    isGuided: true,
+    reportedActions: [{ raw: "下蹲" }],
+    candidates: candidates(["knee-squat", "knee-single-leg", "knee-single-leg-squat"]),
+    firstResults: {},
+  });
+  assert.deepEqual(initial.map((item) => item.id), ["knee-squat"]);
+
+  const progressed = core.selectFunctionAssessmentPlan({
+    ...base,
+    regionId: "knee",
+    isGuided: true,
+    reportedActions: [{ raw: "下蹲" }],
+    candidates: candidates(["knee-squat", "knee-single-leg", "knee-single-leg-squat"]),
+    firstResults: { "function:knee-squat": "normal" },
+  });
+  assert.deepEqual(progressed.map((item) => item.id), ["knee-squat", "knee-single-leg"]);
+});

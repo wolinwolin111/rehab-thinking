@@ -235,7 +235,7 @@ export function selectFunctionAssessmentPlan(input: FunctionAssessmentPlanInput)
   const progressionIds = progressionIdsForRegion(input.regionId);
   const candidates = input.candidates
     .filter((item) => functionActionIsRelevant(input.regionId, item.id, input)
-      || input.isGuided && !hasClearChiefAction(input) && progressionIds.includes(item.id))
+      || input.isGuided && progressionIds.includes(item.id))
     .filter(() => !(input.regionId === "ankle-foot" && isAcuteTrauma(input) && input.goal <= 1))
     .map((item, index) => ({ item, relevance: relevanceFor(item, input), index }))
     .sort((a, b) => b.relevance - a.relevance || a.index - b.index);
@@ -269,6 +269,14 @@ export function selectFunctionAssessmentPlan(input: FunctionAssessmentPlanInput)
   const chiefMatch = candidates.find((entry) => entry.relevance > 0);
   if (chiefMatch) {
     add(chiefMatch.item.id, "chief-context");
+    if (input.firstResults?.[`function:${chiefMatch.item.id}`] === "normal") {
+      const chiefLoad = FUNCTION_LOAD_ORDER[chiefMatch.item.id] ?? 99;
+      const chiefProgressionIndex = progressionIds.indexOf(chiefMatch.item.id);
+      const next = chiefProgressionIndex >= 0
+        ? progressionIds.slice(chiefProgressionIndex + 1).find((id) => byId.has(id))
+        : progressionIds.find((id) => byId.has(id) && (FUNCTION_LOAD_ORDER[id] ?? 99) >= chiefLoad);
+      if (next) add(next, "progression");
+    }
     return selected;
   }
   const first = progressionIds.find((id) => byId.has(id));

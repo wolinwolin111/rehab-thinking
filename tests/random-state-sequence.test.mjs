@@ -3,24 +3,34 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-async function load(path) {
-  const source = await readFile(new URL(path, import.meta.url), "utf8");
+async function loadSource(path, replacements = {}) {
+  let source = await readFile(new URL(path, import.meta.url), "utf8");
+  for (const [from, to] of Object.entries(replacements)) source = source.replaceAll(from, to);
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   return import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
 }
 
-const [profile, workbench, training, adverse, queue] = await Promise.all([
-  load("../app/workflow-profile-core.ts"),
-  load("../app/stage-workbench-core.ts"),
-  load("../app/training-feedback-core.ts"),
-  load("../app/adverse-response-core.ts"),
-  load("../app/workflow-state-core.ts"),
-]);
+async function moduleUrl(path) {
+  const source = await readFile(new URL(path, import.meta.url), "utf8");
+  const output = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  return `data:text/javascript;base64,${Buffer.from(output).toString("base64")}`;
+}
 
-const operations = ["select", "cancel", "skip", "back", "modify", "save", "restore", "adverse", "reassess", "end", "next"];
-const exercises = [{ id: "exercise-a" }, { id: "exercise-b" }];
+const assessmentUrl = await moduleUrl("../app/function-assessment-core.ts");
+const workflowUrl = await moduleUrl("../app/workflow-state-core.ts");
+const bilateralUrl = await moduleUrl("../app/bilateral-flow-core.ts");
+const [evidence, retest, queue, ledger, training, eligibility] = await Promise.all([
+  loadSource("../app/function-evidence-core.ts", { "./function-assessment-core": assessmentUrl }),
+  loadSource("../app/function-retest-transition-core.ts"),
+  loadSource("../app/treatment-queue-core.ts", { "./workflow-state-core": workflowUrl }),
+  loadSource("../app/treatment-ledger-core.ts"),
+  loadSource("../app/training-stage-gate-core.ts", { "./bilateral-flow-core": bilateralUrl }),
+  loadSource("../app/retest-eligibility-core.ts"),
+]);
 
 function rng(seed) {
   let value = seed >>> 0;
@@ -30,133 +40,133 @@ function rng(seed) {
   };
 }
 
-function snapshot(state) {
-  return JSON.parse(JSON.stringify(state));
+function pick(random, values) {
+  return values[Math.floor(random() * values.length)];
 }
 
-function initialState(mode) {
-  return {
+function randomScore(random) {
+  return Math.floor(random() * 11);
+}
+
+function checkFunctionCore(random) {
+  const isFunctionTarget = random() > 0.2;
+  const mode = isFunctionTarget ? pick(random, ["ordinary", "completion-status", "none"]) : "none";
+  const completion = isFunctionTarget ? pick(random, ["", "complete", "unable"]) : "";
+  const unableReason = completion === "unable" ? pick(random, ["", "pain", "weak", "fear", "instruction"]) : "";
+  const result = retest.resolveFunctionRetestTransition({
+    isFunctionTarget,
     mode,
-    stage: "intake",
-    sessionNumber: 1,
-    assessmentRevision: 1,
-    planRevision: 1,
-    answers: 0,
-    skipped: 0,
-    trainingFeedback: {},
-    saved: null,
-    stopped: false,
-  };
-}
-
-function applyOperation(state, operation, random) {
-  const beforeRevision = state.assessmentRevision;
-  if (operation === "select") state.answers += 1;
-  if (operation === "cancel") state.answers = Math.max(0, state.answers - 1);
-  if (operation === "skip") state.skipped += 1;
-  if (operation === "back") state.stage = state.stage === "summary" ? "training" : state.stage === "training" ? "treatment" : state.stage === "treatment" ? "assessment" : "intake";
-  if (operation === "modify") {
-    state.assessmentRevision = adverse.nextAssessmentRevision(state.assessmentRevision);
-    state.planRevision = state.assessmentRevision;
-    state.stage = "assessment";
-    state.trainingFeedback = {};
-  }
-  if (operation === "reassess") {
-    state.assessmentRevision = adverse.nextAssessmentRevision(state.assessmentRevision);
-    state.planRevision = state.assessmentRevision;
-    state.stage = "reassessment";
-    state.trainingFeedback = {};
-  }
-  if (operation === "save") state.saved = snapshot({ ...state, saved: null });
-  if (operation === "restore" && state.saved) Object.assign(state, snapshot(state.saved), { saved: state.saved });
-  if (operation === "adverse") {
-    const afterScore = 2 + Math.floor(random() * 7);
-    const event = {
-      ...adverse.createAdverseResponse({
-        source: random() > 0.5 ? "training" : "treatment",
-        sourceId: "random-unit",
-        sourceLabel: "随机动作",
-        timing: "immediate",
-        beforeScore: 4,
-        afterScore,
-        relatedAssessmentIds: ["motion:knee-extension"],
-        assessmentRevision: state.assessmentRevision,
-      }),
-      afterScoreConfirmed: true,
-      settledAfterStopping: afterScore > 4 ? "yes" : "no",
-      locationChanged: "no",
-      symptomChanged: "no",
-      neuralOrWeakness: afterScore >= 8 ? "yes" : "no",
-    };
-    const route = adverse.resolveAdverseResponse(event);
-    if (route === "stop-and-refer") {
-      state.stage = "stopped";
-      state.stopped = true;
-    } else if (route === "focused-reassessment") {
-      state.stage = "reassessment";
-      state.assessmentRevision = adverse.nextAssessmentRevision(state.assessmentRevision);
-      state.planRevision = state.assessmentRevision;
-    } else if (route === "regress-training") {
-      state.stage = "training";
-    }
-  }
-  if (operation === "end") {
-    if (state.stage === "training" && !training.trainingFeedbackComplete(exercises, state.trainingFeedback)) return;
-    if (state.stage !== "stopped") state.stage = "summary";
-  }
-  if (operation === "next" && state.stage === "summary") {
-    state.sessionNumber += 1;
-    state.assessmentRevision = adverse.nextAssessmentRevision(state.assessmentRevision);
-    state.planRevision = state.assessmentRevision;
-    state.stage = "intake";
-    state.answers = 0;
-    state.skipped = 0;
-    state.trainingFeedback = {};
-  }
-  if (state.planRevision !== state.assessmentRevision && operation !== "restore") state.planRevision = state.assessmentRevision;
-  if (operation !== "restore") assert.ok(state.assessmentRevision >= beforeRevision, "评估版本只能递增");
-}
-
-function assertState(state) {
-  assert.ok(["intake", "assessment", "treatment", "training", "reassessment", "summary", "stopped"].includes(state.stage));
-  const normalized = profile.normalizeWorkflowProfile({ productMode: state.mode });
-  if (state.mode === "guided") {
-    assert.equal(normalized.canAssessPassive, false);
-    assert.equal(normalized.canMobilizeJoint, false);
-  }
-  const stages = workbench.workbenchStageStates({
-    canContinueSafety: state.stage !== "intake",
-    assessmentFlowComplete: ["treatment", "training", "summary"].includes(state.stage),
-    completedAssessmentCount: state.stage === "assessment" ? 1 : 2,
-    totalAssessmentCount: 2,
-    unresolvedProblemCount: state.stage === "assessment" ? 1 : 0,
-    trialRecordCount: ["training", "summary"].includes(state.stage) ? 1 : 0,
-    trainingComplete: state.stage === "summary",
-    trainingPlanSaved: false,
-    exerciseCount: 2,
-    isSummaryStep: state.stage === "summary",
+    completion,
+    unableReason,
+    scoreConfirmed: random() > 0.5,
+    chiefScoreRetestBlocked: random() > 0.8,
   });
-  assert.equal(stages.length, 6);
-  assert.ok(stages.every((value) => typeof value === "string" && value.length > 0));
-  assert.ok(state.planRevision <= state.assessmentRevision);
-  assert.equal(queue.resolveDynamicQueueAdvance(0, ["target:a", "target:b"], { completedKey: "target:a", nextKey: "target:b" }), 1);
+  assert.equal(result.completionOnly, isFunctionTarget && mode === "completion-status");
+  assert.equal(result.requiresScore, isFunctionTarget ? !result.completionOnly : true);
+  if (result.evidenceCaptured) assert.equal(result.functionReady, true);
+  if (result.completionOnly) assert.equal(result.requiresScore, false);
 }
 
-test("两种模式各500条、每条最多100步的随机状态序列都有合法状态和出口", () => {
-  let sequenceCount = 0;
-  for (const mode of ["guided", "thinking"]) {
-    for (let seed = 1; seed <= 500; seed += 1) {
-      const random = rng(seed + (mode === "thinking" ? 100000 : 0));
-      const state = initialState(mode);
-      for (let step = 0; step < 100; step += 1) {
-        const operation = operations[Math.floor(random() * operations.length)];
-        applyOperation(state, operation, random);
-        assertState(state);
+function checkQueueCore(random) {
+  const types = ["muscle", "control", "joint", "neural"];
+  const candidates = Array.from({ length: 1 + Math.floor(random() * 6) }, (_, index) => ({
+    id: `candidate-${index}`,
+    type: pick(random, types),
+  }));
+  const preferredTypes = random() > 0.35 ? [pick(random, types)] : [];
+  const startIndex = Math.floor(random() * candidates.length);
+  const result = pick(random, ["better", "partial", "same", "worse"]);
+  const activityWorsened = random() > 0.85;
+  const advance = queue.resolveTreatmentQueueAdvance({
+    candidates,
+    startIndex,
+    preferredTypes,
+    getType: (candidate) => candidate.type,
+    result,
+    activityWorsened,
+  });
+  assert.ok(advance.nextCandidateIndex >= -1 && advance.nextCandidateIndex < candidates.length);
+  if (advance.stopped) {
+    assert.equal(advance.nextCandidateIndex, -1);
+    assert.equal(advance.nextTargetPosition, undefined);
+  }
+  if (advance.nextCandidateIndex >= 0) {
+    assert.ok(advance.nextCandidateIndex > startIndex);
+    if (preferredTypes.length) assert.ok(preferredTypes.includes(candidates[advance.nextCandidateIndex].type));
+  }
+  if (advance.advanceToNextTarget) assert.equal(advance.nextCandidateIndex, -1);
+}
+
+function checkLedgerCore(random) {
+  const targetId = pick(random, ["target:chief", "target:motion:knee-extension", "target:swelling", "target:local-limb"]);
+  const record = {
+    targetId,
+    result: pick(random, ["better", "partial", "same", "worse"]),
+    afterScore: randomScore(random),
+    chiefRetested: random() > 0.4,
+    rangeOutcomes: targetId.startsWith("target:motion:")
+      ? { "knee-extension": pick(random, ["both-match", "better-passive-limited", "passive-limited", "worse"]) }
+      : undefined,
+  };
+  const completed = ledger.completedProblemIdsFromTreatmentRecords([record], {
+    "ankle-dorsiflexion": pick(random, ["both-match", "passive-limited"]),
+  });
+  assert.ok(completed instanceof Set);
+  for (const id of completed) assert.match(id, /^(chief|motion:|swelling|local-limb)/);
+  if (targetId === "target:chief" && record.afterScore > 0) assert.equal(completed.has("chief"), false);
+}
+
+function checkTrainingCore(random) {
+  const trainingComplete = random() > 0.8;
+  const trainingPlanSaved = random() > 0.8;
+  const safetySignal = random() > 0.9;
+  const treatmentWorsened = random() > 0.9;
+  const result = training.resolveTrainingStageGate({
+    bilateral: random() > 0.45,
+    assessmentComplete: random() > 0.4,
+    safetySignal,
+    treatmentWorsened,
+    trainingComplete,
+    trainingPlanSaved,
+  });
+  assert.equal(result.closed, trainingComplete || trainingPlanSaved);
+  assert.equal(result.blocked, result.bilateralGate === "blocked");
+  assert.equal(result.lowLoadOnly, result.bilateralGate === "low-load");
+  if (safetySignal || treatmentWorsened) assert.equal(result.bilateralGate, "blocked");
+}
+
+function checkEvidenceEligibilityCore(random) {
+  const completion = pick(random, ["complete", "unable"]);
+  const unableReason = completion === "unable" ? pick(random, ["pain", "weak", "fear", "instruction"]) : "";
+  const record = { functionCompletion: completion, functionUnableReason: unableReason };
+  const actual = evidence.functionEvidenceFromRecord("function:knee-squat", record);
+  const mode = eligibility.retestBaselineModeFromEvidence([{ mode: actual.retestMode }]);
+  const route = eligibility.retestEligibility({
+    hasReportedChiefAction: true,
+    hasPerformedBaseline: actual.performed,
+    baselineMode: mode,
+    treatmentOrTrainingCompleted: random() > 0.5,
+  });
+  assert.equal(mode, actual.retestMode);
+  if (!actual.performed) assert.equal(route, "not-comparable");
+  if (actual.retestMode === "completion-status") assert.equal(route, "completion-status");
+}
+
+test("生产逻辑核心随机组合始终满足复测、队列、台账和训练门禁不变量", () => {
+  let operationCount = 0;
+  for (let seed = 1; seed <= 500; seed += 1) {
+    const random = rng(seed);
+    for (let step = 0; step < 100; step += 1) {
+      switch (Math.floor(random() * 5)) {
+        case 0: checkFunctionCore(random); break;
+        case 1: checkQueueCore(random); break;
+        case 2: checkLedgerCore(random); break;
+        case 3: checkTrainingCore(random); break;
+        default: checkEvidenceEligibilityCore(random); break;
       }
-      assert.ok(state.stage, `${mode} seed ${seed} 没有阶段出口`);
-      sequenceCount += 1;
+      operationCount += 1;
     }
   }
-  assert.equal(sequenceCount, 1000);
-  console.log(`random-state-sequences=${sequenceCount}; max-steps=100`);
+  assert.equal(operationCount, 50000);
+  console.log(`production-core-random-combinations=${operationCount}`);
 });
