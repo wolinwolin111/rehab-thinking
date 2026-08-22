@@ -31,6 +31,9 @@ button:focus:not(:focus-visible), summary:focus:not(:focus-visible) { outline: n
 .rm-label.is-missing span { color: var(--rm-red); }
 .rm-label.is-missing { box-shadow: inset 3px 0 0 var(--rm-red); }
 .rm-missing-jump { margin: 0 2px; padding: 1px 7px; border: 0; border-radius: 999px; color: var(--rm-red); background: var(--rm-red-soft); font-size: 12px; font-weight: 700; cursor: pointer; }
+/* 肌肉紧张度页的显眼出口条：两侧差别不大时免翻区域卡。 */
+.rm-tension-exit { padding: 12px 14px; border: 1px dashed var(--rm-line-strong); border-radius: 12px; background: var(--rm-paper); }
+.rm-tension-exit > b { display: block; margin-bottom: 8px; color: #415168; font-size: 13px; font-weight: 800; }
 html { background: var(--rm-paper); scroll-behavior: smooth; }
 body { margin: 0; color: var(--rm-ink); background: var(--rm-paper); font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif; font-size: 17px; }
 button, input, textarea, select { font: inherit; }

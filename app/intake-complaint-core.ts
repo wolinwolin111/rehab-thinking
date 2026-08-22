@@ -41,3 +41,24 @@ export function currentComplaintText(text: string) {
 export function hasNegatedTerm(text: string, terms: string[]) {
   return terms.some((term) => new RegExp(`(?:不|没|没有|并无|无|未)(?:再|会|是|有)?[^，。；]{0,2}${term}`).test(text));
 }
+
+/**
+ * 从当前主诉里提取「哪一侧更明显」的优先侧预填值。
+ *
+ * 只在出现明确的单侧比较表述（X侧…更明显/严重/重/厉害/疼）时返回；
+ * 「右侧比左侧更明显」取比较主体（X侧）。比较句常不带症状词（如「下楼时右侧更明显」），
+ * 因此这里不复用要求症状词的 currentComplaintSegments，只排除纯历史从句。
+ * 结果仅作预填，用户仍可在优先侧题目上修改。
+ */
+export function extractComplaintPrioritySide(text: string): "左侧" | "右侧" | undefined {
+  const pattern = /(右(?:侧|边|腿|膝|脚|踝)|左(?:侧|边|腿|膝|脚|踝))[^，。；]{0,8}?(?:症状|问题)?(?:(?:更(?:为|要)?)?(?:明显|严重|厉害)|更(?:为|要)?(?:重|疼|痛|不舒服))/;
+  for (const segment of splitComplaintSegments(text)) {
+    if (!pattern.test(segment)) continue;
+    const historical = HISTORY_WORDS.some((word) => segment.includes(word));
+    const current = CURRENT_WORDS.some((word) => segment.includes(word));
+    if (historical && !current && !/(一直|仍然|还没|没有恢复|反复)/.test(segment)) continue;
+    const match = segment.match(pattern);
+    return match![1].startsWith("左") ? "左侧" : "右侧";
+  }
+  return undefined;
+}

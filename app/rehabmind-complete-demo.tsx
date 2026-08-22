@@ -148,7 +148,7 @@ import {
 import { needsTrainingToleranceRetest, needsTreatmentFinalChiefRetest, treatmentMustStop } from "./treatment-session-core";
 import { capturesChiefRetestScore, nextRangeCandidateType, shouldRequestChiefRetest } from "./retest-routing-core";
 import { recommendNextSession } from "./next-session-recommendation-core";
-import { currentComplaintText } from "./intake-complaint-core";
+import { currentComplaintText, extractComplaintPrioritySide } from "./intake-complaint-core";
 import {
   adverseCaptureComplete,
   canExecutePlan,
@@ -6448,7 +6448,9 @@ export default function RehabMindCompleteDemo() {
                 locationConfirmed: Boolean(primary),
                 regionId,
                 side: sideFromLocationSelections(bodyLocations),
-                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间" ? intake.prioritySide : undefined,
+                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间"
+                  ? intake.prioritySide ?? extractComplaintPrioritySide(currentComplaintText(intake.description))
+                  : undefined,
                 location: bodyLocations.map((item) => item.location).join("、"),
                 forceDirection,
                 actionAnalysis: analyzeChiefAction(intake.description, regionId, forceDirection, primaryReportedAction(intake)),
@@ -6630,7 +6632,9 @@ export default function RehabMindCompleteDemo() {
                 locationConfirmed: Boolean(primary),
                 regionId,
                 side: sideFromLocationSelections(bodyLocations),
-                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间" ? intake.prioritySide : undefined,
+                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间"
+                  ? intake.prioritySide ?? extractComplaintPrioritySide(currentComplaintText(intake.description))
+                  : undefined,
                 location: bodyLocations.map((item) => item.location).join("、"),
                 forceDirection,
                 actionAnalysis: analyzeChiefAction(intake.description, regionId, forceDirection, primaryReportedAction(intake)),
@@ -6866,11 +6870,12 @@ export default function RehabMindCompleteDemo() {
       const tensionContext = `${intake.location} ${intake.description} ${intake.symptomType} ${intake.provocationTypes.join(" ")}`;
       const locations = [...new Set(limitedPilotMotionItems.flatMap((motionItem) => tensionLocationOptions(motionItem.id.replace(/^motion:/, ""), tensionContext)))];
       const selectedLocations = sharedTensionRecord.tensionLocations ?? [];
+      const tensionExitLabels = ["没有明显差别", "两侧感觉接近", "暂不判断"];
       const toggleSharedTensionLocation = (location: string) => {
         updateAssessment(SHARED_TENSION_ASSESSMENT_ID, (latestRecord) => {
           const latestLocations = latestRecord.tensionLocations ?? [];
           const alreadySelected = latestLocations.includes(location);
-          const specialLabels = ["没有明显差别", "两侧感觉接近", "暂不判断"];
+          const specialLabels = tensionExitLabels;
           const next = specialLabels.includes(location)
             ? alreadySelected ? [] : [location]
             : alreadySelected
@@ -6885,6 +6890,7 @@ export default function RehabMindCompleteDemo() {
           <header><i>触</i><div><span>按图示同一肌肉区域比较两侧</span><strong>相关区域只检查一次</strong></div></header>
           <section><b>怎么比较</b><p>{intake.side === "双侧/中间" ? "左右两侧分别轻按同一肌肉区域一次，比较哪一侧更酸或更胀。" : "先按另一侧，再用相近力度轻按不舒服的一侧，比较哪一侧更酸或更胀。"}</p></section>
           <section><b>选择区域</b><p>选择按压反应明显不同的肌肉区域；不要根据“硬不硬”下结论，也不要按骨头、关节线、明显肿胀中心或尖锐痛点。</p></section>
+          <section className="rm-tension-exit"><b>{intake.side === "双侧/中间" ? "两侧差别不大？直接选：" : "两侧差别不大？直接选："}</b><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{tensionExitLabels.map((label) => <button type="button" key={label} className={selectedLocations.includes(label) ? "is-selected" : ""} onClick={() => toggleSharedTensionLocation(label)}><i>{selectedLocations.includes(label) ? "✓" : ""}</i>{label}</button>)}</div></section>
           <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} onToggle={toggleSharedTensionLocation} />
           <p className="rm-choice-hint">不要按骨头、关节线、明显肿胀中心或尖锐痛点；出现刺痛、麻或电感就停止。</p>
         </article>
