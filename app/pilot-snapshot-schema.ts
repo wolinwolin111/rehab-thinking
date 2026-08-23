@@ -87,7 +87,7 @@ export function assertAndStampPilotSnapshotSchemaVersion(
   label: string,
 ): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
+    throw new PilotCaseValidationError(`${label} must be an object`);
   }
   const raw = value as Record<string, unknown>;
   const version = raw.schemaVersion === undefined ? 1 : raw.schemaVersion;

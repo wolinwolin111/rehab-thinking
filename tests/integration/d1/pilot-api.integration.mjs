@@ -6,8 +6,22 @@ const inviteToken = process.env.PILOT_INVITE_TOKEN ?? "local-rehabmind-invite";
 const adminKey = process.env.PILOT_ADMIN_KEY ?? "local-rehabmind-admin";
 const runId = `d1-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+/** 本地服务器逐请求关连接时，undici 复用可能撞上 ECONNRESET；传输层重试一次，不掩盖业务状态。 */
+async function fetchWithRetry(url, init, attempts = 2) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  throw lastError;
+}
+
 async function request(path, { method = "GET", headers = {}, body } = {}) {
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetchWithRetry(`${baseUrl}${path}`, {
     method,
     headers: body === undefined ? headers : { "content-type": "application/json", ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -16,7 +30,7 @@ async function request(path, { method = "GET", headers = {}, body } = {}) {
 }
 
 async function requestRaw(path, { method = "GET", headers = {}, body } = {}) {
-  const response = await fetch(`${baseUrl}${path}`, { method, headers, body });
+  const response = await fetchWithRetry(`${baseUrl}${path}`, { method, headers, body });
   return { status: response.status, body: await response.json().catch(() => null) };
 }
 

@@ -1,3 +1,6 @@
+// ⚠️ 作用域：仅本地开发/测试 harness（vite 的 cloudflare 插件与 miniflare 需要）。
+// 生产部署走 VPS（scripts/vps-release.sh + pm2/nginx），与本文件及 wrangler.jsonc 无关。
+// REL-02 决议（2026-08-23，产品确认）：保留此配置用于本地 harness；不作为部署来源。
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rehabmind-local",

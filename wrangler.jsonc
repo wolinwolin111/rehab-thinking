@@ -1,3 +1,6 @@
+// ⚠️ 作用域：仅当需要真实 Cloudflare 部署演练时使用（REHABMIND_CLOUDFLARE_DEPLOY=1 npm run build）。
+// 生产部署已迁移至 VPS（scripts/vps-release.sh + pm2/nginx），与本文件无关；
+// 本地 dev/test harness 使用 wrangler.local.jsonc。REL-02 决议（2026-08-23，产品确认）：保留归档。
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rehabmind",
