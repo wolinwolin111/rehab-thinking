@@ -128,12 +128,11 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 
 部署脚本存档：`scripts/vps-recon*.sh`、`vps-deploy-setup.sh`（解包+npm ci+迁移）、nginx 配置以服务器 `/etc/nginx/sites-enabled/combined.conf.bak-*` 与仓库内 `docs/HANDOVER.md` 本节描述为准。
 
-### 阶段 2：发布验收（半天）
+### 阶段 2：发布验收 ✅ 自动化部分完成（2026-08-23，报告见 `docs/release-acceptance-report-2026-08-23.md`）
 
-1. 按发布手册（`docs/pilot-release-readiness-execution-runbook.md`）在新环境重跑全部阻断项
-2. 人工走读 ×2（普通用户 + 专业人员视角）
-3. 双侧全链路回归：mix10 走读需先补 TENS-01 相关交互处理（见 §6 已知问题）
-4. 测试数据清点：**日常不做任何自动清理**；试用结束由产品明确指示后，用 `POST /api/pilot/admin/purge` 带 `createdBefore=<结束时刻>` 一次性全量清除并归档输出
+- 本地基线（test:fast 542 / lint 0 / 变异 12）✅；本地与生产集成 5/5 ✅；生产 §11 页面冒烟 ✅（含刷新恢复路径）；日志脱敏 ✅；测试数据清零 ✅
+- 结论：**允许开放**（附保留风险：DEPLOY-01 隔离、ARCH-01、人工双视角走读待产品执行）
+- 顺带修复：快照非对象 500→400；集成 harness 连接重试加固
 
 **VPS 发布操作**（REL-02 固化，2026-08-23 干净检出演练通过）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
 
