@@ -3,7 +3,7 @@
  */
 
 import assert from "node:assert/strict";
-import { dismissOnboarding } from "./real-browser-test-helpers.mjs";
+import { agreePilotConsent, dismissOnboarding } from "./real-browser-test-helpers.mjs";
 import {
   assertNoBrowserRuntimeErrors,
   clickFirstFixedButton,
@@ -41,6 +41,7 @@ async function clickUnselectedExact(name, label) {
 }
 
 await page.goto(fixedScenarioUrl(), { waitUntil: "networkidle", timeout: 30000 });
+await agreePilotConsent(page);
 await dismissOnboarding(page);
 await page.locator("textarea").fill("昨晚崴了右脚，外踝疼、肿，还出现麻电，走路越来越没力");
 await clickFixedButton(page, "帮我整理");

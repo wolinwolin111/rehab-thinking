@@ -31,6 +31,8 @@ async function clickLocator(locator, label) {
   if (cls.includes("is-selected")) return false; // 已选中，跳过（避免多选 toggle 死循环）
   const text = (await first.textContent().catch(() => "")).trim();
   if (/修改$/.test(text)) return false; // 旁栏「已收集信息」编辑按钮，不是题目选项
+  // 紧张度页出口条与选择器内部存在同文案按钮；walker 一律不点出口文案（完成区域后走「查看评估结果」）。
+  if (["没有明显差别", "两侧感觉接近", "暂不判断"].includes(text)) return false;
   await first.click().catch(() => {});
   await page.waitForTimeout(300);
   console.log(`  ${label}${text ? ` | ${text.slice(0, 24)}` : ""}`);
