@@ -122,7 +122,7 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 1. ~~better-sqlite3 新实现~~ ✅ `db/sqlite-pilot-case-repository.ts`，与 D1 版同一接口；原生模块经 `createRequire` 运行时加载（绕开打包器内联 .node 失效问题）
 2. ~~env 解耦~~ ✅ `app/api/pilot/_shared.ts#getPilotEnv`：Workers 读 bindings / Node 读 process.env，动态 specifier 防打包解析
 3. **运行方式**：pm2 托管 `npm run start`（vinext Node 模式），应用监听 127.0.0.1:3100；ecosystem.config.cjs 自读 `.env`
-4. **nginx**：四服务共存于同一 IP 证书站点——RehabMind 占根跳转与 `/RehabMind/` 后缀入口（Node 3100）；RehabGuide shop 于 `/shop/`（Gunicorn 3098，2026-08-23 短暂下线后恢复）；Clinic 于 `/clinic/`（8080）与静态 `/mobile/`；`location /api/pilot/` 最长前缀代理避开 Clinic 的 `/api/` 重定向；`client_max_body_size 4m` 让大载荷守卫在应用层按合同返回 413 JSON。裸根 `/` 为 308 跳转，唯一内容入口是 `https://66.154.101.204/RehabMind/`
+4. **nginx**：四服务共存于同一 IP 证书站点——RehabMind 占根跳转与 `/RehabMind/` 后缀入口（Node 3100）；RehabGuide shop 于 `/shop/`（Gunicorn 3098，2026-08-23 短暂下线后恢复）；Clinic 于 `/clinic/`（8080）与静态 `/mobile/`；`location /api/pilot/` 最长前缀代理避开 Clinic 的 `/api/` 重定向；`location /rehabmind-` 前缀代理定位图等根级 PNG（曾因缺失导致定位图全灭，已修）；`client_max_body_size 4m` 让大载荷守卫在应用层按合同返回 413 JSON。裸根 `/` 为 308 跳转，唯一内容入口是 `https://66.154.101.204/RehabMind/`
 5. **Secrets**：`~/rehabmind/app-src/.env`（chmod 600），含 PILOT_INVITE_TOKEN / PILOT_ADMIN_KEY / PILOT_INVITE_EXPIRES_AT(90天) / PILOT_SQLITE_PATH / PORT=3100；本地副本在开发机 `%TEMP%` 外的 `D:\Study\codex\project\.tmp-deploy-secrets.txt`——**请转移进密码管理器**
 6. **验证**：集成套件 5/5 全绿指向 https://66.154.101.204 （真 TLS 校验，无豁免）；页面 SSR 标题与六步导航正常；Clinic(/clinic/) 与 /mobile/ 未受影响
 

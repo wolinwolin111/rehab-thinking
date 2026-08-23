@@ -1,4 +1,4 @@
-﻿set -e
+set -e
 echo "=== backup ==="
 sudo cp /etc/nginx/sites-enabled/combined.conf "/etc/nginx/sites-enabled/combined.conf.bak-$(date +%Y%m%d-%H%M3)"
 
@@ -65,6 +65,8 @@ server {
     location /assets/    { proxy_pass http://127.0.0.1:3100; proxy_http_version 1.1; }
     location = /og-rehabmind-complete.png { proxy_pass http://127.0.0.1:3100; }
     location = /favicon.svg               { proxy_pass http://127.0.0.1:3100; }
+    # 定位图/部位图集等根级静态资源（rehabmind-*.png，与 /RehabMind/ 入口大小写不冲突）
+    location /rehabmind- { proxy_pass http://127.0.0.1:3100; proxy_http_version 1.1; }
 
     location /api/pilot/ {
         proxy_pass http://127.0.0.1:3100;
