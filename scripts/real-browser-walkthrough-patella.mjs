@@ -22,7 +22,7 @@ const hasJointCapability = process.env.PATELLA_JOINT !== "0";
 const patellaAssessmentCardCounts = [];
 const patellaTreatmentTitles = [];
 
-await page.goto(pilotScenarioUrl("http://localhost:3000/"), { waitUntil: "networkidle", timeout: 30000 });
+await page.goto(pilotScenarioUrl(), { waitUntil: "networkidle", timeout: 30000 });
 await agreePilotConsent(page);
 await dismissOnboarding(page);
 await page.locator("textarea").fill("右膝下楼时髌骨周围刺痛，有三个月了");
