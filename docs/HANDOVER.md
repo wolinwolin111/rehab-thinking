@@ -135,7 +135,7 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 3. 双侧全链路回归：mix10 走读需先补 TENS-01 相关交互处理（见 §6 已知问题）
 4. 测试数据清点：**日常不做任何自动清理**；试用结束由产品明确指示后，用 `POST /api/pilot/admin/purge` 带 `createdBefore=<结束时刻>` 一次性全量清除并归档输出
 
-**VPS 发布操作**（REL-02 固化）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
+**VPS 发布操作**（REL-02 固化，2026-08-23 干净检出演练通过）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
 
 ### 阶段 3：开放粉丝群 + 观察
 
@@ -180,7 +180,7 @@ ssh -i ~/.ssh/id_ed25519 rehabdeploy@66.154.101.204   # 有 sudo
 
 1. **双侧肌肉紧张度页的走读交互未完全自动化**：walker 在该页的选项定位需用 `.rm-muscle-location-picker` 作用域 + `button:has-text("两侧感觉接近")`（可见性过滤）；`.rm-muscle-location-card` 是 article 容器无 handler，点它无效。TENS-01 实验代码留在 `.tmp-real-case-walk.mjs` 死循环分支可参考
 2. **本地 D1 外键无 ON DELETE 子句**：删除案例必须显式多表删除（参照 `hardDeleteCases` 顺序：叶子→根）
-3. **PowerShell 编辑含中文/模板字符串的文件**：`-replace` + `WriteAllText` 会搞坏编码和转义——改代码一律用 Edit 工具或 Node fixer 脚本
+3. **PowerShell 编辑含中文/模板字符串的文件**：`-replace` + `WriteAllText` 会搞坏编码和转义——改代码一律用 Edit 工具或 Node fixer 脚本。**管道远程脚本同样**：`Get-Content -Raw`（不带 `-Encoding utf8`）会把 UTF-8 脚本按 ANSI 读入再传给 ssh，中文 echo 变乱码；读脚本必须 `Get-Content -Raw -Encoding utf8`。
 4. **SSH 防爆破**：连续失败会封 IP；用对密钥一次连成
 5. **`.first()` 匹配器偏移**：按钮点击后文本变化（如 反应更明显→更明显）会让同选择器匹配到另一实例——BEFORE/AFTER 对比实验必须锚定同一元素
 6. **主组件 8700 行**：改前先读目标区域上下文；行号会随编辑漂移，用唯一文本锚点
