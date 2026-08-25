@@ -136,11 +136,21 @@ export type MotionSymptomRecord = {
   passiveDiscomfort?: string;
 };
 
-/** 方向是否已知有不适：主诉同动作、主动/被动不适或无法完成(痛)都算。 */
+/**
+ * 方向是否已知有不适：主诉同动作、主动/被动不适或无法完成(痛)都算。
+ * 但如果评估明确记录了"无不适"（discomfort === "no" 且未标记 unable/pain），
+ * 即使与主诉同动作也不视为有症状——评估结果优先于主诉推测。
+ */
 export function motionWasSymptomatic(directionId: string, assessmentResults: Record<string, MotionSymptomRecord | undefined>, chiefDirection?: string) {
   const record = valueForPhysicalAction(assessmentResults, `motion:${directionId}`);
-  return samePhysicalAction(chiefDirection, directionId)
-    || record?.discomfort === "yes"
+  if (samePhysicalAction(chiefDirection, directionId)) {
+    // 主诉同动作：默认有症状，但如果评估明确记录了无不适则以评估为准
+    if (record?.discomfort === "no" && record?.unableReason !== "pain" && record?.passiveDiscomfort !== "yes") {
+      return false;
+    }
+    return true;
+  }
+  return record?.discomfort === "yes"
     || record?.unableReason === "pain"
     || record?.passiveDiscomfort === "yes";
 }
