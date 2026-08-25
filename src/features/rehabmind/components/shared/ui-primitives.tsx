@@ -124,7 +124,7 @@ export function StepHeading({ eyebrow, title, note, current, total, tutorialTarg
   const stepMatch = eyebrow.match(/第(\d+)步/);
   const stepNum = stepMatch ? Number(stepMatch[1]) : null;
   return <header className="rm-heading" data-rehabmind-tutorial={tutorialTarget}>
-    <div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}{stepNum ? <div className="rm-step-progress" aria-label={`第${stepNum}步，共6步`}>{[1, 2, 3, 4, 5, 6].map((n) => <i key={n} className={n < stepNum ? "is-done" : n === stepNum ? "is-current" : ""} />)}</div> : null}</div>
+    <div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}{stepNum ? <div className="rm-step-progress" role="img" aria-label={`第${stepNum}步，共6步`}>{[1, 2, 3, 4, 5, 6].map((n) => <i key={n} className={n < stepNum ? "is-done" : n === stepNum ? "is-current" : ""} />)}</div> : null}</div>
     {typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}
   </header>;
 }

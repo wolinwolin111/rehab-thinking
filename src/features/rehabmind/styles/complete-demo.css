@@ -1151,7 +1151,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-product-welcome section > div { display: flex; align-items: center; gap: 12px; margin-top: 34px; }
 .rm-product-welcome section button { min-height: 52px; padding: 11px 22px; border: 1px solid #b7c0d1; border-radius: 6px; color: #26344f; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 .rm-product-welcome section button.rm-primary { color: #fff; border-color: #4657c6; background: #4657c6; }
-.rm-product-welcome footer { max-width: 760px; padding-top: 16px; border-top: 1px solid #d7dde7; color: #697489; font-size: 13px; line-height: 1.6; }
+.rm-product-welcome footer { max-width: 760px; padding-top: 16px; border-top: 1px solid #d7dde7; color: #56617a; font-size: 13px; line-height: 1.6; }
 
 .rm-entry-sheet-backdrop { position: fixed; inset: 0; z-index: 285; padding: 20px; background: rgba(18, 28, 47, .56); display: flex; align-items: center; justify-content: center; }
 .rm-entry-sheet { width: min(620px, 100%); max-height: min(760px, calc(100vh - 40px)); padding: 24px; border-radius: 8px; background: #fff; box-shadow: 0 24px 70px rgba(16, 27, 51, .3); overflow: auto; }
