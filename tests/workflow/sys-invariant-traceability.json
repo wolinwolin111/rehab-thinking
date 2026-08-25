@@ -1,0 +1,40 @@
+{
+  "comment": "SYS 不变量/场景 -> 守护测试映射（批次 4）。guards[].file 相对仓库根；anchor 必须真实出现在该文件中，证明守护关系。文档侧唯一来源：docs/pilot-scenario-coverage.md。",
+  "invariants": {
+    "SYS-EVIDENCE-001": { "guards": [{ "file": "tests/unit/domain/pilot-decision-engine.test.mjs", "anchor": "buildPilotTreatmentUnits" }] },
+    "SYS-EVIDENCE-002": { "guards": [{ "file": "tests/unit/domain/pilot-decision-engine.test.mjs", "anchor": "matchedRelationIds" }] },
+    "SYS-IDENTITY-001": { "guards": [{ "file": "tests/unit/domain/action-identity-core.test.mjs", "anchor": "samePhysicalAction" }] },
+    "SYS-IDENTITY-002": { "guards": [{ "file": "tests/unit/domain/finding-groups-core.test.mjs", "anchor": "buildFindingGroups" }] },
+    "SYS-IMPACT-001": { "guards": [{ "file": "tests/unit/domain/trial-target-core.test.mjs", "anchor": "consolidateTrialTargetsByTreatment" }] },
+    "SYS-BASELINE-001": { "guards": [{ "file": "tests/unit/domain/function-evidence-core.test.mjs", "anchor": "completion-status" }, { "file": "tests/unit/domain/function-retest-transition-core.test.mjs", "anchor": "completionOnly" }] },
+    "SYS-RESULT-001": { "guards": [{ "file": "tests/unit/domain/batch-retest-compute.test.mjs", "anchor": "computeBatchResult" }] },
+    "SYS-RESULT-002": { "guards": [{ "file": "tests/unit/domain/treatment-session-core.test.mjs", "anchor": "treatmentMustStop" }] },
+    "SYS-STATE-001": { "guards": [{ "file": "tests/unit/domain/downstream-invalidation-core.test.mjs", "anchor": "resolveDownstreamInvalidation" }] },
+    "SYS-QUEUE-001": { "guards": [{ "file": "tests/unit/domain/workflow-state-core.test.mjs", "anchor": "resolveDynamicQueueAdvance" }, { "file": "tests/unit/domain/treatment-record-ledger-queue-flow.test.mjs", "anchor": "resolveTreatmentQueueAdvance" }] },
+    "SYS-TRAIN-001": { "guards": [{ "file": "tests/unit/domain/training-feedback-core.test.mjs", "anchor": "trainingFeedbackComplete" }] },
+    "SYS-SAVE-001": { "guards": [{ "file": "tests/component/save-promise-copy.test.mjs", "anchor": "SAVE-01" }, { "file": "tests/workflow/orchestrator-sequence-exploration.test.mjs", "anchor": "invariant" }] },
+    "SYS-BILATERAL-001": { "guards": [{ "file": "tests/unit/domain/bilateral-flow-core.test.mjs", "anchor": "resolveBilateralPriority" }] },
+    "SYS-BILATERAL-002": { "guards": [{ "file": "tests/unit/domain/bilateral-flow-core.test.mjs", "anchor": "needsConfirmation" }] },
+    "SYS-BILATERAL-003": { "guards": [{ "file": "tests/unit/domain/bilateral-flow-core.test.mjs", "anchor": "bilateralTrainingGate" }] },
+    "SYS-BILATERAL-004": { "guards": [{ "file": "tests/unit/domain/bilateral-flow-core.test.mjs", "anchor": "bilateralCheckpointOptions" }] },
+    "SYS-INPUT-001": { "guards": [{ "file": "tests/component/muscle-region-location-picker.test.mjs", "anchor": "暂不判断" }] }
+  },
+  "scenarios": {
+    "SYS-S01": { "guards": [{ "file": "tests/workflow/function-retest-flow.test.mjs", "anchor": "resolveTreatmentRetestGate" }] },
+    "SYS-S02": { "guards": [{ "file": "tests/unit/domain/treatment-response-core.test.mjs", "anchor": "classifyTreatmentResponse" }] },
+    "SYS-S03": { "guards": [{ "file": "tests/unit/domain/treatment-session-core.test.mjs", "anchor": "activityWorsened" }] },
+    "SYS-S04": { "guards": [{ "file": "tests/unit/domain/function-retest-transition-core.test.mjs", "anchor": "unable" }] },
+    "SYS-S05": { "guards": [{ "file": "tests/unit/domain/build-trial-targets-scenario.test.mjs", "anchor": "customAction" }] },
+    "SYS-S06": { "guards": [{ "file": "tests/unit/domain/retest-reuse-core.test.mjs", "anchor": "cannot be reused for a different function action" }] },
+    "SYS-S07": { "guards": [{ "file": "tests/unit/domain/workflow-profile-core.test.mjs", "anchor": "all six capability bits are normalized across all 64 combinations" }] },
+    "SYS-S08": { "guards": [{ "file": "tests/workflow/adverse-workflow-matrix.test.mjs", "anchor": "invalidate" }] },
+    "SYS-S09": { "guards": [{ "file": "tests/unit/domain/restored-position-core.test.mjs", "anchor": "resolveRestoredAssessmentProgress" }] },
+    "SYS-S10": { "guards": [{ "file": "tests/unit/domain/training-stage-gate-core.test.mjs", "anchor": "resolveTrainingStageGate" }] },
+    "SYS-S11": { "guards": [{ "file": "tests/workflow/p0-decision-table-execution.test.mjs", "anchor": "bilateral" }] },
+    "SYS-S12": { "guards": [{ "file": "tests/unit/domain/knowledge-consistency.test.mjs", "anchor": "KNOW-" }] },
+    "SYS-BASELINE-002": { "guards": [{ "file": "tests/unit/domain/retest-routing-core.test.mjs", "anchor": "shouldRequestChiefRetest" }] },
+    "SYS-BASELINE-003": { "guards": [{ "file": "tests/unit/domain/chief-retest-history-core.test.mjs", "anchor": "chiefRetested" }] },
+    "SYS-BASELINE-004": { "guards": [{ "file": "tests/unit/domain/action-identity-core.test.mjs", "anchor": "canonicalActionIdFromAssessmentId" }] },
+    "SYS-ACCESS-001": { "guards": [{ "file": "tests/unit/domain/workflow-profile-core.test.mjs", "anchor": "joint mobilization capability requires passive range and clears when passive is removed" }] }
+  }
+}

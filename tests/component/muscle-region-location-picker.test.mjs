@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
+import { expectSourceContains } from "../support/source-contract-assert.mjs";
 
 const [picker, demo, styles, walkthrough] = await Promise.all([
   readFile(new URL("../../src/features/rehabmind/components/assessment/muscle-region-location-picker.tsx", import.meta.url), "utf8"),
@@ -11,16 +12,16 @@ const [picker, demo, styles, walkthrough] = await Promise.all([
 ]);
 
 test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {
-  assert.match(picker, /髋前方到膝盖上缘之间的肌肉区/);
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "髋前方到膝盖上缘之间的肌肉区" }, "肌肉区域文案表");
   assert.match(picker, /MUSCLE_ZONE_PATHS/);
   assert.match(picker, /MuscleAnatomyMap/);
   assert.doesNotMatch(picker, /rehabmind-region-.*atlas-v2\.png/);
   assert.doesNotMatch(picker, /rm-muscle-location-figure__photo/);
   assert.match(picker, /rm-muscle-location-figure__highlight/);
-  assert.match(picker, /按图示肌肉区域比较两侧的张力或按压阻力/);
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "按图示肌肉区域比较两侧的张力或按压阻力" }, "肌肉区域文案表");
   assert.match(picker, /MuscleRegionTreatmentMap/);
   assert.doesNotMatch(picker, /maxSelections = 2/);
-  assert.match(picker, /暂不判断/);
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "暂不判断" }, "肌肉区域文案表");
   assert.match(picker, /bilateral\?: boolean/);
   assert.match(picker, /const encoded = \(side: "左侧" \| "右侧"\)/);
   assert.match(picker, /sideLocation/);
