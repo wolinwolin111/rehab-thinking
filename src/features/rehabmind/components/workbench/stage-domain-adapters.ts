@@ -40,3 +40,4 @@ export type { HomeRelaxationTarget } from "@/src/domain/rehab/training/home-rela
 export { resolvedTreatmentCombination, treatmentResponsePriority } from "@/src/domain/rehab/treatment/treatment-response-core";
 export { formatRecommendedDateRange, recommendNextSession } from "@/src/domain/rehab/followup/next-session-recommendation-core";
 export { compareFollowupScore } from "@/src/domain/rehab/followup/followup-review-core";
+export { markingSideMismatchHint } from "@/src/domain/rehab/shared/marking-side-consistency-core";
