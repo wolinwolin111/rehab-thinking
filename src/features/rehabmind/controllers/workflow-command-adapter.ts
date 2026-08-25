@@ -6,8 +6,6 @@ export type WorkflowCommandPorts = {
   advanceTreatmentTarget?: () => void;
   stopTreatment?: (reason: "worsened") => void;
   clearPendingQueueAdvance?: () => void;
-  enterTraining?: () => void;
-  remainInTreatment?: () => void;
   navigateToStep?: (step: 0 | 1 | 2 | 3 | 4 | 5) => void;
   openReadonlyReview?: (step: 0 | 1 | 2 | 3 | 4 | 5) => void;
   openExplicitEdit?: (step: 0 | 1 | 2 | 3 | 4 | 5) => void;
@@ -33,12 +31,6 @@ export function executeWorkflowCommands(commands: WorkflowCommand[], ports: Work
         break;
       case "clear-pending-queue-advance":
         ports.clearPendingQueueAdvance?.();
-        break;
-      case "enter-training":
-        ports.enterTraining?.();
-        break;
-      case "remain-in-treatment":
-        ports.remainInTreatment?.();
         break;
       case "navigate-to-step":
         ports.navigateToStep?.(command.step);

@@ -4,8 +4,6 @@ export type WorkflowCommand =
   | { type: "advance-treatment-target" }
   | { type: "stop-treatment"; reason: "worsened" }
   | { type: "clear-pending-queue-advance" }
-  | { type: "enter-training" }
-  | { type: "remain-in-treatment" }
   | { type: "navigate-to-step"; step: 0 | 1 | 2 | 3 | 4 | 5 }
   | { type: "open-readonly-review"; step: 0 | 1 | 2 | 3 | 4 | 5 }
   | { type: "open-explicit-edit"; step: 0 | 1 | 2 | 3 | 4 | 5 }

@@ -40,7 +40,6 @@ test("A4 worsening stops the treatment chain instead of entering training", () =
   assert.equal(result.queueAdvance.stopped, true);
   assert.equal(result.transition.to, "treatment-stopped");
   assert.deepEqual(result.commands, [{ type: "stop-treatment", reason: "worsened" }]);
-  assert.ok(!result.commands.some((command) => command.type === "enter-training"));
 });
 
 test("A4 queue recomputation uses stable target identity and clears the pending marker", () => {
