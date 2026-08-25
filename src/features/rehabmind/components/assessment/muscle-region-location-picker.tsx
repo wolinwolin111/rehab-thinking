@@ -133,17 +133,6 @@ const MUSCLE_ZONE_PATHS: Record<PilotMuscleRegionId, string[]> = {
   plantar: ["M134 77 C145 67 160 64 178 66 C195 63 214 68 226 80 L234 119 C225 135 209 145 191 149 L158 143 C142 136 130 124 126 109 Z"],
 };
 
-const MUSCLE_BASE_PATHS = {
-  front: {
-    upper: "M117 40 C133 24 224 24 243 43 L247 74 L233 213 C223 237 208 247 180 247 C151 247 135 236 125 213 L112 75 Z",
-    lower: "M139 244 C153 232 208 232 221 246 L224 283 L215 407 C207 442 193 459 178 460 C162 459 148 442 141 409 L134 282 Z",
-  },
-  back: {
-    upper: "M117 42 C137 24 224 24 243 43 L247 75 L233 214 C220 238 203 248 180 248 C157 248 139 237 125 214 L112 75 Z",
-    lower: "M139 244 C154 232 207 232 221 246 L224 283 L215 407 C207 442 193 459 178 460 C162 459 148 442 141 409 L134 282 Z",
-  },
-};
-
 function MuscleAnatomyMap({ regionId, view }: { regionId: PilotMuscleRegionId; view: MuscleRegionView }) {
   const photo = view === "front"
     ? "/rehabmind-region-calf-v1.png"

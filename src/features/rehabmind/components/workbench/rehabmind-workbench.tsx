@@ -5157,7 +5157,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     <header className="rm-topbar">
       <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>RehabMind</strong><small>康复思路工作台</small></span></button>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
-      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" && !["local-saved", "synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" onClick={openCurrentFeedback}>问题反馈</button><button type="button" className="rm-records-trigger" data-rehabmind-tutorial="records" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
+      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" && !["local-saved", "synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">
@@ -5265,7 +5265,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       onSubmit={submitCurrentFeedback}
     />
 
-    {!testContext ? <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} canContinue={savedRecords.length > 0} onContinue={continueFromWelcome} onStart={startFromWelcome} /> : null}
+    {!testContext ? <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} mode="welcome" canContinue={savedRecords.length > 0} onContinue={continueFromWelcome} onStart={startFromWelcome} /> : null}
 
     {!testContext ? <GuideCards open={guideCardsOpen} onComplete={handleGuideCardsComplete} onSkip={handleGuideCardsSkip} /> : null}
 

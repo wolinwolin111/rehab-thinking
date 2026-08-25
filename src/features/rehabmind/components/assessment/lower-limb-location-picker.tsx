@@ -301,6 +301,11 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
     </nav> : null}
 
     <div className="rm-atlas-workbench">
+      {!compact ? <div className="rm-atlas-hint" aria-hidden="true">
+        <span>① 左侧小图确认大部位</span>
+        <i>→</i>
+        <span>② 右侧大图点击具体位置</span>
+      </div> : null}
       {!compact ? <aside className="rm-atlas-overview" aria-label="选择左右侧和部位">
         {(["front", "back"] as const).map((view) => <div className="rm-overview-body" key={view}>
           <span>{view === "front" ? "正面" : "背面"}</span>

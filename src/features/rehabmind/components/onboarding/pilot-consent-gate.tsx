@@ -34,12 +34,13 @@ export function PilotConsentGate({
           <li>康复内容会使用匿名案例编号保存</li>
           <li>不需要填写姓名、手机号等身份信息</li>
           <li>你可以在应用内删除案例</li>
+          <li>评估和处理由你根据提示自行判断和执行，缺少康复师的实时把关，效果因人而异</li>
+          <li>多次康复改善不明显时建议寻求线下康复师帮助</li>
         </ul>
         <details className="rm-consent-details">
           <summary>查看完整说明</summary>
           <p>你的问题描述和康复记录会保存到悦舒运动康复使用的服务器，以便恢复进度、关联问题反馈并改进产品。</p>
           <p>案例不关联登录账号，请不要在问题描述或反馈中填写真实姓名、手机号等可以识别身份的信息。</p>
-          <p>案例编号本身不能读取康复内容；当前设备会保存独立访问凭证。删除案例后，原访问凭证立即失效。</p>
         </details>
         <label className="rm-consent-check">
           <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} data-rehabmind-tutorial="consent-checkbox" />

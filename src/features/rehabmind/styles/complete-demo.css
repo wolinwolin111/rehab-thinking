@@ -2000,3 +2000,52 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   stroke-width: 2;
   stroke-opacity: 0.8;
 }
+/* ===== 引导卡（GuideCards）专属样式 ===== */
+.rm-guide-cards-backdrop {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(18, 28, 47, .56);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.rm-guide-cards-panel {
+  width: min(420px, calc(100vw - 32px));
+  background: #fff; border-radius: 16px;
+  padding: 32px 28px 24px;
+  box-shadow: 0 12px 40px rgba(18, 28, 47, .18);
+  display: flex; flex-direction: column;
+}
+.rm-guide-cards-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px;
+}
+.rm-guide-cards-progress-text { color: #8795a9; font-size: 12px; font-weight: 600; }
+.rm-guide-cards-skip {
+  background: none; border: none; color: #8795a9; font-size: 12px;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.rm-guide-cards-body { text-align: center; flex: 1; }
+.rm-guide-cards-icon { font-size: 48px; margin-bottom: 16px; }
+.rm-guide-cards-title { font-size: 22px; font-weight: 800; color: #14213d; margin: 0 0 16px; }
+.rm-guide-cards-line { color: #536178; font-size: 15px; line-height: 1.7; margin: 4px 0; }
+.rm-guide-cards-dots { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+.rm-guide-cards-dot { width: 8px; height: 8px; border-radius: 50%; background: #d7dde7; transition: background .2s; }
+.rm-guide-cards-dot.is-active { background: #4657c6; }
+.rm-guide-cards-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.rm-guide-cards-back {
+  background: none; border: none; color: #8795a9; font-size: 14px;
+  cursor: pointer; padding: 8px 0;
+}
+.rm-guide-cards-back:disabled { color: #d7dde7; cursor: default; }
+.rm-guide-cards-next {
+  min-height: 44px; padding: 10px 28px; border: none; border-radius: 8px;
+  color: #fff; background: #4657c6; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.rm-guide-cards-next:hover { background: #3a49b0; }
+/* 人体图两步操作提示 */
+.rm-atlas-hint {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; margin-bottom: 8px;
+  background: #f0f4ff; border-radius: 6px;
+  color: #4657c6; font-size: 13px; font-weight: 600;
+}
+.rm-atlas-hint i { color: #8795a9; font-style: normal; }
