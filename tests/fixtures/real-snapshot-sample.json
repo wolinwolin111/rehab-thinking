@@ -1,11 +1,11 @@
 {
-  "exportedAt": "2026-08-25T17:50:07.199Z",
-  "source": "http://localhost:3001/ 真实页面本地草稿",
+  "exportedAt": "2026-08-25T20:15:40.192Z",
+  "source": "http://localhost:3000/ 真实页面本地草稿",
   "description": "右脚踝昨天扭伤，上下楼梯疼，恢复目标是正常走路跑步",
   "draft": {
     "schemaVersion": 1,
-    "localCaseId": "local-18938cfc-0fbb-4032-964c-90dbc9912a20",
-    "savedAt": "2026-08-25T17:50:06.384Z",
+    "localCaseId": "local-bdc21759-59d9-48b5-a0d3-114a9478892d",
+    "savedAt": "2026-08-25T20:15:39.376Z",
     "snapshot": {
       "schemaVersion": 1,
       "step": 0,
