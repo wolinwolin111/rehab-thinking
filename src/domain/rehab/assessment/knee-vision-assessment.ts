@@ -1,4 +1,4 @@
-import type { KneeFindingFact, KneeSide } from "./knee-decision-core.ts";
+import type { KneeFindingFact, KneeSide } from "@/src/domain/rehab/shared/knee-decision-core";
 
 export type PoseLandmark = {
   x: number;

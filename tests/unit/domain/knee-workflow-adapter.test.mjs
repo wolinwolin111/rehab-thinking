@@ -1,16 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const coreSource = await readFile(new URL("../app/knee-decision-core.ts", import.meta.url), "utf8");
-const adapterSource = await readFile(new URL("../app/knee-workflow-adapter.ts", import.meta.url), "utf8");
-const coreCode = ts.transpileModule(coreSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const coreUrl = `data:text/javascript;base64,${Buffer.from(coreCode).toString("base64")}`;
-const adapterCode = ts.transpileModule(adapterSource.replace('from "./knee-decision-core"', `from "${coreUrl}"`), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const adapterUrl = `data:text/javascript;base64,${Buffer.from(adapterCode).toString("base64")}`;
-const { kneeCandidateAllowedInTreatmentQueue, kneeCandidateBelongsToCurrentDecision, kneeDecisionInputFromWorkflow, kneeExerciseIdsForDecision, kneeLegacyCandidateIdsForUnit, kneeRetestInstruction, kneeTreatmentInstruction } = await import(adapterUrl);
-const { buildKneeDecision } = await import(coreUrl);
+const { kneeCandidateAllowedInTreatmentQueue, kneeCandidateBelongsToCurrentDecision, kneeDecisionInputFromWorkflow, kneeExerciseIdsForDecision, kneeLegacyCandidateIdsForUnit, kneeRetestInstruction, kneeTreatmentInstruction } = await loadTypeScriptModule("./src/domain/rehab/shared/knee-workflow-adapter.ts");
+const { buildKneeDecision } = await loadTypeScriptModule("./src/domain/rehab/shared/knee-decision-core.ts");
+const adapterSource = await readFile(
+  new URL("../../../src/domain/rehab/shared/knee-workflow-adapter.ts", import.meta.url),
+  "utf8",
+);
 
 test("maps the current knee flexion assessment without guessing a missing treatment site", () => {
   const input = kneeDecisionInputFromWorkflow({

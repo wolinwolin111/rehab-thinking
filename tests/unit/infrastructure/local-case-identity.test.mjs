@@ -3,7 +3,7 @@ import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../app/local-case-identity.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/infrastructure/pilot/persistence/local-case-identity.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -40,4 +40,14 @@ test("record identity prefers the stable local id over legacy keys", () => {
   // 旧记录没有 localCaseId 时回退到旧键；都没有时为空串而不是抛错。
   assert.equal(identity.savedRecordIdentity({ caseKey: "legacy-b", id: "c" }), "legacy-b");
   assert.equal(identity.savedRecordIdentity({}), "");
+});
+
+test("CASE-01: explicit identity selects the active case regardless of record order or complaint", () => {
+  const records = [
+    { localCaseId: "local-new", pilotCaseId: "remote-new", complaint: "相同主诉" },
+    { localCaseId: "local-old", pilotCaseId: "remote-old", complaint: "相同主诉" },
+  ];
+  assert.equal(identity.findLocalCaseRecord(records, "local-new")?.pilotCaseId, "remote-new");
+  assert.equal(identity.findLocalCaseRecord([...records].reverse(), "local-new")?.pilotCaseId, "remote-new");
+  assert.equal(identity.findLocalCaseRecord(records, "local-missing"), undefined);
 });

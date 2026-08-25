@@ -1,18 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const source = await readFile(new URL("../app/treatment-queue-core.ts", import.meta.url), "utf8");
-const workflowSource = await readFile(new URL("../app/workflow-state-core.ts", import.meta.url), "utf8");
-const workflowCode = ts.transpileModule(workflowSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const workflowUrl = `data:text/javascript;base64,${Buffer.from(workflowCode).toString("base64")}`;
-const code = ts.transpileModule(source.replace('from "./workflow-state-core"', `from "${workflowUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const core = await loadTypeScriptModule("./src/domain/rehab/treatment/treatment-queue-core.ts");
 
 const candidates = [
   { id: "muscle-1", type: "muscle" },

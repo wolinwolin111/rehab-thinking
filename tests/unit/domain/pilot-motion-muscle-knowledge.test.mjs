@@ -2,8 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
+import { readRehabMindUiSource } from "../../support/read-rehabmind-ui-source.mjs";
 
-const source = await readFile(new URL("../app/pilot-motion-muscle-knowledge.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -68,7 +69,7 @@ test("a treated ankle muscle region retests only its primary motion plane", () =
 });
 
 test("the treatment page renders release, control and one unified retest hierarchy", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /轻柔松解/);
   assert.match(demo, /主动控制/);
   assert.match(demo, /完成后统一复测/);
@@ -77,7 +78,7 @@ test("the treatment page renders release, control and one unified retest hierarc
 });
 
 test("assessment uses professional page titles and one shared tension screen", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /professionalAssessmentTitle\(item\.id, item\.title\)/);
   assert.match(demo, /SHARED_TENSION_ASSESSMENT_ID/);
   assert.match(demo, /肌肉紧张度对比/);
@@ -89,8 +90,8 @@ test("assessment uses professional page titles and one shared tension screen", a
 });
 
 test("functional checks use action-specific observations and guided intake separates scenario from action", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
-  const content = await readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
+  const content = await readFile(new URL("../../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
   assert.match(demo, /function:calf-walk/);
   assert.match(demo, /function:shoulder-overhead-task/);
   assert.match(demo, /showIntakeQuestion\("具体动作"\)/);
@@ -100,7 +101,7 @@ test("functional checks use action-specific observations and guided intake separ
 });
 
 test("pure passive checks are rendered from an explicit assessment mode", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /item\.testMode !== "passive" \|\| canAssessPassive/);
   assert.match(demo, /testMode: item\.testMode \?\? "combined"/);
   assert.match(demo, /if \(item\.testMode === "passive"\) return item\.professionalHow/);
@@ -108,14 +109,14 @@ test("pure passive checks are rendered from an explicit assessment mode", async 
 });
 
 test("time-based treatment rebuilds the dynamic queue before selecting the next target", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /function advanceToNextTrialTarget\(rebuildFromQueue = false\)/);
   assert.match(demo, /setTrialTargetIndex\(\(current\) => rebuildFromQueue \? 0 : current \+ 1\)/);
   assert.match(demo, /advanceToNextTrialTarget\(timeBased\)/);
 });
 
 test("retest freezes its direction list and reads the latest recorded direction score", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /type RetestPlan/);
   assert.match(demo, /setRetestPlan\(\{ targetId: activeTarget\.id/);
   assert.match(demo, /latestRangeScores\[directionId\]/);
@@ -123,7 +124,7 @@ test("retest freezes its direction list and reads the latest recorded direction 
 });
 
 test("training preparation stays inside training and follow-up can use current tension evidence", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /训练前准备/);
   assert.doesNotMatch(demo, /trainingPreparationLabels/);
   assert.match(demo, /followupTensionLocations/);

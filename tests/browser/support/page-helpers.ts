@@ -12,7 +12,7 @@ export function collectRuntimeErrors(page: Page) {
 }
 
 export async function openFreshProduct(page: Page) {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("./", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle");
   await expect(page.locator("body")).toContainText("RehabMind");
   await expect(page.locator('[data-rehabmind-tutorial="symptom-input"]:visible')).toHaveCount(1);
@@ -24,6 +24,11 @@ export async function skipOnboarding(page: Page) {
   if (await skip.count()) {
     await expect(skip).toBeVisible();
     await skip.click();
+  }
+  const consent = page.locator('#rm-consent-title:visible');
+  if (await consent.count()) {
+    await page.getByRole("button", { name: "暂不同意（仅保存在本机）", exact: true }).click();
+    await expect(consent).toHaveCount(0);
   }
   await expect(dialog).toHaveCount(0);
 }

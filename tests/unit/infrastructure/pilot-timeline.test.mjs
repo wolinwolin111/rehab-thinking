@@ -1,16 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import ts from "typescript";
-import { readFile } from "node:fs/promises";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const contractsSource = await readFile(new URL("../app/pilot-case-contracts.ts", import.meta.url), "utf8");
-const timelineSource = await readFile(new URL("../app/pilot-timeline.ts", import.meta.url), "utf8");
-const contractsModuleUrl = `data:text/javascript;base64,${Buffer.from(ts.transpileModule(contractsSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText).toString("base64")}`;
-const timeline = await import(`data:text/javascript;base64,${Buffer.from(ts.transpileModule(timelineSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText.replace("./pilot-case-contracts", contractsModuleUrl)).toString("base64")}`);
+const timeline = await loadTypeScriptModule("./src/infrastructure/pilot/persistence/timeline.ts");
 
 function event(sequence, overrides = {}) {
   return {

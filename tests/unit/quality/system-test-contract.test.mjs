@@ -18,12 +18,12 @@ async function loadBundle(paths) {
 }
 
 const [retest, training, profile, coverage, session, batch] = await Promise.all([
-  loadBundle(["../app/retest-eligibility-core.ts"]),
-  loadBundle(["../app/training-feedback-core.ts"]),
-  loadBundle(["../app/workflow-profile-core.ts"]),
-  loadBundle(["../app/treatment-coverage-core.ts"]),
-  loadBundle(["../app/treatment-session-core.ts"]),
-  loadBundle(["../app/treatment-response-core.ts", "../app/trial-record-builder.ts", "../app/batch-retest-compute.ts"]),
+  loadBundle(["../../../src/domain/rehab/retest/retest-eligibility-core.ts"]),
+  loadBundle(["../../../src/domain/rehab/training/training-feedback-core.ts"]),
+  loadBundle(["../../../src/domain/rehab/intake/workflow-profile-core.ts"]),
+  loadBundle(["../../../src/domain/rehab/treatment/treatment-coverage-core.ts"]),
+  loadBundle(["../../../src/domain/rehab/treatment/treatment-session-core.ts"]),
+  loadBundle(["../../../src/domain/rehab/treatment/treatment-response-core.ts", "../../../src/domain/rehab/treatment/trial-record-builder.ts", "../../../src/domain/rehab/retest/batch-retest-compute.ts"]),
 ]);
 
 test("SYS-S02 mixed pain improvement and activity worsening is an explicit stop", () => {

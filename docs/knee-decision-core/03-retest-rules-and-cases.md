@@ -102,7 +102,7 @@
 
 ## 4. 当前自动测试
 
-`tests/knee-decision-core.test.mjs` 已覆盖：
+`tests/unit/domain/knee-decision-core.test.mjs` 已覆盖：
 
 - 动作同义词归并；
 - 主诉与同动作检查合并；

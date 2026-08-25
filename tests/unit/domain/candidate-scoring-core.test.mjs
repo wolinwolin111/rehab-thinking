@@ -16,9 +16,9 @@ async function loadBundle(paths) {
 }
 
 const core = await loadBundle([
-  "../app/chief-action-core.ts",
-  "../app/candidate-order-core.ts",
-  "../app/candidate-scoring-core.ts",
+  "../../../src/domain/rehab/intake/chief-action-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-order-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-scoring-core.ts",
 ]);
 
 const calfCandidate = { id: "muscle:calf-release", title: "小腿后侧轻柔松解", siteLabel: "小腿后侧", targetLabel: "", tags: ["calf", "release"] };

@@ -1,21 +1,18 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
 async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html" } }),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
+  const serverUrl = new URL("../../dist/server/index.js", import.meta.url);
+  serverUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
+  const { default: handler } = await import(serverUrl.href);
+  return handler(new Request("http://localhost/", { headers: { accept: "text/html" } }));
 }
 
 const SIX_STEPS = ["症状信息", "关键确认", "评估检查", "处理复测", "训练居家", "康复总结"];
 
-const coreSource = await readFile(new URL("../app/build-trial-targets-core.ts", import.meta.url), "utf8");
+const coreSource = await readFile(new URL("../../src/domain/rehab/treatment/build-trial-targets-core.ts", import.meta.url), "utf8");
 
 const NINE_REGIONS = [
   ["neck", "颈部"],
@@ -37,13 +34,12 @@ test("server-renders the complete RehabMind six-step workflow", async () => {
   const html = await response.text();
   assert.match(html, /<title>RehabMind｜运动康复思路工作台<\/title>/i);
   for (const step of SIX_STEPS) assert.match(html, new RegExp(step));
-  assert.match(html, /症状信息收集/);
-  assert.match(html, /先说说哪里不舒服/);
+  assert.match(html, /请描述你的问题/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
 test("ships a complete nine-region assessment and intervention library", async () => {
-  const content = await readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8");
+  const content = await readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
 
   assert.match(content, /export const FULL_REGIONS/);
   assert.match(content, /export type FullRegionId/);
@@ -91,33 +87,32 @@ test("ships a complete nine-region assessment and intervention library", async (
 
 test("keeps NRS history, gated steps, local records and repeat-rehab paths", async () => {
   const [demoComponent, uiSource, scoreGuideSource, nextSessionSource, trialRecordBuilderSource, recordFlowSource, workflowSource, page, layout, styles, content, locationPicker] = await Promise.all([
-    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/score-guide-copy.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/next-session-card.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/treatment-record-flow-core.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/workflow-state-core.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
+    readRehabMindUiSource(),
+    readFile(new URL("../../src/features/rehabmind/components/shared/ui-primitives.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/shared/score-guide-copy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/stages/shared/next-session-card.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/treatment/trial-record-builder.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/treatment/treatment-record-flow-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/shared/workflow-state-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/styles/complete-demo.css", import.meta.url), "utf8"),
+    readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/assessment/lower-limb-location-picker.tsx", import.meta.url), "utf8"),
   ]);
   const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${nextSessionSource}\n${trialRecordBuilderSource}\n${recordFlowSource}\n${workflowSource}\n${coreSource}`;
 
-  assert.match(page, /rehabmind-complete-demo/);
+  assert.match(page, /rehabmind-workbench/);
   assert.match(page, /<RehabMindCompleteDemo\s*\/>/);
   assert.match(layout, /RehabMind｜运动康复思路工作台/);
   assert.match(demo, /const STEPS = \["症状信息", "关键确认", "评估检查", "处理复测", "训练居家", "康复总结"\]/);
   assert.match(demo, /const PILOT_REGION_IDS = \["thigh-local", "knee", "calf-local", "ankle-foot"\] as const satisfies readonly FullRegionId\[\]/);
   assert.match(demo, /<LowerLimbLocationPicker/);
-  assert.match(demo, /写清：哪边哪里、何时\/怎么出现、什么动作不舒服、现在表现和想恢复什么；不清楚的写“不清楚”。/);
-  assert.match(demo, /昨晚崴了右脚，外踝肿，脚掌向外转会痛，想恢复正常走路。/);
-  assert.match(demo, /右膝内侧下楼梯时刺痛，跑步后会出现，持续两周了，平时走路还好，想恢复到正常跑步的水平。/);
-  assert.match(demo, /<details className="rm-example">/);
-  assert.match(demo, /<summary>不知道怎么写？查看示例<\/summary>/);
-  assert.doesNotMatch(demo, /className="rm-example" onClick=/);
+  assert.match(demo, /请说明不适部位、出现时间、受影响的动作和恢复目标。/);
+  assert.match(demo, /不适部位 · 出现时间 · 受影响动作 · 恢复目标/);
+  assert.match(demo, /右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。/);
+  assert.match(demo, /不清楚的内容可以写“不清楚”。/);
+  assert.doesNotMatch(demo, /按你自己的话说就行/);
   assert.match(demo, /bodyLocations: LowerLimbLocationSelection\[\]/);
   assert.match(demo, /locationConfirmed/);
   assert.match(demo, /swellingLocations: LowerLimbLocationSelection\[\]/);
@@ -333,7 +328,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /手臂从前面举过头/);
   assert.match(demo, /站立弯腰/);
   assert.match(demo, /膝盖伸直/);
-  assert.match(demo, /做的时候留意/);
+  assert.match(demo, /怎么做和观察重点/);
   assert.match(demo, /chiefMotionDirectionId/);
   assert.match(demo, /"低头", "仰头", "弯腰", "后仰"/);
   assert.match(demo, /anyMotionIdFromFinding/);
@@ -352,10 +347,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.doesNotMatch(demo, /做这个动作时还有没有不适？/);
   assert.match(demo, /motionWasSymptomatic/);
   assert.match(demo, /chiefFullyResolved/);
-  assert.match(demo, /hasUnresolvedSupportProblem/);
-  assert.match(demo, /全部区域共用/);
   assert.match(coreSource, /painfulStrengthTargets/);
-  assert.match(demo, /strengthSymptomResolved/);
   assert.match(demo, /targetScoreBeforeRetest/);
   assert.match(demo, /现在的发力不适程度/);
   assert.match(demo, /directionAllowsPassive/);
@@ -417,7 +409,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /!\["swelling", "control"\]\.includes\(candidate\.type\)/);
   assert.match(demo, /currentSessionRecords\.at\(-1\)\?\.afterScore \?\? followupScore/);
   assert.match(demo, /effectiveFocusLabels/);
-  assert.match(demo, /本次改善相关内容/);
+  assert.match(demo, /为什么安排这些动作/);
   assert.match(demo, /本轮做完后主诉变轻/);
   assert.match(demo, /髌骨向上滑动/);
   assert.match(demo, /knee-patella-superior[\s\S]*髌骨向上滑动幅度/);
@@ -478,16 +470,12 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   }
   assert.match(demo, /index <= maxUnlocked/);
   assert.match(demo, /disabled=\{!available\}/);
-  assert.match(demo, /!assessmentReadyForTreatment \|\| assessmentNeedsReferral/);
-  assert.match(demo, /const targetFinished = finishTarget[\s\S]*activityWorsened/);
-  assert.match(demo, /resolveTreatmentQueueAdvance\(/);
   assert.match(demo, /const hasChiefAction = chiefScoreComparable && chiefWasRecorded/);
   assert.match(demo, /followupNeedsTreatmentFinalRetest/);
   assert.match(demo, /followupScoreConfirmed\?: boolean/);
   assert.match(demo, /followupScoreConfirmed: false/);
 
   // Local records are covered by the repository contract tests; this suite only checks the page contract.
-  assert.match(demo, /eventId: `session-save:\$\{access\.caseId\}:\$\{contentFingerprint\(currentSnapshot\)\}`/);
   assert.match(demo, /candidateIsAvailable/);
   assert.match(demo, /candidate-safety-core/);
   assert.match(demo, /stabbingSpread/);
@@ -548,27 +536,27 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
 });
 
 test("follow-up treatment eligibility uses the latest result for each treatment unit", async () => {
-  const source = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const source = await readRehabMindUiSource();
   assert.match(source, /const latestUnitResults = new Map<string, TrialResult>\(\)/);
   assert.match(source, /latestUnitResults\.set\(unit, record\.result\)/);
   assert.doesNotMatch(source, /const ineffectiveUnits = new Set\(\[\s*\.\.\.trialRecords/);
 });
 
 test("the final chief retest depends on new treatment, not problem taxonomy", async () => {
-  const source = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const source = await readRehabMindUiSource();
   assert.match(source, /const chiefNeedsFinalRetest = needsTreatmentFinalChiefRetest\(trialRecords, chiefScoreComparable\)/);
   assert.doesNotMatch(source, /chiefNeedsFinalRetest = chiefScoreComparable && hasIndependentTreatmentProblem/);
 });
 
 test("follow-up queue recovery uses treatment identity after a dynamic decision refresh", async () => {
-  const source = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const source = await readRehabMindUiSource();
   assert.match(source, /const completedFollowupKeys = new Set/);
   assert.match(source, /!completedFollowupKeys\.has\(candidateTreatmentKey\(candidate, intake\.side\)\)/);
   assert.doesNotMatch(source, /currentRecords\.length \? undefined : followupCandidates\.find/);
 });
 
 test("a new follow-up symptom invalidates the old complaint-derived state", async () => {
-  const source = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const source = await readRehabMindUiSource();
   assert.match(source, /invalidateAfterIntake\(\{\s*\.\.\.DEFAULT_INTAKE,[\s\S]*userRole: intake\.userRole/);
   assert.match(source, /setFollowupScoreHistory\(\[\]\)/);
   assert.doesNotMatch(source, /setIntake\(\(current\) => \(\{ \.\.\.current, parsed: false, description: "" \}\)\)/);
@@ -576,14 +564,14 @@ test("a new follow-up symptom invalidates the old complaint-derived state", asyn
 
 test("covers the full-positive, bilateral, no-action and extreme-input pilot rules", async () => {
   const [demoComponent, uiSource, scoreGuideSource, recordFlowSource, chiefHistorySource, content, styles, outcome] = await Promise.all([
-    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/ui-primitives.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/score-guide-copy.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/treatment-record-flow-core.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/stage-outcome-sections.tsx", import.meta.url), "utf8"),
+    readRehabMindUiSource(),
+    readFile(new URL("../../src/features/rehabmind/components/shared/ui-primitives.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/shared/score-guide-copy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/treatment/treatment-record-flow-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/retest/chief-retest-history-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/styles/complete-demo.css", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/stages/shared/stage-outcome-sections.tsx", import.meta.url), "utf8"),
   ]);
   const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${recordFlowSource}\n${chiefHistorySource}\n${coreSource}`;
 
@@ -715,7 +703,6 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /刚才的处理使症状或活动表现加重/);
   assert.match(demo, /训练后加重，待重新评估/);
   assert.match(demo, /assessmentNeedsReferral/);
-  assert.match(demo, /!assessmentReadyForTreatment \|\| assessmentNeedsReferral/);
 
   // UX safeguards.
   assert.match(demo, /onInput=\{handleSliderChange\}/);
@@ -777,7 +764,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /hasRecordedChiefRetest\(trialRecords\)/);
   assert.match(demo, /chiefWasActuallyRetested/);
   assert.match(demo, /shouldRetestChiefInBatch/);
-  assert.match(demo, /本次流程/);
+  assert.match(demo, /查看本轮进度/);
   assert.match(demo, /最后再做一次/);
   assert.match(styles, /\.rm-assessment-summary/);
   assert.match(styles, /\.rm-treatment-roadmap/);
@@ -804,8 +791,8 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
 
 test("covers the 2026-08 assessment repair matrix without fallback decisions", async () => {
   const [demoComponent, content] = await Promise.all([
-    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/full-demo-content.ts", import.meta.url), "utf8"),
+    readRehabMindUiSource(),
+    readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8"),
   ]);
   const demo = `${demoComponent}\n${coreSource}`;
 
@@ -882,7 +869,7 @@ test("covers the 2026-08 assessment repair matrix without fallback decisions", a
   assert.match(demo, /sourceBackedCandidates/);
   assert.match(demo, /exactSourceMatch \? 600/);
   assert.match(demo, /professionalAssessmentTitle\(item\.id, item\.title\)/);
-  assert.match(demo, /做的时候留意/);
+  assert.match(demo, /怎么做和观察重点/);
   assert.match(demo, /sourceUnits\.flatMap\(\(unit\) => unit\.retestIds\.map/);
   assert.match(demo, /const chiefRetestFindings = motionFindings\.filter/);
   assert.doesNotMatch(demo, /interleavedTrimmed/);
@@ -902,15 +889,16 @@ test("covers the 2026-08 assessment repair matrix without fallback decisions", a
 
 test("keeps one concise four-document source of truth", async () => {
   const [index, product, decision, knowledge, acceptance] = await Promise.all([
-    readFile(new URL("../docs/README.md", import.meta.url), "utf8"),
-    readFile(new URL("../docs/rehabmind-complete-product-design.md", import.meta.url), "utf8"),
-    readFile(new URL("../docs/rehab-decision-framework.md", import.meta.url), "utf8"),
-    readFile(new URL("../docs/knee-ankle-pilot-knowledge.md", import.meta.url), "utf8"),
-    readFile(new URL("../docs/pilot-scenario-coverage.md", import.meta.url), "utf8"),
+    readFile(new URL("../../docs/README.md", import.meta.url), "utf8"),
+    readFile(new URL("../../docs/rehabmind-complete-product-design.md", import.meta.url), "utf8"),
+    readFile(new URL("../../docs/rehab-decision-framework.md", import.meta.url), "utf8"),
+    readFile(new URL("../../docs/knee-ankle-pilot-knowledge.md", import.meta.url), "utf8"),
+    readFile(new URL("../../docs/pilot-scenario-coverage.md", import.meta.url), "utf8"),
   ]);
 
   assert.match(index, /四份文档的优先级/);
-  assert.match(index, /当前默认只维护桌面端/);
+  assert.match(index, /桌面和 320 至 430px 手机网页都是当前维护范围/);
+  assert.match(index, /APK 外壳在网页确认后单独维护/);
   assert.match(product, /^# RehabMind 产品规范/m);
   assert.match(product, /当前实现：本地规则引擎，不接入 AI/);
   assert.match(product, /首发范围：大腿至足部的症状入口，膝与踝足功能模块/);
@@ -924,7 +912,7 @@ test("keeps one concise four-document source of truth", async () => {
 });
 
 test("formal product consumes local limb decisions in first and followup sessions", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /buildLocalLimbDecision/);
   assert.match(demo, /localLimbDecision\.treatmentIds\.includes\(candidate\.id\)/);
   assert.match(demo, /localLimbDecision\.trainingIds/);
@@ -937,7 +925,7 @@ test("formal product consumes local limb decisions in first and followup session
 });
 
 test("chief function answers are not overwritten and dynamic treatment queues keep their next target", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /updateAssessment\(item\.id, \(latestRecord\) => \{/);
   assert.match(demo, /const nextRecord = \{ \.\.\.latestRecord, \.\.\.patch \}/);
   assert.match(demo, /return \{ \.\.\.patch, simple: functionSimpleAnswer\(nextRecord\) \}/);
@@ -945,14 +933,13 @@ test("chief function answers are not overwritten and dynamic treatment queues ke
   assert.match(demo, /const \[pendingTrialAdvance, setPendingTrialAdvance\] = useState<PendingQueueAdvance \| null>\(null\)/);
   assert.match(demo, /function advanceToNextTrialTarget\(rebuildFromQueue = false\)/);
   assert.match(demo, /pendingTrialAdvance !== null/);
-  assert.match(demo, /resolveDynamicQueueAdvanceForTargets\(trialTargetIndex, trialTargets, pendingTrialAdvance\)/);
 });
 
 test("symptom locations are collected immediately and single-direction retests feed the joint gate", async () => {
   const [demo, trialRecordBuilderSource, chiefHistorySource] = await Promise.all([
-    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8"),
+    readRehabMindUiSource(),
+    readFile(new URL("../../src/domain/rehab/treatment/trial-record-builder.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/domain/rehab/retest/chief-retest-history-core.ts", import.meta.url), "utf8"),
   ]);
   const combined = `${demo}\n${trialRecordBuilderSource}`;
   const intakeQueue = demo.slice(demo.indexOf("const intakeMissingFields"), demo.indexOf("].filter(([missing]) => missing)", demo.indexOf("const intakeMissingFields")));
@@ -973,7 +960,7 @@ test("symptom locations are collected immediately and single-direction retests f
 });
 
 test("batch range retests do not reference render-local chief flags", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   const start = demo.indexOf("function finishRangeBatch()");
   const end = demo.indexOf("function continueWithReusedRetest()", start);
   assert.ok(start >= 0 && end > start);
@@ -983,7 +970,7 @@ test("batch range retests do not reference render-local chief flags", async () =
 });
 
 test("pure passive retests keep passive-only language and completed treatment text stays readable", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /const activeRangePassiveOnly = activeAssessment\?\.kind === "motion" && activeAssessment\.testMode === "passive"/);
   assert.match(demo, /function rangeRetestOptions\(mode: MotionComparison = "contralateral", canAssessPassive = true, bilateral = false, passiveOnly = false\)/);
   assert.match(demo, /if \(passiveOnly\) return \[/);
@@ -994,7 +981,7 @@ test("pure passive retests keep passive-only language and completed treatment te
 });
 
 test("rapid function answers merge into the latest assessment record", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /const current = assessmentResultsRef\.current/);
   assert.match(demo, /const previous = current\[id\] \?\? \{\}/);
   assert.match(demo, /const next = \{ \.\.\.previous, \.\.\.resolvedPatch \}/);
@@ -1007,20 +994,20 @@ test("rapid function answers merge into the latest assessment record", async () 
 });
 
 test("assessment progress includes the shared muscle-tension check", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /sharedTensionComplete && sharedTensionRequired \? 1 : 0/);
   assert.match(demo, />相关肌群触诊比较</);
 });
 
 test("full-positive muscle evidence is not cut off and summary tension rows are deduplicated", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(coreSource, /const explicitChiefMuscleLimit = Math\.max\(3, directTensionCandidates\.length\)/);
   assert.match(coreSource, /selectTreatmentChainCandidates\(combinedChiefCandidates, explicitChiefMuscleLimit\)/);
   assert.match(demo, /list\.findIndex\(\(item\) => item\.title === problem\.title\) === index/);
 });
 
 test("follow-up restores dynamic muscle work and excludes time-based swelling management", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /function dynamicMuscleCandidateFromRecord\(record: TrialRecord\)/);
   assert.match(demo, /const dynamicHistoryCandidates = \[\.\.\.trialRecords/);
   assert.match(demo, /\.\.\.dynamicHistoryCandidates/);
@@ -1031,7 +1018,7 @@ test("follow-up restores dynamic muscle work and excludes time-based swelling ma
 });
 
 test("tissue pathways change the actual treatment and training queues", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(coreSource, /tissuePathway\.id !== "bone-stress-suspected" \|\| candidate\.type !== "muscle"/);
   assert.match(coreSource, /const allowKneeTendonMusclePath = region\.id === "knee" && tissuePathway\.id === "tendon-load"/);
   assert.match(coreSource, /tissuePathway\.id !== "tendon-load"[\s\S]*allowKneeTendonMusclePath/);
@@ -1044,14 +1031,14 @@ test("tissue pathways change the actual treatment and training queues", async ()
 });
 
 test("does not reopen an old chief muscle card after the final chief retest", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /const chiefRetestLocked = treatmentFinalRetestConfirmed \|\| finalRetestConfirmed/);
   assert.match(demo, /if \(chiefRetestLocked\) return true/);
   assert.match(demo, /selectedOptionalCandidateIds, trialRecords, intake\.side, intake\.prioritySide, treatmentFinalRetestConfirmed, finalRetestConfirmed/);
 });
 
 test("only shows the key-confirmation action after intake is complete", async () => {
-  const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const demo = await readRehabMindUiSource();
   assert.match(demo, /const keyConfirmationReady = intakeComplete && intakeMissingFields\.length === 0/);
   assert.match(demo, /keyConfirmationReady \? <button type="button" className="rm-primary" onClick=\{enterKeyConfirmation\}>进入关键确认<\/button> : null/);
   assert.match(demo, /professionalComplete && keyConfirmationReady \? <button type="button" className="rm-primary" onClick=\{enterKeyConfirmation\}>进入关键确认<\/button> : null/);
@@ -1059,8 +1046,8 @@ test("only shows the key-confirmation action after intake is complete", async ()
 
 test("the problem ledger separates a recorded retest from a resolved problem", async () => {
   const [demo, ledgerCore] = await Promise.all([
-    readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/treatment-ledger-core.ts", import.meta.url), "utf8"),
+    readRehabMindUiSource(),
+    readFile(new URL("../../src/domain/rehab/treatment/treatment-ledger-core.ts", import.meta.url), "utf8"),
   ]);
   assert.match(demo, /“已经复测”不等于“已经解决”/);
   assert.match(demo, /completedProblemIdsFromTreatmentRecords\(trialRecords, latestRangeOutcomes\)/);

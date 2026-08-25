@@ -1,8 +1,8 @@
 // 阶段2 · §11 唯一页面最小冒烟（发布验收专用）。
-// 用法：WALKTHROUGH_URL=https://host/RehabMind/ PILOT_INVITE_TOKEN=xxx node scripts/release-smoke.mjs
+// 用法：WALKTHROUGH_URL=https://host/RehabMind/ node scripts/deploy/release-smoke.mjs
 import { chromium } from "playwright-core";
 import assert from "node:assert/strict";
-import { agreePilotConsent, dismissOnboarding, pilotScenarioUrl } from "./real-browser-test-helpers.mjs";
+import { agreePilotConsent, dismissOnboarding, pilotScenarioUrl } from "../legacy-browser/real-browser-test-helpers.mjs";
 
 const URL = pilotScenarioUrl();
 const browser = await chromium.launch({ channel: "msedge", headless: true });
@@ -23,7 +23,7 @@ await page.goto(URL, { waitUntil: "networkidle", timeout: 30000 });
 await agreePilotConsent(page);
 await dismissOnboarding(page);
 
-console.log("2. 无邀请边界已在 API 层验证（403 invite_required）；此处持有效邀请进入");
+console.log("2. 来源渠道与知情同意由案例创建接口校验；缺失时返回 400 validation");
 await page.locator("textarea").fill("发布冒烟：右膝下楼内侧刺痛三天，想恢复正常走路。");
 await page.getByRole("button", { name: "帮我整理" }).click();
 await page.waitForTimeout(900);

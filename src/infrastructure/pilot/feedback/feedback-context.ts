@@ -14,7 +14,25 @@ export type PilotFeedbackDraft = PilotFeedbackLocation & {
   eventId: string | null;
 };
 
+export type PilotFeedbackSourceContext = PilotFeedbackLocation & {
+  caseIdentity: string;
+  eventId: string | null;
+};
+
 export const PILOT_FEEDBACK_UNLOCATED = "未定位";
+
+export class PilotFeedbackSubmissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PilotFeedbackSubmissionError";
+  }
+}
+
+export function feedbackSubmissionErrorMessage(error: unknown) {
+  return error instanceof PilotFeedbackSubmissionError
+    ? error.message
+    : "反馈暂时没有提交成功，请稍后再试";
+}
 
 export const PILOT_FEEDBACK_KINDS = [
   "流程不合理",
@@ -50,4 +68,13 @@ export function isCurrentPilotFeedbackLocation(
   current: PilotFeedbackLocation,
 ) {
   return location.sessionNumber === current.sessionNumber && location.stage === current.stage;
+}
+
+export function capturePilotFeedbackSourceContext(input: PilotFeedbackSourceContext): Readonly<PilotFeedbackSourceContext> {
+  return Object.freeze({
+    caseIdentity: input.caseIdentity,
+    sessionNumber: input.sessionNumber,
+    stage: input.stage,
+    eventId: input.eventId,
+  });
 }

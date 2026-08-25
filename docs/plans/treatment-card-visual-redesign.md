@@ -1,6 +1,6 @@
 # 针对性处理卡片设计规范
 
-> 状态：界面参考。现行页面流程以[产品规范](./rehabmind-complete-product-design.md)为准。
+> 状态：界面参考。现行页面流程以[产品规范](../rehabmind-complete-product-design.md)为准。
 
 ## 用户此刻需要知道什么
 

@@ -16,9 +16,9 @@ async function loadBundle(paths) {
 }
 
 const core = await loadBundle([
-  "../app/pilot-motion-muscle-knowledge.ts",
-  "../app/candidate-treatment-core.ts",
-  "../app/candidate-action-core.ts",
+  "../../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts",
+  "../../../src/domain/rehab/treatment/candidate-treatment-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-action-core.ts",
 ]);
 
 const muscle = { id: "muscle:calf-posterior-release", type: "muscle", title: "小腿后侧轻柔松解", do: "轻柔松解小腿后侧肌腹30秒", tags: ["calf", "release"], retestIds: ["ankle-dorsiflexion", "ankle-plantarflexion"], siteLabel: "小腿后侧", targetLabel: "" };

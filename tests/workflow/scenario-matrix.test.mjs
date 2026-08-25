@@ -9,11 +9,11 @@ async function load(rel) {
   return import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
 }
 
-const identity = await load("../app/action-identity-core.ts");
-const relax = await load("../app/home-relaxation-core.ts");
-const tension = await load("../app/muscle-tension-assessment-core.ts");
-const patella = await load("../app/patella-mobility-core.ts");
-const knowledge = await load("../app/pilot-motion-muscle-knowledge.ts");
+const identity = await load("../../src/domain/rehab/intake/action-identity-core.ts");
+const relax = await load("../../src/domain/rehab/training/home-relaxation-core.ts");
+const tension = await load("../../src/domain/rehab/assessment/muscle-tension-assessment-core.ts");
+const patella = await load("../../src/domain/rehab/assessment/patella-mobility-core.ts");
+const knowledge = await load("../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts");
 
 // 组合工具：笛卡尔积
 function product(...lists) {

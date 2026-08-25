@@ -7,8 +7,8 @@
  * 命名核心。
  */
 
-import { controlPlansForMotions, normalizePilotMuscleRegion, pilotMotionKnowledge, regionRelationForMotion } from "./pilot-motion-muscle-knowledge";
-import { jointTreatmentName } from "./candidate-treatment-core";
+import { controlPlansForMotions, normalizePilotMuscleRegion, pilotMotionKnowledge, regionRelationForMotion } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
+import { jointTreatmentName } from "@/src/domain/rehab/treatment/candidate-treatment-core";
 
 export type CandidateActionInput = {
   id: string;

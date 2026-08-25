@@ -28,8 +28,17 @@ export function stageCompletionEvent(stageIndex: number): PilotStageEventType | 
  */
 export function pickStageAdvanceEvent(input: { prev: number; next: number; seen: string[] }): PilotStageEventType | null {
   if (input.next <= input.prev) return null;
-  const eventType = stageCompletionEvent(input.next);
+  const eventType = stageCompletionEvent(input.prev);
   if (!eventType) return null;
   if (input.seen.includes(eventType)) return null;
   return eventType;
+}
+
+export function markStageEventSeen(seen: string[], eventType: PilotStageEventType) {
+  if (!seen.includes(eventType)) seen.push(eventType);
+}
+
+/** Stable retry identity that keeps different semantic events independent. */
+export function pilotProgressEventId(caseId: string, eventType: string, snapshotFingerprint: string) {
+  return `case-event:${caseId}:${eventType}:${snapshotFingerprint}`;
 }

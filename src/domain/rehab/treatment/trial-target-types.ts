@@ -7,12 +7,12 @@
  * 形式放进上下文（参数用 any 承接组件私有类型，调用侧仍由组件保证类型安全）。
  */
 
-import { type CandidateTreatmentInput } from "./candidate-treatment-core";
-import { type ChiefActionIntake } from "./chief-action-core";
-import { type PilotRelation } from "./pilot-knowledge";
-import { type PilotTreatmentUnit } from "./pilot-decision-engine";
-import { type KneeDecisionOutput } from "./knee-decision-core";
-import { type LocalLimbDecision } from "./local-limb-decision-core";
+import { type CandidateTreatmentInput } from "@/src/domain/rehab/treatment/candidate-treatment-core";
+import { type ChiefActionIntake } from "@/src/domain/rehab/intake/chief-action-core";
+import { type PilotRelation } from "@/src/knowledge/pilot/pilot-knowledge";
+import { type PilotTreatmentUnit } from "@/src/domain/rehab/shared/pilot-decision-engine";
+import { type KneeDecisionOutput } from "@/src/domain/rehab/shared/knee-decision-core";
+import { type LocalLimbDecision } from "@/src/domain/rehab/shared/local-limb-decision-core";
 
 export type FullCandidateInput = CandidateTreatmentInput & {
   access: string;

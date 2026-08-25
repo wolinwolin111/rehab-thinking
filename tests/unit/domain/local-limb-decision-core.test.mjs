@@ -1,19 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const tissueSource = await readFile(new URL("../app/tissue-pathway-core.ts", import.meta.url), "utf8");
-const tissueOutput = ts.transpileModule(tissueSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const tissueUrl = `data:text/javascript;base64,${Buffer.from(tissueOutput).toString("base64")}`;
-const source = (await readFile(new URL("../app/local-limb-decision-core.ts", import.meta.url), "utf8"))
-  .replace("./tissue-pathway-core", tissueUrl);
-const output = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
+const core = await loadTypeScriptModule("./src/domain/rehab/shared/local-limb-decision-core.ts");
 const decisions = new Map(core.LOCAL_LIMB_LAB_CASES.map((scenario) => [scenario.id, core.buildLocalLimbDecision(scenario.input)]));
 
 test("local limb decision lab contains all twelve audit scenarios", () => {

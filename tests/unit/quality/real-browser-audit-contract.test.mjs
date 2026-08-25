@@ -2,13 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { readRehabMindUiSource } from "../../support/read-rehabmind-ui-source.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const audit = fs.readFileSync(path.join(root, "scripts", "real-browser-flow-audit.mjs"), "utf8");
-const ankleWalkthrough = fs.readFileSync(path.join(root, "scripts", "real-browser-walkthrough-ankle.mjs"), "utf8");
-const guide = fs.readFileSync(path.join(root, "docs", "real-browser-flow-audit.md"), "utf8");
-const demo = fs.readFileSync(path.join(root, "app", "rehabmind-complete-demo.tsx"), "utf8");
+const root = process.cwd();
+const audit = fs.readFileSync(path.join(root, "scripts", "legacy-browser", "real-browser-flow-audit.mjs"), "utf8");
+const ankleWalkthrough = fs.readFileSync(path.join(root, "scripts", "legacy-browser", "real-browser-walkthrough-ankle.mjs"), "utf8");
+const guide = fs.readFileSync(path.join(root, "docs", "quality", "real-browser-flow-audit.md"), "utf8");
+const demo = await readRehabMindUiSource();
 
 test("real browser audit requires fresh snapshots, terminal exits and zero runtime errors", () => {
   assert.match(audit, /domSnapshot\(\)/);

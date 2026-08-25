@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
 const [demo, walkthrough] = await Promise.all([
-  readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../scripts/real-browser-walkthrough.mjs", import.meta.url), "utf8"),
+  readRehabMindUiSource(),
+  readFile(new URL("../../scripts/legacy-browser/real-browser-walkthrough.mjs", import.meta.url), "utf8"),
 ]);
 
 test("首诊和后续训练都必须留下每个动作的反馈", () => {
@@ -21,4 +22,3 @@ test("真实浏览器走读必须明确到达总结页并检查运行时错误",
   assert.match(walkthrough, /assert\.match\(h1, \/本次康复总结\//);
   assert.match(walkthrough, /assert\.equal\(runtimeErrors\.length, 0/);
 });
-

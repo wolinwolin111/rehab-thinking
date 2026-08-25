@@ -1,4 +1,4 @@
-import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialRecordBuildInput, type TrialResult } from "./trial-record-types";
+import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialRecord, type TrialRecordBuildInput, type TrialResult } from "@/src/domain/rehab/treatment/trial-record-types";
 
 function isCompletedRangeRetestAnswer(value: RangeRetestAnswer | undefined): value is CompletedRangeRetestAnswer {
   return value !== undefined && value !== "";

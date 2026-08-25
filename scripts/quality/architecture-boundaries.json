@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "src",
+  "domainRoots": ["src/domain"],
+  "domainForbiddenPackages": ["react", "react-dom", "next"],
+  "domainForbiddenProjectRoots": ["app", "db", "src/features", "src/infrastructure"],
+  "domainForbiddenGlobals": ["fetch", "localStorage", "sessionStorage", "indexedDB", "window", "document", "navigator"],
+  "stageRoots": ["src/features/rehabmind/components/stages"],
+  "stageForbiddenPackages": ["drizzle-orm", "better-sqlite3"],
+  "stageForbiddenProjectRoots": ["app", "db", "src/domain", "src/infrastructure"],
+  "stageForbiddenGlobals": ["fetch", "localStorage", "sessionStorage", "indexedDB"],
+  "exclusiveRuleOwners": [
+    {
+      "ruleId": "ARCH-02-WORKFLOW-OWNER",
+      "owner": "src/features/rehabmind/workflow/workflow-orchestrator.ts",
+      "forbiddenFiles": ["src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "symbols": [
+        "resolveTreatmentQueueAdvance(",
+        "resolveDynamicQueueAdvanceForTargets(",
+        "resolveTrainingStageGate(",
+        "const treatmentComplete = !treatmentQueueIsRefreshing"
+      ]
+    },
+    {
+      "ruleId": "ARCH-A5-SYNC-OWNERS",
+      "owner": "src/infrastructure/pilot/persistence/sync-core.ts",
+      "forbiddenFiles": ["src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "symbols": [
+        "pilotSaveQueuesRef",
+        "setPilotSyncState(\"syncing\")",
+        "setPilotSyncState(\"synced\")",
+        "setPilotSyncState(\"conflict\")"
+      ]
+    }
+  ]
+}

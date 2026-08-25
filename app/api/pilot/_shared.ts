@@ -3,11 +3,11 @@ import {
   PilotCasePayloadTooLargeError,
   PilotCaseUnauthorizedError,
   PilotCaseValidationError,
-} from "@/app/pilot-case-contracts";
-import { PilotCaseService } from "@/app/pilot-case-service";
-import { PILOT_RELEASE_VERSIONS } from "@/app/pilot-release";
-import { isPilotInviteFailure, validatePilotInvite } from "@/app/pilot-invite";
-import { createRateLimiter } from "../../rate-limit-core";
+} from "@/src/infrastructure/pilot/api/case-contracts";
+import { PilotCaseService } from "@/src/infrastructure/pilot/services/case-service";
+import { PILOT_RELEASE_VERSIONS } from "@/src/infrastructure/pilot/release/release-version";
+import { readPilotAdminSessionCookie, validatePilotAdminSession } from "@/src/infrastructure/pilot/admin/admin-session";
+import { createRateLimiter } from "@/src/infrastructure/http/rate-limit-core";
 
 /**
  * 基础防滥用限流（SEC-01）。内存滑动窗口，按隔离实例独立计数；
@@ -18,32 +18,21 @@ export const pilotWriteLimiter = createRateLimiter({ windowMs: 60_000, max: 60 }
 
 type PilotRuntimeEnv = {
   PILOT_ADMIN_KEY?: string;
-  PILOT_INVITE_TOKEN?: string;
-  PILOT_INVITE_EXPIRES_AT?: string;
-  PILOT_INVITE_REVOKED?: string;
-  PILOT_DB_DRIVER?: string;
   PILOT_SQLITE_PATH?: string;
 };
 
-/**
- * 平台无关的环境读取：Cloudflare Workers 读 bindings，Node/VPS 读 process.env。
- * specifier 拼接 + @vite-ignore 防止打包器把 cloudflare:workers 静态解析进 Node 产物。
- */
+type ClosablePilotRepository = Awaited<ReturnType<typeof import("@/db/sqlite/sqlite-pilot-case-repository")["SqlitePilotCaseRepository"]["open"]>>;
+let sqliteRepositoryState: { path: string; repository: ClosablePilotRepository } | null = null;
+let sqliteRepositoryOpening: Promise<ClosablePilotRepository> | null = null;
+let sqliteRepositoryOpeningPath = "";
+
 export async function getPilotEnv(): Promise<PilotRuntimeEnv> {
-  try {
-    const specifier = ["cloudflare", "workers"].join(":");
-    const mod: { env?: PilotRuntimeEnv } = await import(/* @vite-ignore */ specifier);
-    return mod.env ?? (process.env as PilotRuntimeEnv);
-  } catch {
-    return process.env as PilotRuntimeEnv;
-  }
+  return process.env as PilotRuntimeEnv;
 }
 
 export function clientIpKey(request: Request): string {
-  const connectingIp = request.headers.get("cf-connecting-ip");
-  if (connectingIp) return connectingIp;
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
   return "unknown";
 }
 
@@ -66,16 +55,29 @@ export async function enforceRateLimit(
 
 export async function createPilotCaseRepository() {
   const env = await getPilotEnv();
-  if (String(env.PILOT_DB_DRIVER ?? "").trim().toLowerCase() === "sqlite") {
-    const { SqlitePilotCaseRepository } = await import("@/db/sqlite-pilot-case-repository");
-    const databasePath = String(env.PILOT_SQLITE_PATH ?? "").trim() || "./data/rehabmind.sqlite";
-    return SqlitePilotCaseRepository.open(databasePath);
+  const databasePath = String(env.PILOT_SQLITE_PATH ?? "").trim() || "./data/rehabmind.sqlite";
+  if (sqliteRepositoryState?.path === databasePath && sqliteRepositoryState.repository.sqlite.open) {
+    return sqliteRepositoryState.repository;
   }
-  const [{ getDb }, { D1PilotCaseRepository }] = await Promise.all([
-    import("@/db"),
-    import("@/db/pilot-case-repository"),
-  ]);
-  return new D1PilotCaseRepository(getDb());
+  if (sqliteRepositoryOpening && sqliteRepositoryOpeningPath === databasePath) return sqliteRepositoryOpening;
+  sqliteRepositoryOpeningPath = databasePath;
+  sqliteRepositoryOpening = import("@/db/sqlite/sqlite-pilot-case-repository").then(({ SqlitePilotCaseRepository }) => {
+    sqliteRepositoryState?.repository.close();
+    const repository = SqlitePilotCaseRepository.open(databasePath);
+    sqliteRepositoryState = { path: databasePath, repository };
+    return repository;
+  }).finally(() => {
+    sqliteRepositoryOpening = null;
+    sqliteRepositoryOpeningPath = "";
+  });
+  return sqliteRepositoryOpening;
+}
+
+export function closePilotCaseRepository() {
+  sqliteRepositoryState?.repository.close();
+  sqliteRepositoryState = null;
+  sqliteRepositoryOpening = null;
+  sqliteRepositoryOpeningPath = "";
 }
 
 export async function createPilotCaseService() {
@@ -85,30 +87,14 @@ export async function createPilotCaseService() {
   });
 }
 
-export async function requirePilotInvite(request: Request): Promise<Response | null> {
-  const runtimeEnv = await getPilotEnv();
-  const validation = await validatePilotInvite(
-    request.headers.get("x-pilot-invite-token"),
-    {
-      token: runtimeEnv.PILOT_INVITE_TOKEN ?? "",
-      expiresAt: runtimeEnv.PILOT_INVITE_EXPIRES_AT,
-      revoked: runtimeEnv.PILOT_INVITE_REVOKED === "true",
-    },
-  );
-  if (validation === "valid") return null;
-  if (validation === "not_configured" || validation === "invalid_config") {
-    console.error("pilot invite configuration is unavailable", { reason: validation });
-    return Response.json({ error: "Pilot invite is not configured", code: "invite_unavailable" }, { status: 503 });
-  }
-  if (isPilotInviteFailure(validation)) {
-    return Response.json({ error: "A valid invitation is required", code: "invite_required" }, { status: 403 });
-  }
-  return null;
+export async function createPilotCaseAdminService() {
+  const { PilotCaseAdminService } = await import("@/src/infrastructure/pilot/services/case-admin-service");
+  return new PilotCaseAdminService(await createPilotCaseRepository(), { versions: PILOT_RELEASE_VERSIONS });
 }
 
-export async function createPilotCaseAdminService() {
-  const { PilotCaseAdminService } = await import("@/app/pilot-case-admin-service");
-  return new PilotCaseAdminService(await createPilotCaseRepository());
+export async function createPilotTrialOperationsService() {
+  const { PilotTrialOperationsService } = await import("@/src/infrastructure/pilot/services/trial-operations-service");
+  return new PilotTrialOperationsService(await createPilotCaseRepository(), PILOT_RELEASE_VERSIONS);
 }
 
 export function getAccessToken(request: Request) {
@@ -197,10 +183,19 @@ export async function requirePilotAdmin(request: Request): Promise<Response | nu
   if (!configuredKey) {
     return Response.json({ error: "Admin access is not configured" }, { status: 503 });
   }
+  const session = readPilotAdminSessionCookie(request);
+  if (await validatePilotAdminSession(session, configuredKey)) return null;
+  // Non-browser maintenance scripts retain header authentication. The /admin UI
+  // exchanges the key for an HttpOnly session and never persists the key.
   if (request.headers.get("x-pilot-admin-key") !== configuredKey) {
     throw new PilotCaseUnauthorizedError("Admin access denied");
   }
   return null;
+}
+
+export async function requirePilotTestAccess(request: Request): Promise<Response | null> {
+  if (process.env.NODE_ENV === "development" || process.env.PILOT_ALLOW_TEST_WORKBENCH === "true") return null;
+  return requirePilotAdmin(request);
 }
 
 export function pilotApiError(error: unknown) {

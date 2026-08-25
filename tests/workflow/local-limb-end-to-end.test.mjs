@@ -1,26 +1,15 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../support/load-typescript-module.mjs";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
-async function loadModule(path) {
-  const source = await readFile(new URL(path, import.meta.url), "utf8");
-  const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-  return import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
-}
-
-const tissueSource = await readFile(new URL("../app/tissue-pathway-core.ts", import.meta.url), "utf8");
-const tissueOutput = ts.transpileModule(tissueSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const tissueUrl = `data:text/javascript;base64,${Buffer.from(tissueOutput).toString("base64")}`;
-const decisionSource = (await readFile(new URL("../app/local-limb-decision-core.ts", import.meta.url), "utf8"))
-  .replace("./tissue-pathway-core", tissueUrl);
-const decisionOutput = ts.transpileModule(decisionSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const decisionCore = await import(`data:text/javascript;base64,${Buffer.from(decisionOutput).toString("base64")}`);
-const historyCore = await loadModule("../app/rehab-session-history.ts");
-const identityCore = await loadModule("../app/local-case-identity.ts");
-const regionSource = await readFile(new URL("../app/local-limb-regions.ts", import.meta.url), "utf8");
-const demoSource = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
-const chiefHistorySource = await readFile(new URL("../app/chief-retest-history-core.ts", import.meta.url), "utf8");
+const decisionCore = await loadTypeScriptModule("./src/domain/rehab/shared/local-limb-decision-core.ts");
+const historyCore = await loadTypeScriptModule("./src/features/rehabmind/workflow/session-history.ts");
+const identityCore = await loadTypeScriptModule("./src/infrastructure/pilot/persistence/local-case-identity.ts");
+const regionSource = await readFile(new URL("../../src/knowledge/pilot/local-limb-regions.ts", import.meta.url), "utf8");
+const demoSource = await readRehabMindUiSource();
+const chiefHistorySource = await readFile(new URL("../../src/domain/rehab/retest/chief-retest-history-core.ts", import.meta.url), "utf8");
 
 const base = {
   onset: "1～6周", mechanism: "逐渐出现", symptomType: "牵扯或紧绷",

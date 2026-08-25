@@ -4,10 +4,10 @@ import {
   type PilotCaseFeedbackRecord,
   type PilotCaseRecord,
   type PilotCaseSnapshotRecord,
-} from "./pilot-case-contracts";
-import { reconstructPilotCaseTimeline } from "./pilot-timeline";
+} from "@/src/infrastructure/pilot/api/case-contracts";
+import { reconstructPilotCaseTimeline } from "@/src/infrastructure/pilot/persistence/timeline";
 
-export type PublicPilotCaseRecord = Omit<PilotCaseRecord, "accessTokenHash">;
+export type PublicPilotCaseRecord = Omit<PilotCaseRecord, "accessTokenHash" | "inviteTokenHash" | "firstUseFlowId">;
 export type PublicPilotCaseSnapshot = Omit<PilotCaseSnapshotRecord, "payload"> & {
   payload: Record<string, unknown>;
 };
@@ -31,7 +31,7 @@ export type PilotCaseView = {
 
 export function publicPilotCaseRecord(record: PilotCaseRecord): PublicPilotCaseRecord {
   return Object.fromEntries(
-    Object.entries(record).filter(([key]) => key !== "accessTokenHash"),
+    Object.entries(record).filter(([key]) => key !== "accessTokenHash" && key !== "inviteTokenHash" && key !== "firstUseFlowId"),
   ) as PublicPilotCaseRecord;
 }
 

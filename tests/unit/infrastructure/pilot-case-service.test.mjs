@@ -1,34 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import ts from "typescript";
 import { readFile } from "node:fs/promises";
-
-async function loadService() {
-  const contractSource = await readFile(new URL("../app/pilot-case-contracts.ts", import.meta.url), "utf8");
-  const timelineSource = await readFile(new URL("../app/pilot-timeline.ts", import.meta.url), "utf8");
-  const viewSource = await readFile(new URL("../app/pilot-case-view.ts", import.meta.url), "utf8");
-  const serviceSource = await readFile(new URL("../app/pilot-case-service.ts", import.meta.url), "utf8");
-  const contract = ts.transpileModule(contractSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/export\s+/g, "");
-  const timeline = ts.transpileModule(timelineSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
-    .replace(/export\s+/g, "");
-  const view = ts.transpileModule(viewSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from \"\.\/pilot-case-contracts\";\s*/s, "")
-    .replace(/import \{[\s\S]*?\} from \"\.\/pilot-timeline\";\s*/s, "")
-    .replace(/export\s+/g, "");
-  const service = ts.transpileModule(serviceSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-view";\s*/s, "")
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-snapshot-schema";\s*/s, "")
-    .replace(/export\s+/g, "");
-  const schemaSource = await readFile(new URL("../app/pilot-snapshot-schema.ts", import.meta.url), "utf8");
-  const schema = ts.transpileModule(schemaSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-    .replace(/import \{[\s\S]*?\} from "\.\/pilot-case-contracts";\s*/gs, "")
-    .replace(/export\s+/g, "");
-  const bundle = `${contract}\n${timeline}\n${view}\n${schema}\n${service}\nexport { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidationError };`;
-  const bundleUrl = `data:text/javascript;base64,${Buffer.from(bundle).toString("base64")}`;
-  return import(bundleUrl);
-}
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
 class MemoryRepository {
   cases = new Map();
@@ -103,47 +76,86 @@ class MemoryRepository {
   }
 }
 
-const { PilotCaseService, PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidationError } = await loadService();
+const { PilotCaseService } = await loadTypeScriptModule("./src/infrastructure/pilot/services/case-service.ts");
+const { PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidationError } = await loadTypeScriptModule("./src/infrastructure/pilot/api/case-contracts.ts");
+const TEST_SOURCE = { channel: "douyin_fan_group", detail: null };
+const TEST_CONSENT = { version: "pilot-consent-v1", confirmedAt: "2026-08-21T00:00:00.000Z" };
+
+function makeSnapshot(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    consent: { version: "pilot-consent-v1", confirmedAt: "2026-08-21T00:00:00.000Z" },
+    step: 0,
+    intake: { regionId: "knee" },
+    safety: {},
+    imaging: [],
+    assessmentIndex: 0,
+    assessmentResults: {},
+    trialTargetIndex: 0,
+    candidateIndex: 0,
+    trialRecords: [],
+    postScore: 0,
+    movementResponse: "",
+    exerciseFeedback: {},
+    trainingComplete: false,
+    followupMode: false,
+    sessionNumber: 1,
+    followupScore: 0,
+    followupScoreHistory: [],
+    followupStage: "review",
+    followupPostScore: 0,
+    followupCandidateId: "",
+    followupTrialRecords: [],
+    followupExerciseChoices: {},
+    followupTrends: {},
+    ...overrides,
+  };
+}
 
 function makeService() {
   const repository = new MemoryRepository();
   repository.errors = { PilotCaseConflictError };
   let id = 0;
+  const service = new PilotCaseService({
+    repository,
+    versions: { appVersion: "app-test", knowledgeVersion: "knowledge-test", decisionVersion: "decision-test" },
+    now: (() => { let tick = 0; return () => `2026-08-21T00:00:0${tick++}Z`; })(),
+    createId: () => `id-${++id}`,
+    createPublicCode: () => `CODE-${++id}`,
+    createAccessToken: () => `token-${++id}`,
+    hashAccessToken: async (token) => `hash:${token}`,
+  });
+  const createCase = service.createCase.bind(service);
+  service.createCase = (input = {}) => createCase({ source: TEST_SOURCE, consent: TEST_CONSENT, ...input });
   return {
     repository,
-    service: new PilotCaseService({
-      repository,
-      versions: { appVersion: "app-test", knowledgeVersion: "knowledge-test", decisionVersion: "decision-test" },
-      now: (() => { let tick = 0; return () => `2026-08-21T00:00:0${tick++}Z`; })(),
-      createId: () => `id-${++id}`,
-      createPublicCode: () => `CODE-${++id}`,
-      createAccessToken: () => `token-${++id}`,
-      hashAccessToken: async (token) => `hash:${token}`,
-    }),
+    service,
   };
 }
 
 test("createCase stores an anonymous case, snapshot, initial event, and only returns the raw token", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase({ initialSnapshot: { step: "症状信息" } });
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   const record = repository.cases.get(access.caseId);
   assert.equal(access.publicCode.startsWith("CODE-"), true);
   assert.equal(record.accessTokenHash, `hash:${access.accessToken}`);
+  assert.equal(record.sourceChannel, "douyin_fan_group");
+  assert.equal(record.consentVersion, "pilot-consent-v1");
   assert.equal(record.accessToken, undefined);
   const storedFirstPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
-  assert.equal(storedFirstPayload.step, "症状信息");
+  assert.equal(storedFirstPayload.step, 0);
   assert.equal(storedFirstPayload.schemaVersion, 1);
   assert.equal([...repository.events.values()][0].type, "case_created");
   // REL-01：入库载荷补烙显式 schema 版本（缺失视为 v1）。
   const storedPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
   assert.equal(storedPayload.schemaVersion, 1);
-  assert.deepEqual({ ...storedPayload, schemaVersion: undefined }, { step: "症状信息", schemaVersion: undefined });
+  assert.deepEqual(storedPayload, makeSnapshot());
 });
 
 test("replaying one client creation id returns the same case instead of creating a duplicate", async () => {
   const { service, repository } = makeService();
-  const first = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: { step: "症状信息" } });
-  const replay = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: { step: "changed" } });
+  const first = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: makeSnapshot() });
+  const replay = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: makeSnapshot({ step: 1 }) });
   assert.equal(replay.caseId, first.caseId);
   assert.equal(replay.accessToken, first.accessToken);
   assert.equal(replay.replayed, true);
@@ -153,7 +165,7 @@ test("replaying one client creation id returns the same case instead of creating
 
 test("a concurrent create race re-reads the winning case after the unique constraint", async () => {
   const { service, repository } = makeService();
-  const input = { clientCreationId: "creation-race", accessToken: "persisted-token", initialSnapshot: { step: "症状信息" } };
+  const input = { clientCreationId: "creation-race", accessToken: "persisted-token", initialSnapshot: makeSnapshot() };
   const [first, second] = await Promise.all([service.createCase(input), service.createCase(input)]);
   assert.equal(first.caseId, second.caseId);
   assert.equal(second.replayed, true);
@@ -163,12 +175,12 @@ test("a concurrent create race re-reads the winning case after the unique constr
 
 test("saveProgress advances the snapshot revision, appends a versioned event, and patches case state", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   const result = await service.saveProgress({
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: { step: "关键确认", rawComplaint: "膝前方不适" },
+    snapshot: makeSnapshot({ step: 1, rawComplaint: "膝前方不适" }),
     eventType: "intake_saved",
     eventPayload: { raw: "膝前方不适", parsed: { region: "knee" }, confirmed: false },
     eventId: "stable-event-1",
@@ -184,12 +196,12 @@ test("saveProgress advances the snapshot revision, appends a versioned event, an
 
 test("a case token cannot forge an administrator event source", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   await service.saveProgress({
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: { step: "关键确认" },
+    snapshot: makeSnapshot({ step: 1 }),
     eventType: "intake_saved",
     eventPayload: { sourceAttempt: "admin" },
     source: "admin",
@@ -200,12 +212,12 @@ test("a case token cannot forge an administrator event source", async () => {
 
 test("repeating the same event is idempotent and an old revision cannot overwrite the new snapshot", async () => {
   const { service } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   const input = {
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: { step: "评估检查" },
+    snapshot: makeSnapshot({ step: 2 }),
     eventType: "assessment_answered",
     eventPayload: { assessmentId: "a1", answer: "yes" },
     eventId: "stable-event-2",
@@ -215,7 +227,7 @@ test("repeating the same event is idempotent and an old revision cannot overwrit
   assert.equal(repeated.snapshot.revision, first.snapshot.revision);
   assert.equal(repeated.event.id, first.event.id);
   await assert.rejects(
-    service.saveProgress({ ...input, eventId: "stable-event-3", snapshot: { step: "旧页面" } }),
+    service.saveProgress({ ...input, eventId: "stable-event-3", snapshot: makeSnapshot({ step: 1 }) }),
     (error) => error instanceof PilotCaseConflictError,
   );
 });
@@ -223,8 +235,8 @@ test("repeating the same event is idempotent and an old revision cannot overwrit
 test("feedback must reference an event from the same case", async () => {
   const first = makeService();
   const second = makeService();
-  const firstCase = await first.service.createCase();
-  const secondCase = await second.service.createCase();
+  const firstCase = await first.service.createCase({ initialSnapshot: makeSnapshot() });
+  const secondCase = await second.service.createCase({ initialSnapshot: makeSnapshot() });
   await assert.rejects(
     first.service.submitFeedback({ caseId: firstCase.caseId, accessToken: firstCase.accessToken, eventId: "id-2", stage: "评估", kind: "不相关" }),
   );
@@ -238,7 +250,11 @@ test("feedback must reference an event from the same case", async () => {
 
 test("feedback keeps target and submission contexts separate", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
+  repository.cases.set(access.caseId, {
+    ...repository.cases.get(access.caseId),
+    sessionCount: 2,
+  });
   const sourceEventId = [...repository.events.values()][0].id;
   const feedback = await service.submitFeedback({
     caseId: access.caseId,
@@ -263,7 +279,7 @@ test("feedback keeps target and submission contexts separate", async () => {
 
 test("feedback rejects invalid session context and oversized messages", async () => {
   const { service } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   await assert.rejects(service.submitFeedback({
     caseId: access.caseId,
     accessToken: access.accessToken,
@@ -282,12 +298,12 @@ test("feedback rejects invalid session context and oversized messages", async ()
 
 test("invalid credentials and unsupported event types are rejected before persistence", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   await assert.rejects(service.saveProgress({
     caseId: access.caseId,
     accessToken: "wrong-token",
     expectedRevision: 0,
-    snapshot: { step: "症状信息" },
+    snapshot: makeSnapshot(),
     eventType: "intake_saved",
     eventPayload: {},
   }));
@@ -295,7 +311,7 @@ test("invalid credentials and unsupported event types are rejected before persis
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: { step: "症状信息" },
+    snapshot: makeSnapshot(),
     eventType: "not-an-event",
     eventPayload: {},
   }));
@@ -304,12 +320,12 @@ test("invalid credentials and unsupported event types are rejected before persis
 
 test("oversized snapshot payloads are rejected before they reach the repository", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase();
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   await assert.rejects(service.saveProgress({
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: { step: "症状信息", oversized: "x".repeat(1_100_000) },
+    snapshot: makeSnapshot({ oversized: "x".repeat(1_100_000) }),
     eventType: "session_saved",
     eventPayload: {},
   }), (error) => error instanceof PilotCasePayloadTooLargeError);
@@ -318,7 +334,7 @@ test("oversized snapshot payloads are rejected before they reach the repository"
 
 test("deleteCase marks the case inactive and appends a deletion event", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase({ initialSnapshot: { step: "症状信息" } });
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   const deleted = await service.deleteCase({ caseId: access.caseId, accessToken: access.accessToken });
   assert.equal(deleted.status, "deleted");
   assert.match(deleted.deletedAt, /^2026-08-21T00:00:/);
@@ -330,24 +346,49 @@ test("deleteCase marks the case inactive and appends a deletion event", async ()
 
 test("REL-01: future snapshot schema versions are rejected before storage", async () => {
   const { service, repository } = makeService();
-  const access = await service.createCase({ initialSnapshot: { step: "症状信息" } });
+  const access = await service.createCase({ initialSnapshot: makeSnapshot() });
   await assert.rejects(
     service.saveProgress({
       caseId: access.caseId,
       accessToken: access.accessToken,
       expectedRevision: 0,
-      snapshot: { schemaVersion: 999, step: "评估检查" },
+      snapshot: makeSnapshot({ schemaVersion: 999, step: 2 }),
       eventType: "assessment_answered",
       eventPayload: {},
     }),
-    (error) => error instanceof PilotCaseValidationError && /schema version 999/.test(error.message),
+    (error) => error instanceof PilotCaseValidationError && /unsupported snapshot schema version/.test(error.message),
   );
   assert.equal(repository.snapshots.size, 1);
 });
 
+test("SCHEMA-01: incomplete snapshots and invalid creation consent never reach storage", async () => {
+  const first = makeService();
+  await assert.rejects(
+    first.service.createCase({ initialSnapshot: { schemaVersion: 1, step: 0 } }),
+    (error) => error instanceof PilotCaseValidationError && /snapshot intake is missing/.test(error.message),
+  );
+  assert.equal(first.repository.cases.size, 0);
+
+  const second = makeService();
+  await assert.rejects(
+    second.service.createCase({ initialSnapshot: makeSnapshot(), consent: null }),
+    (error) => error instanceof PilotCaseValidationError && /consent is required/.test(error.message),
+  );
+  assert.equal(second.repository.cases.size, 0);
+
+  const third = makeService();
+  await assert.rejects(
+    third.service.createCase({ initialSnapshot: makeSnapshot(), source: { channel: "forged" } }),
+    (error) => error instanceof PilotCaseValidationError && /source channel is invalid/.test(error.message),
+  );
+  assert.equal(third.repository.cases.size, 0);
+});
+
 test("REL-01: pilot app version stays in lockstep with package.json", async () => {
-  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
-  const releaseSource = await readFile(new URL("../app/pilot-release.ts", import.meta.url), "utf8");
+  const pkg = JSON.parse(await readFile(new URL("../../../package.json", import.meta.url), "utf8"));
+  const releaseSource = await readFile(new URL("../../../src/infrastructure/pilot/release/release-version.ts", import.meta.url), "utf8");
   const expected = `rehabmind-pilot-app-${pkg.version}`;
-  assert.match(releaseSource, new RegExp(`appVersion:\\s*"${expected}"`));
+  assert.match(releaseSource, /PILOT_RELEASE_MANIFEST\.appVersion/);
+  const generatedSource = await readFile(new URL("../../../src/infrastructure/pilot/release/release.generated.ts", import.meta.url), "utf8");
+  assert.match(generatedSource, new RegExp(`${expected.replaceAll(".", "\\.")}\\+`));
 });

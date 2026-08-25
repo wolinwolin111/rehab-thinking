@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 test("decision lab exposes the ten clinical audit cases", async () => {
-  const source = await readFile(new URL("../app/decision-lab/knee-decision-lab.tsx", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../src/features/rehabmind/decision-lab/knee-decision-lab.tsx", import.meta.url), "utf8");
   assert.match(source, /膝关节决策对照页/);
   assert.match(source, /案例 01 · 主诉优先/);
   assert.match(source, /案例 05 · 关节松动门槛/);
@@ -13,8 +13,8 @@ test("decision lab exposes the ten clinical audit cases", async () => {
 });
 
 test("decision lab exposes the twelve thigh and calf audit cases", async () => {
-  const page = await readFile(new URL("../app/decision-lab/page.tsx", import.meta.url), "utf8");
-  const source = await readFile(new URL("../app/decision-lab/local-limb-decision-lab.tsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../../app/decision-lab/page.tsx", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../src/features/rehabmind/decision-lab/local-limb-decision-lab.tsx", import.meta.url), "utf8");
   assert.match(page, /大腿 \/ 小腿/);
   assert.match(page, /LocalLimbDecisionLab/);
   assert.match(source, /LOCAL_LIMB_LAB_CASES/);

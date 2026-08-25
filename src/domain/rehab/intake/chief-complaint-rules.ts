@@ -1,4 +1,4 @@
-import type { ModuleId, TreatmentCandidate } from "./first-batch-modules";
+import type { ModuleId, TreatmentCandidate } from "@/src/knowledge/pilot/first-batch-modules";
 
 export type ChiefComplaintPlan = {
   title: string;

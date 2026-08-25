@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../support/load-typescript-module.mjs";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
-const engineSource = await readFile(new URL("../app/pilot-decision-engine.ts", import.meta.url), "utf8");
-const knowledgeSource = await readFile(new URL("../app/pilot-knowledge.ts", import.meta.url), "utf8");
-const knowledgeUrl = `data:text/javascript;base64,${Buffer.from(ts.transpileModule(knowledgeSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText).toString("base64")}`;
-const engineCode = ts.transpileModule(engineSource.replace('./pilot-knowledge.ts', knowledgeUrl), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const engine = await import(`data:text/javascript;base64,${Buffer.from(engineCode).toString("base64")}`);
+const engine = await loadTypeScriptModule("./src/domain/rehab/shared/pilot-decision-engine.ts");
 
 const base = {
   userRole: "general", onset: "1～6周", mechanism: "跑跳或拉伤", symptomType: "牵扯或紧绷",
@@ -71,7 +68,7 @@ test("local findings generate one source-backed treatment chain", () => {
 });
 
 test("location picker keeps one main region while allowing several precise complaint sites", async () => {
-  const source = await readFile(new URL("../app/lower-limb-location-picker.tsx", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../src/features/rehabmind/components/assessment/lower-limb-location-picker.tsx", import.meta.url), "utf8");
   assert.match(source, /id: "thigh"[^\n]+regionId: "thigh-local"/);
   assert.match(source, /id: "calf"[^\n]+regionId: "calf-local"/);
   assert.doesNotMatch(source, /mode === "complaint" \? 1/);
@@ -82,7 +79,7 @@ test("location picker keeps one main region while allowing several precise compl
 });
 
 test("restored and decision input preserve all complaint sites in the selected main area", async () => {
-  const source = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
+  const source = await readRehabMindUiSource();
   assert.match(source, /const selectedLocations = intake\.bodyLocations/);
   assert.match(source, /selectedLocations\.map\(\(item\) => item\.regionId\)/);
   assert.match(source, /selectedLocations\.map\(\(item\) => item\.location\)/);

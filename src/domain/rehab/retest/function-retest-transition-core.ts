@@ -1,4 +1,4 @@
-import type { FunctionUnableReason } from "./function-assessment-core";
+import type { FunctionUnableReason } from "@/src/domain/rehab/assessment/function-assessment-core";
 
 export type FunctionRetestMode = "ordinary" | "completion-status" | "none";
 export type FunctionRetestCompletion = "" | "complete" | "unable";

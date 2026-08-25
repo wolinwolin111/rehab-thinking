@@ -77,8 +77,8 @@
 
 ## 6. 实现位置
 
-- 数据模型与归并函数：`app/knee-decision-core.ts`
-- 正式页面数据适配：`app/knee-workflow-adapter.ts`
-- 正式处理流程：`app/rehabmind-complete-demo.tsx`，膝关节候选顺序优先使用当前核心决策单元；记录时保存核心单元编号，处理后重新计算下一项。
-- 自动测试：`tests/knee-decision-core.test.mjs`
-- 正式页面适配测试：`tests/knee-workflow-adapter.test.mjs`
+- 数据模型与归并函数：`src/domain/rehab/shared/knee-decision-core.ts`
+- 正式页面数据适配：`src/domain/rehab/shared/knee-workflow-adapter.ts`
+- 正式处理流程：`src/features/rehabmind/components/workbench/rehabmind-workbench.tsx`，膝关节候选顺序优先使用当前核心决策单元；记录时保存核心单元编号，处理后重新计算下一项。
+- 自动测试：`tests/unit/domain/knee-decision-core.test.mjs`
+- 正式页面适配测试：`tests/unit/domain/knee-workflow-adapter.test.mjs`

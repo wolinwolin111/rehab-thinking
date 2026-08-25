@@ -1,35 +1,14 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../support/load-typescript-module.mjs";
 
-async function loadSource(path, replacements = {}) {
-  let source = await readFile(new URL(path, import.meta.url), "utf8");
-  for (const [from, to] of Object.entries(replacements)) source = source.replaceAll(from, to);
-  const output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  return import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
-}
-
-async function moduleUrl(path) {
-  const source = await readFile(new URL(path, import.meta.url), "utf8");
-  const output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  return `data:text/javascript;base64,${Buffer.from(output).toString("base64")}`;
-}
-
-const assessmentUrl = await moduleUrl("../app/function-assessment-core.ts");
-const workflowUrl = await moduleUrl("../app/workflow-state-core.ts");
-const bilateralUrl = await moduleUrl("../app/bilateral-flow-core.ts");
 const [evidence, retest, queue, ledger, training, eligibility] = await Promise.all([
-  loadSource("../app/function-evidence-core.ts", { "./function-assessment-core": assessmentUrl }),
-  loadSource("../app/function-retest-transition-core.ts"),
-  loadSource("../app/treatment-queue-core.ts", { "./workflow-state-core": workflowUrl }),
-  loadSource("../app/treatment-ledger-core.ts"),
-  loadSource("../app/training-stage-gate-core.ts", { "./bilateral-flow-core": bilateralUrl }),
-  loadSource("../app/retest-eligibility-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/retest/function-evidence-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/retest/function-retest-transition-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-queue-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-ledger-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/training/training-stage-gate-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/retest/retest-eligibility-core.ts"),
 ]);
 
 function rng(seed) {

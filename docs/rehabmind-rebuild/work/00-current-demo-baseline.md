@@ -17,10 +17,10 @@
 
 | 文件 | SHA-256 |
 | --- | --- |
-| `app/rehabmind-complete-demo.tsx` | `88ED8F95F467407878DEF3EA8CE9165780BFC8EC9BA0520CBE3A8DFC2AED6BAD` |
-| `app/full-demo-content.ts` | `DA56799BCD44A4CF7621BA0598DDA2F3546F91CF8A07535C4A5CC37AE9D185AC` |
-| `app/complete-demo.css` | `02074B47EC07C431F006C8D57EA442B74535512841C460A428C18821D7E53228` |
-| `tests/rendered-html.test.mjs` | `9D7E859907B34F4B329F32BE339DCD9006B395D9A29767E724562625791721DA` |
+| `src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` | `88ED8F95F467407878DEF3EA8CE9165780BFC8EC9BA0520CBE3A8DFC2AED6BAD` |
+| `src/knowledge/pilot/full-demo-content.ts` | `DA56799BCD44A4CF7621BA0598DDA2F3546F91CF8A07535C4A5CC37AE9D185AC` |
+| `src/features/rehabmind/styles/complete-demo.css` | `02074B47EC07C431F006C8D57EA442B74535512841C460A428C18821D7E53228` |
+| `tests/component/rendered-html.test.mjs` | `9D7E859907B34F4B329F32BE339DCD9006B395D9A29767E724562625791721DA` |
 
 文件指纹只用于识别基线。用户继续修改后哈希变化是正常现象。
 
@@ -30,7 +30,7 @@
 
 ```text
 npm.cmd run build
-npx.cmd eslint app/rehabmind-complete-demo.tsx app/full-demo-content.ts tests/rendered-html.test.mjs
+npx.cmd eslint src/features/rehabmind/components/workbench/rehabmind-workbench.tsx src/knowledge/pilot/full-demo-content.ts tests/component/rendered-html.test.mjs
 npm.cmd test
 ```
 

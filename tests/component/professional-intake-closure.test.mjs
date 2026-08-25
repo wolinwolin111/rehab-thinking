@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
-const demo = await readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8");
-const styles = await readFile(new URL("../app/complete-demo.css", import.meta.url), "utf8");
-const profileSource = await readFile(new URL("../app/workflow-profile-core.ts", import.meta.url), "utf8");
+const demo = await readRehabMindUiSource();
+const styles = await readFile(new URL("../../src/features/rehabmind/styles/complete-demo.css", import.meta.url), "utf8");
+const profileSource = await readFile(new URL("../../src/domain/rehab/intake/workflow-profile-core.ts", import.meta.url), "utf8");
 const profileCode = ts.transpileModule(profileSource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;

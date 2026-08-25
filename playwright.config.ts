@@ -1,8 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
+import { isLocalBrowserTarget, resolveBrowserTarget } from "./tests/browser/support/browser-target";
 
 const configuredUrl = process.env.WALKTHROUGH_URL?.trim() || "http://localhost:3000/";
-const baseURL = new URL(configuredUrl).origin;
-const isRemoteTarget = !/^https?:\/\/localhost(?::\d+)?\/?$/i.test(configuredUrl);
+const baseURL = resolveBrowserTarget(configuredUrl);
+const isRemoteTarget = !isLocalBrowserTarget(baseURL);
+const expectedPath = process.env.EXPECTED_APP_PATH?.trim();
+if (expectedPath && new URL(baseURL).pathname !== resolveBrowserTarget(`https://quality.local${expectedPath}`).replace("https://quality.local", "")) {
+  throw new Error(`WALKTHROUGH_URL must preserve the expected application path ${expectedPath}`);
+}
 const browserChannel = process.env.BROWSER_CHANNEL?.trim() || "msedge";
 const artifactsDir = process.env.QUALITY_ARTIFACTS_DIR?.trim() || "artifacts/quality/playwright";
 
@@ -41,6 +46,11 @@ export default defineConfig({
     },
     {
       name: "edge-full",
+      use: { ...devices["Desktop Chrome"], channel: browserChannel },
+    },
+    {
+      name: "edge-release",
+      testMatch: /release\/.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], channel: browserChannel },
     },
   ],

@@ -3,7 +3,7 @@ import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../app/pilot-sync-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/infrastructure/pilot/persistence/sync-core.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -62,4 +62,37 @@ test("content fingerprints are deterministic, key-order independent and value se
   assert.equal(a, reordered);
   assert.notEqual(a, sync.contentFingerprint({ step: 3, intake: { description: "右膝下楼刺痛" } }));
   assert.notEqual(a, sync.contentFingerprint({ step: 2, intake: { description: "左踝崴伤肿胀" } }));
+});
+
+test("A5 SYNC-02: conflict summaries identify modules without returning health text", () => {
+  const local = { intake: { description: "private local text" }, trialRecords: [{ result: "better" }], sessionNumber: 1 };
+  const remote = { intake: { description: "private remote text" }, trialRecords: [{ result: "same" }], sessionNumber: 2 };
+  const sections = sync.summarizePilotSnapshotConflict(local, remote);
+  assert.deepEqual(sections, ["症状信息", "处理复测", "后续康复"]);
+  assert.doesNotMatch(JSON.stringify(sections), /private|local|remote/);
+});
+
+test("A5 SYNC-02: saving a conflict as new strips every remote identity field", () => {
+  const copy = sync.buildPilotConflictCaseCopy({
+    id: "old-id",
+    localCaseId: "old-local",
+    pilotCaseId: "remote-id",
+    pilotClientCreationId: "creation-id",
+    pilotPublicCode: "PUBLIC01",
+    pilotAccessToken: "secret-token",
+    pilotRevision: 5,
+    pilotLastSyncedRevision: 4,
+    pilotConflictRevision: 6,
+    pilotConflictSnapshot: { step: 2 },
+    pilotVersions: { appVersion: "old" },
+    snapshot: { step: 3 },
+  }, { id: "new-id", localCaseId: "new-local" });
+
+  assert.equal(copy.id, "new-id");
+  assert.equal(copy.localCaseId, "new-local");
+  assert.equal(copy.pilotDirty, true);
+  for (const key of ["pilotCaseId", "pilotClientCreationId", "pilotPublicCode", "pilotAccessToken", "pilotRevision", "pilotConflictSnapshot", "pilotConflictRevision", "pilotVersions"]) {
+    assert.equal(key in copy, false, key);
+  }
+  assert.deepEqual(copy.snapshot, { step: 3 });
 });

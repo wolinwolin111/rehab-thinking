@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../app/api/pilot/_shared.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../app/api/pilot/_shared.ts", import.meta.url), "utf8");
 
 test("pilot API storage logs keep only sanitized error metadata", () => {
   assert.match(source, /console\.error\(\s*"pilot API storage failure"/);

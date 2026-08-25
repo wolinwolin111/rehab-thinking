@@ -23,7 +23,7 @@ export type FullAccess = "self" | "coach" | "therapist";
 export type FullCandidateType = "muscle" | "joint" | "control" | "neural" | "swelling";
 export type FullExerciseStage = 1 | 2 | 3 | 4 | 5;
 
-import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "./local-limb-regions";
+import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "@/src/knowledge/pilot/local-limb-regions";
 
 export type FullAssessment = {
   id: string;

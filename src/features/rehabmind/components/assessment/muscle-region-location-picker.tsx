@@ -1,6 +1,6 @@
 "use client";
 
-import { PILOT_MUSCLE_REGIONS, type PilotMuscleRegionId } from "./pilot-motion-muscle-knowledge";
+import { PILOT_MUSCLE_REGIONS, type PilotMuscleRegionId } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
 
 type MuscleRegionView = "front" | "back" | "sole";
 
@@ -145,6 +145,9 @@ const MUSCLE_BASE_PATHS = {
 };
 
 function MuscleAnatomyMap({ regionId, view }: { regionId: PilotMuscleRegionId; view: MuscleRegionView }) {
+  const photo = view === "front"
+    ? "/rehabmind-region-calf-v1.png"
+    : "/rehabmind-region-calf-atlas-v2.png";
   if (view === "sole") return <svg viewBox="0 0 360 170" role="img" aria-label="足底肌肉范围示意图" focusable="false">
     <rect width="360" height="170" rx="18" className="rm-muscle-location-figure__map-bg" />
     <path d="M103 28 C118 15 149 13 171 20 C186 14 215 16 230 30 C246 48 247 83 237 117 C229 143 212 154 190 155 L145 151 C124 146 111 129 108 104 L101 62 Z" className="rm-muscle-location-figure__map-base" />
@@ -153,21 +156,15 @@ function MuscleAnatomyMap({ regionId, view }: { regionId: PilotMuscleRegionId; v
     <text x="18" y="151" className="rm-muscle-location-figure__map-label">足底软组织与足弓范围</text>
   </svg>;
 
-  const base = MUSCLE_BASE_PATHS[view];
   return <svg viewBox="0 0 360 480" role="img" aria-label="下肢肌肉范围示意图" focusable="false">
     <defs>
-      <linearGradient id={`muscle-map-${regionId}-${view}`} x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0" stopColor="#f7eee5" />
-        <stop offset="1" stopColor="#ead8ca" />
-      </linearGradient>
+      <clipPath id={`muscle-photo-clip-${regionId}-${view}`}>
+        <rect width="360" height="480" rx="18" />
+      </clipPath>
     </defs>
-    <rect width="360" height="480" rx="18" className="rm-muscle-location-figure__map-bg" />
-    <path d={base.upper} fill={`url(#muscle-map-${regionId}-${view})`} className="rm-muscle-location-figure__map-base" />
-    <path d={base.lower} fill={`url(#muscle-map-${regionId}-${view})`} className="rm-muscle-location-figure__map-base" />
-    <path d="M137 237 C152 227 207 227 222 238" className="rm-muscle-location-figure__map-line" />
-    <path d={MUSCLE_ZONE_PATHS[regionId][0]} className="rm-muscle-location-figure__highlight" />
-    <path d={view === "front" ? "M180 55 L180 224 M180 265 L180 432" : "M160 54 C171 100 171 178 164 222 M200 54 C189 100 189 178 196 222 M163 269 C173 314 170 385 165 426 M197 269 C187 314 190 385 195 426"} className="rm-muscle-location-figure__map-line" />
-    <text x="18" y="462" className="rm-muscle-location-figure__map-label">肌肉范围示意 · 目标区已标出</text>
+    <image href={photo} width="360" height="480" preserveAspectRatio="xMidYMid slice" clipPath={`url(#muscle-photo-clip-${regionId}-${view})`} className="rm-muscle-location-figure__photo" />
+    <path d={MUSCLE_ZONE_PATHS[regionId][0]} className="rm-muscle-location-figure__highlight rm-muscle-location-figure__highlight--photo" />
+    <text x="18" y="462" className="rm-muscle-location-figure__map-label">目标区已标出 · 照片示意</text>
   </svg>;
 }
 
@@ -220,6 +217,7 @@ export type MuscleRegionLocationPickerProps = {
   uncertainLabel?: string;
   professional?: boolean;
   bilateral?: boolean;
+  showSpecials?: boolean;
   onToggle: (location: string) => void;
 };
 
@@ -230,6 +228,7 @@ export function MuscleRegionLocationPicker({
   uncertainLabel = "暂不判断",
   professional = false,
   bilateral = false,
+  showSpecials = true,
   onToggle,
 }: MuscleRegionLocationPickerProps) {
   const uniqueLocations = [...new Set(locations)].filter((location) => !SENTINEL_LABELS.has(location));
@@ -277,14 +276,14 @@ export function MuscleRegionLocationPicker({
         </article>;
       })}
     </div>
-    <div className="rm-muscle-location-specials">
+    {showSpecials ? <div className="rm-muscle-location-specials">
       <button type="button" className={selectedLocations.includes(comparisonLabel) ? "is-selected" : ""} aria-pressed={selectedLocations.includes(comparisonLabel)} onClick={() => onToggle(comparisonLabel)}>
         <strong>{displayForComparison}</strong><small>没有需要特别标记的区域</small>
       </button>
       <button type="button" className={selectedLocations.includes(uncertainLabel) ? "is-selected" : ""} aria-pressed={selectedLocations.includes(uncertainLabel)} onClick={() => onToggle(uncertainLabel)}>
         <strong>{uncertainLabel}</strong><small>不确定或不方便触碰</small>
       </button>
-    </div>
+    </div> : null}
   </div>;
 }
 

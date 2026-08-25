@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { buildLocalLimbDecision, LOCAL_LIMB_LAB_CASES } from "../local-limb-decision-core";
+import { buildLocalLimbDecision, LOCAL_LIMB_LAB_CASES } from "@/src/domain/rehab/shared/local-limb-decision-core";
 import styles from "./knee-decision-lab.module.css";
 
 const LABELS: Record<string, string> = {

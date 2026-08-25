@@ -3,7 +3,7 @@
  *
  * 验证 P0 #3：专业「协助他人」+ 声明 PROM/触诊/关节处理能力 → 髌骨四方向被动检查
  * 受限 → 处理阶段出现单张「髌骨向上/…滑动辅助」单元卡（一张处理卡、一张复测卡）。
- * 用法：`node scripts/real-browser-walkthrough-patella.mjs`。
+ * 用法：`node scripts/legacy-browser/real-browser-walkthrough-patella.mjs`。
  */
 
 import { chromium } from "playwright-core";

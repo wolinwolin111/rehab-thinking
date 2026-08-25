@@ -5,8 +5,8 @@
  * 依赖主诉动作解析（chiefActionSource）与文本包含工具（includesAny）。
  */
 
-import { chiefActionSource, type ChiefActionIntake } from "./chief-action-core";
-import { includesAny } from "./candidate-order-core";
+import { chiefActionSource, type ChiefActionIntake } from "@/src/domain/rehab/intake/chief-action-core";
+import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 
 export type CandidateRelevanceInput = {
   id: string;

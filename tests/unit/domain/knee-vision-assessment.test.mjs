@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
-const coreSource = await readFile(new URL("../app/knee-decision-core.ts", import.meta.url), "utf8");
+const coreSource = await readFile(new URL("../../../src/domain/rehab/shared/knee-decision-core.ts", import.meta.url), "utf8");
 const coreCode = ts.transpileModule(coreSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const coreUrl = `data:text/javascript;base64,${Buffer.from(coreCode).toString("base64")}`;
-const visionSource = await readFile(new URL("../app/knee-vision-assessment.ts", import.meta.url), "utf8");
+const visionSource = await readFile(new URL("../../../src/domain/rehab/assessment/knee-vision-assessment.ts", import.meta.url), "utf8");
 const visionCode = ts.transpileModule(visionSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
   .replace("./knee-decision-core.ts", coreUrl);
 const visionUrl = `data:text/javascript;base64,${Buffer.from(visionCode).toString("base64")}`;

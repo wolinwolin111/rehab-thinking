@@ -1,6 +1,6 @@
-import { type CompletedRangeRetestAnswer, type TrialResult } from "./trial-record-types";
-import { resultFromScore } from "./trial-record-builder";
-import { classifyTreatmentResponse, type TreatmentResponseRole } from "./treatment-response-core";
+import { type CompletedRangeRetestAnswer, type TrialResult } from "@/src/domain/rehab/treatment/trial-record-types";
+import { resultFromScore } from "@/src/domain/rehab/treatment/trial-record-builder";
+import { classifyTreatmentResponse, type TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 
 /**
  * 批量复测的结果计算：范围 + 主诉 → 综合结果和响应角色。

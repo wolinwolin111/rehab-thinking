@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import {
   buildPilotFeedbackLocations,
+  feedbackSubmissionErrorMessage,
   feedbackLocationKey,
   isCurrentPilotFeedbackLocation,
   PILOT_FEEDBACK_KINDS,
   type PilotFeedbackDraft,
   type PilotFeedbackLocation,
   type PilotFeedbackStageOption,
-} from "./pilot-feedback-context";
+} from "@/src/infrastructure/pilot/feedback/feedback-context";
 
 function feedbackLocationLabel(location: PilotFeedbackLocation, stages: PilotFeedbackStageOption[]) {
   if (location.sessionNumber === null) return "暂不确定具体环节";
@@ -69,8 +70,8 @@ export function PilotFeedbackPanel({
       setKind("");
       setMessage("");
       onClose();
-    } catch {
-      setError("反馈暂时没有提交成功，请稍后再试");
+    } catch (submissionError) {
+      setError(feedbackSubmissionErrorMessage(submissionError));
     } finally {
       setSubmitting(false);
     }

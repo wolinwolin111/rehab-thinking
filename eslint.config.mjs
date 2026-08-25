@@ -11,6 +11,12 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "dist/**",
+    ".tmp/**",
+    ".tmp-smoke/**",
+    ".wrangler/**",
+    "artifacts/**",
+    "outputs/**",
     "next-env.d.ts",
     // Legacy prototype retained for reference; the complete product now uses rehab-system.tsx.
     "app/ankle-guided-workflow.tsx",

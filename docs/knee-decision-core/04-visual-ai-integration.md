@@ -223,6 +223,6 @@ MediaPipe Pose Landmarker支持图片、视频和实时流，能够返回33个�
 
 ## 11. 当前实现
 
-- 测量和判断模块：`app/knee-vision-assessment.ts`
-- 膝关节决策核心：`app/knee-decision-core.ts`
-- 自动测试：`tests/knee-vision-assessment.test.mjs`
+- 测量和判断模块：`src/domain/rehab/assessment/knee-vision-assessment.ts`
+- 膝关节决策核心：`src/domain/rehab/shared/knee-decision-core.ts`
+- 自动测试：`tests/unit/domain/knee-vision-assessment.test.mjs`

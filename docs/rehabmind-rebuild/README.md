@@ -10,8 +10,8 @@
 | [knowledge](./knowledge/README.md) | 膝踝关系、证据与审核记录 |
 | [work](./work/) | 代码走读、问题追踪和迁移记录 |
 | [视觉评估方案](./09-visual-assessment-plan.md) | 后续视觉 AI 接口与判断边界 |
-| [动作图提示词](./10-knee-ankle-action-image-prompts.md) | 普通用户和专业人员动作图生成提示词 |
-| [动作图盘点](./11-action-image-inventory.md) | 已有素材与缺图清单 |
+| [动作图提示词](./10-knee-ankle-action-image-prompts.md) | 当前轻 Q 版成年人物训练与自主放松图片的完整可复制提示词 |
+| [动作图盘点](./11-action-image-inventory.md) | 44 张新素材的优先级、文件名、状态与接入顺序 |
 | [多问题与 AI 收集预研](./12-multi-region-ai-intake-rebuild.md) | 尚未开放的多问题调度和 AI 主诉收集方案 |
 
 ## 当前实施原则

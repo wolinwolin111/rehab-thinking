@@ -1,4 +1,4 @@
-import RehabMindCompleteDemo from "./rehabmind-complete-demo";
+import RehabMindCompleteDemo from "@/src/features/rehabmind/components/workbench/rehabmind-workbench";
 
 export default function Page() {
   return <RehabMindCompleteDemo />;

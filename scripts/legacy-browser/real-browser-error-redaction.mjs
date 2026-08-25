@@ -2,7 +2,7 @@
  * DATA-09：错误响应和服务错误日志不能泄露邀请令牌、访问凭据或完整主诉。
  *
  * 浏览器层验证客户端可见响应；服务端错误记录只由类型、名称和消息组成，
- * 其日志形状由 tests/pilot-api-redaction.test.mjs 固定。
+ * 其日志形状由 tests/unit/infrastructure/pilot-api-redaction.test.mjs 固定。
  */
 
 import assert from "node:assert/strict";

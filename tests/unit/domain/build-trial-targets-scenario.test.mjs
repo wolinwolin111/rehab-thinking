@@ -18,20 +18,20 @@ async function loadBundle(paths) {
 
 // buildTrialTargets 的运行时依赖（按拓扑序，依赖在前）
 const core = await loadBundle([
-  "../app/pilot-motion-muscle-knowledge.ts",
-  "../app/action-identity-core.ts",
-  "../app/assessment-answer-core.ts",
-  "../app/candidate-order-core.ts",
-  "../app/chief-action-core.ts",
-  "../app/knee-decision-core.ts",
-  "../app/knee-workflow-adapter.ts",
-  "../app/candidate-treatment-core.ts",
-  "../app/candidate-safety-core.ts",
-  "../app/candidate-action-core.ts",
-  "../app/candidate-scoring-core.ts",
-  "../app/patella-mobility-core.ts",
-  "../app/trial-target-core.ts",
-  "../app/build-trial-targets-core.ts",
+  "../../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts",
+  "../../../src/domain/rehab/intake/action-identity-core.ts",
+  "../../../src/domain/rehab/assessment/assessment-answer-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-order-core.ts",
+  "../../../src/domain/rehab/intake/chief-action-core.ts",
+  "../../../src/domain/rehab/shared/knee-decision-core.ts",
+  "../../../src/domain/rehab/shared/knee-workflow-adapter.ts",
+  "../../../src/domain/rehab/treatment/candidate-treatment-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-safety-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-action-core.ts",
+  "../../../src/domain/rehab/treatment/candidate-scoring-core.ts",
+  "../../../src/domain/rehab/assessment/patella-mobility-core.ts",
+  "../../../src/domain/rehab/treatment/trial-target-core.ts",
+  "../../../src/domain/rehab/treatment/build-trial-targets-core.ts",
 ]);
 
 function product(...lists) {

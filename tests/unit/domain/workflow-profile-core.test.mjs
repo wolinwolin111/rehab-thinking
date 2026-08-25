@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
-const source = await readFile(new URL("../app/workflow-profile-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/domain/rehab/intake/workflow-profile-core.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 

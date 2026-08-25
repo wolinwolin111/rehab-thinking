@@ -7,10 +7,16 @@ DEST="${PILOT_BACKUP_DIR:-$HOME/backups/rehabmind}"
 STAMP="$(date +%Y%m%d-%H%M)"
 mkdir -p "$DEST"
 cd "$HOME/rehabmind/current" 2>/dev/null || cd "$HOME/rehabmind/app-src"
+BACKUP="$DEST/rehabmind-$STAMP.sqlite"
 node -e "
 const Database = require('better-sqlite3');
 const src = new Database(process.argv[1], { readonly: true });
 src.backup(process.argv[2]).then(() => { src.close(); console.log('backup ok'); }).catch((e) => { console.error(e); process.exit(1); });
-" "$DB" "$DEST/rehabmind-$STAMP.sqlite"
+" "$DB" "$BACKUP"
+CHECK_SCRIPT="$HOME/rehabmind/current/scripts/data/check-sqlite-health.mjs"
+if [ -f "$CHECK_SCRIPT" ]; then
+  PILOT_SQLITE_PATH="$BACKUP" node "$CHECK_SCRIPT"
+fi
 ls -1t "$DEST"/rehabmind-*.sqlite | tail -n +8 | xargs -r rm -f
 echo "kept: $(ls -1 "$DEST" | wc -l) files"
+echo "backup_path=$BACKUP"

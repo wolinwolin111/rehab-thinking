@@ -1,18 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const source = await readFile(new URL("../app/training-stage-gate-core.ts", import.meta.url), "utf8");
-const bilateralSource = await readFile(new URL("../app/bilateral-flow-core.ts", import.meta.url), "utf8");
-const bilateralCode = ts.transpileModule(bilateralSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const bilateralUrl = `data:text/javascript;base64,${Buffer.from(bilateralCode).toString("base64")}`;
-const code = ts.transpileModule(source.replace('from "./bilateral-flow-core"', `from "${bilateralUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const core = await loadTypeScriptModule("./src/domain/rehab/training/training-stage-gate-core.ts");
 
 const base = {
   bilateral: false,

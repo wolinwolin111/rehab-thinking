@@ -7,6 +7,7 @@ const DRAFT_STORE_KEY = "current";
 export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records";
 export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-migrated-v1";
 export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v1";
+export type LocalCaseStorageScope = "user" | "test";
 
 export type LocalCaseStorageBackend = "indexeddb" | "localStorage";
 
@@ -14,28 +15,58 @@ export type LocalCaseLoadResult<T> = {
   records: T[];
   backend: LocalCaseStorageBackend;
   migrated: boolean;
+  diagnostic?: LocalCaseStorageDiagnostic;
+};
+
+export type LocalCaseStorageDiagnostic = {
+  code: "corrupt-local-records" | "corrupt-local-draft";
+  storageKey: string;
+  byteLength: number;
+};
+
+export type LocalDraftLoadResult<T> = {
+  draft: T | null;
+  backend: LocalCaseStorageBackend;
+  diagnostic?: LocalCaseStorageDiagnostic;
 };
 
 function canUseIndexedDb() {
   return typeof window !== "undefined" && typeof indexedDB !== "undefined";
 }
 
-function readLegacyRecords<T>(): T[] {
-  const raw = window.localStorage.getItem(LEGACY_LOCAL_CASES_KEY);
-  if (!raw) return [];
-  const parsed: unknown = JSON.parse(raw);
-  return Array.isArray(parsed) ? parsed as T[] : [];
+function diagnostic(code: LocalCaseStorageDiagnostic["code"], storageKey: string, raw: string): LocalCaseStorageDiagnostic {
+  return { code, storageKey, byteLength: new TextEncoder().encode(raw).byteLength };
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+function scopedKey(key: string, scope: LocalCaseStorageScope) {
+  return scope === "user" ? key : `${key}-${scope}`;
+}
+
+function readLegacyRecords<T>(scope: LocalCaseStorageScope): { records: T[]; diagnostic?: LocalCaseStorageDiagnostic } {
+  const key = scopedKey(LEGACY_LOCAL_CASES_KEY, scope);
+  const raw = window.localStorage.getItem(key);
+  if (!raw) return { records: [] };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return { records: parsed as T[] };
+  } catch {
+    // Return a diagnostic while leaving the original value untouched for recovery/export.
+  }
+  return { records: [], diagnostic: diagnostic("corrupt-local-records", key, raw) };
+}
+
+function openDatabase(scope: LocalCaseStorageScope): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+    const request = indexedDB.open(scope === "user" ? DATABASE_NAME : `${DATABASE_NAME}-${scope}`, DATABASE_VERSION);
     request.onerror = () => reject(request.error ?? new Error("IndexedDB is unavailable"));
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME);
       if (!request.result.objectStoreNames.contains(DRAFT_STORE_NAME)) request.result.createObjectStore(DRAFT_STORE_NAME);
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
   });
 }
 
@@ -93,98 +124,134 @@ function deleteAll(database: IDBDatabase): Promise<void> {
   });
 }
 
-export async function loadLocalCaseRecords<T>(): Promise<LocalCaseLoadResult<T>> {
+export async function loadLocalCaseRecords<T>(scope: LocalCaseStorageScope = "user"): Promise<LocalCaseLoadResult<T>> {
   if (!canUseIndexedDb()) {
-    return { records: readLegacyRecords<T>(), backend: "localStorage", migrated: false };
+    const legacy = readLegacyRecords<T>(scope);
+    return { ...legacy, backend: "localStorage", migrated: false };
   }
 
+  let database: IDBDatabase | undefined;
   try {
-    const database = await openDatabase();
+    database = await openDatabase(scope);
     const stored = await readAll<T>(database);
     if (stored) return { records: stored, backend: "indexeddb", migrated: false };
 
-    const legacy = readLegacyRecords<T>();
-    if (legacy.length) {
-      await writeAll(database, legacy);
-      window.localStorage.removeItem(LEGACY_LOCAL_CASES_KEY);
-      window.localStorage.setItem(LOCAL_CASES_MIGRATION_KEY, "complete");
-      return { records: legacy, backend: "indexeddb", migrated: true };
+    const legacy = readLegacyRecords<T>(scope);
+    if (legacy.records.length) {
+      await writeAll(database, legacy.records);
+      window.localStorage.removeItem(scopedKey(LEGACY_LOCAL_CASES_KEY, scope));
+      window.localStorage.setItem(scopedKey(LOCAL_CASES_MIGRATION_KEY, scope), "complete");
+      return { records: legacy.records, backend: "indexeddb", migrated: true };
     }
-    return { records: [], backend: "indexeddb", migrated: false };
+    return { records: [], backend: "indexeddb", migrated: false, diagnostic: legacy.diagnostic };
   } catch {
-    return { records: readLegacyRecords<T>(), backend: "localStorage", migrated: false };
+    const legacy = readLegacyRecords<T>(scope);
+    return { ...legacy, backend: "localStorage", migrated: false };
+  } finally {
+    database?.close();
   }
 }
 
-export async function saveLocalCaseRecords<T>(records: T[]): Promise<LocalCaseStorageBackend> {
+export async function saveLocalCaseRecords<T>(records: T[], scope: LocalCaseStorageScope = "user"): Promise<LocalCaseStorageBackend> {
   if (canUseIndexedDb()) {
+    let database: IDBDatabase | undefined;
     try {
-      const database = await openDatabase();
+      database = await openDatabase(scope);
       await writeAll(database, records);
-      window.localStorage.removeItem(LEGACY_LOCAL_CASES_KEY);
-      window.localStorage.setItem(LOCAL_CASES_MIGRATION_KEY, "complete");
+      window.localStorage.removeItem(scopedKey(LEGACY_LOCAL_CASES_KEY, scope));
+      window.localStorage.setItem(scopedKey(LOCAL_CASES_MIGRATION_KEY, scope), "complete");
       return "indexeddb";
     } catch {
       // The fallback below keeps the local copy available when IndexedDB is blocked.
+    } finally {
+      database?.close();
     }
   }
-  window.localStorage.setItem(LEGACY_LOCAL_CASES_KEY, JSON.stringify(records));
+  window.localStorage.setItem(scopedKey(LEGACY_LOCAL_CASES_KEY, scope), JSON.stringify(records));
   return "localStorage";
 }
 
-export async function clearLocalCaseRecords(): Promise<void> {
+export async function clearLocalCaseRecords(scope: LocalCaseStorageScope = "user"): Promise<void> {
   if (canUseIndexedDb()) {
+    let database: IDBDatabase | undefined;
     try {
-      const database = await openDatabase();
+      database = await openDatabase(scope);
       await deleteAll(database);
     } catch {
       // Remove the legacy copy below even when an old browser blocks IndexedDB.
+    } finally {
+      database?.close();
     }
   }
-  window.localStorage.removeItem(LEGACY_LOCAL_CASES_KEY);
-  window.localStorage.removeItem(LOCAL_CASES_MIGRATION_KEY);
+  window.localStorage.removeItem(scopedKey(LEGACY_LOCAL_CASES_KEY, scope));
+  window.localStorage.removeItem(scopedKey(LOCAL_CASES_MIGRATION_KEY, scope));
 }
 
-export async function loadLocalDraft<T>(): Promise<T | null> {
+export async function loadLocalDraftWithDiagnostics<T>(scope: LocalCaseStorageScope = "user"): Promise<LocalDraftLoadResult<T>> {
+  const draftKey = scopedKey(LOCAL_DRAFT_KEY, scope);
   if (!canUseIndexedDb()) {
-    const raw = window.localStorage.getItem(LOCAL_DRAFT_KEY);
-    return raw ? JSON.parse(raw) as T : null;
+    const raw = window.localStorage.getItem(draftKey);
+    if (!raw) return { draft: null, backend: "localStorage" };
+    try {
+      return { draft: JSON.parse(raw) as T, backend: "localStorage" };
+    } catch {
+      return { draft: null, backend: "localStorage", diagnostic: diagnostic("corrupt-local-draft", draftKey, raw) };
+    }
   }
 
+  let database: IDBDatabase | undefined;
   try {
-    const database = await openDatabase();
+    database = await openDatabase(scope);
     const draft = await readDraft<T>(database);
-    if (draft) return draft;
+    if (draft) return { draft, backend: "indexeddb" };
   } catch {
     // Fall through to the localStorage copy when IndexedDB is blocked or unavailable.
+  } finally {
+    database?.close();
   }
-  const raw = window.localStorage.getItem(LOCAL_DRAFT_KEY);
-  return raw ? JSON.parse(raw) as T : null;
+  const raw = window.localStorage.getItem(draftKey);
+  if (!raw) return { draft: null, backend: "localStorage" };
+  try {
+    return { draft: JSON.parse(raw) as T, backend: "localStorage" };
+  } catch {
+    return { draft: null, backend: "localStorage", diagnostic: diagnostic("corrupt-local-draft", draftKey, raw) };
+  }
 }
 
-export async function saveLocalDraft<T>(draft: T): Promise<LocalCaseStorageBackend> {
+export async function loadLocalDraft<T>(scope: LocalCaseStorageScope = "user"): Promise<T | null> {
+  return (await loadLocalDraftWithDiagnostics<T>(scope)).draft;
+}
+
+export async function saveLocalDraft<T>(draft: T, scope: LocalCaseStorageScope = "user"): Promise<LocalCaseStorageBackend> {
+  const draftKey = scopedKey(LOCAL_DRAFT_KEY, scope);
   if (canUseIndexedDb()) {
+    let database: IDBDatabase | undefined;
     try {
-      const database = await openDatabase();
+      database = await openDatabase(scope);
       await writeDraft(database, draft);
-      window.localStorage.removeItem(LOCAL_DRAFT_KEY);
+      window.localStorage.removeItem(draftKey);
       return "indexeddb";
     } catch {
       // The fallback below keeps the active draft available when IndexedDB is blocked.
+    } finally {
+      database?.close();
     }
   }
-  window.localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(draft));
+  window.localStorage.setItem(draftKey, JSON.stringify(draft));
   return "localStorage";
 }
 
-export async function clearLocalDraft(): Promise<void> {
+export async function clearLocalDraft(scope: LocalCaseStorageScope = "user"): Promise<void> {
   if (canUseIndexedDb()) {
+    let database: IDBDatabase | undefined;
     try {
-      const database = await openDatabase();
+      database = await openDatabase(scope);
       await deleteDraft(database);
     } catch {
       // Remove the fallback copy below even when IndexedDB is unavailable.
+    } finally {
+      database?.close();
     }
   }
-  window.localStorage.removeItem(LOCAL_DRAFT_KEY);
+  window.localStorage.removeItem(scopedKey(LOCAL_DRAFT_KEY, scope));
 }

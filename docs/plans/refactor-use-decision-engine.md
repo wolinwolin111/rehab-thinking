@@ -4,7 +4,7 @@
 
 ## 1. 背景与目标
 
-`app/rehabmind-complete-demo.tsx` 是康复应用的主组件（约 7600 行），把 UI、状态、事件、决策编排四类东西耦合在一起。前面的重构已经把它拆掉了一部分：
+`src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` 是康复应用的主组件（约 7600 行），把 UI、状态、事件、决策编排四类东西耦合在一起。前面的重构已经把它拆掉了一部分：
 
 - **决策层**：38 个 `*-core.ts` 纯函数文件（已解耦，可单测）。
 - **UI 层**：`ui-primitives.tsx`、`next-session-card.tsx`、`stage-outcome-sections.tsx`、`lower-limb-location-picker.tsx` 等纯展示组件。
@@ -118,11 +118,11 @@ const decision = useDecisionEngine({
 
 | 文件 | 作用 |
 |---|---|
-| `app/rehabmind-complete-demo.tsx` | 主组件（约 7600 行，待继续瘦身） |
-| `app/trial-record-types.ts` | 共享类型（TrialRecord、TrialResult、YesNo 等） |
-| `app/trial-record-builder.ts` | `buildTrialRecords`、`resultFromScore` 纯函数 |
-| `app/batch-retest-compute.ts` | `computeBatchResult` 纯函数 |
-| `app/use-function-retest.ts` | 功能复测 state hook |
-| `app/use-training-flow.ts` | 训练 state hook |
-| `app/ui-primitives.tsx` | 8 个纯展示组件 |
-| `app/next-session-card.tsx` | 下次康复卡片组件 |
+| `src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` | 主组件（约 7600 行，待继续瘦身） |
+| `src/domain/rehab/treatment/trial-record-types.ts` | 共享类型（TrialRecord、TrialResult、YesNo 等） |
+| `src/domain/rehab/treatment/trial-record-builder.ts` | `buildTrialRecords`、`resultFromScore` 纯函数 |
+| `src/domain/rehab/retest/batch-retest-compute.ts` | `computeBatchResult` 纯函数 |
+| `src/features/rehabmind/controllers/use-function-retest.ts` | 功能复测 state hook |
+| `src/features/rehabmind/controllers/use-training-flow.ts` | 训练 state hook |
+| `src/features/rehabmind/components/shared/ui-primitives.tsx` | 8 个纯展示组件 |
+| `src/features/rehabmind/components/stages/shared/next-session-card.tsx` | 下次康复卡片组件 |

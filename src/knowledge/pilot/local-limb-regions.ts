@@ -1,4 +1,4 @@
-import type { FullAssessment, FullCandidate, FullExercise, FullRegion } from "./full-demo-content";
+import type { FullAssessment, FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
 
 const assessment = (id: string, title: string, kind: FullAssessment["kind"], how: string, observe: string, tags: string[], caution?: string): FullAssessment => ({
   id, title, kind, access: "self", how, observe, tags, caution,

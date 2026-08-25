@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "tables": [
+    {
+      "ruleId": "SAFE-GATE",
+      "productionEntry": "src/features/rehabmind/workflow/workflow-orchestrator.ts#resolveWorkflowSafetyGate",
+      "method": "mcdc",
+      "conditions": ["answersComplete", "imagingSelected", "safetySignal", "structuralSignal", "medicalClearance"],
+      "outcomes": ["continue-assessment", "stop-and-save"],
+      "rows": [
+        { "id": "S0", "when": [true, true, false, false, false], "then": "continue-assessment" },
+        { "id": "S1", "when": [false, true, false, false, false], "then": "stop-and-save" },
+        { "id": "S2", "when": [true, false, false, false, false], "then": "stop-and-save" },
+        { "id": "S3", "when": [true, true, true, false, false], "then": "stop-and-save" },
+        { "id": "S4", "when": [true, true, false, true, false], "then": "stop-and-save" },
+        { "id": "S5", "when": [true, true, true, false, true], "then": "continue-assessment" },
+        { "id": "S6", "when": [true, true, false, true, true], "then": "continue-assessment" }
+      ]
+    },
+    {
+      "ruleId": "RETEST-GATE",
+      "productionEntry": "src/domain/rehab/retest/retest-eligibility-core.ts#retestEligibility",
+      "method": "condition-independence",
+      "conditions": ["reportedAction", "performedBaseline", "baselineMode", "comparableNow", "interventionCompleted"],
+      "outcomes": ["same-session", "after-training", "completion-status", "next-session", "not-comparable"],
+      "rows": [
+        { "id": "R0", "when": [true, true, "ordinary", true, false], "then": "same-session" },
+        { "id": "R1", "when": [false, true, "ordinary", true, false], "then": "not-comparable" },
+        { "id": "R2", "when": [true, false, "ordinary", true, false], "then": "not-comparable" },
+        { "id": "R3", "when": [true, true, "ordinary", true, true], "then": "after-training" },
+        { "id": "R4", "when": [true, true, "completion-status", true, true], "then": "completion-status" },
+        { "id": "R5", "when": [true, false, "ordinary", false, true], "then": "next-session" },
+        { "id": "R6", "when": [true, true, "none", true, true], "then": "not-comparable" }
+      ]
+    },
+    {
+      "ruleId": "QUEUE-GATE",
+      "productionEntry": "src/domain/rehab/treatment/treatment-queue-eligibility-core.ts#isTreatmentQueueCandidateEligible",
+      "method": "condition-independence",
+      "conditions": ["preferredTypeMatches", "trackedDirectionNeedsCandidate", "recordedDirectionNeedsCandidate", "targetDirectionNeedsCandidate", "chiefStillSymptomatic"],
+      "outcomes": ["eligible", "ineligible"],
+      "rows": [
+        { "id": "Q0", "when": [true, true, false, false, false], "then": "eligible" },
+        { "id": "Q1", "when": [false, true, false, false, false], "then": "ineligible" },
+        { "id": "Q2", "when": [true, false, false, false, false], "then": "ineligible" },
+        { "id": "Q3", "when": [true, null, true, false, false], "then": "eligible" },
+        { "id": "Q4", "when": [true, null, false, true, false], "then": "eligible" },
+        { "id": "Q5", "when": [true, null, false, false, true], "then": "eligible" },
+        { "id": "Q6", "when": [true, null, false, false, false], "then": "ineligible" }
+      ]
+    },
+    {
+      "ruleId": "TRAINING-GATE",
+      "productionEntry": "src/features/rehabmind/workflow/workflow-orchestrator.ts#projectWorkflowState",
+      "method": "mcdc",
+      "conditions": ["bilateral", "assessmentComplete", "safetySignal", "treatmentWorsened", "trainingComplete", "planSaved"],
+      "outcomes": ["normal-open", "low-load-open", "blocked", "closed"],
+      "rows": [
+        { "id": "T0", "when": [false, true, false, false, false, false], "then": "normal-open" },
+        { "id": "T1", "when": [true, false, false, false, false, false], "then": "low-load-open" },
+        { "id": "T2", "when": [true, true, false, false, false, false], "then": "normal-open" },
+        { "id": "T3", "when": [false, true, true, false, false, false], "then": "blocked" },
+        { "id": "T4", "when": [false, true, false, true, false, false], "then": "blocked" },
+        { "id": "T5", "when": [false, true, false, false, true, false], "then": "closed" },
+        { "id": "T6", "when": [false, true, false, false, false, true], "then": "closed" }
+      ]
+    },
+    {
+      "ruleId": "WORKFLOW-HANDOFF",
+      "productionEntry": "src/features/rehabmind/workflow/workflow-orchestrator.ts#projectWorkflowState",
+      "method": "mcdc",
+      "conditions": ["queueRefreshing", "pendingAssessmentCheck", "queueRemaining", "safetySignal", "treatmentWorsened"],
+      "outcomes": ["remain-treatment", "enter-training", "blocked"],
+      "rows": [
+        { "id": "H0", "when": [false, false, false, false, false], "then": "enter-training" },
+        { "id": "H1", "when": [true, false, false, false, false], "then": "remain-treatment" },
+        { "id": "H2", "when": [false, true, false, false, false], "then": "remain-treatment" },
+        { "id": "H3", "when": [false, false, true, false, false], "then": "remain-treatment" },
+        { "id": "H4", "when": [false, false, false, true, false], "then": "blocked" },
+        { "id": "H5", "when": [false, false, false, false, true], "then": "blocked" }
+      ]
+    },
+    {
+      "ruleId": "PERMISSION-GATE",
+      "productionEntry": "src/infrastructure/pilot/onboarding/source-channel.ts, src/infrastructure/pilot/consent/consent-core.ts and src/infrastructure/pilot/services/case-service.ts#authorize",
+      "method": "mcdc",
+      "conditions": ["sourceValid", "consentValid", "caseActive", "accessTokenValid"],
+      "outcomes": ["create-allowed", "case-read-write-allowed", "denied"],
+      "rows": [
+        { "id": "P0", "when": [true, true, true, true], "then": "case-read-write-allowed" },
+        { "id": "P1", "when": [false, true, null, null], "then": "denied" },
+        { "id": "P2", "when": [true, false, null, null], "then": "denied" },
+        { "id": "P3", "when": [true, true, false, true], "then": "denied" },
+        { "id": "P4", "when": [true, true, true, false], "then": "denied" },
+        { "id": "P5", "when": [true, true, null, null], "then": "create-allowed" }
+      ]
+    },
+    {
+      "ruleId": "RETURN-EDIT-GATE",
+      "productionEntry": "src/features/rehabmind/workflow/workflow-orchestrator.ts#resolveReturnEditGate",
+      "method": "condition-independence",
+      "conditions": ["targetIsCompleted", "editExplicitlyEnabled", "answersChanged"],
+      "outcomes": ["read-only-review", "edit-without-invalidation", "edit-and-invalidate-downstream", "denied"],
+      "rows": [
+        { "id": "E0", "when": [true, false, false], "then": "read-only-review" },
+        { "id": "E1", "when": [true, true, false], "then": "edit-without-invalidation" },
+        { "id": "E2", "when": [true, true, true], "then": "edit-and-invalidate-downstream" },
+        { "id": "E3", "when": [false, false, false], "then": "denied" }
+      ]
+    }
+  ]
+}

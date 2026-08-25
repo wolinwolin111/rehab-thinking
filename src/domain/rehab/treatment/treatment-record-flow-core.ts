@@ -1,7 +1,7 @@
-import { buildTrialRecords } from "./trial-record-builder";
-import { chiefRetestWasRecorded, shouldCaptureChiefRetest, type ChiefRetestCaptureInput } from "./retest-routing-core";
-import type { CompletedRangeRetestAnswer, TrialRecord, TrialRecordBuildInput, TrialResult, YesNo } from "./trial-record-types";
-import type { TreatmentResponseRole } from "./treatment-response-core";
+import { buildTrialRecords } from "@/src/domain/rehab/treatment/trial-record-builder";
+import { chiefRetestWasRecorded, shouldCaptureChiefRetest, type ChiefRetestCaptureInput } from "@/src/domain/rehab/retest/retest-routing-core";
+import type { CompletedRangeRetestAnswer, TrialRecord, TrialRecordBuildInput, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import type { TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 
 export type TreatmentRecordFlowInput = {
   recordInput: Omit<TrialRecordBuildInput, "chiefWasActuallyRetested" | "retestActionKey">;

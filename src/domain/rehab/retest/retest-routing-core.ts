@@ -1,4 +1,4 @@
-import { canonicalActionIdFromAssessmentId } from "./action-identity-core";
+import { canonicalActionIdFromAssessmentId } from "@/src/domain/rehab/intake/action-identity-core";
 
 export type RetestCandidateType = "control" | "joint" | undefined;
 export type RetestOutcome = "both-match" | "passive-match-active-limited" | "better-passive-limited" | "passive-limited" | "worse";

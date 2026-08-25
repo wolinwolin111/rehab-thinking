@@ -1,4 +1,4 @@
-import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTreatmentCandidate } from "./pilot-knowledge.ts";
+import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTreatmentCandidate } from "@/src/knowledge/pilot/pilot-knowledge";
 
 export type PilotRole = "general" | "coach" | "rehab";
 

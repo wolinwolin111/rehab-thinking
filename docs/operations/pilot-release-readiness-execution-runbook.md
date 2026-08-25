@@ -1,436 +1,242 @@
-# RehabMind 粉丝群开放前执行手册
+# RehabMind VPS 网页发布与开放执行手册
 
-更新时间：2026-08-22
+更新时间：2026-08-25
 
-## 1. 目的和边界
+## 1. 适用范围
 
-本手册交给后续执行模型，目标是完成 RehabMind 小范围粉丝群试用前的必要验收，并给出明确的“允许开放/禁止开放”结论。
+本文是当前唯一现行发布手册，适用于：
 
-本手册**不包含动作图片生成、替换、审核和素材接入**。动作图片另行处理，不作为本手册的执行内容。
+- VPS `66.154.101.204`；
+- Node.js + vinext；
+- SQLite；
+- PM2；
+- nginx；
+- 网页先验收、APK 最后打包的发布顺序。
 
-本项目不使用 AI 做康复决策。本手册验证的是发布环境、邀请入口、案例数据、权限、反馈、版本、日志和最小用户入口是否可靠。
+Cloudflare Worker、D1、Wrangler、workers.dev 和远程 D1 不属于当前运行、测试或发布路径。历史报告中出现这些名称，只代表当时证据，不得作为当前操作指令。
 
-## 2. 当前已完成基线
+## 2. 发布原则
 
-开始本手册前，先确认以下基线没有被新改动破坏：
+1. 先完成本地网页逻辑和响应式验收，再部署 VPS。
+2. 网页未通过时不得构建 APK。
+3. 数据库只做向前兼容迁移，发布前必须备份 SQLite。
+4. 发布采用时间戳目录、`current` 软链接、PM2 激活和失败自动回滚。
+5. 不在命令参数、日志、报告或仓库中写管理员密钥、案例访问凭据或用户原始信息。
+6. 不用线上真实案例制造故障；所有验证案例必须标记为测试数据并在验收后清理。
+7. 自动化门禁通过不等于产品体验通过，粉丝群开放仍需人工任务验收。
 
-| 项目 | 当前结果 | 验证命令 |
-| --- | --- | --- |
-| 内部逻辑全量测试 | `528/528` | `npm run test:fast` |
-| D1/API 本地集成 | `5/5` | `npm run test:integration` |
-| 定向变异 | `12/12` | `npm run test:logic:mutations` |
-| 类型检查 | 通过 | `npm run typecheck` |
-| 构建 | 通过 | `npm run build` |
-| lint | 0 errors | `npm run lint` |
+## 3. 本地网页门禁
 
-允许保留的 lint warning 只有当前 `.wrangler` 生成文件中的 2 条未使用变量 warning；业务源码不能新增 warning。
-
-如果基线失败，立即停止，不进入 Cloudflare 部署和粉丝群开放准备。
-
-## 3. 粉丝群开放前的阻断项
-
-以下项目全部通过后，才允许向粉丝群发送邀请链接：
-
-1. 本地逻辑、构建、lint 和 D1/API 门禁通过。
-2. 预览 Worker 和预览 D1 配置正确，远程迁移完成。
-3. 预览环境的邀请、创建、保存、读取、冲突、并发、隔离、反馈、管理员读取和删除通过。
-4. 预览环境的错误响应和日志不会暴露访问令牌、完整主诉或内部堆栈。
-5. 正式试用环境使用独立 Worker、D1、邀请配置、管理员密钥和版本标识，不能直接把预览环境当正式环境。
-6. 正式试用环境至少完成一次 HTTP/API 验收。
-7. 页面至少完成一次极简用户冒烟：邀请入口可进入、案例编号显示、填写后刷新可恢复。
-8. 所有测试案例已删除或明确标记为测试数据，没有真实用户信息。
-
-真实浏览器不再运行完整场景矩阵、不再重复三次 P0、不再用浏览器验证内部决策组合。第 7 项只验证发布入口和保存恢复边界。
-
-## 4. 可以暂缓的事项
-
-以下事项不阻塞本次粉丝群试用，但必须在发布记录中标注为未完成：
-
-- `RET-03` 完全不注入 IndexedDB 前置状态的完整用户路径；
-- 剩余 P1 发散场景的全面浏览器走读；
-- Firefox 完整流程和移动端完整流程；
-- 普通用户与专业人员各一次完整人工走读；
-- 浏览器失败路径的全局 `runId` 清理增强；
-- 管理后台分页、统计、筛选和导出等增强功能；
-- 全量视觉截图回归。
-
-这些事项不能被写成“已完成”，但也不能与本次发布阻断项混在一起。
-
-## 5. 执行总原则
-
-- 所有测试使用合成数据，不使用真实姓名、手机号、病历或粉丝信息。
-- 每次测试生成唯一 `runId`，推荐格式：`release-YYYYMMDD-HHmmss`。
-- 不把真实邀请 token、管理员密钥、访问 token 写入文档、代码、截图或提交记录。
-- 不执行 `git reset --hard`、`git checkout --` 或删除未知来源的工作区文件。
-- 不直接修改线上 D1 数据作为测试手段。
-- 每个失败都要保留命令、时间、环境、HTTP 状态、错误响应、案例编号和处理结论。
-- 任一步失败，都不能用相邻测试通过替代该步骤。
-
-默认不运行以下浏览器命令：
+### 3.1 工作区确认
 
 ```powershell
-npm run test:browser:full
-npm run test:explore
-npm run test:visual
-```
-
-只有页面入口、保存恢复或发布域名发生变化时，才执行第 11 节的一次最小冒烟。
-
-## 6. 第一阶段：本地基线复核
-
-### 6.1 检查工作区
-
-```powershell
-Set-Location D:\Study\codex\project\rehab-thinking-demo
 git status --short
+git diff --check
+node --version
+npm --version
 ```
 
-记录工作区是否存在其他模型或用户的未提交修改。不要恢复或覆盖这些修改。
+记录本次发布版本、预期数据库迁移和已知非阻塞问题。工作区有无关改动时不得擅自回退。
 
-### 6.2 运行本地逻辑门禁
+### 3.2 内部逻辑与数据门禁
 
 ```powershell
-npm run test:fast
+npm run typecheck
 npm run lint
-npm run test:logic:mutations
-```
-
-验收标准：
-
-- `test:fast` 为 `528/528` 或更高；新增测试必须解释数量变化；
-- lint 为 0 errors；
-- 变异测试输出 12 项 `killed`；
-- typecheck、build 均通过。
-
-### 6.3 运行本地 D1/API 集成
-
-启动服务：
-
-```powershell
-npm run dev -- --hostname 127.0.0.1
-```
-
-在另一个 PowerShell 窗口执行：
-
-```powershell
-Set-Location D:\Study\codex\project\rehab-thinking-demo
-$env:D1_TEST_URL = "http://localhost:3000"
-npm run test:integration
-Remove-Item Env:D1_TEST_URL
-```
-
-验收标准：
-
-- 3 个集成测试全部通过；
-- 并发保存两个请求只能一个返回 `200`，另一个返回 `409`；
-- 不得出现并发保存导致的 `500`；
-- 测试案例全部删除；
-- 关闭服务，并确认 3000 端口没有残留监听。
-
-## 7. 第二阶段：Cloudflare 目标和 D1 预检
-
-### 7.1 检查登录和资源
-
-当前仓库已知配置：
-
-- Worker 名称：`rehabmind`；
-- 预览 D1 名称：`rehabmind-preview`；
-- Wrangler 配置：`wrangler.jsonc`；
-- 本地 D1 配置：`wrangler.local.jsonc`。
-
-执行：
-
-```powershell
-npx wrangler whoami
-npx wrangler d1 list
-Get-Content wrangler.jsonc
-```
-
-验收标准：
-
-- 当前账号具有 Worker、D1 和 Secrets 权限；
-- `rehabmind-preview` 的 database ID 与 `wrangler.jsonc` 一致；
-- 不能因为名称相似而选择其他 D1。
-
-### 7.2 确认正式环境不复用预览
-
-当前 `wrangler.jsonc` 指向 `rehabmind-preview`，只能用于预览验收。
-
-正式开放前必须有独立的：
-
-```text
-正式 Worker 或独立 deployment
-正式 D1 database_name
-正式 D1 database_id
-正式邀请 token
-正式管理员 key
-正式版本标识
-```
-
-如果仓库没有正式 Wrangler 配置，不能自行猜测正式 D1 ID，也不能把预览 D1 直接当正式 D1。若这一步无法证明隔离，结论必须是“禁止开放”。
-
-### 7.3 远程迁移
-
-先查看状态：
-
-```powershell
-npx wrangler d1 migrations list rehabmind-preview --remote --config wrangler.jsonc
-```
-
-确认目标无误后执行：
-
-```powershell
-npx wrangler d1 migrations apply rehabmind-preview --remote --config wrangler.jsonc
-npx wrangler d1 migrations list rehabmind-preview --remote --config wrangler.jsonc
-```
-
-所有仓库迁移必须显示已应用。若 Wrangler 版本不接受参数，先执行对应的 `--help`，按当前版本调整，并记录实际命令。不得直接执行破坏性 SQL，不得手动删除远程表。
-
-## 8. 第三阶段：Secrets 和邀请配置
-
-### 8.1 必要变量
-
-| 变量 | 用途 | 处理要求 |
-| --- | --- | --- |
-| `PILOT_INVITE_TOKEN` | 创建案例前的邀请凭据 | 只写入 Secret，不写明文 |
-| `PILOT_INVITE_EXPIRES_AT` | 邀请失效时间 | 可以记录时间，不记录 token |
-| `PILOT_INVITE_REVOKED` | 紧急撤销邀请 | 记录是否撤销 |
-| `PILOT_ADMIN_KEY` | 管理员 API 保护 | 只写入 Secret，不写明文 |
-
-### 8.2 写入 Secrets
-
-使用交互式输入，不把值放进命令参数：
-
-```powershell
-npx wrangler secret put PILOT_INVITE_TOKEN --name rehabmind
-npx wrangler secret put PILOT_ADMIN_KEY --name rehabmind
-npx wrangler secret put PILOT_INVITE_EXPIRES_AT --name rehabmind
-```
-
-写入后只确认 Secret 名称存在，不尝试打印 Secret 内容。测试 token 和正式 token 必须分开。
-
-### 8.3 邀请边界
-
-| 请求 | 预期 |
-| --- | --- |
-| 无邀请创建案例 | `403`, `code=invite_required` |
-| 错误邀请创建案例 | `403`, `code=invite_required` |
-| 正确邀请创建案例 | `201` |
-| 已过期邀请 | `403` |
-| 已撤销邀请 | `403` |
-| 邀请配置缺失 | `503`, `code=invite_unavailable` |
-
-失效和撤销验证必须在预览或专用测试配置中完成，不能修改正式邀请配置后忘记恢复。
-
-## 9. 第四阶段：预览部署和 HTTP 验收
-
-### 9.1 部署预览
-
-```powershell
-npm run build
-npx wrangler deploy --config wrangler.jsonc
-```
-
-记录 Worker 名称、部署时间、deployment/version ID、实际访问域名、D1 名称和三类版本号。
-
-历史预览地址为：
-
-```text
-https://rehabmind.yueshu-rehab.workers.dev/
-```
-
-若部署输出的地址不同，以部署输出为准，并更新证据。
-
-### 9.2 用集成测试指向预览
-
-不要先启动完整浏览器。使用 API 集成测试：
-
-```powershell
-$env:D1_TEST_URL = "https://rehabmind.yueshu-rehab.workers.dev"
-$env:PILOT_INVITE_TOKEN = "仅在当前 PowerShell 会话设置真实值"
-$env:PILOT_ADMIN_KEY = "仅在当前 PowerShell 会话设置真实值"
-npm run test:integration
-Remove-Item Env:D1_TEST_URL
-Remove-Item Env:PILOT_INVITE_TOKEN
-Remove-Item Env:PILOT_ADMIN_KEY
-```
-
-必须验证：
-
-1. 无邀请不能创建案例。
-2. 正确邀请返回匿名案例编号。
-3. 创建幂等不会创建第二个案例。
-4. 同一创建 ID 使用不同 token 会冲突。
-5. revision 递增，旧 revision 返回 `409`。
-6. 同一事件重试不会增加事件。
-7. 同一事件 ID 提交不同内容返回 `409`。
-8. 并发保存只能成功一个，另一个返回 `409`，不得返回 `500`。
-9. 两个案例不能交叉读取、保存或提交反馈。
-10. 管理员可以读取时间线，但响应没有 `accessTokenHash`。
-11. 删除后普通 token 失效，管理员仍能看到删除状态和 `case_deleted` 事件。
-12. 响应包含应用、知识和决策版本。
-
-集成测试创建的案例必须在测试中删除。删除失败时不能标记为通过。
-
-## 10. 第五阶段：日志和错误脱敏
-
-先运行静态和内部门禁：
-
-```powershell
 npm run test:fast
 npm run test:logic:mutations
+npm run test:integration
+npm run test:vertical
+npm run test:migrations:compat
+npm run test:sqlite:health
+npm run test:dependencies
+npm run build
 ```
 
-确认公开错误不返回访问 token、邀请 token、管理员 key、请求体、完整主诉或内部堆栈；服务日志不打印 token、headers、body 或 payload。
+验收要求：
 
-然后用 Cloudflare Dashboard Worker Logs 或 Wrangler tail 观察预览：
+- 生产领域函数、工作流轨迹和定向变异全部通过；
+- SQLite/API 验证创建、保存、恢复、隔离、冲突、反馈、删除和版本；
+- 从旧 schema 到当前 schema 的兼容迁移通过；
+- 构建产物可以由 `vinext start` 启动；
+- 不存在 Cloudflare、D1 或 Wrangler 运行依赖。
+
+### 3.3 Node 生产构建探针
+
+使用独立端口和临时 SQLite：
 
 ```powershell
-npx wrangler tail rehabmind --format json
+$env:PORT = "3101"
+$env:PILOT_SQLITE_PATH = ".tmp-release-smoke.sqlite"
+$env:PILOT_ADMIN_KEY = "仅在当前会话设置的测试值"
+npm start
 ```
 
-观察期间只发送无邀请创建、错误访问 token、旧 revision 保存和非法 JSON 请求。检查：
+另开终端检查主页和 API，结束后停止进程并删除临时数据库。不得占用日常开发端口 `3000`。
 
-- 日志没有完整邀请 token、访问 token 或管理员 key；
-- 日志没有完整主诉或快照正文；
-- 日志没有内部堆栈；
-- 请求仍能通过时间、状态、安全关联 ID或匿名案例编号定位。
+## 4. 最小网页验收
 
-如果无法取得 Cloudflare tail 真实证据，必须写成“日志环境证据未完成”，禁止写成已完成。
+不穷举内部业务组合，只验证真实接线和响应式布局。
 
-## 11. 第六阶段：唯一一次页面最小冒烟
+自动接线先运行：
 
-这一阶段不是内部逻辑测试，只验证发布入口和浏览器实际连接。只执行一条短路径：
+```powershell
+npm run test:browser:release
+```
 
-1. 打开候选试用地址。
-2. 无邀请不能创建案例。
-3. 使用有效邀请进入创建流程。
-4. 创建后页面显示匿名案例编号。
-5. 填写最少量症状信息并保存。
-6. 刷新页面。
-7. 确认页面恢复最近一次成功保存状态。
-8. 记录控制台是否有运行时错误。
+当前固定为 4 条：来源/同意拒绝、匿名案例保存刷新与反馈、App 壳支持宽度、管理员拒绝访问。评估、处理、复测和训练的组合正确性由内部逻辑与 SQLite 流水线证明。
 
-通过标准：页面可进入、邀请边界正确、案例编号可见、刷新不回到空白新案例、无运行时异常、只创建一个测试案例、测试案例随后通过 API 删除。
+### 4.1 视口
 
-不在本阶段验证所有康复决策、所有动作组合、Firefox、全量视觉、三次重复和后台所有筛选统计。
+- 桌面：`1440×900`；
+- 手机：宽度 `320`、`360`、`390`、`412`、`430`；
+- 手机高度至少覆盖 `667` 和 `844` 两档。
 
-## 12. 第七阶段：正式试用环境
+### 4.2 VPS 人工任务
 
-正式环境必须满足：
+1. 首次进入，理解产品价值并完成来源、同意和案例创建。
+2. 描述问题并确认结构化信息是否易懂。
+3. 抽查一条后续康复与复测，确认页面含义和操作顺序合理；不穷举业务组合。
+4. 保存、刷新并恢复到原进度。
+5. 打开案例编号、康复记录和问题反馈。
+6. 管理员进入测试工作台并确认正式数据隔离。
 
-- 独立 Worker 或明确独立 deployment；
-- 独立 D1 database；
-- 独立邀请 token；
-- 独立管理员 key；
-- 独立版本标识；
-- 预览和正式数据不能互读。
+### 4.3 布局要求
 
-正式环境至少运行一次精简 HTTP 验收：创建合成案例、保存一次 revision、读取一次管理员时间线、提交一次反馈、删除案例、确认 token 失效、确认版本和脱敏响应。结束后删除案例。
+- 页面不得发生整体横向滚动；
+- 导航、抽屉、输入框、按钮和底部操作栏完整可见；
+- 软键盘弹出后主要输入和提交按钮仍可操作；
+- 固定区域不得遮住错误、安全停止或下一步；
+- 图片失败时文字步骤仍完整，业务流程不被阻断。
 
-如果只能使用同一 Worker 名称，必须证明 Cloudflare deployment/environment 可以隔离配置和 D1；无法证明时禁止开放。
+## 5. VPS 发布前准备
 
-## 13. 通过清单
+### 5.1 环境变量
 
-只有全部勾选，才可以向粉丝群发送链接：
-
-- [ ] `npm run test:fast` 通过。
-- [ ] `npm run lint` 无业务代码 errors。
-- [ ] `npm run test:logic:mutations` 的 12 项变异全部被捕获。
-- [ ] 本地 `npm run test:integration` 为 `5/5`。
-- [ ] 预览 D1 迁移状态已记录。
-- [ ] 预览 API 验收通过。
-- [ ] 正式环境不是预览 D1。
-- [ ] 邀请 token 已配置且失效时间已记录。
-- [ ] 管理员 key 已配置且未写入文档。
-- [ ] 删除、隔离、并发和反馈绑定已验证。
-- [ ] 版本标识已记录。
-- [ ] 错误响应和日志已脱敏。
-- [ ] 唯一页面最小冒烟通过。
-- [ ] 测试案例已清理。
-
-## 14. 禁止开放条件
-
-出现任一情况，结论必须是“禁止开放”：
-
-- 预览或正式 D1 目标不明确；
-- 无法确认正式环境和预览环境隔离；
-- 邀请制未配置或可以绕过；
-- 普通 token 可以读取管理员数据；
-- 并发保存出现 `500` 或静默覆盖；
-- 删除后 token 仍能读取案例；
-- 错误响应或日志包含访问凭据或内部堆栈；
-- 版本号无法追溯；
-- 页面最小冒烟失败；
-- 测试数据无法清理。
-
-## 15. 失败处理和回滚
-
-### 15.1 代码或测试失败
-
-1. 保存失败命令和输出。
-2. 判断是测试夹具、环境、已有缺陷还是新缺陷。
-3. 新缺陷先增加最小回归测试，再修实现。
-4. 重新运行相关层，再运行 `test:fast`。
-5. 不得删除测试、放宽断言或改成源码正则来消除失败。
-
-### 15.2 预览部署失败
-
-1. 不继续向正式环境部署。
-2. 保存 Wrangler 输出和 deployment ID。
-3. 检查 Worker 名称、账号、D1 ID、migration 和 Secret 名称。
-4. 修复配置后重新构建和部署。
-
-### 15.3 正式环境异常
-
-1. 立即停止传播邀请链接。
-2. 将 `PILOT_INVITE_REVOKED` 设置为 `true` 或移除邀请 Secret。
-3. 保留异常案例编号、请求时间和安全关联 ID。
-4. 使用 Cloudflare Dashboard 或当前 Wrangler 版本支持的 rollback 命令回到上一版本。
-5. 修复后重新完成第 9～13 节，不能只验证首页后恢复开放。
-
-## 16. 交付报告格式
-
-执行模型完成后必须返回：
+VPS 运行环境至少包含：
 
 ```text
-执行时间：
-代码版本/commit：
-目标环境：local / preview / formal
-Worker：
-D1：
-
-本地 test:fast：通过/失败，数量：
-本地 test:integration：通过/失败，数量：
-mutation：通过/失败，数量：
-预览迁移：通过/失败，迁移状态：
-预览 API 验收：通过/失败
-日志脱敏：通过/失败/未取得证据
-唯一页面冒烟：通过/失败/未执行
-正式环境 API 验收：通过/失败/未执行
-测试数据清理：通过/失败
-
-发现的问题：
-修复的文件：
-保留的风险：
-最终结论：允许开放 / 禁止开放 / 等待用户决定
+NODE_ENV=production
+PORT=<PM2 使用端口>
+PILOT_SQLITE_PATH=<绝对 SQLite 路径>
+PILOT_ADMIN_KEY=<秘密值>
+PILOT_TRUSTED_PROXY=nginx
 ```
 
-不得只写“测试通过”，必须写明实际运行了哪些层、哪些层没有运行。
+秘密值只保存在服务器受限环境文件中。部署包不得包含 `.env*`、私钥、证书私钥或临时凭据文件。
 
-## 17. 预计时间
+### 5.2 SQLite 备份
 
-在 Cloudflare 权限正常、没有新代码缺陷的情况下：
+执行仓库脚本：
 
-| 阶段 | 预计时间 |
-| --- | ---: |
-| 本地基线复核 | 10～20 分钟 |
-| 远程 D1 和 Wrangler 配置检查 | 20～40 分钟 |
-| Secrets 和邀请配置 | 15～30 分钟 |
-| 预览部署和 HTTP 验收 | 30～60 分钟 |
-| 日志脱敏与版本记录 | 15～30 分钟 |
-| 唯一页面最小冒烟 | 10～20 分钟 |
-| 正式环境 API 验收和清理 | 30～60 分钟 |
-| **合计** | **约 2～4 小时** |
+```bash
+bash scripts/deploy/vps-backup-sqlite.sh
+```
 
-如果出现 Cloudflare 权限、D1 迁移、域名、Secrets 或真实缺陷问题，预计增加到 4～6 小时。延长原因必须记录，不能用估算时间代替验收。
+确认：
+
+- 备份文件存在且大小合理；
+- 备份路径不位于即将替换的发布目录；
+- SQLite 完整性检查通过；
+- 已记录备份时间和对应发布版本，不记录案例正文。
+
+## 6. Canary 与发布
+
+使用当前发布脚本：
+
+```bash
+bash scripts/deploy/vps-release.sh
+```
+
+脚本必须完成：
+
+1. 创建时间戳发布目录；
+2. 安装锁定依赖并构建；
+3. 在备份后执行 SQLite 迁移；
+4. 使用独立 canary 端口启动候选版本；
+5. 检查主页、静态资源、API 和版本；
+6. 探针通过后切换 `current` 并激活 PM2；
+7. nginx 健康检查通过；
+8. 失败时恢复上一 `current` 和 PM2 版本；
+9. 只保留规定数量的历史发布。
+
+禁止手工覆盖 `current` 目录、直接修改线上 SQLite 表或跳过健康探针。
+
+## 7. VPS 网页验收
+
+部署后检查：
+
+```bash
+pm2 status
+pm2 logs rehabmind --lines 100 --nostream
+curl -k -I https://66.154.101.204/RehabMind/
+```
+
+随后在 VPS 网页重复一次最小人工任务：
+
+1. 产品价值是否清楚；
+2. 信息是否仍过密；
+3. 创建、保存、关闭和恢复是否正常；
+4. 案例编号、记录和反馈是否可找到；
+5. 手机视口是否无需左右滑动；
+6. 管理员和测试工作台是否受保护；
+7. 版本号是否与本次发布一致。
+
+只有产品明确确认网页版本通过，才能进入 APK 批次。
+
+## 8. 日志与脱敏
+
+通过 PM2 和 nginx 日志验证：
+
+- 4xx、409 和 500 可以按时间、状态、关联 ID 和匿名案例编号定位；
+- 不记录访问 token、管理员 key、完整请求头或请求体；
+- 不记录完整主诉、快照正文或反馈正文；
+- 对外错误不返回堆栈、数据库路径或内部异常对象。
+
+无法取得真实日志证据时必须标为未完成，不能用静态测试冒充线上日志验证。
+
+## 9. 回滚
+
+出现以下任一情况立即停止开放并回滚：
+
+- 主页或关键静态资源不可用；
+- 新案例无法创建或旧案例无法恢复；
+- SQLite 迁移失败或完整性检查失败；
+- 多案例串线、保存覆盖或权限绕过；
+- 敏感信息出现在响应或日志；
+- 手机页面无法完成主要任务。
+
+回滚顺序：
+
+1. 停止候选版本流量；
+2. 将 `current` 指回上一通过版本；
+3. 重新加载 PM2 并检查 nginx；
+4. 只有迁移造成不可兼容数据变化时，才按备份恢复方案处理 SQLite；
+5. 记录故障时间、版本、影响范围和脱敏错误摘要。
+
+## 10. APK 最终批次
+
+APK 不承担业务流程验证，只验证 WebView 外壳：
+
+- 安装和首次启动；
+- 系统返回键；
+- 断网和恢复联网；
+- 关闭后重新打开；
+- 软键盘、状态栏和安全区域；
+- 外部链接；
+- App 与网页版本标识。
+
+任何业务内容问题返回网页修复，不在 Android 外壳复制业务逻辑。
+
+## 11. 开放条件
+
+粉丝群发包前必须同时满足：
+
+- 本地内部逻辑和 SQLite/API 门禁通过；
+- 本地开发者模式网页验收通过；
+- VPS canary、备份、迁移、健康检查和回滚能力通过；
+- VPS 网页人工任务通过并获得产品确认；
+- APK 外壳专项通过；
+- 当前版本、已知限制、反馈方式和回滚入口已记录。
+
+任一项未完成时不得写成“可以开放”。

@@ -7,7 +7,7 @@
  *
  * 用法（在已连接的浏览器会话中）：
  *   const { auditSnapshot, auditPatellaGroup, auditSummaryScore } =
- *     await import(".../scripts/real-browser-flow-audit.mjs");
+ *     await import(".../scripts/legacy-browser/real-browser-flow-audit.mjs");
  *   await auditSnapshot(tab, { stage: "评估检查", required: ["髌骨四方向被动活动"] });
  */
 

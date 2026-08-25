@@ -1,6 +1,6 @@
 # 真实页面闭环验收
 
-当前系统测试契约统一记录在[首发场景验收](./pilot-scenario-coverage.md)的“当前系统测试契约”章节。本文件只保留真实浏览器的操作纪律、页面断言和实际走读记录。
+当前系统测试契约统一记录在[首发场景验收](../pilot-scenario-coverage.md)的“当前系统测试契约”章节。本文件只保留真实浏览器的操作纪律、页面断言和实际走读记录。
 
 ## 目的
 
@@ -31,7 +31,7 @@
 
 ## 固化的断言
 
-`scripts/real-browser-flow-audit.mjs` 提供统一辅助器：
+`scripts/legacy-browser/real-browser-flow-audit.mjs` 提供统一辅助器：
 
 - `auditCheckpoint`：检查当前阶段标题、必需/禁止内容、按钮或明确终止出口，并检查 error 日志；
 - `auditPatellaGroup`：检查髌骨方向卡实际数量必须为4；
@@ -184,9 +184,9 @@ B3 第一次执行因动作不适位置和分数需要额外填写，测试连�
 
 ## 组合矩阵与专业能力边界执行结果（2026-08-20）
 
-- 新增 `tests/clinical-combination-matrix.test.mjs`，实际执行 1728 组分层组合，覆盖大腿/小腿、前后内外侧、急性/亚急性/慢性、左右侧、自助/专业协助、明确动作/无固定动作、活动受限/单纯力量不足和1/3/5级目标；全部返回处理、训练、复测或明确阶段出口，处理/训练/复测 ID 无重复。
-- 新增 `tests/random-state-sequence.test.mjs`，使用固定种子执行自助模式500条、思路模式500条，每条最多100步；保存/恢复、返回、修改、加重、复查、训练结束门槛和下一次康复均未产生非法阶段、死循环或跨版本执行。
-- `tests/workflow-profile-core.test.mjs` 的64种能力位组合全部通过核心规则验证；浏览器边界抽查 mask 0、1、2、4、8、16、32、33、63，error 0。
+- 新增 `tests/unit/domain/clinical-combination-matrix.test.mjs`，实际执行 1728 组分层组合，覆盖大腿/小腿、前后内外侧、急性/亚急性/慢性、左右侧、自助/专业协助、明确动作/无固定动作、活动受限/单纯力量不足和1/3/5级目标；全部返回处理、训练、复测或明确阶段出口，处理/训练/复测 ID 无重复。
+- 新增 `tests/workflow/random-state-sequence.test.mjs`，使用固定种子执行自助模式500条、思路模式500条，每条最多100步；保存/恢复、返回、修改、加重、复查、训练结束门槛和下一次康复均未产生非法阶段、死循环或跨版本执行。
+- `tests/unit/domain/workflow-profile-core.test.mjs` 的64种能力位组合全部通过核心规则验证；浏览器边界抽查 mask 0、1、2、4、8、16、32、33、63，error 0。
 - mask 32 的历史页面验收缺陷已修复并回归：仅声明“关节处理”而没有“被动活动度”时，按钮处于禁用且未选中；先开启被动活动度后才可选择关节处理，取消被动活动度会自动清除关节处理；mask 33 和 mask 63 保持正常。
 
 ## 本轮继续验证记录（2026-08-20）
@@ -206,7 +206,7 @@ B3 第一次执行因动作不适位置和分数需要额外填写，测试连�
 
 ## 崴脚自动走读脚本维护（2026-08-20）
 
-脚本位于 [`scripts/real-browser-walkthrough-ankle.mjs`](../scripts/real-browser-walkthrough-ankle.mjs)，固定使用真实用户原话启动，不注入内部状态。当前覆盖：
+脚本位于 [`scripts/legacy-browser/real-browser-walkthrough-ankle.mjs`](../../scripts/legacy-browser/real-browser-walkthrough-ankle.mjs)，固定使用真实用户原话启动，不注入内部状态。当前覆盖：
 
 - 肿胀位置确认、右侧外踝定位和急性骨性风险/影像门控；
 - 踝足四方向主动评估，实际选择外翻受限并验证主诉动作基线；

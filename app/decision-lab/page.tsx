@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import KneeDecisionLab from "./knee-decision-lab";
-import LocalLimbDecisionLab from "./local-limb-decision-lab";
+import KneeDecisionLab from "@/src/features/rehabmind/decision-lab/knee-decision-lab";
+import LocalLimbDecisionLab from "@/src/features/rehabmind/decision-lab/local-limb-decision-lab";
 
 export default function DecisionLabPage() {
   const [module, setModule] = useState<"knee" | "local">("knee");

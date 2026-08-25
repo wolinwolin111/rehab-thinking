@@ -1,27 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../support/load-typescript-module.mjs";
 
-const assessmentSource = await readFile(new URL("../app/function-assessment-core.ts", import.meta.url), "utf8");
-const evidenceSource = await readFile(new URL("../app/function-evidence-core.ts", import.meta.url), "utf8");
-const eligibilitySource = await readFile(new URL("../app/retest-eligibility-core.ts", import.meta.url), "utf8");
-const transitionSource = await readFile(new URL("../app/function-retest-transition-core.ts", import.meta.url), "utf8");
-
-function transpile(source) {
-  return ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-}
-
-async function load(source) {
-  return import(`data:text/javascript;base64,${Buffer.from(transpile(source)).toString("base64")}`);
-}
-
-const assessmentUrl = `data:text/javascript;base64,${Buffer.from(transpile(assessmentSource)).toString("base64")}`;
-const evidence = await load(evidenceSource.replace('from "./function-assessment-core"', `from "${assessmentUrl}"`));
-const eligibility = await load(eligibilitySource);
-const transition = await load(transitionSource);
+const evidence = await loadTypeScriptModule("./src/domain/rehab/retest/function-evidence-core.ts");
+const eligibility = await loadTypeScriptModule("./src/domain/rehab/retest/retest-eligibility-core.ts");
+const transition = await loadTypeScriptModule("./src/domain/rehab/retest/function-retest-transition-core.ts");
 
 function runFlow(record, completion, scoreConfirmed) {
   const initialEvidence = evidence.functionEvidenceFromRecord("function:knee-squat", record);

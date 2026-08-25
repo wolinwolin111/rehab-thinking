@@ -10,8 +10,9 @@ import {
   readJsonObject,
   requiredString,
 } from "../../../_shared";
-import type { PilotCaseEventType } from "@/app/pilot-case-contracts";
-import { publicPilotCaseRecord } from "@/app/pilot-case-view";
+import type { PilotCaseEventType } from "@/src/infrastructure/pilot/api/case-contracts";
+import { PilotCaseValidationError } from "@/src/infrastructure/pilot/api/case-contracts";
+import { publicPilotCaseRecord } from "@/src/infrastructure/pilot/services/case-view";
 
 export async function POST(
   request: Request,
@@ -22,11 +23,22 @@ export async function POST(
     if (limited) return limited;
     const { caseId } = await context.params;
     const body = await readJsonObject(request, 1_500_000);
+    const bodyCaseId = requiredString(body.caseId ?? caseId, "caseId");
+    if (bodyCaseId !== caseId) throw new PilotCaseValidationError("caseId does not match the request path");
+    const expectedRevision = body.baseRevision ?? body.expectedRevision;
+    if (body.baseRevision !== undefined && body.expectedRevision !== undefined && body.baseRevision !== body.expectedRevision) {
+      throw new PilotCaseValidationError("baseRevision and expectedRevision must match");
+    }
+    const requestId = requiredString(body.requestId ?? body.eventId, "requestId");
+    const sessionNumber = optionalNonNegativeInteger(body.sessionCount, "sessionCount");
+    const sessionId = requiredString(body.sessionId ?? `session-${sessionNumber ?? 0}`, "sessionId");
     const service = await createPilotCaseService();
     const result = await service.saveProgress({
       caseId,
       accessToken: getAccessToken(request),
-      expectedRevision: body.expectedRevision as number,
+      expectedRevision: expectedRevision as number,
+      requestId,
+      sessionId,
       snapshot: body.snapshot,
       eventType: requiredString(body.eventType, "eventType") as PilotCaseEventType,
       eventPayload: body.eventPayload,
@@ -34,9 +46,12 @@ export async function POST(
       currentStage: optionalString(body.currentStage, "currentStage"),
       isBilateral: optionalBoolean(body.isBilateral, "isBilateral"),
       hasSafetyStop: optionalBoolean(body.hasSafetyStop, "hasSafetyStop"),
-      sessionCount: optionalNonNegativeInteger(body.sessionCount, "sessionCount"),
+      sessionCount: sessionNumber,
     });
-    return Response.json({ progress: { ...result, caseRecord: publicPilotCaseRecord(result.caseRecord) } });
+    return Response.json(
+      { progress: { ...result, caseRecord: publicPilotCaseRecord(result.caseRecord), operation: { requestId, caseId, sessionId, baseRevision: expectedRevision } } },
+      { headers: { "x-pilot-request-id": requestId } },
+    );
   } catch (error) {
     return pilotApiError(error);
   }

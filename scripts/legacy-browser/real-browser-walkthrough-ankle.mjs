@@ -10,7 +10,7 @@
  * - 训练反馈未完成时不能直接结束训练。
  *
  * 用法：先启动 dev server，再运行：
- *   node scripts/real-browser-walkthrough-ankle.mjs
+ *   node scripts/legacy-browser/real-browser-walkthrough-ankle.mjs
  *
  * 可用 WALKTHROUGH_URL 覆盖默认地址。
  */

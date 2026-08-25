@@ -1,10 +1,14 @@
 # RehabMind 交接文档
 
-> 交接日期：2026-08-22（2026-08-23 更新：阶段1 VPS 迁移完成，正式入口 `https://66.154.101.204/RehabMind/`）
+> 交接日期：2026-08-22（历史交接；2026-08-25 当前入口与状态已变化）
 >
 > 交接范围：质量整改体系落地、两个 P0 缺陷修复、发布前测试体系、部署评估
 >
 > 读者：下一位接手的开发者或 AI 执行模型
+>
+> **现行口径**：执行顺序和开放门槛以[App 入口、移动体验与测试效率优化方案](../plans/rehabmind-app-experience-optimization-plan.md)为准，当前事实以[最新完整交接](./rehabmind-handover-2026-08-25.md)、[项目状态](./project-status.md)、[当前测试计划](../quality/rehabmind-test-plan.md)和[VPS 发布验收](../quality/app-experience-vps-acceptance-2026-08-25.md)为准。本文后续章节保留 2026-08-22/23 的历史交接细节，不得用旧邀请、旧测试计数或旧 VPS 绿灯替代当前证据。
+>
+> **最新完整交接入口**：[RehabMind 当前交接文档（2026-08-23 至 2026-08-25）](./rehabmind-handover-2026-08-25.md)。
 
 ---
 
@@ -13,23 +17,31 @@
 | 维度 | 状态 |
 | --- | --- |
 | 产品定位 | 运动康复思路辅助工具（健身教练/康复学习者/普通用户），不输出诊断 |
-| 技术栈 | vinext（Cloudflare 系全栈框架）+ React 19 + TypeScript + D1/Drizzle |
+| 技术栈 | vinext + React 19 + TypeScript + Node API routes + SQLite/better-sqlite3/Drizzle |
 | 部署现状 | **Cloudflare 方案已放弃**（workers.dev 大陆不可直连）；已选定 VPS：66.154.101.204 |
-| 质量基线 | 528 单元/合同测试 ✅ · 12 定向变异 ✅ · 5 D1/API 集成 ✅ · lint 0 errors ✅ |
-| 真实浏览器场景 | 11 条全绿（QUEUE×5 · 踝扭伤 · 髌骨专业 · MIX-05 · 同意层 · TIME-01） |
-| P0 缺陷 | **0**（SAVE-02 已修 · BIL-01 主断点已修 · TENS-01 误报关闭） |
-| 代码 | 9 笔逻辑提交全部落库，工作区干净，HEAD 复验通过 |
-| 文档 | 四份正式文档 + 登记表/覆盖矩阵/测试计划/发布手册全部与代码同步 |
+| 质量基线 | 627/627（117 个快速测试文件）· 36/36 定向变异 · 14/14 SQLite/API · 2/2 纵向 · 当前本地结构版本 6/6 最小浏览器 · lint 0 |
+| VPS 发布 | 真实 HTTP、SQLite 健康、备份、canary、PM2 真实 cwd 和版本回滚往返均通过 |
+| 当前进度 | A7 为 15/16；B0-B6 已完成；结构门禁通过，人工任务仍未通过，禁止开放粉丝群 |
+| 唯一 A7 阻塞 | 用户理解记录与保存，但反馈中间描述过密、页面显乱；`UX-DENSITY-01` 已记录，待讨论后整改并复验 |
+| 文档 | 当前施工主计划、项目状态、质量登记和 A7 验收报告已同步 |
+
+### 1.1 2026-08-24 B0-B6 结构治理增量
+
+- `app/` 已收敛为页面/API 路由；领域、知识、feature、infrastructure 和数据库文件已进入稳定目录。
+- 测试、脚本和文档均已分类；根临时产物归档；Markdown 88/88、资产 manifest 41/41、循环 0。
+- 工作台从约 8750 行降至 5023 行，另有 2035 行 support；六个阶段均为真实类型组件。
+- 阶段只接收视图状态和事件合同；领域展示依赖经 `stage-domain-adapters.ts` 进入，严格 `check:structure` 与 `check:boundaries` 均通过。
+- 本轮结构改动未部署。完整证据和下一步顺序见 `docs/quality/b0-b6-structure-governance-2026-08-24.md`。
 
 ## 2. 本轮完成的工作明细
 
 ### 2.1 质量体系重建（前期整改的落地）
 
-- **证据标准重建**：建立「内部逻辑覆盖矩阵」（`docs/internal-logic-coverage-matrix.md`），每条规则标注 已覆盖/部分覆盖/待提取/伪证据待迁移；把源码字符串匹配类测试降级为「界面接线合同（不计逻辑覆盖）」
+- **证据标准重建**：建立「内部逻辑覆盖矩阵」（`docs/quality/internal-logic-coverage-matrix.md`），每条规则标注 已覆盖/部分覆盖/待提取/伪证据待迁移；把源码字符串匹配类测试降级为「界面接线合同（不计逻辑覆盖）」
 - **变异测试**：`npm run test:logic:mutations`，12 项定向变异全部捕获（覆盖功能复测门槛、台账阈值、队列方向规则、下游失效守卫）
 - **历史缺陷回放集**：六类历史人工走查缺陷各有能在错误实现上失败的回归测试
 - **伪证据迁移**：`random-state-sequence.test.mjs` 改为直接驱动 6 个真实生产核心（5 万次随机组合）；`rendered-html.test.mjs` 重新归类
-- **测试分层执行口径**：真实浏览器不再作为内部逻辑常规门禁；门禁 = 决策规则 + 状态轨迹 + 组合不变量 + 错误注入 + D1/API 集成 + 人工界面验收
+- **测试分层执行口径**：真实浏览器不再作为内部逻辑常规门禁；门禁 = 决策规则 + 状态轨迹 + 组合不变量 + 错误注入 + SQLite/API 纵向集成 + 最小人工界面验收
 
 ### 2.2 决策核心提取链（绞杀者式，行为等价）
 
@@ -119,22 +131,22 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 
 实际落地形态（与原计划差异见括号）：
 
-1. ~~better-sqlite3 新实现~~ ✅ `db/sqlite-pilot-case-repository.ts`，与 D1 版同一接口；原生模块经 `createRequire` 运行时加载（绕开打包器内联 .node 失效问题）
+1. ~~better-sqlite3 新实现~~ ✅ `db/sqlite/sqlite-pilot-case-repository.ts`，与 D1 版同一接口；原生模块经 `createRequire` 运行时加载（绕开打包器内联 .node 失效问题）
 2. ~~env 解耦~~ ✅ `app/api/pilot/_shared.ts#getPilotEnv`：Workers 读 bindings / Node 读 process.env，动态 specifier 防打包解析
 3. **运行方式**：pm2 托管 `npm run start`（vinext Node 模式），应用监听 127.0.0.1:3100；ecosystem.config.cjs 自读 `.env`
 4. **nginx**：四服务共存于同一 IP 证书站点——RehabMind 占根跳转与 `/RehabMind/` 后缀入口（Node 3100）；RehabGuide shop 于 `/shop/`（Gunicorn 3098，2026-08-23 短暂下线后恢复）；Clinic 于 `/clinic/`（8080）与静态 `/mobile/`；`location /api/pilot/` 最长前缀代理避开 Clinic 的 `/api/` 重定向；`location /rehabmind-` 前缀代理定位图等根级 PNG（曾因缺失导致定位图全灭，已修）；`client_max_body_size 4m` 让大载荷守卫在应用层按合同返回 413 JSON。裸根 `/` 为 308 跳转，唯一内容入口是 `https://66.154.101.204/RehabMind/`
-5. **Secrets**：`~/rehabmind/app-src/.env`（chmod 600），含 PILOT_INVITE_TOKEN / PILOT_ADMIN_KEY / PILOT_INVITE_EXPIRES_AT(90天) / PILOT_SQLITE_PATH / PORT=3100；本地副本在开发机 `%TEMP%` 外的 `D:\Study\codex\project\.tmp-deploy-secrets.txt`——**请转移进密码管理器**
+5. **Secrets**：`~/rehabmind/app-src/.env`（chmod 600）。生产邀请优先配置 `PILOT_INVITE_TOKEN_HASH`，旧 `PILOT_INVITE_TOKEN` 仅作兼容；另含 `PILOT_ADMIN_KEY`、`PILOT_INVITE_EXPIRES_AT`、`PILOT_INVITE_MAX_USES`、`PILOT_INVITE_SOURCE`、`PILOT_SQLITE_PATH` 和 `PORT=3100`。密钥不得进入仓库或测试产物。
 6. **验证**：集成套件 5/5 全绿指向 https://66.154.101.204 （真 TLS 校验，无豁免）；页面 SSR 标题与六步导航正常；Clinic(/clinic/) 与 /mobile/ 未受影响
 
-部署脚本存档：`scripts/vps-recon*.sh`、`vps-deploy-setup.sh`（解包+npm ci+迁移）、nginx 配置以服务器 `/etc/nginx/sites-enabled/combined.conf.bak-*` 与仓库内 `docs/HANDOVER.md` 本节描述为准。
+部署脚本存档：`scripts/vps-recon*.sh`、`vps-deploy-setup.sh`（解包+npm ci+迁移）、nginx 配置以服务器 `/etc/nginx/sites-enabled/combined.conf.bak-*` 与仓库内 `docs/handover/HANDOVER.md` 本节描述为准。
 
-### 阶段 2：发布验收 ✅ 自动化部分完成（2026-08-23，报告见 `docs/release-acceptance-report-2026-08-23.md`）
+### 阶段 2：发布验收 ✅ 自动化部分完成（2026-08-23，报告见 `docs/quality/release-acceptance-report-2026-08-23.md`）
 
 - 本地基线（test:fast 542 / lint 0 / 变异 12）✅；本地与生产集成 5/5 ✅；生产 §11 页面冒烟 ✅（含刷新恢复路径）；日志脱敏 ✅；测试数据清零 ✅
 - 结论：**允许开放**（附保留风险：DEPLOY-01 隔离、ARCH-01、人工双视角走读待产品执行）
 - 顺带修复：快照非对象 500→400；集成 harness 连接重试加固
 
-**VPS 发布操作**（REL-02 固化，2026-08-23 干净检出演练通过）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
+**VPS 发布操作**（REL-02 固化，2026-08-23 干净检出演练通过）：本地 `npm run test:fast && npm run build` → `git archive HEAD -o code.tar` + `tar -czf dist.tar.gz dist` → scp 至 `~/rehabmind/incoming/` → `ssh 'bash -s' < scripts/deploy/vps-release.sh`（时间戳目录、迁移、健康探针、失败自动回滚、仅保留 3 版）。
 
 ### 阶段 3：开放粉丝群 + 观察
 
@@ -150,16 +162,17 @@ QUEUE-01 常规 / QUEUE-02 无变化 / QUEUE-03 活动↑痛不变 / QUEUE-04 �
 
 ```bash
 # 质量门禁（提交前必跑）
-npm run test:fast              # typecheck + build + 528 测试
-npm run lint                   # 0 errors（仅 2 条 .wrangler 生成文件警告可容忍）
-npm run test:logic:mutations   # 12 项变异全部 killed
-npm run test:integration       # 本地需先起 dev server，设 D1_TEST_URL
+npm run test:fast              # 边界 + typecheck + build + 117 个文件 / 627 条测试
+npm run lint                   # 0 errors、0 warnings
+npm run test:logic:mutations   # 36 项定向变异全部 killed
+npm run test:integration       # 生产 route/service + 临时真实 SQLite，无需启动 dev server
+npm run test:vertical          # 首诊保存→关闭重开→恢复→后续康复
 npm run test:browser:p0        # 可选：P0 浏览器场景（需 Edge）
 
 # 场景走读（真实业务回归）
-$env:WALKTHROUGH_TIME01='1'; node scripts/real-browser-walkthrough.mjs
+$env:WALKTHROUGH_TIME01='1'; node scripts/legacy-browser/real-browser-walkthrough.mjs
 $env:WALKTHROUGH_WORSEN='1' / NO_CHANGE / ACTIVITY_BETTER / MIXED_WORSEN 同理
-node scripts/real-browser-walkthrough-ankle.mjs / -patella.mjs
+node scripts/legacy-browser/real-browser-walkthrough-ankle.mjs / -patella.mjs
 
 # VPS 访问
 ssh -i ~/.ssh/id_ed25519 rehabdeploy@66.154.101.204   # 有 sudo
@@ -169,22 +182,22 @@ ssh -i ~/.ssh/id_ed25519 rehabdeploy@66.154.101.204   # 有 sudo
 
 | 文件 | 说明 |
 | --- | --- |
-| `docs/rehabmind-quality-remediation-register.md` | 34+2 项缺陷/事项账本（状态权威来源） |
-| `docs/internal-logic-coverage-matrix.md` | 规则↔证据覆盖矩阵 |
-| `docs/rehabmind-test-plan.md` | 测试分层与执行口径（§11 整改方案） |
-| `docs/pilot-release-readiness-execution-runbook.md` | 发布执行手册（含禁止开放条件） |
-| `app/rehabmind-complete-demo.tsx` | 主组件（约 8700 行，阶段 C 重构指导见 `docs/refactor-use-decision-engine.md`） |
+| `docs/quality/rehabmind-quality-remediation-register.md` | 34+2 项缺陷/事项账本（状态权威来源） |
+| `docs/quality/internal-logic-coverage-matrix.md` | 规则↔证据覆盖矩阵 |
+| `docs/quality/rehabmind-test-plan.md` | 测试分层与执行口径（§11 整改方案） |
+| `docs/operations/pilot-release-readiness-execution-runbook.md` | 发布执行手册（含禁止开放条件） |
+| `src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` | 主工作台装配与状态协调（5023 行；六个阶段视图已提取） |
 
 ## 6. 已知问题与坑（重要！）
 
 1. **双侧肌肉紧张度页的走读交互未完全自动化**：walker 在该页的选项定位需用 `.rm-muscle-location-picker` 作用域 + `button:has-text("两侧感觉接近")`（可见性过滤）；`.rm-muscle-location-card` 是 article 容器无 handler，点它无效。TENS-01 实验代码留在 `.tmp-real-case-walk.mjs` 死循环分支可参考
-2. **本地 D1 外键无 ON DELETE 子句**：删除案例必须显式多表删除（参照 `hardDeleteCases` 顺序：叶子→根）
+2. **SQLite 外键无 ON DELETE 子句**：删除案例必须显式多表删除（参照 `hardDeleteCases` 顺序：叶子→根）；A5 已用真实 SQLite 验证引用行全部清除和事务回滚
 3. **PowerShell 编辑含中文/模板字符串的文件**：`-replace` + `WriteAllText` 会搞坏编码和转义——改代码一律用 Edit 工具或 Node fixer 脚本。**管道远程脚本同样**：`Get-Content -Raw`（不带 `-Encoding utf8`）会把 UTF-8 脚本按 ANSI 读入再传给 ssh，中文 echo 变乱码；读脚本必须 `Get-Content -Raw -Encoding utf8`。
 4. **SSH 防爆破**：连续失败会封 IP；用对密钥一次连成
 5. **`.first()` 匹配器偏移**：按钮点击后文本变化（如 反应更明显→更明显）会让同选择器匹配到另一实例——BEFORE/AFTER 对比实验必须锚定同一元素
-6. **主组件 8700 行**：改前先读目标区域上下文；行号会随编辑漂移，用唯一文本锚点
+6. **主工作台仍有 5023 行**：阶段视图已提取，但状态协调仍较集中；改前先读目标区域上下文，使用唯一文本锚点，不依赖历史行号
 7. **vinext 部署**：`wrangler deploy` 直接从源码打包会失败（virtual module）；正确流程 = `REHABMIND_CLOUDFLARE_DEPLOY=1 npm run build` 后 `npx wrangler deploy`（不带 --config，跟随 `.wrangler/deploy/config.json` 重定向）。VPS 部署则完全不用 wrangler
-8. **测试基线数字**：当前 528 单测 / 12 变异 / 5 集成；新增测试后记得同步 runbook 与登记表数字
+8. **测试基线数字**：当前 627 条快速测试 / 36 变异 / 14 集成；新增测试后同步项目状态、runbook 与登记表数字
 
 ## 7. 给产品侧的待确认项
 

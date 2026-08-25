@@ -1,5 +1,5 @@
-import { findNextCandidateAcrossTargets, findNextCandidateIndex } from "./workflow-state-core";
-import type { TrialResult } from "./trial-record-types";
+import { findNextCandidateAcrossTargets, findNextCandidateIndex } from "@/src/domain/rehab/shared/workflow-state-core";
+import type { TrialResult } from "@/src/domain/rehab/treatment/trial-record-types";
 
 export type TreatmentQueueTarget<TCandidate> = {
   id: string;

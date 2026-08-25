@@ -1,58 +1,13 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadSource(path, replacements = {}) {
-  let source = await readFile(new URL(path, import.meta.url), "utf8");
-  for (const [from, to] of Object.entries(replacements)) source = source.replaceAll(from, to);
-  const code = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
-}
-
-const identitySource = await readFile(new URL("../app/action-identity-core.ts", import.meta.url), "utf8");
-const identityUrl = `data:text/javascript;base64,${Buffer.from(ts.transpileModule(identitySource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText).toString("base64")}`;
-
-// The loader keeps each test on the same production modules used by the app;
-// the data URLs only replace TypeScript imports for Node's native test runner.
-const routingSource = await readFile(new URL("../app/retest-routing-core.ts", import.meta.url), "utf8");
-const routingCode = ts.transpileModule(routingSource.replace('from "./action-identity-core"', `from "${identityUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const routingModuleUrl = `data:text/javascript;base64,${Buffer.from(routingCode).toString("base64")}`;
-const builderSource = await readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8");
-const builderCode = ts.transpileModule(builderSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const builderUrl = `data:text/javascript;base64,${Buffer.from(builderCode).toString("base64")}`;
-const recordFlowSource = await readFile(new URL("../app/treatment-record-flow-core.ts", import.meta.url), "utf8");
-const recordFlowCode = ts.transpileModule(recordFlowSource
-  .replace('from "./retest-routing-core"', `from "${routingModuleUrl}"`)
-  .replace('from "./trial-record-builder"', `from "${builderUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const recordFlowUrl = `data:text/javascript;base64,${Buffer.from(recordFlowCode).toString("base64")}`;
-const ledger = await loadSource("../app/treatment-ledger-core.ts");
-const workflowSource = await readFile(new URL("../app/workflow-state-core.ts", import.meta.url), "utf8");
-const workflowCode = ts.transpileModule(workflowSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const workflowUrl = `data:text/javascript;base64,${Buffer.from(workflowCode).toString("base64")}`;
-const queueSource = await readFile(new URL("../app/treatment-queue-core.ts", import.meta.url), "utf8");
-const queueCode = ts.transpileModule(queueSource.replace('from "./workflow-state-core"', `from "${workflowUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const queueUrl = `data:text/javascript;base64,${Buffer.from(queueCode).toString("base64")}`;
 const [recordFlow, ledgerCore, queue] = await Promise.all([
-  import(recordFlowUrl),
-  Promise.resolve(ledger),
-  import(queueUrl),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-record-flow-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-ledger-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-queue-core.ts"),
 ]);
-const workflow = await import(workflowUrl);
+const workflow = await loadTypeScriptModule("./src/domain/rehab/shared/workflow-state-core.ts");
 
 function scoreRecord(overrides = {}) {
   return recordFlow.resolveTreatmentRecordFlow({

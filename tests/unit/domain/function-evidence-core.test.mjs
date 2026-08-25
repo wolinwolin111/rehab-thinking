@@ -1,16 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const source = await readFile(new URL("../app/function-evidence-core.ts", import.meta.url), "utf8");
-const assessmentSource = await readFile(new URL("../app/function-assessment-core.ts", import.meta.url), "utf8");
-const assessmentCode = ts.transpileModule(assessmentSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const assessmentUrl = `data:text/javascript;base64,${Buffer.from(assessmentCode).toString("base64")}`;
-const code = ts.transpileModule(source.replace('from "./function-assessment-core"', `from "${assessmentUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const core = await loadTypeScriptModule("./src/domain/rehab/retest/function-evidence-core.ts");
 
 test("pain without a control deficit goes to treatment, not training", () => {
   const evidence = core.functionEvidenceFromRecord("function:knee-squat", {

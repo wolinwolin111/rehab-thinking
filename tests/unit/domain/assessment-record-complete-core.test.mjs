@@ -24,10 +24,10 @@ async function loadBundle(paths) {
 }
 
 const corePromise = loadBundle([
-  "../app/assessment-answer-core.ts",
-  "../app/function-assessment-core.ts",
-  "../app/motion-assessment-core.ts",
-  "../app/assessment-record-complete-core.ts",
+  "../../../src/domain/rehab/assessment/assessment-answer-core.ts",
+  "../../../src/domain/rehab/assessment/function-assessment-core.ts",
+  "../../../src/domain/rehab/assessment/motion-assessment-core.ts",
+  "../../../src/domain/rehab/assessment/assessment-record-complete-core.ts",
 ]);
 
 test("a function check completes when completion, control and discomfort are present", async () => {

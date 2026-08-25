@@ -12,8 +12,8 @@ import {
   hasClearChiefAction,
   isAcuteTrauma,
   type ChiefActionIntake,
-} from "./chief-action-core";
-import { canonicalActionIdFromAssessmentId } from "./action-identity-core";
+} from "@/src/domain/rehab/intake/chief-action-core";
+import { canonicalActionIdFromAssessmentId } from "@/src/domain/rehab/intake/action-identity-core";
 
 export type FunctionalActionKind =
   | "task-performance"

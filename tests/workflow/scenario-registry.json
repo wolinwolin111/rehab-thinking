@@ -151,5 +151,165 @@
     "script": "tests/browser/visual/critical-layout.spec.ts",
     "titlePattern": "移动端首页不产生横向溢出",
     "tags": ["visual", "mobile"]
+  },
+  {
+    "scenarioId": "A7-L0-L4-current-fast-gate",
+    "ruleIds": ["TEST-14", "TEST-16", "TEST-17", "TEST-19"],
+    "priority": "P0",
+    "layer": "L0-L4",
+    "evidenceType": "command",
+    "gateId": "fast",
+    "releaseRequired": true,
+    "script": "npm run test:fast"
+  },
+  {
+    "scenarioId": "A7-L2-L3-production-workflow",
+    "ruleIds": ["TEST-16", "OPS-03"],
+    "priority": "P0",
+    "layer": "L2-L3",
+    "evidenceType": "command",
+    "gateId": "workflow",
+    "releaseRequired": true,
+    "script": "npm run test:workflow"
+  },
+  {
+    "scenarioId": "A7-L2-L3-mutation-validity",
+    "ruleIds": ["TEST-19"],
+    "priority": "P0",
+    "layer": "L2-L3",
+    "evidenceType": "mutation",
+    "gateId": "mutations",
+    "releaseRequired": true,
+    "script": "npm run test:logic:mutations"
+  },
+  {
+    "scenarioId": "A7-L4-page-adapter",
+    "ruleIds": ["TEST-17"],
+    "priority": "P0",
+    "layer": "L4",
+    "evidenceType": "command",
+    "gateId": "component",
+    "releaseRequired": true,
+    "script": "npm run test:component"
+  },
+  {
+    "scenarioId": "A7-L5-sqlite-api",
+    "ruleIds": ["DB-01", "SCHEMA-01", "SYNC-01", "ONBOARD-01", "FEED-01"],
+    "priority": "P0",
+    "layer": "L5",
+    "evidenceType": "integration",
+    "gateId": "integration",
+    "releaseRequired": true,
+    "script": "npm run test:integration"
+  },
+  {
+    "scenarioId": "A7-L5-longitudinal",
+    "ruleIds": ["TEST-18"],
+    "priority": "P0",
+    "layer": "L5",
+    "evidenceType": "integration",
+    "gateId": "vertical",
+    "releaseRequired": true,
+    "script": "npm run test:vertical"
+  },
+  {
+    "scenarioId": "A7-L5-security-redaction",
+    "ruleIds": ["SEC-01", "SEC-03", "PRIV-03", "OPS-03"],
+    "priority": "P0",
+    "layer": "L5",
+    "evidenceType": "security",
+    "gateId": "security",
+    "releaseRequired": true,
+    "script": "npm run test:security"
+  },
+  {
+    "scenarioId": "A7-L5-sqlite-health",
+    "ruleIds": ["DB-01", "REL-04"],
+    "priority": "P0",
+    "layer": "L5",
+    "evidenceType": "health",
+    "gateId": "sqlite-health",
+    "releaseRequired": true,
+    "script": "npm run test:sqlite:health"
+  },
+  {
+    "scenarioId": "A7-release-migration-compatibility",
+    "ruleIds": ["REL-04"],
+    "priority": "P0",
+    "layer": "release",
+    "evidenceType": "migration",
+    "gateId": "migration-compatibility",
+    "releaseRequired": true,
+    "script": "npm run test:migrations:compat"
+  },
+  {
+    "scenarioId": "A7-release-production-dependencies",
+    "ruleIds": ["SEC-04"],
+    "priority": "P0",
+    "layer": "release",
+    "evidenceType": "security",
+    "gateId": "dependencies",
+    "releaseRequired": true,
+    "script": "npm run test:dependencies"
+  },
+  {
+    "scenarioId": "A7-release-code-resource-budget",
+    "ruleIds": ["PERF-01"],
+    "priority": "P0",
+    "layer": "release",
+    "evidenceType": "performance",
+    "gateId": "performance",
+    "releaseRequired": true,
+    "script": "npm run test:performance"
+  },
+  {
+    "scenarioId": "A7-release-lint",
+    "ruleIds": ["TEST-01"],
+    "priority": "P0",
+    "layer": "release",
+    "evidenceType": "command",
+    "gateId": "lint",
+    "releaseRequired": true,
+    "script": "npm run lint"
+  },
+  {
+    "scenarioId": "APP-L6-current-browser-wiring",
+    "ruleIds": ["ONBOARD-01", "DATA-RESTORE-01", "FEED-01", "MOBILE-01", "ADMIN-01", "TEST-15"],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "e2e",
+    "gateId": "browser-minimal",
+    "releaseRequired": true,
+    "script": "npm run test:browser:release"
+  },
+  {
+    "scenarioId": "APP-L6-manual-task",
+    "ruleIds": ["UX-01", "UX-DENSITY-01"],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "manual",
+    "gateId": "manual-task",
+    "releaseRequired": true,
+    "script": "operator acceptance record"
+  },
+  {
+    "scenarioId": "A7-L7-vps-security-health",
+    "ruleIds": ["SEC-02", "SEC-03", "OPS-01", "PERF-01", "DEPLOY-02"],
+    "priority": "P0",
+    "layer": "L7",
+    "evidenceType": "deployment",
+    "gateId": "vps-health",
+    "releaseRequired": true,
+    "script": "scripts/deploy/vps-verify-release.sh"
+  },
+  {
+    "scenarioId": "A7-L7-backup-canary-rollback",
+    "ruleIds": ["REL-04"],
+    "priority": "P0",
+    "layer": "L7",
+    "evidenceType": "deployment",
+    "gateId": "vps-recovery",
+    "releaseRequired": true,
+    "script": "scripts/deploy/vps-verify-recovery.sh"
   }
 ]

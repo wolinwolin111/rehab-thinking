@@ -1,4 +1,4 @@
-import { bilateralTrainingGate, type BilateralTrainingGate } from "./bilateral-flow-core";
+import { bilateralTrainingGate, type BilateralTrainingGate } from "@/src/domain/rehab/shared/bilateral-flow-core";
 
 export type TrainingStageGateInput = {
   bilateral: boolean;

@@ -1,19 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const chiefSource = await readFile(new URL("../app/chief-action-core.ts", import.meta.url), "utf8");
-const chiefCode = ts.transpileModule(chiefSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const chiefUrl = `data:text/javascript;base64,${Buffer.from(chiefCode).toString("base64")}`;
-const actionSource = await readFile(new URL("../app/action-identity-core.ts", import.meta.url), "utf8");
-const actionCode = ts.transpileModule(actionSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const actionUrl = `data:text/javascript;base64,${Buffer.from(actionCode).toString("base64")}`;
-const source = await readFile(new URL("../app/function-assessment-plan-core.ts", import.meta.url), "utf8");
-const code = ts.transpileModule(source.replace('from "./chief-action-core"', `from "${chiefUrl}"`).replace('from "./action-identity-core"', `from "${actionUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const core = await loadTypeScriptModule("./src/domain/rehab/assessment/function-assessment-plan-core.ts");
 
 const base = {
   reportedActions: [],

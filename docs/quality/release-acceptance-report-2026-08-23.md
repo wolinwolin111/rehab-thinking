@@ -1,6 +1,6 @@
 # RehabMind 发布验收报告（2026-08-23）
 
-按 `docs/pilot-release-readiness-execution-runbook.md` §16 格式交付。手册原按 Cloudflare 编写；实际部署已在阶段 1 迁移至 VPS，以下按 VPS 现实等价执行（单环境=试用环境本身，「预览/正式隔离」转化为 DEPLOY-01 开放项记录）。
+按 `docs/operations/pilot-release-readiness-execution-runbook.md` §16 格式交付。手册原按 Cloudflare 编写；实际部署已在阶段 1 迁移至 VPS，以下按 VPS 现实等价执行（单环境=试用环境本身，「预览/正式隔离」转化为 DEPLOY-01 开放项记录）。
 
 ```text
 执行时间：2026-08-23 04:30 ~ 05:40 (UTC+8)
@@ -15,7 +15,7 @@ mutation：通过，12/12 killed
 lint：通过，0 errors 0 warnings
 生产集成终验：通过，5/5（https://66.154.101.204/RehabMind，真实 TLS 校验）
 日志脱敏：通过（本地证据：四类错误请求后日志零令牌/零主诉/零堆栈；意外错误仅记 name+message；VPS pm2 日志同构观察一致）
-唯一页面冒烟：通过（scripts/release-smoke.mjs 对生产——邀请进入、案例编号 G9ASN8RR 可见、保存同步、刷新经康复记录→继续恢复到「确认你的症状信息」、0 运行时错误、测试案例删除 200）
+唯一页面冒烟：通过（scripts/deploy/release-smoke.mjs 对生产——邀请进入、案例编号 G9ASN8RR 可见、保存同步、刷新经康复记录→继续恢复到「确认你的症状信息」、0 运行时错误、测试案例删除 200）
 测试数据清理：通过（生产 listCases = 0）
 
 发现的问题：
@@ -39,6 +39,6 @@ lint：通过，0 errors 0 warnings
 |---|---|
 | §7 Wrangler/D1 预检 | 不适用（CF 弃用）；等价为 SQLite 迁移幂等验证（vps-release.sh 步骤3） |
 | §8 Secrets 写入 | `.env` chmod 600（服务器），令牌值不入库不入文档 |
-| §9 预览部署 | `scripts/vps-release.sh` 时间戳目录发布 + 探针 + 自动回滚 |
+| §9 预览部署 | `scripts/deploy/vps-release.sh` 时间戳目录发布 + 探针 + 自动回滚 |
 | §10 wrangler tail | pm2 日志文件扫描（同构格式） |
 | §12 正式环境隔离 | 转为 DEPLOY-01 开放项记录；试用数据与验收数据均在本环境，验收案例已清零 |

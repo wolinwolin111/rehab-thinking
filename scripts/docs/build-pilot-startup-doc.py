@@ -8,7 +8,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-OUT = Path(__file__).resolve().parents[1] / "docs" / "rehabmind-pilot-startup-plan.docx"
+OUT = Path(__file__).resolve().parents[2] / "docs" / "rehabmind-pilot-startup-plan.docx"
 
 BLUE = "2E74B5"
 DARK_BLUE = "1F4D78"
@@ -464,7 +464,7 @@ def build_document():
     )
 
     add_heading(doc, "3. 开放试用前必须补上的能力", 1)
-    add_text_paragraph(doc, "当前业务记录仍主要保存在浏览器 localStorage。项目虽然已经有 Cloudflare D1 和 Drizzle 的基础脚手架，但数据库尚未承担正式案例存储。因此，开放给其他人使用前至少需要补充以下能力：")
+    add_text_paragraph(doc, "当前业务记录由本机草稿和 VPS SQLite 协同保存。开放给其他人使用前仍需确认以下能力：")
     for item in [
         "服务端案例存储。",
         "匿名案例编号和访问凭证。",

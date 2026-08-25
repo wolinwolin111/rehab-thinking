@@ -1,4 +1,4 @@
-import { type TreatmentResponseRole } from "./treatment-response-core";
+import { type TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 
 export type YesNo = "yes" | "no";
 

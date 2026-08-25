@@ -6,7 +6,7 @@ import {
   type KneeDecisionInput,
   type KneeProblem,
   type KneeTreatmentUnit,
-} from "../knee-decision-core";
+} from "@/src/domain/rehab/shared/knee-decision-core";
 import styles from "./knee-decision-lab.module.css";
 
 type LabCase = {

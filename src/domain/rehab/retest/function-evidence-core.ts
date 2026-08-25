@@ -5,7 +5,7 @@
  * 让下游决策按自己的通道消费，避免把所有功能 tags 当成全局指令。
  */
 
-import { functionCompletionValue, functionControlValue, functionDiscomfortValue, type FunctionAssessmentRecord } from "./function-assessment-core";
+import { functionCompletionValue, functionControlValue, functionDiscomfortValue, type FunctionAssessmentRecord } from "@/src/domain/rehab/assessment/function-assessment-core";
 
 export type FunctionEvidence = {
   assessmentId: string;

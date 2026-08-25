@@ -11,7 +11,7 @@ import {
 test.describe("历史缺陷回放·首页和教程", () => {
   test("UX-01 聚焦教程逐步完成、可跳过并能重新打开 @target", async ({ page }) => {
     const runtimeErrors = collectRuntimeErrors(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("./", { waitUntil: "domcontentloaded" });
 
     const dialog = page.locator('.rm-focus-onboarding[role="dialog"]');
     await expect(dialog).toBeVisible();
@@ -29,6 +29,8 @@ test.describe("历史缺陷回放·首页和教程", () => {
     await expect(dialog).toContainText("不使用 AI 代替用户或专业人员做康复决策");
     await dialog.getByRole("button", { name: "开始使用", exact: true }).click();
     await expect(dialog).toHaveCount(0);
+    await expect(page.locator("#rm-consent-title")).toBeVisible();
+    await page.getByRole("button", { name: "暂不同意（仅保存在本机）", exact: true }).click();
 
     const tutorialButton = await expectUniqueVisible(page, "首页教程入口", page.getByRole("button", { name: "使用教程", exact: true }));
     await tutorialButton.click();

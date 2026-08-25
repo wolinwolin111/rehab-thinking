@@ -4,65 +4,65 @@ import { useState } from "react";
 
 export function PilotConsentGate({
   open,
+  declined,
   onAgree,
   onDecline,
+  onReconsider,
 }: {
   open: boolean;
-  onAgree: () => void;
+  declined: boolean;
+  onAgree: () => Promise<void> | void;
   onDecline: () => void;
+  onReconsider: () => void;
 }) {
   const [agreed, setAgreed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   if (!open) return null;
 
-  return (
-    <div
-      className="rm-focus-onboarding is-unanchored"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="rm-consent-title"
-    >
-      <div className="rm-focus-dim" aria-hidden="true" />
-      <section
-        className="rm-focus-tooltip is-bottom is-unanchored"
-        style={{ left: "50%", top: "50%", width: "min(520px, calc(100vw - 32px))", transform: "translate(-50%, -50%)" }}
-      >
-        <header className="rm-focus-header">
-          <div><span>开始前请阅读</span></div>
-        </header>
-        <div className="rm-focus-copy">
-          <h1 id="rm-consent-title">试用知情同意</h1>
-          <p>
-            你的症状描述和康复记录会上传到开发者服务器，以匿名案例编号保存、不关联任何账号，
-            仅用于改进本产品和提供使用支持。
-            <strong>请勿填写真实姓名、手机号等能识别你身份的信息。</strong>
-          </p>
-          <p>你可随时在应用内删除案例；试用结束后，服务器数据将全部清除。</p>
+  return <div className="rm-entry-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="rm-consent-title">
+    <section className="rm-entry-sheet rm-consent-gate">
+      {declined ? <>
+        <div className="rm-consent-copy">
+          <h1 id="rm-consent-title">暂未开始使用</h1>
+          <p>确认数据使用方式后，才能创建匿名案例并进入康复流程。</p>
         </div>
-        <label style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "12px 0", cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(event) => setAgreed(event.target.checked)}
-            data-rehabmind-tutorial="consent-checkbox"
-            style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0 }}
-          />
-          <span>我已阅读并同意以上条款</span>
+        <footer><button type="button" className="rm-primary" onClick={onReconsider}>重新查看说明</button></footer>
+      </> : <>
+        <header><span>数据使用说明</span><h1 id="rm-consent-title">开始前，请确认数据使用方式</h1></header>
+        <ul className="rm-consent-points">
+          <li>康复内容会使用匿名案例编号保存</li>
+          <li>不需要填写姓名、手机号等身份信息</li>
+          <li>你可以在应用内删除案例</li>
+        </ul>
+        <details className="rm-consent-details">
+          <summary>查看完整说明</summary>
+          <p>你的问题描述和康复记录会保存到悦舒运动康复使用的服务器，以便恢复进度、关联问题反馈并改进产品。</p>
+          <p>案例不关联登录账号，请不要在问题描述或反馈中填写真实姓名、手机号等可以识别身份的信息。</p>
+          <p>案例编号本身不能读取康复内容；当前设备会保存独立访问凭证。删除案例后，原访问凭证立即失效。</p>
+        </details>
+        <label className="rm-consent-check">
+          <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} data-rehabmind-tutorial="consent-checkbox" />
+          <span>我已了解并同意以上内容</span>
         </label>
-        <footer className="rm-focus-footer">
-          <button type="button" className="rm-focus-back" onClick={onDecline}>
-            暂不同意（仅保存在本机）
-          </button>
+        {error ? <p className="rm-consent-error" role="alert">{error}</p> : null}
+        <footer>
+          <button type="button" onClick={onDecline} disabled={busy}>暂不使用</button>
           <button
             type="button"
-            className="rm-primary rm-focus-next"
-            onClick={onAgree}
-            disabled={!agreed}
+            className="rm-primary"
+            disabled={!agreed || busy}
             data-rehabmind-tutorial="consent-agree"
-          >
-            同意并继续
-          </button>
+            onClick={() => {
+              setBusy(true);
+              setError("");
+              Promise.resolve(onAgree())
+                .catch(() => setError("匿名案例创建失败，请检查网络后重试。"))
+                .finally(() => setBusy(false));
+            }}
+          >{busy ? "正在创建" : "同意并创建案例"}</button>
         </footer>
-      </section>
-    </div>
-  );
+      </>}
+    </section>
+  </div>;
 }

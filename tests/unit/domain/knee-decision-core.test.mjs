@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
-const source = await readFile(new URL("../app/knee-decision-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/domain/rehab/shared/knee-decision-core.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;

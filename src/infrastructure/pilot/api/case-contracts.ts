@@ -21,6 +21,17 @@ export type PilotCaseEventType = (typeof PILOT_CASE_EVENT_TYPES)[number];
 export type PilotCaseStatus = "active" | "deleted";
 export type PilotCaseEventSource = "user" | "system" | "admin";
 export type PilotCaseFeedbackSource = "in_app" | "fan_group" | "admin";
+export type PilotCaseFeedbackStatus = "open" | "in_review" | "resolved" | "dismissed";
+export const PILOT_TRIAL_EVENT_TYPES = [
+  "tutorial_completed",
+  "tutorial_skipped",
+  "consent_confirmed",
+  "consent_declined",
+  "case_recovered",
+  "save_failed",
+  "save_conflict",
+] as const;
+export type PilotTrialEventType = (typeof PILOT_TRIAL_EVENT_TYPES)[number];
 
 export type PilotReleaseVersions = {
   appVersion: string;
@@ -33,6 +44,17 @@ export type PilotCaseRecord = PilotReleaseVersions & {
   clientCreationId: string;
   publicCode: string;
   accessTokenHash: string;
+  inviteTokenHash: string | null;
+  inviteSource: string | null;
+  sourceChannel: string | null;
+  sourceDetail: string | null;
+  consentVersion: string | null;
+  consentConfirmedAt: string | null;
+  isTestCase: boolean;
+  testRunId: string | null;
+  scenarioId: string | null;
+  createdBy: string | null;
+  firstUseFlowId: string | null;
   status: PilotCaseStatus;
   currentStage: string | null;
   isTrial: boolean;
@@ -62,7 +84,7 @@ export type PilotCaseEventRecord = PilotReleaseVersions & {
   occurredAt: string;
 };
 
-export type PilotCaseFeedbackRecord = {
+export type PilotCaseFeedbackRecord = PilotReleaseVersions & {
   id: string;
   caseId: string;
   eventId: string | null;
@@ -75,7 +97,42 @@ export type PilotCaseFeedbackRecord = {
   sourceSessionNumber: number | null;
   sourceStage: string | null;
   sourceEventId: string | null;
+  status: PilotCaseFeedbackStatus;
   createdAt: string;
+  updatedAt: string | null;
+};
+
+export type PilotAdminNoteRecord = {
+  id: string;
+  caseId: string;
+  note: string;
+  author: "admin";
+  createdAt: string;
+};
+
+export type PilotAdminAuditAction =
+  | "case_full_viewed"
+  | "note_added"
+  | "feedback_status_updated"
+  | "case_exported"
+  | "case_deleted";
+
+export type PilotAdminAuditRecord = PilotReleaseVersions & {
+  id: string;
+  caseId: string;
+  action: PilotAdminAuditAction;
+  targetId: string | null;
+  metadata: string | null;
+  occurredAt: string;
+};
+
+export type PilotTrialEventRecord = PilotReleaseVersions & {
+  id: string;
+  dedupeKey: string;
+  flowId: string;
+  eventType: PilotTrialEventType;
+  caseId: string | null;
+  occurredAt: string;
 };
 
 export type NewPilotCaseBundle = {
@@ -102,6 +159,7 @@ export type DeleteCaseInput = {
   caseId: string;
   deletedAt: string;
   event: Omit<PilotCaseEventRecord, "caseId" | "sequence">;
+  adminAudit?: PilotAdminAuditRecord;
 };
 
 export type SaveFeedbackInput = Omit<PilotCaseFeedbackRecord, "createdAt"> & {
@@ -118,12 +176,20 @@ export interface PilotCaseRepository {
   getEventById(eventId: string): Promise<PilotCaseEventRecord | null>;
   getEventsByCaseId(caseId: string): Promise<PilotCaseEventRecord[]>;
   getFeedbackByCaseId(caseId: string): Promise<PilotCaseFeedbackRecord[]>;
+  getAdminNotesByCaseId(caseId: string): Promise<PilotAdminNoteRecord[]>;
+  getAdminAuditByCaseId(caseId: string): Promise<PilotAdminAuditRecord[]>;
+  listTrialEvents(): Promise<PilotTrialEventRecord[]>;
   listCases(): Promise<PilotCaseRecord[]>;
   saveProgress(input: SaveProgressInput): Promise<SaveProgressResult>;
   saveFeedback(input: SaveFeedbackInput): Promise<PilotCaseFeedbackRecord>;
+  saveAdminNote(input: PilotAdminNoteRecord, audit?: PilotAdminAuditRecord): Promise<PilotAdminNoteRecord>;
+  saveAdminAudit(input: PilotAdminAuditRecord): Promise<PilotAdminAuditRecord>;
+  saveTrialEvent(input: PilotTrialEventRecord): Promise<PilotTrialEventRecord>;
+  updateFeedbackStatus(input: { caseId: string; feedbackId: string; status: PilotCaseFeedbackStatus; updatedAt: string; adminAudit?: PilotAdminAuditRecord }): Promise<PilotCaseFeedbackRecord>;
   deleteCase(input: DeleteCaseInput): Promise<PilotCaseRecord>;
   /** PRIV-02：物理清除过期案例（子表级联），返回移除数量。至少提供一个截止条件。 */
   hardDeleteCases(where: { deletedBefore?: string; createdBefore?: string }): Promise<number>;
+  hardDeleteTestRun(testRunId: string): Promise<number>;
 }
 
 export class PilotCaseError extends Error {
@@ -216,6 +282,12 @@ export function parsePilotPayload(payload: string, label: string): Record<string
 export function assertPilotEventType(value: string): asserts value is PilotCaseEventType {
   if (!(PILOT_CASE_EVENT_TYPES as readonly string[]).includes(value)) {
     throw new PilotCaseValidationError(`Unsupported case event type: ${value}`);
+  }
+}
+
+export function assertPilotTrialEventType(value: string): asserts value is PilotTrialEventType {
+  if (!(PILOT_TRIAL_EVENT_TYPES as readonly string[]).includes(value)) {
+    throw new PilotCaseValidationError(`Unsupported trial event type: ${value}`);
   }
 }
 

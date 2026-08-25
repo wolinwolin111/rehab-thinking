@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-24",
+  "oracle": "docs/rehabmind-current-remediation-execution-plan.md",
+  "evidencePolicy": {
+    "behavior": "Direct execution of a production function, service, repository, route, or workflow.",
+    "wiring": "Temporary structural evidence for behavior still embedded in the main component; must be replaced by behavior evidence in A2-A4.",
+    "invalid": "A copied model or source-string presence check cannot close a business rule."
+  },
+  "rules": [
+    {
+      "ruleId": "CASE-01",
+      "priority": "P0",
+      "designRule": "A stage event is written only to the explicitly active local and remote case pair.",
+      "productionEntries": ["src/features/rehabmind/components/workbench/rehabmind-workbench.tsx", "src/infrastructure/pilot/persistence/local-case-identity.ts"],
+      "legalExits": ["current-case-event-enqueued", "no-remote-case-no-event"],
+      "forbiddenExits": ["older-case-selected-from-record-order", "same-complaint-case-reused"],
+      "stateEffects": ["only active case revision may advance", "other cases remain unchanged"],
+      "evidence": [{ "test": "tests/unit/infrastructure/local-case-identity.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "AUDIT-03",
+      "priority": "P0",
+      "designRule": "Moving from stage N to N+1 records completion of stage N, never entry into stage N+1.",
+      "productionEntries": ["src/features/rehabmind/workflow/stage-events.ts"],
+      "legalExits": ["previous-stage-completion-event", "no-event-on-back-or-same-stage"],
+      "forbiddenExits": ["next-stage-completion-event", "history-replay-event"],
+      "stateEffects": ["timeline receives one semantically correct event"],
+      "evidence": [{ "test": "tests/workflow/stage-event-core.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "AUDIT-04",
+      "priority": "P0",
+      "designRule": "A stage completion is emitted once per case; retries reuse an ID only for identical event type and content; different event types cannot collide.",
+      "productionEntries": ["src/features/rehabmind/workflow/stage-events.ts", "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx", "db/sqlite/sqlite-pilot-case-repository.ts"],
+      "legalExits": ["identical-retry-replayed", "different-event-appended"],
+      "forbiddenExits": ["duplicate-stage-event", "cross-type-id-conflict"],
+      "stateEffects": ["retry does not advance revision", "new semantic event advances revision once"],
+      "evidence": [{ "test": "tests/workflow/stage-event-core.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-case-service.test.mjs", "type": "behavior", "status": "partial" }]
+    },
+    {
+      "ruleId": "FEED-02",
+      "priority": "P0",
+      "designRule": "Opening feedback captures an immutable source case, session, stage, and event context; later navigation cannot rewrite it.",
+      "productionEntries": ["src/infrastructure/pilot/feedback/feedback-context.ts", "src/features/rehabmind/components/feedback/feedback-panel.tsx", "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "legalExits": ["feedback-bound-to-open-context", "unlocated-feedback-with-explicit-null-event"],
+      "forbiddenExits": ["feedback-bound-to-previous-case", "open-dialog-context-mutates-after-navigation"],
+      "stateEffects": ["target context and submission context remain separately auditable"],
+      "evidence": [{ "test": "tests/unit/infrastructure/pilot-feedback-context.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-case-service.test.mjs", "type": "behavior", "status": "partial" }]
+    },
+    {
+      "ruleId": "SCHEMA-01",
+      "priority": "P0",
+      "designRule": "Only a complete supported snapshot may be stored or restored.",
+      "productionEntries": ["src/infrastructure/pilot/persistence/snapshot-schema.ts", "src/infrastructure/pilot/services/case-service.ts"],
+      "legalExits": ["valid-current-snapshot-stamped", "valid-legacy-snapshot-migrated"],
+      "forbiddenExits": ["partial-snapshot-stored", "future-or-corrupt-snapshot-restored"],
+      "stateEffects": ["invalid input leaves repository unchanged"],
+      "evidence": [{ "test": "tests/unit/infrastructure/pilot-snapshot-schema.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-case-service.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/fixtures-workflow.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "SYNC-01",
+      "priority": "P0",
+      "designRule": "Save completion, case switching, deletion, and delayed responses are resolved by case identity and operation generation.",
+      "productionEntries": ["src/infrastructure/pilot/persistence/persistence-controller.ts", "src/infrastructure/pilot/persistence/sync-core.ts", "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "legalExits": ["matching-operation-committed", "stale-response-ignored", "delete-tombstone-wins"],
+      "forbiddenExits": ["old-save-marks-new-case-saved", "deleted-case-resurrected", "response-updates-wrong-case"],
+      "stateEffects": ["each case has independent revision and sync status"],
+      "evidence": [{ "test": "tests/unit/infrastructure/pilot-sync-state-machine.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-persistence-controller.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-case-client-contract.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "DB-01",
+      "priority": "P0",
+      "designRule": "One process reuses one SQLite repository per configured database path; multi-row writes and purges are atomic and repositories can be explicitly closed.",
+      "productionEntries": ["app/api/pilot/_shared.ts", "db/sqlite/sqlite-pilot-case-repository.ts", "scripts/data/sqlite-migration-core.mjs"],
+      "legalExits": ["concurrent-requests-share-connection", "transaction-commits-all-rows", "close-then-reopen"],
+      "forbiddenExits": ["connection-opened-per-request", "partial-write-after-failure", "partial-migration-marked-applied"],
+      "stateEffects": ["revision and timeline advance atomically", "failed writes and migrations leave prior state readable"],
+      "evidence": [{ "test": "tests/integration/sqlite-api/a5-infrastructure-contract.integration.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/sqlite-failure-injection.integration.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/sqlite-migrations.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "ONBOARD-01",
+      "priority": "P0",
+      "designRule": "Case creation requires a valid public source channel and current server-validated consent; refusal blocks use, while case and administrator credentials remain independent.",
+      "productionEntries": ["src/infrastructure/pilot/onboarding/source-channel.ts", "src/infrastructure/pilot/consent/consent-core.ts", "app/api/pilot/cases/route.ts", "src/infrastructure/pilot/services/case-service.ts"],
+      "legalExits": ["valid-source-and-consent-create-case", "case-token-reads-own-case", "administrator-reads-by-public-code"],
+      "forbiddenExits": ["missing-forged-source-creates-case", "missing-stale-consent-creates-case", "declined-consent-enters-workspace", "public-code-reads-case"],
+      "stateEffects": ["source and consent evidence are stored on the case", "legacy invitation columns remain historical only"],
+      "evidence": [{ "test": "tests/unit/infrastructure/pilot-source-consent.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-first-use-core.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/p0-permission-decision-table.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/source-consent-operations.integration.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "SEC-02",
+      "priority": "P0",
+      "designRule": "Rate-limit identity trusts only a platform-controlled client address header and never a caller-selected forwarded chain.",
+      "productionEntries": ["app/api/pilot/_shared.ts", "scripts/deploy/vps-nginx-rehabmind-suffix.sh"],
+      "legalExits": ["cloudflare-address-used", "nginx-real-address-used", "unknown-without-trusted-address"],
+      "forbiddenExits": ["caller-x-forwarded-for-used"],
+      "stateEffects": ["one client cannot rotate a forged header to evade limits"],
+      "evidence": [{ "test": "tests/workflow/p0-known-defects.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "REL-03",
+      "priority": "P0",
+      "designRule": "Every stored snapshot, event, and quality result identifies the exact application build plus knowledge, decision, and schema versions.",
+      "productionEntries": ["scripts/deploy/generate-pilot-release.mjs", "src/infrastructure/pilot/release/release.generated.ts", "src/infrastructure/pilot/release/release-version.ts", "src/infrastructure/pilot/services/case-service.ts"],
+      "legalExits": ["build-manifest-generated", "versions-stored-with-case-and-event"],
+      "forbiddenExits": ["hard-coded-ambiguous-release", "build-or-rule-version-missing"],
+      "stateEffects": ["case timeline can be traced to commit and build identity"],
+      "evidence": [{ "test": "tests/unit/infrastructure/pilot-release.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/infrastructure/pilot-case-service.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-14",
+      "priority": "P0",
+      "designRule": "A quality summary accepts evidence only from the current run identity and fails closed for missing required scenarios.",
+      "productionEntries": ["scripts/quality/quality-summary.mjs"],
+      "legalExits": ["current-run-evidence-summarized"],
+      "forbiddenExits": ["stale-artifact-counted", "required-not-run-exits-zero"],
+      "stateEffects": ["summary records commit, build, run ID, and evidence paths"],
+      "evidence": [{ "test": "tests/unit/quality/quality-summary.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-15",
+      "priority": "P0",
+      "designRule": "The configured walkthrough URL retains its deployment pathname, including /RehabMind/.",
+      "productionEntries": ["playwright.config.ts"],
+      "legalExits": ["origin-and-path-preserved"],
+      "forbiddenExits": ["pathname-dropped-to-origin"],
+      "stateEffects": ["release smoke starts at the canonical deployed path"],
+      "evidence": [{ "test": "tests/unit/quality/playwright-config.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-16",
+      "priority": "P0",
+      "designRule": "Every P0 rule is traceable from oracle to production entry, legal and forbidden exits, state effects, and current evidence.",
+      "productionEntries": ["tests/workflow/p0-rule-matrix.json"],
+      "legalExits": ["matrix-valid-and-complete"],
+      "forbiddenExits": ["unregistered-P0", "evidence-without-production-entry"],
+      "stateEffects": ["coverage gaps fail validation"],
+      "evidence": [{ "test": "tests/workflow/p0-remediation-matrix.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/workflow-orchestrator.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-17",
+      "priority": "P0",
+      "designRule": "Page intents are converted to production workflow events and commands without a second page-owned workflow implementation.",
+      "productionEntries": ["src/features/rehabmind/controllers/use-workflow-controller.ts", "src/features/rehabmind/workflow/workflow-orchestrator.ts", "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "legalExits": ["intent-dispatches-production-event", "returned-command-drives-page-state"],
+      "forbiddenExits": ["page-recomputes-next-stage", "legacy-rule-returns-to-page"],
+      "stateEffects": ["one workflow owner determines transitions and commands"],
+      "evidence": [{ "test": "tests/workflow/workflow-command-adapter.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/unit/quality/architecture-boundaries.test.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-18",
+      "priority": "P0",
+      "designRule": "One test trace must execute the production orchestrator, service, HTTP routes, real SQLite persistence, repository restart, snapshot restore, and a continued follow-up session.",
+      "productionEntries": ["src/features/rehabmind/workflow/workflow-orchestrator.ts", "src/infrastructure/pilot/services/case-service.ts", "app/api/pilot/cases/[caseId]/progress/route.ts", "db/sqlite/sqlite-pilot-case-repository.ts"],
+      "legalExits": ["initial-session-persisted", "restart-restores-current-snapshot", "followup-session-continues-and-persists"],
+      "forbiddenExits": ["mock-repository-counted-as-vertical", "restored-case-loses-history", "followup-writes-wrong-case"],
+      "stateEffects": ["revision and event sequence remain monotonic across restart and follow-up"],
+      "evidence": [{ "test": "tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs", "type": "behavior", "status": "active" }]
+    },
+    {
+      "ruleId": "TEST-19",
+      "priority": "P0",
+      "designRule": "High-risk compound gates demonstrate condition independence and normal fixtures pass the production schema.",
+      "productionEntries": ["tests/workflow/decision-tables/p0-gates.json", "tests/fixtures/workflow/p0-minimal-case.json"],
+      "legalExits": ["condition-independence-demonstrated", "valid-fixture-accepted"],
+      "forbiddenExits": ["pairwise-only-P0-gate", "hand-built-invalid-normal-state"],
+      "stateEffects": ["condition reversal or invalid fixture fails tests"],
+      "evidence": [{ "test": "tests/workflow/p0-remediation-matrix.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/fixtures-workflow.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/p0-decision-table-execution.test.mjs", "type": "behavior", "status": "active" }, { "test": "tests/workflow/p0-permission-decision-table.test.mjs", "type": "behavior", "status": "active" }]
+    }
+  ]
+}

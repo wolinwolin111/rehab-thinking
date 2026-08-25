@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
-const source = await readFile(new URL("../app/training-progression-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/domain/rehab/training/training-progression-core.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`;
 const { adjustedTrainingExerciseId, nextSessionTrainingIds, INITIAL_TRAINING_PRIORITY } = await import(moduleUrl);

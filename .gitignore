@@ -49,3 +49,11 @@ next-env.d.ts
 /outputs/
 /work/
 /artifacts/quality/
+
+# local runtime databases
+/data/*.sqlite
+/data/*.sqlite-wal
+/data/*.sqlite-shm
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm

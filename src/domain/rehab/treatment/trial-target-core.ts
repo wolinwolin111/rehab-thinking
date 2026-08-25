@@ -6,8 +6,8 @@
  * 这里集中目标合并与跨问题复用规则，供动态队列编排复用。
  */
 
-import { candidateTreatmentKey, type CandidateTreatmentInput } from "./candidate-treatment-core";
-import { dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, type MotionFindingInput } from "./action-identity-core";
+import { candidateTreatmentKey, type CandidateTreatmentInput } from "@/src/domain/rehab/treatment/candidate-treatment-core";
+import { dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, type MotionFindingInput } from "@/src/domain/rehab/intake/action-identity-core";
 
 export type TrialTargetCandidate = CandidateTreatmentInput & { retestIds?: string[] };
 

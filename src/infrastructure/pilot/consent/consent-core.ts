@@ -12,7 +12,21 @@ type ConsentStorage = {
 };
 
 export function buildPilotConsentRecord(confirmedAt: string): PilotConsentRecord {
-  return { version: PILOT_CONSENT_VERSION, confirmedAt };
+  return parsePilotConsentRecord({ version: PILOT_CONSENT_VERSION, confirmedAt });
+}
+
+export function parsePilotConsentRecord(value: unknown): PilotConsentRecord {
+  if (!value || typeof value !== "object") throw new Error("consent is required");
+  const candidate = value as Record<string, unknown>;
+  if (candidate.version !== PILOT_CONSENT_VERSION) throw new Error("consent version is invalid");
+  if (typeof candidate.confirmedAt !== "string" || !Number.isFinite(Date.parse(candidate.confirmedAt))) {
+    throw new Error("consent confirmedAt is invalid");
+  }
+  return { version: PILOT_CONSENT_VERSION, confirmedAt: new Date(candidate.confirmedAt).toISOString() };
+}
+
+export function assertPilotConsentTimestamp(record: PilotConsentRecord, nowMs: number, allowedClockSkewMs = 5 * 60_000): void {
+  if (Date.parse(record.confirmedAt) > nowMs + allowedClockSkewMs) throw new Error("consent confirmedAt is in the future");
 }
 
 export function readPilotConsent(storage: ConsentStorage): PilotConsentRecord | null {
@@ -21,11 +35,7 @@ export function readPilotConsent(storage: ConsentStorage): PilotConsentRecord | 
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
-    const version = (parsed as Record<string, unknown>).version;
-    const confirmedAt = (parsed as Record<string, unknown>).confirmedAt;
-    if (typeof version !== "string" || !version) return null;
-    if (typeof confirmedAt !== "string" || !confirmedAt) return null;
-    return { version, confirmedAt };
+    return parsePilotConsentRecord(parsed);
   } catch {
     return null;
   }

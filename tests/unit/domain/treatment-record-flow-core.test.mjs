@@ -1,36 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadSource(path, replacements = {}) {
-  let source = await readFile(new URL(path, import.meta.url), "utf8");
-  for (const [from, to] of Object.entries(replacements)) source = source.replaceAll(from, to);
-  const code = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
-}
-
-const routingSource = await readFile(new URL("../app/retest-routing-core.ts", import.meta.url), "utf8");
-const identitySource = await readFile(new URL("../app/action-identity-core.ts", import.meta.url), "utf8");
-const recordBuilderSource = await readFile(new URL("../app/trial-record-builder.ts", import.meta.url), "utf8");
-const identityCode = ts.transpileModule(identitySource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const identityUrl = `data:text/javascript;base64,${Buffer.from(identityCode).toString("base64")}`;
-const routingCode = ts.transpileModule(routingSource.replace('from "./action-identity-core"', `from "${identityUrl}"`), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const builderCode = ts.transpileModule(recordBuilderSource, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const routingUrl = `data:text/javascript;base64,${Buffer.from(routingCode).toString("base64")}`;
-const builderUrl = `data:text/javascript;base64,${Buffer.from(builderCode).toString("base64")}`;
-const core = await loadSource("../app/treatment-record-flow-core.ts", {
-  "./retest-routing-core": routingUrl,
-  "./trial-record-builder": builderUrl,
-});
+const core = await loadTypeScriptModule("./src/domain/rehab/treatment/treatment-record-flow-core.ts");
 
 function input(overrides = {}) {
   return {

@@ -3,7 +3,7 @@ import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../app/rate-limit-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/infrastructure/http/rate-limit-core.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;

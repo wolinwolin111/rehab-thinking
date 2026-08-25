@@ -1,0 +1,37 @@
+{
+  "fixtureVersion": 1,
+  "case": {
+    "localCaseId": "fixture-case-001",
+    "sessionNumber": 1,
+    "snapshot": {
+      "schemaVersion": 1,
+      "consent": { "version": "pilot-consent-v1", "confirmedAt": "2026-08-23T00:00:00.000Z" },
+      "step": 0,
+      "intake": { "regionId": "knee", "description": "右膝下楼时不适" },
+      "safety": {},
+      "imaging": [],
+      "assessmentIndex": 0,
+      "assessmentResults": {},
+      "trialTargetIndex": 0,
+      "candidateIndex": 0,
+      "trialRecords": [],
+      "postScore": 0,
+      "movementResponse": "",
+      "exerciseFeedback": {},
+      "trainingComplete": false,
+      "followupMode": false,
+      "sessionNumber": 1,
+      "followupScore": 0,
+      "followupScoreHistory": [],
+      "followupStage": "review",
+      "followupPostScore": 0,
+      "followupCandidateId": "",
+      "followupTrialRecords": [],
+      "followupExerciseChoices": {},
+      "followupTrends": {}
+    },
+    "events": [
+      { "type": "case_created", "source": "system" }
+    ]
+  }
+}

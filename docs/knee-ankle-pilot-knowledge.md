@@ -481,4 +481,4 @@
 
 ---
 
-线下资料完整提炼过程见[关节经验地图](./clinical-record-joint-map.md)和[全身关节统一总结](./remaining-joint-record-map.md)。它们属于参考来源，不是现行产品规则。
+线下资料完整提炼过程见[关节经验地图](./research/clinical-record-joint-map.md)和[全身关节统一总结](./research/remaining-joint-record-map.md)。它们属于参考来源，不是现行产品规则。

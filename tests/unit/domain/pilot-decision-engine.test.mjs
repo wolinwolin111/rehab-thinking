@@ -1,16 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const transpile = (source) => ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const knowledgeSource = await readFile(new URL("../app/pilot-knowledge.ts", import.meta.url), "utf8");
-const knowledgeUrl = `data:text/javascript;base64,${Buffer.from(transpile(knowledgeSource)).toString("base64")}`;
-const engineSource = await readFile(new URL("../app/pilot-decision-engine.ts", import.meta.url), "utf8");
-const engineCode = transpile(engineSource).replace("./pilot-knowledge.ts", knowledgeUrl);
-const engineUrl = `data:text/javascript;base64,${Buffer.from(engineCode).toString("base64")}`;
 const {
   PILOT_ASSESSMENT_BUDGET,
   PILOT_QUESTION_BUDGET,
@@ -20,7 +11,7 @@ const {
   classifyPilotAssessmentEvidence,
   matchPilotRelations,
   rankPilotAssessmentIds,
-} = await import(engineUrl);
+} = await loadTypeScriptModule("./src/domain/rehab/shared/pilot-decision-engine.ts");
 
 test("assessment evidence keeps unknown separate from a clear normal screen", () => {
   assert.equal(classifyPilotAssessmentEvidence([

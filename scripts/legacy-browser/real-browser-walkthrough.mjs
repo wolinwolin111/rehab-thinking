@@ -3,7 +3,7 @@
  *
  * 用 playwright-core 驱动本机 Edge（`channel: "msedge"`），从症状输入一路点通
  * 六阶段，验证 P0 #1「训练后针对性自主放松」和 P0 #2「本阶段成果」真实出现。
- * 用法：先 `npm i playwright-core --no-save`，再 `node scripts/real-browser-walkthrough.mjs`。
+ * 用法：先 `npm i playwright-core --no-save`，再 `node scripts/legacy-browser/real-browser-walkthrough.mjs`。
  */
 
 import { chromium } from "playwright-core";

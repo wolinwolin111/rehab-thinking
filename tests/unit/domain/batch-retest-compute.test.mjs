@@ -16,9 +16,9 @@ async function loadBundle(paths) {
 }
 
 const core = await loadBundle([
-  "../app/treatment-response-core.ts",
-  "../app/trial-record-builder.ts",
-  "../app/batch-retest-compute.ts",
+  "../../../src/domain/rehab/treatment/treatment-response-core.ts",
+  "../../../src/domain/rehab/treatment/trial-record-builder.ts",
+  "../../../src/domain/rehab/retest/batch-retest-compute.ts",
 ]);
 
 test("all ranges resolved with chief drop yields better partial-contribution", () => {

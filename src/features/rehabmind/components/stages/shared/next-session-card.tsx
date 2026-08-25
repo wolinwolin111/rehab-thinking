@@ -1,10 +1,27 @@
 import { useState } from "react";
-import { formatRecommendedDateRange, type NextSessionRecommendation } from "./next-session-recommendation-core";
 
-export function NextSessionCard({ recommendation, nextSessionNumber, completedAt, onStart, onReportWorsening }: { recommendation: NextSessionRecommendation; nextSessionNumber: number; completedAt?: string; onStart?: () => void; onReportWorsening?: () => void }) {
+type NextSessionCardRecommendation = {
+  mode: "scheduled" | "medical-clearance";
+  earliestDays?: number;
+  label: string;
+  interimChecks: string[];
+  startCondition: string;
+  earlyReviewTriggers: string[];
+};
+
+type NextSessionCardProps = {
+  recommendation: NextSessionCardRecommendation;
+  nextSessionNumber: number;
+  completedAt?: string;
+  formatDateRange: (base: Date, recommendation: NextSessionCardRecommendation) => string;
+  onStart?: () => void;
+  onReportWorsening?: () => void;
+};
+
+export function NextSessionCard({ recommendation, nextSessionNumber, completedAt, formatDateRange, onStart, onReportWorsening }: NextSessionCardProps) {
   const [renderedAt] = useState(() => Date.now());
   const completedDate = completedAt ? new Date(completedAt) : new Date(renderedAt);
-  const dateLabel = formatRecommendedDateRange(completedDate, recommendation);
+  const dateLabel = formatDateRange(completedDate, recommendation);
   const earliestStart = recommendation.earliestDays === undefined ? null : new Date(completedDate.getTime() + recommendation.earliestDays * 86_400_000);
   const startingEarly = Boolean(earliestStart && renderedAt < earliestStart.getTime());
   const start = () => {

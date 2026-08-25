@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-const source = await readFile(new URL("../app/workflow-state-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/domain/rehab/shared/workflow-state-core.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;

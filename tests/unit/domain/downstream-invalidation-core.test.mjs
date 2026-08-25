@@ -3,7 +3,7 @@ import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../app/downstream-invalidation-core.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../../../src/domain/rehab/shared/downstream-invalidation-core.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: es2022Target() },
 }).outputText;

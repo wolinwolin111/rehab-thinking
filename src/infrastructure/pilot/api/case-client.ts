@@ -11,6 +11,8 @@ export type PilotCaseAccess = {
   replayed?: boolean;
 };
 
+export type PilotTestContext = { testRunId: string; scenarioId: string; createdBy: "test_workbench" };
+
 export type PilotCaseView = {
   caseRecord: Record<string, unknown>;
   snapshot: {
@@ -26,6 +28,8 @@ export type PilotCaseView = {
 
 export type SavePilotCaseProgressInput = {
   access: PilotCaseAccess;
+  requestId: string;
+  sessionId: string;
   snapshot: unknown;
   eventId: string;
   eventType: string;
@@ -101,12 +105,13 @@ export async function createPilotCase(input: {
   currentStage: string;
   isBilateral: boolean;
   hasSafetyStop: boolean;
-  inviteToken?: string | null;
+  source: import("@/src/infrastructure/pilot/onboarding/source-channel").PilotSourceRecord;
+  consent: import("@/src/infrastructure/pilot/consent/consent-core").PilotConsentRecord;
+  testContext?: PilotTestContext;
 }): Promise<PilotCaseAccess> {
-  const inviteToken = input.inviteToken ?? getPilotInviteToken();
-  const result = await requestJson<{ case: PilotCaseAccess }>("/api/pilot/cases", {
+  const { getPilotFirstUseFlowId } = await import("@/src/infrastructure/pilot/api/trial-operations-client");
+  const result = await requestJson<{ case: PilotCaseAccess }>(input.testContext ? "/api/pilot/test/cases" : "/api/pilot/cases", {
     method: "POST",
-    headers: inviteToken ? { "x-pilot-invite-token": inviteToken } : undefined,
     body: JSON.stringify({
       clientCreationId: input.clientCreationId,
       accessToken: input.accessToken,
@@ -114,6 +119,11 @@ export async function createPilotCase(input: {
       currentStage: input.currentStage,
       isBilateral: input.isBilateral,
       hasSafetyStop: input.hasSafetyStop,
+      firstUseFlowId: getPilotFirstUseFlowId(),
+      source: input.source,
+      consent: input.consent,
+      testRunId: input.testContext?.testRunId,
+      scenarioId: input.testContext?.scenarioId,
     }),
   });
   return result.case;
@@ -122,8 +132,12 @@ export async function createPilotCase(input: {
 export async function savePilotCaseProgress(input: SavePilotCaseProgressInput): Promise<SavePilotCaseProgressResult> {
   const result = await requestJson<{ progress: SavePilotCaseProgressResult }>(`/api/pilot/cases/${encodeURIComponent(input.access.caseId)}/progress`, {
     method: "POST",
-    headers: accessHeaders(input.access.accessToken),
+    headers: { ...accessHeaders(input.access.accessToken), "x-pilot-request-id": input.requestId },
     body: JSON.stringify({
+      requestId: input.requestId,
+      caseId: input.access.caseId,
+      sessionId: input.sessionId,
+      baseRevision: input.access.revision,
       expectedRevision: input.access.revision,
       snapshot: input.snapshot,
       eventId: input.eventId,
@@ -180,4 +194,3 @@ export async function submitPilotCaseFeedback(input: {
   });
   return result.feedback;
 }
-import { getPilotInviteToken } from "./pilot-invite-client";

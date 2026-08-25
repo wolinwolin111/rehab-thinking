@@ -6,9 +6,9 @@
  * 队列推进与专业工作台共用。依赖三个已抽取 core 的字段推导，只读取最小结构字段。
  */
 
-import { strengthAnswerResult, type StrengthAnswer, type StrengthUnableReason } from "./assessment-answer-core";
-import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "./function-assessment-core";
-import { activeMotionRecordComplete, motionNeedsPassive, passiveMotionRecordComplete } from "./motion-assessment-core";
+import { strengthAnswerResult, type StrengthAnswer, type StrengthUnableReason } from "@/src/domain/rehab/assessment/assessment-answer-core";
+import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
+import { activeMotionRecordComplete, motionNeedsPassive, passiveMotionRecordComplete } from "@/src/domain/rehab/assessment/motion-assessment-core";
 
 export type AssessmentCompleteItem = {
   kind?: string;

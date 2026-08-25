@@ -13,6 +13,7 @@ ls app-src | head -8
 echo "=== 2. env file ==="
 cat > app-src/.env <<'ENVEOF'
 PILOT_DB_DRIVER=sqlite
+PILOT_TRUSTED_PROXY=nginx
 NODE_ENV=production
 ENVEOF
 echo "base env written (secrets injected separately)"
@@ -26,6 +27,6 @@ node -e "const db=require('better-sqlite3')(':memory:');db.exec('create table t(
 
 echo "=== 5. migrations ==="
 cd "$HOME/rehabmind/app-src"
-PILOT_SQLITE_PATH="$HOME/rehabmind/data/rehabmind.sqlite" node scripts/migrate-sqlite.mjs
+PILOT_SQLITE_PATH="$HOME/rehabmind/data/rehabmind.sqlite" node scripts/data/migrate-sqlite.mjs
 
 echo "=== DONE-SETUP ==="

@@ -1,23 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadLocalDecisionCore() {
-  const tissueSource = await readFile(new URL("../app/tissue-pathway-core.ts", import.meta.url), "utf8");
-  const tissueOutput = ts.transpileModule(tissueSource, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  const tissueUrl = `data:text/javascript;base64,${Buffer.from(tissueOutput).toString("base64")}`;
-  const source = (await readFile(new URL("../app/local-limb-decision-core.ts", import.meta.url), "utf8"))
-    .replace("./tissue-pathway-core", tissueUrl);
-  const output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  return import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
-}
-
-const core = await loadLocalDecisionCore();
+const core = await loadTypeScriptModule("./src/domain/rehab/shared/local-limb-decision-core.ts");
 
 const areaLabels = {
   "thigh-local": { front: "大腿前侧", back: "大腿后侧", medial: "大腿内侧", lateral: "大腿外侧" },

@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
 
 const [picker, demo, styles, walkthrough] = await Promise.all([
-  readFile(new URL("../app/muscle-region-location-picker.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/rehabmind-complete-demo.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/rm-visual-theme.css", import.meta.url), "utf8"),
-  readFile(new URL("../scripts/real-browser-walkthrough.mjs", import.meta.url), "utf8"),
+  readFile(new URL("../../src/features/rehabmind/components/assessment/muscle-region-location-picker.tsx", import.meta.url), "utf8"),
+  readRehabMindUiSource(),
+  readFile(new URL("../../src/features/rehabmind/styles/rm-visual-theme.css", import.meta.url), "utf8"),
+  readFile(new URL("../../scripts/legacy-browser/real-browser-walkthrough.mjs", import.meta.url), "utf8"),
 ]);
 
 test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {

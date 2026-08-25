@@ -7,44 +7,44 @@ import {
   motionIdFromFinding,
   motionWasSymptomatic,
   samePhysicalAction,
-} from "./action-identity-core";
+} from "@/src/domain/rehab/intake/action-identity-core";
 import {
   candidateDirectionChain,
   directionChain,
   includesAny,
   orderCandidatesByChain,
   pilotTreatmentMatchesCandidate,
-} from "./candidate-order-core";
+} from "@/src/domain/rehab/treatment/candidate-order-core";
 import {
   candidateDedupKey,
   candidateMatchesTensionLocation,
   isPatellaSpecificCandidate,
   selectTreatmentChainCandidates,
-} from "./candidate-treatment-core";
-import { candidateAllowedInSharpPath, candidateIsAvailable } from "./candidate-safety-core";
-import { candidatePilotMotionIds } from "./candidate-action-core";
-import { candidateRelevance } from "./candidate-scoring-core";
+} from "@/src/domain/rehab/treatment/candidate-treatment-core";
+import { candidateAllowedInSharpPath, candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-safety-core";
+import { candidatePilotMotionIds } from "@/src/domain/rehab/treatment/candidate-action-core";
+import { candidateRelevance } from "@/src/domain/rehab/treatment/candidate-scoring-core";
 import {
   chiefActionLabel,
   chiefMotionDirectionId,
   hasClearChiefAction,
   isAcuteTrauma,
   assessmentSymptomCanDriveRetest,
-} from "./chief-action-core";
-import { strengthFindingAnswer } from "./assessment-answer-core";
+} from "@/src/domain/rehab/intake/chief-action-core";
+import { strengthFindingAnswer } from "@/src/domain/rehab/assessment/assessment-answer-core";
 import {
   filterPatellaFindingsToLimited,
   isPatellaDirectionId,
   limitedPatellaDirections,
   patellaMobilityUnitTitle,
-} from "./patella-mobility-core";
-import { consolidateTrialTargetsByTreatment } from "./trial-target-core";
+} from "@/src/domain/rehab/assessment/patella-mobility-core";
+import { consolidateTrialTargetsByTreatment } from "@/src/domain/rehab/treatment/trial-target-core";
 import {
   normalizePilotMuscleRegion,
   pilotMotionKnowledge,
   primaryRetestMotionIdsForRegion,
   professionalAssessmentTitle,
-} from "./pilot-motion-muscle-knowledge";
+} from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
 import {
   KNEE_CORE_CANDIDATE_IDS,
   kneeCandidateAllowedInTreatmentQueue,
@@ -52,8 +52,8 @@ import {
   kneeLegacyCandidateIdsForUnit,
   kneeRetestInstruction,
   kneeTreatmentInstruction,
-} from "./knee-workflow-adapter";
-import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "./trial-target-types";
+} from "@/src/domain/rehab/shared/knee-workflow-adapter";
+import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments } = ctx;

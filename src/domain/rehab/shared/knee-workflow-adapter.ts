@@ -9,7 +9,7 @@ import {
   type KneeTreatmentRecord,
   type KneeTreatmentUnit,
   type KneeUserRole,
-} from "./knee-decision-core";
+} from "@/src/domain/rehab/shared/knee-decision-core";
 
 export const KNEE_CORE_CANDIDATE_IDS: Record<string, string[]> = {
   "knee-swelling-management": ["knee-swelling-care"],

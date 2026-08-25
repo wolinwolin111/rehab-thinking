@@ -1,6 +1,6 @@
 # RehabMind 多关节“松解—关节—主动控制”路径方案
 
-> 状态：研究参考。首发膝踝规则以[首发知识库](./knee-ankle-pilot-knowledge.md)和[决策引擎规范](./rehab-decision-framework.md)为准。
+> 状态：研究参考。首发膝踝规则以[首发知识库](../knee-ankle-pilot-knowledge.md)和[决策引擎规范](../rehab-decision-framework.md)为准。
 
 > 版本：方案审核稿。先用于确认临床思路，不立即当成诊断规则或面向普通用户的手法教程。
 

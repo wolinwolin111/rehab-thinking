@@ -11,9 +11,17 @@ import {
   type PilotCaseRepository,
   type PilotReleaseVersions,
   type SaveProgressResult,
-} from "./pilot-case-contracts";
-import { buildPilotCaseView, type PilotCaseView } from "./pilot-case-view";
-import { assertAndStampPilotSnapshotSchemaVersion } from "./pilot-snapshot-schema";
+} from "@/src/infrastructure/pilot/api/case-contracts";
+import { buildPilotCaseView, type PilotCaseView } from "@/src/infrastructure/pilot/services/case-view";
+import { assertAndStampPilotSnapshotSchemaVersion } from "@/src/infrastructure/pilot/persistence/snapshot-schema";
+import { projectWorkflowState } from "@/src/features/rehabmind/workflow/workflow-orchestrator";
+import { assertPilotConsentTimestamp, attachPilotConsent, parsePilotConsentRecord, type PilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
+import { parsePilotSourceRecord, type PilotSourceRecord } from "@/src/infrastructure/pilot/onboarding/source-channel";
+import {
+  buildPilotInvariantAlert,
+  inspectWorkflowProjectionInvariants,
+  parseWorkflowProjectionObservation,
+} from "@/src/features/rehabmind/workflow/workflow-invariants";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -43,12 +51,18 @@ export type CreatePilotCaseInput = {
   currentStage?: string;
   isBilateral?: boolean;
   hasSafetyStop?: boolean;
+  source: PilotSourceRecord;
+  consent: PilotConsentRecord;
+  firstUseFlowId?: string;
+  testContext?: { testRunId: string; scenarioId: string; createdBy: "test_workbench" };
 };
 
 export type SavePilotCaseProgressInput = {
   caseId: string;
   accessToken: string;
   expectedRevision: number;
+  requestId?: string;
+  sessionId?: string;
   snapshot: unknown;
   eventType: PilotCaseEventType;
   eventPayload: unknown;
@@ -168,29 +182,69 @@ export class PilotCaseService {
     };
   }
 
-  async createCase(input: CreatePilotCaseInput = {}): Promise<PilotCaseAccess> {
+  async createCase(input: CreatePilotCaseInput): Promise<PilotCaseAccess> {
     const clientCreationId = input.clientCreationId ?? this.createId();
     if (typeof clientCreationId !== "string" || clientCreationId.trim().length < 4 || clientCreationId.length > 128) {
       throw new PilotCaseValidationError("clientCreationId must be between 4 and 128 characters");
     }
     const accessToken = input.accessToken ?? this.createAccessToken();
     assertAccessToken(accessToken);
+    let source: PilotSourceRecord;
+    let consent: PilotConsentRecord;
+    const now = this.now();
+    try {
+      source = parsePilotSourceRecord(input.source, { allowInternalTest: Boolean(input.testContext) });
+      consent = parsePilotConsentRecord(input.consent);
+      assertPilotConsentTimestamp(consent, Date.parse(now));
+    } catch (error) {
+      throw new PilotCaseValidationError(error instanceof Error ? error.message : "source or consent is invalid");
+    }
+    const firstUseFlowId = input.firstUseFlowId?.trim() || null;
+    if (firstUseFlowId && (!/^[A-Za-z0-9_-]{8,128}$/.test(firstUseFlowId))) {
+      throw new PilotCaseValidationError("firstUseFlowId must be 8 to 128 URL-safe characters");
+    }
+    const testContext = input.testContext ?? null;
+    if (testContext) {
+      if (source.channel !== "internal_test") throw new PilotCaseValidationError("test cases must use internal_test source");
+      if (!/^[A-Za-z0-9_-]{8,128}$/.test(testContext.testRunId)) throw new PilotCaseValidationError("testRunId is invalid");
+      if (!/^[A-Za-z0-9_-]{2,128}$/.test(testContext.scenarioId)) throw new PilotCaseValidationError("scenarioId is invalid");
+    } else if (source.channel === "internal_test") {
+      throw new PilotCaseValidationError("internal_test source requires test context");
+    }
     const existing = await this.dependencies.repository.getCaseByClientCreationId(clientCreationId);
     if (existing) return this.replayExistingCase(existing, accessToken);
     const caseId = this.createId();
-    const publicCode = this.createPublicCode();
-    const now = this.now();
+    const publicCode = testContext ? `TEST-${this.createPublicCode()}` : this.createPublicCode();
+    const initialSnapshot = input.initialSnapshot && typeof input.initialSnapshot === "object"
+      ? input.initialSnapshot as Record<string, unknown>
+      : {};
     const snapshotPayload = serializePilotPayload(
-      assertAndStampPilotSnapshotSchemaVersion(input.initialSnapshot ?? {}, "initialSnapshot"),
+      assertAndStampPilotSnapshotSchemaVersion(attachPilotConsent(initialSnapshot, consent), "initialSnapshot", { requireConsent: true }),
       "initialSnapshot",
     );
-    const eventPayload = JSON.stringify({ source: "case_creation" });
+    const eventPayload = JSON.stringify({
+      source: "case_creation",
+      sourceChannel: source.channel,
+      sourceDetail: source.detail,
+      firstUseFlowId,
+    });
     const versions = this.dependencies.versions;
     const caseRecord: PilotCaseRecord = {
       id: caseId,
       clientCreationId,
       publicCode,
       accessTokenHash: await this.hashAccessToken(accessToken),
+      inviteTokenHash: null,
+      inviteSource: null,
+      sourceChannel: source.channel,
+      sourceDetail: source.detail,
+      consentVersion: consent.version,
+      consentConfirmedAt: consent.confirmedAt,
+      isTestCase: Boolean(testContext),
+      testRunId: testContext?.testRunId ?? null,
+      scenarioId: testContext?.scenarioId ?? null,
+      createdBy: testContext?.createdBy ?? null,
+      firstUseFlowId,
       status: "active",
       currentStage: input.currentStage ?? null,
       isTrial: true,
@@ -243,35 +297,88 @@ export class PilotCaseService {
     const versions = this.dependencies.versions;
     const now = this.now();
     const eventId = input.eventId ?? this.createId();
-    const snapshotPayload = serializePilotPayload(
-      assertAndStampPilotSnapshotSchemaVersion(input.snapshot, "snapshot"),
-      "snapshot",
+    const validatedSnapshot = assertAndStampPilotSnapshotSchemaVersion(input.snapshot, "snapshot", { requireConsent: true });
+    const snapshotPayload = serializePilotPayload(validatedSnapshot, "snapshot");
+    const rawEventPayload = input.eventPayload && typeof input.eventPayload === "object" && !Array.isArray(input.eventPayload)
+      ? input.eventPayload as Record<string, unknown>
+      : input.eventPayload;
+    const workflowContainer = rawEventPayload && typeof rawEventPayload === "object"
+      ? (rawEventPayload as Record<string, unknown>).workflow
+      : null;
+    const workflowInput = parseWorkflowProjectionObservation(
+      workflowContainer && typeof workflowContainer === "object"
+        ? (workflowContainer as Record<string, unknown>).projectionInput
+        : null,
     );
-    const eventPayload = serializePilotPayload(input.eventPayload, "eventPayload");
+    const invariantCodes = workflowInput
+      ? inspectWorkflowProjectionInvariants({
+          snapshotStep: Number((validatedSnapshot as Record<string, unknown>).step ?? 0),
+          projection: projectWorkflowState(workflowInput),
+        })
+      : [];
+    if (invariantCodes.length) {
+      console.warn("pilot workflow invariant", buildPilotInvariantAlert({
+        codes: invariantCodes,
+        requestId: input.requestId ?? eventId,
+        caseId: input.caseId,
+        sessionId: input.sessionId ?? `session-${input.sessionCount ?? 0}`,
+      }));
+    }
+    const eventPayload = serializePilotPayload(
+      input.requestId && input.sessionId && rawEventPayload && typeof rawEventPayload === "object"
+        ? {
+            ...rawEventPayload,
+            technical: {
+              requestId: input.requestId,
+              caseId: input.caseId,
+              sessionId: input.sessionId,
+              baseRevision: input.expectedRevision,
+              invariantCodes,
+            },
+          }
+        : rawEventPayload,
+      "eventPayload",
+    );
 
-    return this.dependencies.repository.saveProgress({
-      caseId: caseRecord.id,
-      expectedRevision: input.expectedRevision,
-      snapshot: {
-        payload: snapshotPayload,
-        createdAt: (await this.dependencies.repository.getSnapshot(caseRecord.id))?.createdAt ?? now,
-        updatedAt: now,
-      },
-      event: {
-        id: eventId,
-        type: input.eventType,
-        payload: eventPayload,
-        source: "user",
-        occurredAt: now,
-        ...versions,
-      },
-      patch: {
-        currentStage: input.currentStage,
-        isBilateral: input.isBilateral,
-        hasSafetyStop: input.hasSafetyStop,
-        sessionCount: input.sessionCount,
-      },
-    });
+    const currentSnapshot = await this.dependencies.repository.getSnapshot(caseRecord.id);
+    try {
+      return await this.dependencies.repository.saveProgress({
+        caseId: caseRecord.id,
+        expectedRevision: input.expectedRevision,
+        snapshot: {
+          payload: snapshotPayload,
+          createdAt: currentSnapshot?.createdAt ?? now,
+          updatedAt: now,
+        },
+        event: {
+          id: eventId,
+          type: input.eventType,
+          payload: eventPayload,
+          source: "user",
+          occurredAt: now,
+          ...versions,
+        },
+        patch: {
+          currentStage: input.currentStage,
+          isBilateral: input.isBilateral,
+          hasSafetyStop: input.hasSafetyStop,
+          sessionCount: input.sessionCount,
+        },
+      });
+    } catch (error) {
+      const replayEvent = error instanceof PilotCaseConflictError
+        ? await this.dependencies.repository.getEventById(eventId)
+        : null;
+      if (error instanceof PilotCaseConflictError && !replayEvent && currentSnapshot && input.expectedRevision < currentSnapshot.revision) {
+        console.warn("pilot workflow invariant", buildPilotInvariantAlert({
+          codes: ["INV-REVISION-REGRESSION"],
+          requestId: input.requestId ?? eventId,
+          caseId: input.caseId,
+          sessionId: input.sessionId ?? `session-${input.sessionCount ?? 0}`,
+        }));
+      }
+      throw error;
+    }
   }
 
   async submitFeedback(input: SubmitPilotCaseFeedbackInput) {
@@ -283,24 +390,40 @@ export class PilotCaseService {
     if (input.message && input.message.length > 2000) {
       throw new PilotCaseValidationError("feedback message is too long");
     }
+    const warnFeedbackInvariant = (code: "INV-FEEDBACK-EVENT-CROSSCASE" | "INV-FEEDBACK-SESSION-MISMATCH") => {
+      console.warn("pilot workflow invariant", buildPilotInvariantAlert({
+        codes: [code],
+        requestId: input.eventId ?? input.sourceEventId ?? "feedback-reference",
+        caseId: caseRecord.id,
+        sessionId: `session-${input.sourceSessionNumber ?? input.sessionNumber ?? "unknown"}`,
+      }));
+    };
+    const maximumSession = Math.max(1, caseRecord.sessionCount);
     for (const [label, value] of [["sessionNumber", input.sessionNumber], ["sourceSessionNumber", input.sourceSessionNumber]] as const) {
       if (value !== undefined && (!Number.isInteger(value) || value < 1)) {
         throw new PilotCaseValidationError(`${label} must be a positive integer`);
+      }
+      if (value !== undefined && value > maximumSession) {
+        warnFeedbackInvariant("INV-FEEDBACK-SESSION-MISMATCH");
+        throw new PilotCaseValidationError(`${label} does not belong to this case`);
       }
     }
     if (input.eventId) {
       const event = await this.dependencies.repository.getEventById(input.eventId);
       if (!event || event.caseId !== caseRecord.id) {
+        warnFeedbackInvariant("INV-FEEDBACK-EVENT-CROSSCASE");
         throw new PilotCaseValidationError("feedback event does not belong to this case");
       }
     }
     if (input.sourceEventId) {
       const event = await this.dependencies.repository.getEventById(input.sourceEventId);
       if (!event || event.caseId !== caseRecord.id) {
+        warnFeedbackInvariant("INV-FEEDBACK-EVENT-CROSSCASE");
         throw new PilotCaseValidationError("feedback source event does not belong to this case");
       }
     }
     const feedbackEventId = this.createId();
+    const createdAt = this.now();
     return this.dependencies.repository.saveFeedback({
       id: this.createId(),
       caseId: caseRecord.id,
@@ -314,7 +437,10 @@ export class PilotCaseService {
       sourceSessionNumber: input.sourceSessionNumber ?? null,
       sourceStage: input.sourceStage?.trim() || null,
       sourceEventId: input.sourceEventId ?? null,
-      createdAt: this.now(),
+      status: "open",
+      ...this.dependencies.versions,
+      createdAt,
+      updatedAt: null,
       timelineEvent: {
         id: feedbackEventId,
         type: "feedback_submitted",
@@ -327,7 +453,7 @@ export class PilotCaseService {
           sourceEventId: input.sourceEventId ?? null,
         }, "feedbackEventPayload"),
         source: "user",
-        occurredAt: this.now(),
+        occurredAt: createdAt,
         ...this.dependencies.versions,
       },
     });
@@ -375,7 +501,15 @@ export class PilotCaseService {
   private async authorize(caseId: string, accessToken: string) {
     const caseRecord = await this.dependencies.repository.getCaseById(caseId);
     if (!caseRecord) throw new PilotCaseNotFoundError();
-    if (caseRecord.status !== "active") throw new PilotCaseUnauthorizedError();
+    if (caseRecord.status !== "active") {
+      console.warn("pilot workflow invariant", buildPilotInvariantAlert({
+        codes: ["INV-DELETED-CASE-RESUMED"],
+        requestId: "deleted-case-access",
+        caseId,
+        sessionId: "unknown",
+      }));
+      throw new PilotCaseUnauthorizedError();
+    }
     const tokenHash = await this.hashAccessToken(accessToken);
     if (tokenHash !== caseRecord.accessTokenHash) throw new PilotCaseUnauthorizedError();
     return caseRecord;

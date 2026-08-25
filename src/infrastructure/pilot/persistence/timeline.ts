@@ -1,4 +1,4 @@
-import { PILOT_CASE_EVENT_TYPES, parsePilotPayload, type PilotCaseEventRecord } from "./pilot-case-contracts";
+import { PILOT_CASE_EVENT_TYPES, parsePilotPayload, type PilotCaseEventRecord } from "@/src/infrastructure/pilot/api/case-contracts";
 
 export type PilotTimelineIssue = {
   code: "sequence_gap" | "duplicate_sequence" | "invalid_type" | "invalid_source" | "invalid_payload" | "time_regression";
@@ -52,4 +52,3 @@ export function reconstructPilotCaseTimeline(events: readonly PilotCaseEventReco
 
   return { valid: issues.length === 0, events: ordered, issues };
 }
-

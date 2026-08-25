@@ -1,6 +1,6 @@
 export type LocalLimbRegionId = "thigh-local" | "calf-local";
 export type LocalLimbArea = "front" | "back" | "medial" | "lateral";
-import { buildTissuePathway, type TissuePathwayId } from "./tissue-pathway-core";
+import { buildTissuePathway, type TissuePathwayId } from "@/src/domain/rehab/safety/tissue-pathway-core";
 
 export type LocalLimbPhase = "acute-strain" | "contusion" | "bone-stress" | "tendon-load" | "nonacute-tension" | "strength-only" | "needs-reassessment";
 export type LocalFindingResult = "normal" | "limited" | "painful" | "weak" | "unknown";

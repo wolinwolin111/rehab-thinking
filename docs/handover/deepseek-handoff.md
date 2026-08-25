@@ -15,18 +15,18 @@
 按下面顺序阅读，不要一上来直接改 `rehabmind-complete-demo.tsx`：
 
 1. 本文，了解仓库地图、状态流和已知边界。
-2. [产品规范](./rehabmind-complete-product-design.md)，了解页面、模式、数据记录和产品范围。
-3. [决策引擎规范](./rehab-decision-framework.md)，了解信息如何变成评估、问题、处理、复测和训练。
-4. [膝踝首发知识库](./knee-ankle-pilot-knowledge.md)，了解膝、踝、大腿、小腿的具体候选和优先级。
-5. [首发场景验收](./pilot-scenario-coverage.md)，了解必须走通的场景和发布门槛。
-6. [真实浏览器走读纪律](./real-browser-flow-audit.md)，了解为什么纯代码测试不够，以及真实页面如何记录。
+2. [产品规范](../rehabmind-complete-product-design.md)，了解页面、模式、数据记录和产品范围。
+3. [决策引擎规范](../rehab-decision-framework.md)，了解信息如何变成评估、问题、处理、复测和训练。
+4. [膝踝首发知识库](../knee-ankle-pilot-knowledge.md)，了解膝、踝、大腿、小腿的具体候选和优先级。
+5. [首发场景验收](../pilot-scenario-coverage.md)，了解必须走通的场景和发布门槛。
+6. [真实浏览器走读纪律](../quality/real-browser-flow-audit.md)，了解为什么纯代码测试不够，以及真实页面如何记录。
 
 历史讨论、旧方案和迁移记录只用于追溯，不参与当前规则：
 
 - `docs/archive/`
-- `docs/clinical-record-joint-map.md`
-- `docs/remaining-joint-record-map.md`
-- `docs/full-joint-demo-test-cases.md`
+- `docs/research/clinical-record-joint-map.md`
+- `docs/research/remaining-joint-record-map.md`
+- `docs/quality/full-joint-demo-test-cases.md`
 - 其他未列入 `docs/README.md` 的方案文档
 
 如果历史文件与四份正式文档冲突，修改正式文档或提出审核问题，不要把历史规则重新接回代码。
@@ -134,7 +134,7 @@ app/page.tsx
        └─ 总结与保存
 ```
 
-`app/rehabmind-complete-demo.tsx` 目前仍是最大组件，约 69 万字符。它既负责页面编排，也保留部分尚未完全抽离的决策衔接。后续修改必须优先把纯规则放入独立核心，再由页面调用，避免继续在 JSX 条件中复制规则。
+`src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` 目前仍是最大组件，约 69 万字符。它既负责页面编排，也保留部分尚未完全抽离的决策衔接。后续修改必须优先把纯规则放入独立核心，再由页面调用，避免继续在 JSX 条件中复制规则。
 
 ### 4.2 按职责分层
 
@@ -168,12 +168,12 @@ flowchart LR
 | 文件 | 作用 | 修改时注意 |
 | --- | --- | --- |
 | `app/page.tsx` | 唯一页面入口 | 不在此增加业务规则 |
-| `app/rehabmind-complete-demo.tsx` | 六阶段页面、状态、渲染和决策衔接 | 修改前先读相关纯核心和测试；避免大范围重写 |
-| `app/complete-demo.css` | 桌面端视觉样式 | 不用 CSS 修复状态机问题 |
-| `app/full-demo-content.ts` | 通用区域、检查、候选、训练内容 | 内容修改需同步验收用例 |
-| `app/first-batch-modules.ts` | 首批模块和训练单元 | 仅放已审核的首发内容 |
+| `src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` | 六阶段页面、状态、渲染和决策衔接 | 修改前先读相关纯核心和测试；避免大范围重写 |
+| `src/features/rehabmind/styles/complete-demo.css` | 桌面端视觉样式 | 不用 CSS 修复状态机问题 |
+| `src/knowledge/pilot/full-demo-content.ts` | 通用区域、检查、候选、训练内容 | 内容修改需同步验收用例 |
+| `src/knowledge/pilot/first-batch-modules.ts` | 首批模块和训练单元 | 仅放已审核的首发内容 |
 | `app/rehab-library.ts` | 较完整的旧/通用内容 | 不是首发规则的唯一来源 |
-| `app/lower-limb-location-picker.tsx` | 下肢人体图和局部点击区 | 图层、热区和语义区域必须一一对应 |
+| `src/features/rehabmind/components/assessment/lower-limb-location-picker.tsx` | 下肢人体图和局部点击区 | 图层、热区和语义区域必须一一对应 |
 
 #### 首发知识和决策
 

@@ -2,11 +2,13 @@
 
 更新日期：2026-08-22
 
+> 当前状态说明（2026-08-23）：本文保留上一轮 34 项整改的历史施工细节和证据。项目已经由 Cloudflare/D1 转为 VPS/SQLite，且最新审查发现案例事件、反馈上下文、快照校验、同步竞态、测试证据时效和发布回滚等新问题。当前执行顺序、完成定义和粉丝群开放门槛以[当前整改优化执行方案](./rehabmind-current-remediation-execution-plan.md)为准；本文中与其冲突的 D1、预览环境和浏览器三轮要求不再作为现行口径。
+
 ## 1. 文档定位
 
 本文是后续执行者的施工手册，覆盖质量整改登记中的全部 34 项。本文不修改产品、临床或决策规则；遇到规则含义不明确时，必须回到文档中心的四份正式文档确认，不能由执行者自行补出新的康复逻辑。
 
-本文最初用于约束施工顺序；当前执行已经完成本地 P0 三轮、预览核心部署验收和主要网络异常场景，进入发散组合、纯用户路径、日志出口和正式试用环境隔离批次。已完成的实现与证据以[质量审查与整改登记](./rehabmind-quality-remediation-register.md)及测试报告为准；尚未通过完整验收的项目仍保持“整改中”或“待整改”。
+本文最初用于约束施工顺序；当前执行已经完成本地 P0 三轮、预览核心部署验收和主要网络异常场景，进入发散组合、纯用户路径、日志出口和正式试用环境隔离批次。已完成的实现与证据以[质量审查与整改登记](../quality/rehabmind-quality-remediation-register.md)及测试报告为准；尚未通过完整验收的项目仍保持“整改中”或“待整改”。
 
 本轮续执行结果：关键页面视觉基线已建立并通过 3/3；隔离、保存中刷新/超时和急性高风险远程脚本已补成功路径清理，失败路径的全局 runId 清理仍未完成。RET-03 的 IndexedDB 边界夹具仍可通过，但当前膝关节真实用户路径没有自然触发复用分支，故不升级为纯用户 E2E；Cloudflare tail 仍受日志流连接超时阻塞。预览中已确认属于本轮测试的残留案例已按精确 ID 清理，未批量删除其他活动案例。
 
@@ -93,7 +95,7 @@ Node、npm、Wrangler 版本
 
 ## 6. 测试整改施工方案
 
-测试的完整目标、场景合同和运行节奏见[测试整改实施方案](./rehabmind-test-plan.md#11-测试整改实施方案)。本节提供文件级实施步骤。
+测试的完整目标、场景合同和运行节奏见[测试整改实施方案](../quality/rehabmind-test-plan.md#11-测试整改实施方案)。本节提供文件级实施步骤。
 
 ### TEST-01：统一测试入口和依赖
 
@@ -107,7 +109,7 @@ Node、npm、Wrangler 版本
 2. 新建 `playwright.config.ts`，定义 `baseURL`、浏览器项目、失败截图、trace、视频、HTML/JUnit 报告、超时和 worker 数。
 3. 增加命令：`test:unit`、`test:integration`、`test:browser:target`、`test:browser:p0`、`test:browser:full`、`test:visual`、`test:explore`、`test:preview`。
 4. 将 `npm test` 定义为本地提交门槛，并在输出第一行明确列出包含与不包含的测试层。
-5. 新建 `scripts/quality-summary.mjs` 聚合各层结果，禁止只输出总测试条数。
+5. 新建 `scripts/quality/quality-summary.mjs` 聚合各层结果，禁止只输出总测试条数。
 6. 将旧浏览器脚本标记为 `legacy`；迁移完成前保留，但不得计入新门禁。
 
 **测试与验收**：
@@ -137,7 +139,7 @@ Node、npm、Wrangler 版本
 
 **目标**：保留现有纯状态随机测试，但不再把它当作用户流程覆盖；新增真实页面有种子探索器。
 
-**主要位置**：`tests/random-state-sequence.test.mjs`；新建 `tests/browser/exploration/`。
+**主要位置**：`tests/workflow/random-state-sequence.test.mjs`；新建 `tests/browser/exploration/`。
 
 **实施步骤**：
 
@@ -155,7 +157,7 @@ Node、npm、Wrangler 版本
 
 **目标**：测试调用真实函数、接口或页面，不通过正则检索源码证明功能存在。
 
-**主要位置**：`tests/real-browser-audit-contract.test.mjs`、`tests/rendered-html.test.mjs`、其他读取源码后 `assert.match` 的测试。
+**主要位置**：`tests/unit/quality/real-browser-audit-contract.test.mjs`、`tests/component/rendered-html.test.mjs`、其他读取源码后 `assert.match` 的测试。
 
 **实施步骤**：
 
@@ -173,7 +175,7 @@ Node、npm、Wrangler 版本
 
 **目标**：测试实际 migration、约束、事务和路由，而不只测试内存仓储替身。
 
-**主要位置**：`db/schema.ts`、`db/pilot-case-repository.ts`、`drizzle/`、`app/api/pilot/`、新建 `tests/integration/d1/`。
+**主要位置**：`db/schema/pilot-schema.ts`、`db/repository/pilot-case-repository.ts`、`drizzle/`、`app/api/pilot/`、新建 `tests/integration/d1/`。
 
 **实施步骤**：
 
@@ -207,7 +209,7 @@ Node、npm、Wrangler 版本
 
 **目标**：场景始终执行自己声明的业务选择，不能碰巧走到终点。
 
-**主要位置**：`scripts/real-browser-fixed-scenario-helpers.mjs`、`real-browser-ret-action-identity.mjs` 等候选循环脚本。
+**主要位置**：`scripts/legacy-browser/real-browser-fixed-scenario-helpers.mjs`、`real-browser-ret-action-identity.mjs` 等候选循环脚本。
 
 **实施步骤**：
 
@@ -224,7 +226,7 @@ Node、npm、Wrangler 版本
 
 **目标**：自动发现明显的尺寸、间距、换行、遮挡和错误素材问题。
 
-**主要位置**：`app/complete-demo.css`、关键页面组件、`tests/browser/visual/`。
+**主要位置**：`src/features/rehabmind/styles/complete-demo.css`、关键页面组件、`tests/browser/visual/`。
 
 **实施步骤**：
 
@@ -271,7 +273,7 @@ Node、npm、Wrangler 版本
 
 **实施步骤**：
 
-1. 建立机器可读 `tests/scenario-registry.json`，字段包含 scenarioId、规则 ID、优先级、evidenceType、脚本、浏览器和负责模块。
+1. 建立机器可读 `tests/workflow/scenario-registry.json`，字段包含 scenarioId、规则 ID、优先级、evidenceType、脚本、浏览器和负责模块。
 2. 测试报告输出每个 scenarioId 的结果、commit、环境、开始/结束时间和证据路径。
 3. 编写校验脚本：重复 ID、缺脚本、P0 无 E2E、无反向断言、矩阵状态高于证据时失败。
 4. 文档只引用生成摘要；历史数字保留在历史执行记录，不作为当前通过状态。
@@ -316,7 +318,7 @@ Node、npm、Wrangler 版本
 
 **问题根因**：恢复逻辑使用远端 `revision >= localRevision` 即采用远端快照，无法区分“本地干净”与“本地在同一服务器 revision 上继续修改”。
 
-**主要位置**：`app/rehabmind-complete-demo.tsx` 的恢复与同步队列、`app/pilot-case-client.ts`、快照表。
+**主要位置**：`src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` 的恢复与同步队列、`src/infrastructure/pilot/api/case-client.ts`、快照表。
 
 **目标数据模型**：本地保存信封至少包含 `serverRevision`、`lastSyncedHash`、`localContentHash`、`dirty`、`pendingEventId`、`lastLocalSavedAt`。
 
@@ -550,7 +552,7 @@ Node、npm、Wrangler 版本
 **实施步骤**：
 
 1. 新建构建期版本生成器，从 package version、知识库版本、决策版本和 commit SHA 生成只读 release manifest。
-2. `app/pilot-release.ts` 改为读取生成 manifest，不再手工硬编码三处 `0.1.0`。
+2. `src/infrastructure/pilot/release/release-version.ts` 改为读取生成 manifest，不再手工硬编码三处 `0.1.0`。
 3. 每个快照和事件写入 `schemaVersion`；案例继续保存创建时版本，事件保存发生时版本。
 4. 发布时向 release 表 upsert manifest、构建时间和 migration 版本。
 5. 页面页脚/问题反馈显示短版本；管理员显示完整 manifest。

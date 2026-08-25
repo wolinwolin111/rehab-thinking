@@ -58,7 +58,7 @@
 | GOALS 大白话不精确 | 拆 `GOALS_SELF` / `GOALS_PRO`；专业模式恢复目标/记录展示/训练阶段线全用 `GOALS_PRO` |
 | 术语无解释 | 「代偿」加 `.rm-term` 虚线 hover |
 | 可访问性 | `--rm-muted` 加深至 `#4c5a60`；`:focus-visible` 蓝色焦点环 |
-| 文案分层无约定 | 新建 `docs/copy-layering-convention.md`（自助 vs 专业规则+检查清单） |
+| 文案分层无约定 | 新建 `docs/plans/copy-layering-convention.md`（自助 vs 专业规则+检查清单） |
 
 ---
 
@@ -98,11 +98,11 @@ Cloudflare 方案已弃用（workers.dev 大陆不可直连），选定 VPS `66.
 
 | 层面 | 文件 | 说明 |
 |---|---|---|
-| SQLite 仓储 | `db/sqlite-pilot-case-repository.ts` | better-sqlite3，与 D1 版同接口（13 方法），事务原子写，冲突语义一致 |
+| SQLite 仓储 | `db/sqlite/sqlite-pilot-case-repository.ts` | better-sqlite3，与 D1 版同接口（13 方法），事务原子写，冲突语义一致 |
 | 原生模块加载 | 同上 | `createRequire` 运行时加载（绕开打包器内联 .node 失效） |
 | 环境解耦 | `app/api/pilot/_shared.ts` | `getPilotEnv()`：Workers 读 bindings / Node 读 process.env |
-| 迁移脚本 | `scripts/migrate-sqlite.mjs` | 幂等，处理 drizzle statement-breakpoint |
-| 发布脚本 | `scripts/vps-release.sh` | 时间戳目录+迁移+健康探针失败自动回滚+仅留3版 |
+| 迁移脚本 | `scripts/data/migrate-sqlite.mjs` | 幂等，处理 drizzle statement-breakpoint |
+| 发布脚本 | `scripts/deploy/vps-release.sh` | 时间戳目录+迁移+健康探针失败自动回滚+仅留3版 |
 | 备份 | `/etc/cron.d/rehabmind-backup` | 每日 03:20，.backup API，保留 7 份 |
 | 进程管理 | pm2 + ecosystem.config.cjs | 自读 .env，max_memory_restart 400M |
 | nginx | 四服务共存 | RehabMind 占根跳转+后缀入口；Clinic/Mobile/Shop 共存 |
@@ -134,7 +134,7 @@ Cloudflare 方案已弃用（workers.dev 大陆不可直连），选定 VPS `66.
 
 ### SAVE-01：自动保存承诺不符
 
-**修复**：教程文案改为「本机浏览器自动保存；按保存才同步服务器」双触发点表述。`tests/save-promise-copy.test.mjs` 三断言防回潮。
+**修复**：教程文案改为「本机浏览器自动保存；按保存才同步服务器」双触发点表述。`tests/component/save-promise-copy.test.mjs` 三断言防回潮。
 
 ### REL-01：版本治理
 
@@ -142,7 +142,7 @@ Cloudflare 方案已弃用（workers.dev 大陆不可直连），选定 VPS `66.
 
 ### REL-02：可复现发布
 
-**修复**：`scripts/vps-release.sh` 时间戳目录+迁移+探针失败自动回滚；备份/pm2/ecosystem 配置入库；**干净检出演练通过**（worktree → npm ci → typecheck → build → 以其产物真实发布并探针全绿）。
+**修复**：`scripts/deploy/vps-release.sh` 时间戳目录+迁移+探针失败自动回滚；备份/pm2/ecosystem 配置入库；**干净检出演练通过**（worktree → npm ci → typecheck → build → 以其产物真实发布并探针全绿）。
 
 ---
 
@@ -223,15 +223,15 @@ Cloudflare 方案已弃用（workers.dev 大陆不可直连），选定 VPS `66.
 
 | 文件 | 说明 |
 |---|---|
-| `docs/HANDOVER.md` | **当前唯一权威交接文档**（部署拓扑/路线图/已知坑） |
-| `docs/rehabmind-quality-remediation-register.md` | 质量登记表（34+2 项状态权威来源） |
-| `docs/release-acceptance-report-2026-08-23.md` | 本次发布验收报告 |
-| `docs/copy-layering-convention.md` | 自助/专业文案分层约定 |
-| `docs/refactor-use-decision-engine.md` | 阶段 C 重构指导（等多关节触发） |
-| `docs/nrs-anchor-requirement.md` | 分数锚点需求文档（等 GPT 返回） |
-| `scripts/vps-release.sh` | VPS 发布脚本（服务器侧执行） |
-| `scripts/vps-backup-sqlite.sh` | SQLite 备份脚本 |
-| `scripts/migrate-sqlite.mjs` | SQLite 迁移执行器 |
-| `db/sqlite-pilot-case-repository.ts` | SQLite 仓储实现 |
-| `app/stage-event-core.ts` | 阶段事件映射核心 |
-| `app/intake-complaint-core.ts` | 主诉解析核心（含优先侧提取） |
+| `docs/handover/HANDOVER.md` | **当前唯一权威交接文档**（部署拓扑/路线图/已知坑） |
+| `docs/quality/rehabmind-quality-remediation-register.md` | 质量登记表（34+2 项状态权威来源） |
+| `docs/quality/release-acceptance-report-2026-08-23.md` | 本次发布验收报告 |
+| `docs/plans/copy-layering-convention.md` | 自助/专业文案分层约定 |
+| `docs/plans/refactor-use-decision-engine.md` | 阶段 C 重构指导（等多关节触发） |
+| `docs/plans/nrs-anchor-requirement.md` | 分数锚点需求文档（等 GPT 返回） |
+| `scripts/deploy/vps-release.sh` | VPS 发布脚本（服务器侧执行） |
+| `scripts/deploy/vps-backup-sqlite.sh` | SQLite 备份脚本 |
+| `scripts/data/migrate-sqlite.mjs` | SQLite 迁移执行器 |
+| `db/sqlite/sqlite-pilot-case-repository.ts` | SQLite 仓储实现 |
+| `src/features/rehabmind/workflow/stage-events.ts` | 阶段事件映射核心 |
+| `src/domain/rehab/intake/intake-complaint-core.ts` | 主诉解析核心（含优先侧提取） |

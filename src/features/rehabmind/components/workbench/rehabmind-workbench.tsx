@@ -1,2164 +1,92 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { AnswerChoiceGrid, PillOptions, ScoreHistory, ScoreSlider, StageTransition, StepHeading, TreatmentRoadmap } from "./ui-primitives";
-import { NextSessionCard } from "./next-session-card";
-import { RehabMindOnboarding } from "./rehabmind-onboarding";
-import { type FunctionUnableReason, useFunctionRetestState } from "./use-function-retest";
-import { type ExerciseFeedback, useTrainingFlow } from "./use-training-flow";
-import { resultFromScore } from "./trial-record-builder";
-import { computeBatchResult } from "./batch-retest-compute";
-import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "./trial-record-types";
-import LowerLimbLocationPicker, {
-  makeLowerLimbLocationSelection,
-  type LowerLimbAreaId,
-  type LowerLimbLocationSelection,
-} from "./lower-limb-location-picker";
-import MuscleRegionLocationPicker, { MuscleRegionTreatmentMap } from "./muscle-region-location-picker";
-import {
-  FULL_REGIONS,
-  type FullCandidate,
-  type FullExercise,
-  type FullRegion,
-  type FullRegionId,
-} from "./full-demo-content";
-import {
-  buildPilotTreatmentUnits,
-  classifyPilotAssessmentEvidence,
-  matchPilotRelations,
-  rankPilotAssessmentIds,
-  type PilotFindingInput,
-  type PilotIntakeInput,
-} from "./pilot-decision-engine.ts";
-import { buildKneeDecision } from "./knee-decision-core";
-import { buildLocalLimbDecision, localLimbArea, type LocalLimbFinding } from "./local-limb-decision-core";
-import { buildTissuePathway } from "./tissue-pathway-core";
-import {
-  classifyTreatmentResponse,
-  resolvedTreatmentCombination,
-  treatmentResponsePriority,
-  type TreatmentResponseRole,
-} from "./treatment-response-core";
-import { summarizeTreatmentCoverage } from "./treatment-coverage-core";
-import { buildPendingQueueAdvance, findNextCandidateIndex, resolveDynamicQueueAdvanceForTargets, type PendingQueueAdvance } from "./workflow-state-core";
-import {
-  keepOtherSessionRecords,
-  resolveDownstreamInvalidation,
-  shouldInvalidateFollowupWork,
-} from "./downstream-invalidation-core";
-import { chiefChangeExplanation } from "./chief-change-explanation-core";
-import {
-  resolveRestoredAssessmentProgress,
-  restoredAssessmentNotice,
-} from "./restored-position-core";
-import { PilotConsentGate } from "./pilot-consent-gate";
-import {
-  attachPilotConsent,
-  buildPilotConsentRecord,
-  isPilotConsentDeclined,
-  markPilotConsentDeclined,
-  readPilotConsent,
-  writePilotConsent,
-  type PilotConsentRecord,
-} from "./consent-core";
-import { resolveTreatmentQueueAdvance } from "./treatment-queue-core";
-import {
-  createPilotCase,
-  createPilotAccessToken,
-  createPilotClientCreationId,
-  deletePilotCase,
-  PilotCaseClientError,
-  readPilotCase,
-  savePilotCaseProgress,
-  submitPilotCaseFeedback,
-  type PilotCaseAccess,
-} from "./pilot-case-client";
-import { getPilotInviteToken } from "./pilot-invite-client";
-import { createLocalCaseId, savedRecordIdentity } from "./local-case-identity";
-import { clearLocalCaseRecords, clearLocalDraft, loadLocalCaseRecords, loadLocalDraft, saveLocalCaseRecords, saveLocalDraft } from "./local-case-store";
-import { createPilotDraftPersistenceController } from "./pilot-persistence-controller";
-import { pickStageAdvanceEvent } from "./stage-event-core";
-import { contentFingerprint, decidePilotRestoreSource } from "./pilot-sync-core";
-import { migratePilotSnapshot } from "./pilot-snapshot-schema";
-import { PILOT_SNAPSHOT_SCHEMA_VERSION } from "./pilot-case-contracts";
-import { PilotFeedbackPanel } from "./pilot-feedback-panel";
-import { PilotConflictPanel } from "./pilot-conflict-panel";
-import type { PilotFeedbackDraft } from "./pilot-feedback-context";
-import {
-  buildNextFocus,
-  sessionScoreTrend,
-  upsertSessionSummary,
-  type RehabSessionSummary,
-} from "./rehab-session-history";
-import {
-  INITIAL_TRAINING_PRIORITY,
-  nextSessionTrainingIds,
-} from "./training-progression-core";
-import {
-  KNEE_CORE_CANDIDATE_IDS,
-  kneeDecisionInputFromWorkflow,
-  kneeExerciseIdsForDecision,
-  kneeLegacyCandidateIdsForUnit,
-  kneeRetestInstruction,
-  kneeTreatmentInstruction,
-} from "./knee-workflow-adapter";
-import {
-  controlPlansForMotions,
-  normalizePilotMuscleRegion,
-  pilotMuscleRegion,
-  pilotMotionKnowledge,
-  primaryRetestMotionIdsForRegion,
-  professionalAssessmentTitle,
-  regionRelationForMotion,
-} from "./pilot-motion-muscle-knowledge";
-import {
-  shouldAskMotionDiscomfort,
-  shouldAskPairedStrength,
-  shouldCaptureUnableMotionSymptom,
-  strengthAnswerForWorkflow,
-  strengthAnswerResult,
-  type StrengthUnableReason,
-} from "./assessment-answer-core";
-import { assessmentGapActionLabel, firstAssessmentGap } from "./assessment-gap-core";
-import {
-  actionIdFromFinding,
-  anyMotionIdFromFinding,
-  canonicalActionIdFromAssessmentId,
-  canonicalActionKey,
-  dedupeAssessmentIdsByAction,
-  dedupeRetestFindingsByAction,
-  motionIdFromFinding,
-  motionWasSymptomatic,
-  samePhysicalAction,
-  treatmentRelatesToChief,
-  valueForPhysicalAction,
-} from "./action-identity-core";
-import {
-  compareFollowupScore,
-  mergeSessionReviewResults,
-  previousSessionEndingScore,
-  trendFromAssessmentResult,
-  type AssessmentReviewResult,
-  type ReviewResult,
-} from "./followup-review-core";
-import {
-  buildProblemLedger,
-  emptyTreatmentMessage,
-  hasUnroutedImmediateProblem,
-  unresolvedImmediateProblems,
-} from "./problem-ledger-core";
-import { needsTrainingToleranceRetest, needsTreatmentFinalChiefRetest, treatmentMustStop } from "./treatment-session-core";
-import { capturesChiefRetestScore, nextRangeCandidateType, shouldRequestChiefRetest } from "./retest-routing-core";
-import { recommendNextSession } from "./next-session-recommendation-core";
-import { currentComplaintText, extractComplaintPrioritySide } from "./intake-complaint-core";
-import {
-  adverseCaptureComplete,
-  canExecutePlan,
-  createAdverseResponse,
-  focusedReassessmentIds,
-  focusedReassessmentComplete,
-  nextAssessmentRevision,
-  resolveAdverseResponse,
-  type AdverseResponseEvent,
-  type AdverseSource,
-  type AdverseTiming,
-} from "./adverse-response-core";
-import { buildMuscleTensionFindings, needsMuscleTensionCheck } from "./muscle-tension-assessment-core";
-import {
-  emptyCapabilities,
-  normalizeWorkflowProfile,
-  toggleCapability,
-  workflowProfileFromLegacy,
-  type CapabilityKey,
-  type CapabilitySet,
-  type OperationTarget,
-  type ProductMode,
-} from "./workflow-profile-core";
-import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "./home-relaxation-core";
-import { candidateDedupKey, candidateMuscleFocus, candidateMuscleUnits, candidateSubject, candidateTreatmentKey, candidateTreatmentName, isPatellaSpecificCandidate } from "./candidate-treatment-core";
-import { candidateAction, candidateControlMotionIds, candidatePilotMotionIds } from "./candidate-action-core";
-import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, isUnclearAction, primaryReportedAction, reportedActionSummary } from "./chief-action-core";
-import { candidateRelevance } from "./candidate-scoring-core";
-import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "./trial-target-core";
-import {
-  bilateralAssessmentGate,
-  bilateralCheckpointOptions,
-  orderBilateralSides,
-  resolveBilateralPriority,
-  type BilateralAssessmentSide,
-  type BilateralComparison,
-  type BilateralSide,
-} from "./bilateral-flow-core";
-import { buildTrialTargets } from "./build-trial-targets-core";
-import { type DecisionContext } from "./trial-target-types";
-import { candidateIsAvailable } from "./candidate-safety-core";
-import { includesAny } from "./candidate-order-core";
-import { workbenchStageStates } from "./stage-workbench-core";
-import { buildFindingGroups } from "./finding-groups-core";
-import { specialIsRelevant } from "./special-test-trigger-core";
-import { StageOutcomeSections } from "./stage-outcome-sections";
-import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "./function-assessment-core";
-import {
-  chiefFunctionAssessmentIds,
-  selectFunctionAssessmentPlan,
-} from "./function-assessment-plan-core";
-import { functionEvidenceDecisionTags, functionEvidenceFromRecord } from "./function-evidence-core";
-import { resolveFunctionRetestTransition, resolveTreatmentRetestGate } from "./function-retest-transition-core";
-import { completedProblemIdsFromTreatmentRecords } from "./treatment-ledger-core";
-import { buildRangeTreatmentRecords, resolveChiefRetestCapture, resolveRangeChiefRetestCapture, resolveTreatmentRecordFlow } from "./treatment-record-flow-core";
-import { canReuseLatestRetest as canReuseLatestRetestDecision } from "./retest-reuse-core";
-import { retestBaselineModeFromEvidence, retestEligibility } from "./retest-eligibility-core";
-import { activeMotionRecordComplete, motionNeedsPassive } from "./motion-assessment-core";
-import { assessmentRecordComplete } from "./assessment-record-complete-core";
-import { pendingTrainingFeedback, trainingFeedbackComplete } from "./training-feedback-core";
-import { resolveTrainingStageGate } from "./training-stage-gate-core";
-import { hasRecordedChiefRetest, latestRecordedChiefScore } from "./chief-retest-history-core";
-import { isTreatmentQueueCandidateEligible } from "./treatment-queue-eligibility-core";
-import { isTreatmentQueueDirectionCandidateNeeded } from "./treatment-queue-direction-core";
-
-type Step = 0 | 1 | 2 | 3 | 4 | 5;
-type UserRole = "" | "general" | "coach" | "rehab";
-type ExamSetup = "" | "self" | "professional-other";
-type SpineAssessmentMode = "" | "guided" | "reference";
-type MotionAnswer = "same" | "limited" | "excessive" | "painful" | "unable" | "unsure";
-type BilateralMotionAnswer = "left-limited" | "right-limited" | "both-limited";
-type PassiveAnswer = "same" | "limited" | "excessive" | "painful" | "skip" | "left-limited" | "right-limited" | "both-limited";
-type PassiveEndFeel = "soft" | "elastic" | "firm" | "hard" | "painful" | "unknown";
-type SimpleAnswer = "normal" | "present" | "weak" | "painful" | "positive" | "unable" | "skip";
-type FunctionCompletion = "complete" | "unable" | "skip";
-type FunctionControl = "stable" | "compensated" | "unsure";
-type FamiliarSymptomAnswer = "yes" | "no" | "unsure";
-type FollowupReviewAnswer = "better" | "same" | "worse" | "unknown" | "unable";
-type FollowupNewSymptomAnswer = "" | "no" | "yes";
-type FollowupExerciseChoice = "reduce" | "hold" | "progress" | "worse";
-type AssessmentKind = "motion" | "strength" | "function" | "special";
-type MotionComparison = "contralateral" | "opposite-direction" | "midline";
-
-function isCompletedRangeRetestAnswer(value: RangeRetestAnswer | undefined): value is CompletedRangeRetestAnswer {
-  return value !== undefined && value !== "";
-}
-type ChiefActionAnalysis = {
-  raw: string;
-  category: string;
-  task: string;
-  function: string;
-  load: string;
-  direction: string;
-  retest: string;
-};
-
-type ReportedActionKind = "functional" | "joint-direction" | "custom";
-
-type ReportedAction = {
-  id: string;
-  label: string;
-  kind: ReportedActionKind;
-  raw: string;
-};
-
-type IntakeState = {
-  description: string;
-  parsed: boolean;
-  userRole: UserRole;
-  examSetup: ExamSetup;
-  productMode: ProductMode | "";
-  operationTarget: OperationTarget | "";
-  capabilities: CapabilitySet;
-  capabilitiesConfirmed: boolean;
-  learningExplanation: boolean;
-  spineAssessmentMode: SpineAssessmentMode;
-  regionId: string;
-  side: string;
-  /** 双侧主诉必须明确本次先处理哪侧；只决定顺序，不代表另一侧正常。 */
-  prioritySide?: BilateralSide;
-  location: string;
-  bodyLocations: LowerLimbLocationSelection[];
-  locationConfirmed: boolean;
-  onset: string;
-  mechanism: string;
-  symptomType: string;
-  /** 通用的“疼/不舒服”需要在位置确认时再让用户确认性质。 */
-  painQualityConfirmed: boolean;
-  symptoms: string[];
-  provocationTypes: string[];
-  forceDirection: string;
-  swellingLocation: string;
-  swellingLocations: LowerLimbLocationSelection[];
-  swellingLocationConfirmed: boolean;
-  tendernessLocation: string;
-  tendernessLocations: LowerLimbLocationSelection[];
-  tendernessLocationConfirmed: boolean;
-  sensoryLocation: string;
-  sensoryLocations: LowerLimbLocationSelection[];
-  sensoryLocationConfirmed: boolean;
-  reproduction: string;
-  /** 用户自己指出的诱发动作；可以多选，不能与评估中的关节方向混为一谈。 */
-  reportedActions: ReportedAction[];
-  /** 没有现成选项时保存用户原话，后续直接作为主诉复测动作。 */
-  customAction: string;
-  actionSelectionConfirmed: boolean;
-  /** 专业人士对患者的补充记录，不替代患者原话。 */
-  professionalNotes: string;
-  actionAnalysis: ChiefActionAnalysis | null;
-  goal: number;
-  baselineScore: number;
-  baselineScoreConfirmed: boolean;
-  stabbingSpread: "" | "single" | "multiple" | "rest" | "unsure";
-  stabbingPalpation: "" | "sharp" | "dull" | "none" | "not-tried";
-  priorCare: string[];
-};
-
-type IntakeMultiConfirmation = {
-  symptoms: boolean;
-  provocationTypes: boolean;
-};
-
-type AssessmentItem = {
-  id: string;
-  kind: AssessmentKind;
-  title: string;
-  how: string;
-  passiveHow?: string;
-  observe: string;
-  next?: string;
-  tags?: string[];
-  comparison?: MotionComparison;
-  spinal?: boolean;
-  /** 关节被动专属项目（例如髌骨滑动），不应显示主动活动或主动发力问题。 */
-  testMode?: "active" | "passive" | "combined";
-  professionalHow?: string;
-  professionalObserve?: string;
-  explain?: string;
-  /** 同一动作下的能力检查：自助模式看主动保持，专业他测模式才看抗阻力量。 */
-  pairedStrengthId?: string;
-  pairedStrengthTitle?: string;
-  pairedStrengthTags?: string[];
-  /** 专项检查的用途分类，只用于专业工作台的分组展示。 */
-  specialCategory?: "localization" | "response" | "safety" | "professional-special";
-};
-
-/** 髌骨四个方向属于同一项被动筛查；后台仍保留方向级结果，页面只展示一张卡。 */
-const PATELLA_DIRECTION_IDS = [
-  "motion:knee-patella-superior",
-  "motion:knee-patella-inferior",
-  "motion:knee-patella-medial",
-  "motion:knee-patella-lateral",
-] as const;
-const PATELLA_GROUP_PRIMARY_ID = PATELLA_DIRECTION_IDS[0];
-const PATELLA_DIRECTION_LABELS: Record<string, string> = {
-  "motion:knee-patella-superior": "向上",
-  "motion:knee-patella-inferior": "向下",
-  "motion:knee-patella-medial": "向内",
-  "motion:knee-patella-lateral": "向外",
-};
-const PATELLA_DIRECTION_TITLES: Record<string, string> = {
-  "motion:knee-patella-superior": "髌骨向上滑动",
-  "motion:knee-patella-inferior": "髌骨向下滑动",
-  "motion:knee-patella-medial": "髌骨向内滑动",
-  "motion:knee-patella-lateral": "髌骨向外滑动",
-};
-
-function isPatellaDirectionId(id: string) {
-  return (PATELLA_DIRECTION_IDS as readonly string[]).includes(id);
-}
-
-function isPatellaGroupSecondaryId(id: string) {
-  return isPatellaDirectionId(id) && id !== PATELLA_GROUP_PRIMARY_ID;
-}
-
-const isPatellaTreatmentCandidate = isPatellaSpecificCandidate;
-
-type AssessmentRecord = {
-  active?: MotionAnswer | BilateralMotionAnswer;
-  passive?: PassiveAnswer;
-  simple?: SimpleAnswer;
-  /** 功能动作分开记录：能否完成、动作是否稳定、是否引发熟悉不适。 */
-  functionCompletion?: FunctionCompletion;
-  functionControl?: FunctionControl;
-  functionDiscomfort?: YesNo;
-  functionUnableReason?: FunctionUnableReason;
-  discomfort?: YesNo;
-  discomfortLocation?: string;
-  discomfortLocations?: LowerLimbLocationSelection[];
-  discomfortType?: string;
-  /** 没有明确主诉动作时，只有复现了平时熟悉的症状，才建立疼痛复测目标。 */
-  familiarSymptom?: FamiliarSymptomAnswer;
-  unableReason?: "pain" | "fear" | "instruction" | "other";
-  strengthUnableReason?: StrengthUnableReason;
-  measuredAngle?: string;
-  symptomScore?: number;
-  passiveDiscomfort?: YesNo;
-  passiveDiscomfortLocation?: string;
-  passiveDiscomfortLocations?: LowerLimbLocationSelection[];
-  passiveDiscomfortType?: string;
-  passiveMeasuredAngle?: string;
-  passiveEndFeel?: PassiveEndFeel;
-  passiveSymptomScore?: number;
-  /** 功能动作异常时记录"哪个阶段最明显"（起始/中途/末端/全过程/说不清）。 */
-  symptomStage?: string;
-  compensations?: string[];
-  /** 活动受限后，用户已完成轻按取样；用于区分“未作答”和“没有明显紧张位置”。 */
-  tensionChecked?: boolean;
-  tensionLocations?: string[];
-  /** 双侧/中间症状时，记录本项目的比较结果；不代表全局优先侧。 */
-  bilateralComparison?: BilateralComparison;
-  /** 旧快照兼容字段；新写入同时保留 bilateralComparison。 */
-  worseSide?: BilateralAssessmentSide;
-  pairedStrength?: SimpleAnswer;
-  pairedStrengthUnableReason?: StrengthUnableReason;
-  pairedStrengthLocation?: string;
-  pairedStrengthLocations?: LowerLimbLocationSelection[];
-  pairedStrengthType?: string;
-  pairedStrengthScore?: number;
-};
-
-type Finding = {
-  id: string;
-  title: string;
-  detail: string;
-  priority: "chief" | "support" | "track";
-  score?: number;
-  tags: string[];
-  note?: string;
-  side?: BilateralAssessmentSide;
-  /** 双侧合并处理目标中的原始侧别集合。 */
-  sides?: BilateralAssessmentSide[];
-  /** 配对力量结果只作为内部决策依据，界面合并在同一个活动动作里展示。 */
-  internal?: boolean;
-  relatedMotionId?: string;
-};
-
-function professionalFindingLabel(finding: Finding) {
-  if (finding.id.startsWith("tension:")) return finding.title || "相关肌群 · 张力或按压阻力差异";
-  const assessmentId = finding.id.replace(/^symptom:|^control:/, "");
-  if (/^(motion|strength|function|special):/.test(assessmentId)) {
-    const base = professionalAssessmentTitle(assessmentId, finding.title.split(/：|会引起|因为/)[0]);
-    if (finding.id.startsWith("symptom:")) return `${base} · 活动不适`;
-    if (finding.id.startsWith("control:")) return `${base} · 主动控制异常`;
-    return base;
-  }
-  if (finding.id === "track:swelling") return "局部肿胀";
-  if (finding.id === "track:tender") return "局部压痛";
-  if (finding.id === "track:sensory") return "感觉异常";
-  return finding.title.split(/：/)[0];
-}
-
-/** 配对在活动度卡片里的力量结果没有独立 assessmentResults 键，需从结果标题补回。 */
-type TreatmentProblem = {
-  id: string;
-  kind: string;
-  title: string;
-  status?: string;
-  findingIds: string[];
-  directionId?: string;
-};
-
-type TrialTarget = {
-  id: string;
-  finding: Finding;
-  findingSides?: BilateralAssessmentSide[];
-  candidates: FullCandidate[];
-  /** 同一项处理完成后需要一起复测、并可分别退出后续流程的活动方向。 */
-  retestFindings?: Finding[];
-  chain?: string;
-  optionalCandidates?: FullCandidate[];
-  /** 给用户看的具体复测动作，不允许回退成“说不清”或系统内部标题。 */
-  retestLabel?: string;
-  sourceCaseIds?: string[];
-};
-
-type RetestPlan = {
-  targetId: string;
-  candidateId: string;
-  directionIds: string[];
-};
-
-type FollowupStage = "review" | "treatment" | "training" | "summary";
-type TransitionTarget = "assessment" | "treatment" | "training" | "summary";
-
-type FollowupTreatmentRecord = {
-  sessionNumber: number;
-  targetId?: string;
-  candidateId: string;
-  treatmentKey?: string;
-  candidateTitle: string;
-  treatmentName?: string;
-  action?: string;
-  beforeScore: number;
-  afterScore: number;
-  result: TrialResult;
-  /** 活动表现恶化可与主诉分数下降并存，必须单独保留。 */
-  activityWorsened?: boolean;
-  timeBased?: boolean;
-  rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>;
-  rangeOutcome?: CompletedRangeRetestAnswer;
-  rangeDiscomforts?: Record<string, YesNo>;
-  rangeScores?: Record<string, number>;
-  chiefRetested?: boolean;
-  retestOnly?: boolean;
-  reviewOnly?: boolean;
-  supportingOnly?: boolean;
-  responseRole?: TreatmentResponseRole;
-};
-
-type SavedDemoSnapshot = {
-  schemaVersion?: number;
-  step: Step;
-  intake: IntakeState;
-  confirmedIntakeMulti?: IntakeMultiConfirmation;
-  safety: Record<string, YesNo>;
-  boneRisk?: Record<string, "yes" | "no" | "unsure">;
-  imaging: string[];
-  assessmentIndex: number;
-  assessmentResults: Record<string, AssessmentRecord>;
-  trialTargetIndex: number;
-  candidateIndex: number;
-  selectedOptionalCandidateIds?: string[];
-  bilateralNeedsReferral?: boolean;
-  midpointDecisionDone?: boolean;
-  bilateralTreatmentSides?: Record<string, BilateralSide[]>;
-  bilateralRetestResponses?: Record<string, "better" | "same" | "worse">;
-  trialRecords: TrialRecord[];
-  postScore: number;
-  postScoreConfirmed?: boolean;
-  postDiscomfort?: YesNo | "";
-  readyToRetest?: boolean;
-  retestPlan?: RetestPlan | null;
-  movementResponse: RangeRetestAnswer | "smoother" | "both-better" | "active-better-passive-limited" | "same";
-  movementResponses?: Record<string, CompletedRangeRetestAnswer>;
-  movementDiscomforts?: Record<string, YesNo>;
-  movementScores?: Record<string, number>;
-  movementScoreConfirmed?: Record<string, boolean>;
-  exerciseFeedback: Record<string, ExerciseFeedback>;
-  trainingComplete: boolean;
-  trainingPlanSaved?: boolean;
-  treatmentFinalRetestScore?: number;
-  treatmentFinalRetestConfirmed?: boolean;
-  trainingReadyForFinalRetest?: boolean;
-  finalRetestScore?: number;
-  finalRetestConfirmed?: boolean;
-  followupMode: boolean;
-  sessionNumber: number;
-  followupScore: number;
-  followupScoreConfirmed?: boolean;
-  followupScoreHistory: number[];
-  followupStage: FollowupStage;
-  followupPostScore: number;
-  followupPostScoreConfirmed?: boolean;
-  followupPostDiscomfort?: YesNo | "";
-  followupCandidateId: string;
-  followupTrialRecords: FollowupTreatmentRecord[];
-  followupReadyToRetest?: boolean;
-  followupRetestPlan?: RetestPlan | null;
-  followupMovementResponses?: Record<string, CompletedRangeRetestAnswer>;
-  followupMovementDiscomforts?: Record<string, YesNo>;
-  followupMovementScores?: Record<string, number>;
-  followupMovementScoreConfirmed?: Record<string, boolean>;
-  followupTensionLocations?: string[];
-  followupExerciseChoices: Record<string, FollowupExerciseChoice>;
-  followupTrainingReadyForRetest?: boolean;
-  followupFinalScore?: number;
-  followupFinalScoreConfirmed?: boolean;
-  hasNewSymptom: FollowupNewSymptomAnswer | boolean;
-  followupTrends: Record<string, FollowupReviewAnswer>;
-  sessionHistory?: RehabSessionSummary[];
-  assessmentRevision?: number;
-  treatmentPlanRevision?: number;
-  adverseResponse?: AdverseResponseEvent | null;
-  adverseConfirmedAssessmentIds?: string[];
-};
-
-type SavedDemoRecord = {
-  id: string;
-  /** Stable local case identity; never derive identity from complaint text. */
-  localCaseId?: string;
-  savedAt: string;
-  region: string;
-  complaint: string;
-  goal: string;
-  initialScore: number;
-  latestScore: number;
-  scoreComparable?: boolean;
-  sessionCount: number;
-  caseKey?: string;
-  sessionHistory?: RehabSessionSummary[];
-  status: "康复中" | "等待影像" | "待医学评估" | "待复查" | "处理后加重，待重新评估" | "训练后加重，待重新评估" | "评估未完成" | "现有检查未形成明确处理方向" | "处理后主诉未明显改善" | "处理完成";
-  snapshot?: SavedDemoSnapshot;
-  pilotCaseId?: string;
-  pilotClientCreationId?: string;
-  pilotPublicCode?: string;
-  pilotAccessToken?: string;
-  pilotRevision?: number;
-  /** Revision acknowledged by the server before the current local edit. */
-  pilotLastSyncedRevision?: number;
-  /** True while the local snapshot has not been acknowledged by the server. */
-  pilotDirty?: boolean;
-  localContentFingerprint?: string;
-  lastSyncedContentFingerprint?: string;
-  pilotConflictSnapshot?: SavedDemoSnapshot;
-  pilotConflictRevision?: number;
-  pilotVersions?: PilotCaseAccess["versions"];
-};
-
-type PilotSyncState = "idle" | "local-saving" | "local-saved" | "syncing" | "synced" | "offline" | "conflict" | "invite" | "error";
-
-type PilotDraftEnvelope = {
-  schemaVersion: number;
-  localCaseId: string;
-  savedAt: string;
-  snapshot: SavedDemoSnapshot;
-};
-
-function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | null {
-  const result = migratePilotSnapshot(value);
-  return result.ok ? result.snapshot as SavedDemoSnapshot : null;
-}
-
-const SHARED_TENSION_ASSESSMENT_ID = "shared:pilot-muscle-tension";
-
-const STEPS = ["症状信息", "关键确认", "评估检查", "处理复测", "训练居家", "康复总结"];
-const PILOT_REGION_IDS = ["thigh-local", "knee", "calf-local", "ankle-foot"] as const satisfies readonly FullRegionId[];
-type PilotDemoRegionId = (typeof PILOT_REGION_IDS)[number];
-const isPilotRegion = (regionId: string): regionId is PilotDemoRegionId => PILOT_REGION_IDS.includes(regionId as PilotDemoRegionId);
-function pilotInputFromIntake(intake: IntakeState, confirmed: IntakeMultiConfirmation): PilotIntakeInput {
-  const selectedLocations = intake.bodyLocations;
-  return {
-    userRole: intake.userRole,
-    regionIds: Array.from(new Set((selectedLocations.length
-      ? selectedLocations.map((item) => item.regionId)
-      : isPilotRegion(intake.regionId) ? [intake.regionId] : []).filter(isPilotRegion))),
-    locations: selectedLocations.length
-      ? Array.from(new Set(selectedLocations.map((item) => item.location).filter(Boolean)))
-      : [intake.location].filter(Boolean),
-    onset: intake.onset,
-    mechanism: intake.mechanism,
-    symptomType: intake.symptomType,
-    symptoms: intake.symptoms,
-    symptomsConfirmed: confirmed.symptoms,
-    provocationTypes: intake.provocationTypes,
-    provocationConfirmed: confirmed.provocationTypes,
-    currentTask: reportedActionSummary(intake).join("、") || intake.actionAnalysis?.task || intake.forceDirection,
-    noFixedTask: intake.provocationTypes.includes("说不清 / 没有固定动作") && reportedActionSummary(intake).length === 0,
-    baselineScoreConfirmed: intake.baselineScoreConfirmed,
-    swellingLocation: intake.swellingLocation,
-    tendernessLocation: intake.tendernessLocation,
-    sensoryLocation: intake.sensoryLocation,
-    goal: intake.goal,
-  };
-}
-const STAGE_TRANSITIONS: Record<TransitionTarget, { step: Step; number: string; title: string; message: string; button: string }> = {
-  assessment: { step: 2, number: "03", title: "症状信息收集完毕", message: "接下来开始评估检查，请跟随提示完成对应操作。", button: "开始评估检查" },
-  treatment: { step: 3, number: "04", title: "评估检查完成", message: "接下来开始处理并复测，请跟随提示完成对应操作。", button: "开始处理并复测" },
-  training: { step: 4, number: "05", title: "处理复测完成", message: "接下来开始训练，请跟随提示完成对应训练内容。", button: "开始训练" },
-  summary: { step: 5, number: "06", title: "本次康复完成", message: "接下来开始复盘。", button: "查看本次康复总结" },
-};
-const ONSETS = ["今天或昨天", "2～7天", "1～6周", "超过6周", "反复出现"];
-const MECHANISMS = ["没有明确受伤", "扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤", "逐渐出现", "其他"];
-const SYMPTOM_TYPES = ["疼痛，性质说不清", "酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"];
-const SYMPTOM_TYPE_GROUPS = [
-  { title: "疼痛", options: ["酸痛", "胀痛", "刺痛", "疼痛，性质说不清"] },
-  { title: "其他异常感觉", options: ["烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"] },
-];
-const SYMPTOMS = ["肿胀或淤青", "按压痛", "活动受限", "力量不足", "麻、电或感觉变化"];
-const PROVOCATION_TYPES = ["活动到某个角度", "用力或对抗阻力", "走路、站立或负重", "按压", "静止或夜间", "运动过程中", "运动结束后", "说不清 / 没有固定动作", "其他情况"];
-const PRIOR_CARE_OPTIONS = ["看过医生", "拍过片", "用过口服药", "用过膏药", "做过针灸或理疗", "用过冰敷", "用过护具/支具", "做过康复训练/锻炼", "都没有/没处理过"];
-const GOALS_SELF = [
-  { level: 1, title: "先消肿止痛", short: "让肿胀和静息不适先稳定下来" },
-  { level: 2, title: "疼痛明显减轻", short: "做动作时不再那么疼" },
-  { level: 3, title: "恢复日常活动", short: "走路、上下楼梯、穿衣和拿取" },
-  { level: 4, title: "恢复中低强度运动", short: "跑步、健身、瑜伽或球类（无对抗）" },
-  { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
-];
-const GOALS_PRO = [
-  { level: 1, title: "急性反应减轻", short: "先让肿胀和静息不适稳定" },
-  { level: 2, title: "基础症状改善", short: "疼痛或异常感觉明显减轻" },
-  { level: 3, title: "恢复正常生活", short: "走路、楼梯、穿衣和拿取" },
-  { level: 4, title: "恢复一般运动", short: "跑步、健身、瑜伽或球类" },
-  { level: 5, title: "恢复高强度与对抗", short: "速度、疲劳、变向或碰撞" },
-];
-const GOALS = GOALS_SELF;
-const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
-  "function:knee-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:ankle-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:knee-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-single-leg-squat": ["骨盆明显歪斜", "膝盖明显向内偏", "足弓明显塌下", "需要扶持或无法控制下降"],
-  "function:knee-step-down": ["膝盖明显向内偏", "身体或骨盆歪向一边", "下降时突然掉下去", "需要扶住栏杆"],
-  "function:knee-step-up": ["膝盖明显向内偏", "身体明显向前或向一边倒", "主要靠另一条腿蹬起", "需要用手拉栏杆"],
-  "function:ankle-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-weight-bearing": ["走路明显一瘸一拐", "不敢让不舒服的一边踩实", "需要扶着才能走", "脚步明显变短"],
-  "function:ankle-knee-wall": ["脚跟提前抬起", "膝盖向内或向外偏", "足弓塌下", "踝前卡住或小腿牵扯"],
-  "function:ankle-hop": ["落地不敢承重", "脚踝向内或向外晃", "落地时膝盖明显内扣", "无法连续完成"],
-  "function:thigh-walk": ["迈步时跛行", "患侧支撑时间变短", "身体向一侧偏", "蹬地时症状明显"],
-  "function:thigh-sit-stand": ["起身时偏向另一侧", "膝盖向内偏", "需要用手撑", "坐下时突然掉下去"],
-  "function:thigh-bridge-check": ["骨盆一侧下沉", "腰部代偿顶起", "患侧抬起高度更低", "大腿后侧抽筋"],
-  "function:thigh-single-leg": ["骨盆下沉", "身体明显侧倒", "膝盖向内偏", "无法保持10秒"],
-  "function:thigh-jog": ["落地时疼或不敢承重", "步幅明显变短", "身体上下起伏不稳", "无法连续完成"],
-  "function:calf-walk": ["脚跟落地不稳", "脚步明显变短", "蹬地不足", "走路时小腿症状明显"],
-  "function:calf-heel-raise": ["患侧抬起高度更低", "身体向一侧偏", "脚趾抓地", "无法连续完成"],
-  "function:calf-single-leg": ["足弓塌下", "脚踝反复向内或向外晃", "身体明显晃动", "不舒服的一侧更难站稳"],
-  "function:calf-jog": ["落地或蹬地时出现症状", "步幅明显变短", "不敢连续跑", "无法完成小步慢跑"],
-  "function:neck-turn-task": ["用躯干代替转头", "肩膀跟着转", "一侧明显转不到位", "转头时出现麻或电感"],
-  "function:neck-screen-task": ["很快需要改变姿势", "回正后仍不缓解", "头部前伸", "症状逐渐增加"],
-  "function:neck-arm-lift-task": ["耸肩", "伸颈", "头部偏向一侧", "抬手时出现麻或电感"],
-  "function:shoulder-overhead-task": ["耸肩代偿", "躯干向一侧偏", "出现疼痛弧", "放下时控制不住"],
-  "function:shoulder-dress-task": ["需要弯腰或转身借力", "一侧明显够不到", "动作中途卡住", "放下手臂时疼"],
-  "function:shoulder-push-pull": ["肩胛骨翘起", "耸肩", "推拉力量明显不对称", "推或拉时出现熟悉不适"],
-  "function:shoulder-support": ["肩胛骨翘起", "肘部锁死或晃动", "身体向一侧偏", "无法保持支撑"],
-  "function:thoracic-turn-task": ["骨盆跟着转", "腰椎代偿明显", "一侧转动幅度更小", "呼吸被限制"],
-  "function:thoracic-overhead-task": ["腰部过度后仰", "耸肩", "肩胛运动不顺", "抬手高度明显不同"],
-  "function:thoracic-breath-task": ["一侧胸廓扩张明显较少", "吸气时疼痛", "呼吸变浅", "无法完成三次缓慢呼吸"],
-  "function:elbow-grip-lift": ["需要耸肩或甩腕", "握持不稳", "提起时肘部偏移", "放下时控制不住"],
-  "function:elbow-push-task": ["肘部向内或向外偏", "肩胛翘起", "伸肘末端卡住", "推墙时疼痛"],
-  "function:elbow-throw-task": ["准备、加速或减速阶段出现症状", "肩或躯干代偿", "肘部轨迹偏移", "无法完成动作"],
-  "function:wrist-mouse-task": ["手腕持续抬起", "拇指夹紧", "前臂过度旋转", "症状逐渐增加"],
-  "function:wrist-twist-task": ["旋转范围明显较小", "握力下降", "尺侧或桡侧疼痛", "需要耸肩借力"],
-  "function:wrist-support-task": ["患侧不敢承重", "腕部向一侧塌下", "肘肩代偿", "无法保持5秒"],
-  "function:wrist-carry-task": ["握持不稳", "腕部偏向一侧", "肘肩代偿", "提起或放下时疼痛"],
-  "function:lumbar-sit-rise": ["需要用手撑", "身体偏向一侧", "腰部先动而髋部不动", "起身或坐下时症状明显"],
-  "function:lumbar-bend-lift": ["腰部代偿多于髋部", "物品离身体太远", "回起时突然发力", "需要扶住才能完成"],
-  "function:lumbar-roll-bed": ["肩和骨盆不同步", "需要用手撑起", "翻身中途停住", "起身时症状明显"],
-  "function:lumbar-walk-task": ["步幅变短", "骨盆明显晃动", "单腿支撑不稳", "症状随走路增加"],
-  "function:hip-squat": ["骨盆偏向一侧", "膝盖内扣", "脚跟提前抬起", "下蹲深度明显不足"],
-  "function:hip-single-leg": ["骨盆下沉或旋转", "身体侧倒", "膝盖不稳", "无法保持20秒"],
-  "function:hip-step": ["骨盆偏移", "膝盖内扣", "主要靠另一侧抬起", "下台阶时突然掉下"],
-  "function:hip-gait": ["步幅变短", "髋部不能后伸", "骨盆晃动", "蹬地时症状明显"],
-};
-const GENERIC_FUNCTION_COMPENSATIONS = ["左右用力不一样", "身体明显晃动", "动作幅度偏小", "需要扶持或借力"];
-function functionCompensationOptions(itemId: string) {
-  return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : GENERIC_FUNCTION_COMPENSATIONS;
-}
-const BILATERAL_OBSERVE: Record<string, string> = {
-  "ankle-dorsiflexion": "脚背能不能明显靠近小腿？注意看脚背，不要只把脚尖勾起来。",
-  "ankle-plantarflexion": "脚背能不能向下压到接近和小腿平直？",
-  "ankle-inversion": "两只脚分别向内转，记录哪一侧范围更小或更不舒服。",
-  "ankle-eversion": "两只脚分别向外转，记录哪一侧范围更小或更不舒服。",
-  "ankle-dorsiflexor": "两侧分别保持勾脚5秒，观察哪一侧更快掉下来或需要脚趾代偿。",
-  "ankle-calf": "能不能连续完成10次标准提踵，不靠脚趾抓地？",
-  "ankle-squat": "下蹲时两侧脚跟能否保持着地，膝盖方向是否一致。",
-  "ankle-single-leg": "左右单腿站能不能各坚持10秒？",
-  "ankle-heel-raise": "左右提踵高度和稳定性是否接近。",
-  "knee-extension": "两侧分别绷直膝盖，记录哪一侧更难压平或更不舒服。",
-  "knee-flexion": "两侧分别弯膝，记录哪一侧更难靠近臀部或更不舒服。",
-  "knee-quadriceps": "两侧分别绷紧大腿保持5秒，记录哪一侧更容易抖或掉力。",
-  "knee-posterior-chain": "比较两侧承担重量时的稳定性，记录哪一侧更难保持骨盆平稳或更容易抽筋。",
-  "knee-squat": "下蹲时观察两边膝盖高度和方向是否一致。",
-  "knee-single-leg": "左右单腿站能不能各坚持10秒？",
-  "knee-heel-raise": "左右提踵高度和稳定性是否接近。",
-};
-
-const bilateralMotionOptions: Array<[BilateralMotionAnswer | "same" | "unable" | "unsure", string]> = [
-  ["same", "两侧接近｜与平时范围相近"],
-  ["left-limited", "左侧偏小｜左侧更差"],
-  ["right-limited", "右侧偏小｜右侧更差"],
-  ["both-limited", "两侧偏小｜两侧都受限"],
-  ["unable", "无法完成｜疼痛或其他原因"],
-  ["unsure", "暂不判断｜无法比较"],
-];
-
-const bilateralComparisonOptions: Array<[BilateralComparison, string]> = [
-  ["左侧更差", "左侧更差｜右侧相对较好"],
-  ["右侧更差", "右侧更差｜左侧相对较好"],
-  ["两侧异常", "两侧都有问题｜可分别轻重不同"],
-  ["两侧接近", "两侧接近｜暂未见明确差异"],
-  ["暂不判断", "暂不判断｜无法安全比较"],
-];
-
-function motionAnswerIsLimited(value?: AssessmentRecord["active"]) {
-  return ["limited", "left-limited", "right-limited", "both-limited"].includes(value ?? "");
-}
-
-function bilateralComparisonToSide(value?: BilateralComparison): BilateralAssessmentSide | undefined {
-  if (value === "左侧更差") return "左侧";
-  if (value === "右侧更差") return "右侧";
-  if (value === "两侧异常") return "两侧异常";
-  if (value === "两侧接近") return "两侧接近";
-  return undefined;
-}
-
-function bilateralSideForMotionAnswer(value?: string): BilateralAssessmentSide | undefined {
-  if (value === "left-limited") return "左侧";
-  if (value === "right-limited") return "右侧";
-  if (value === "both-limited") return "两侧异常";
-  if (value === "same") return "两侧接近";
-  return undefined;
-}
-
-function effectiveBilateralComparison(record: AssessmentRecord): BilateralComparison | undefined {
-  if (record.bilateralComparison) return record.bilateralComparison;
-  if (record.worseSide === "左侧") return "左侧更差";
-  if (record.worseSide === "右侧") return "右侧更差";
-  if (record.worseSide === "两侧异常") return "两侧异常";
-  if (record.worseSide === "两侧接近") return "两侧接近";
-  return undefined;
-}
-
-function passiveAnswerIsLimited(value?: PassiveAnswer) {
-  return ["limited", "left-limited", "right-limited", "both-limited"].includes(value ?? "");
-}
-
-function discomfortDecisionTags(value?: string) {
-  if (!value) return [];
-  if (includesAny(value, ["麻", "电"])) return ["assessment-neural", "conservative"];
-  if (value.includes("刺")) return ["assessment-sharp", "conservative"];
-  if (includesAny(value, ["牵扯", "紧绷", "拉扯"])) return ["assessment-pull", "muscle", "mobility"];
-  if (includesAny(value, ["酸", "沉", "胀"])) return ["assessment-ache", "muscle", "control"];
-  return [];
-}
-
-const SAFETY_ITEMS = [
-  { id: "shape", text: "有明显错位、异常轮廓或开放伤口", note: "单纯肿胀、淤青不算明显错位" },
-  { id: "vascular", text: "远端持续发白、发凉或感觉明显下降", note: "局部受伤后的淤青单独记录" },
-  { id: "neuro", text: "受伤部位以下持续麻木、感觉下降或越来越无力", note: "不是因为疼痛暂时不敢发力" },
-  { id: "systemic", text: "发热，同时局部红、热、肿快速加重", note: "需要结合整体状态判断" },
-  { id: "calf-clot", text: "没有明确受伤，但单侧小腿突然肿、热、红、痛", note: "尤其近期久坐、手术、卧床或既往有血栓时" },
-];
-const IMAGING_OPTIONS = [
-  "没有做影像",
-  "未见骨折",
-  "有骨折或骨裂异常",
-  "韧带损伤或撕裂",
-  "肌腱损伤或撕裂",
-  "骨挫伤或骨髓水肿",
-  "积液或软组织肿胀",
-  "医生已允许按建议康复",
-  "医生有限制",
-  "不确定报告内容",
-];
-
-const DEFAULT_INTAKE: IntakeState = {
-  description: "",
-  parsed: false,
-  userRole: "",
-  examSetup: "",
-  productMode: "",
-  operationTarget: "",
-  capabilities: emptyCapabilities(),
-  capabilitiesConfirmed: false,
-  learningExplanation: false,
-  spineAssessmentMode: "",
-  regionId: "",
-  side: "",
-  prioritySide: undefined,
-  location: "",
-  bodyLocations: [],
-  locationConfirmed: false,
-  onset: "",
-  mechanism: "",
-  symptomType: "",
-  painQualityConfirmed: false,
-  symptoms: [],
-  provocationTypes: [],
-  forceDirection: "",
-  swellingLocation: "",
-  swellingLocations: [],
-  swellingLocationConfirmed: false,
-  tendernessLocation: "",
-  tendernessLocations: [],
-  tendernessLocationConfirmed: false,
-  sensoryLocation: "",
-  sensoryLocations: [],
-  sensoryLocationConfirmed: false,
-  reproduction: "",
-  reportedActions: [],
-  customAction: "",
-  actionSelectionConfirmed: false,
-  professionalNotes: "",
-  actionAnalysis: null,
-  goal: 0,
-  baselineScore: 0,
-  baselineScoreConfirmed: false,
-  stabbingSpread: "",
-  stabbingPalpation: "",
-  priorCare: [],
-};
-
-const EXAMPLE_DESCRIPTION = "右膝内侧下楼梯时刺痛，跑步后会出现，持续两周了，平时走路还好，想恢复到正常跑步的水平。";
-
-/**
- * 旧版记录只保存了 userRole/examSetup；新版记录保存产品模式、操作对象和
- * 能力声明。恢复记录时统一走这里，避免旧快照在症状页出现“字段不存在”或
- * 直接跳过操作对象的问题。
- */
-function migrateIntakeState(raw: Partial<IntakeState> | undefined): IntakeState {
-  const legacyRole = raw?.userRole ?? "";
-  const legacySetup = raw?.examSetup ?? "";
-  const legacyProfile = workflowProfileFromLegacy(legacyRole, legacySetup);
-  const productMode = raw?.productMode || legacyProfile.productMode;
-  const operationTarget = raw?.operationTarget || legacyProfile.operationTarget;
-  const capabilities = raw?.capabilities ?? legacyProfile.capabilities;
-  return {
-    ...DEFAULT_INTAKE,
-    ...raw,
-    productMode,
-    operationTarget,
-    capabilities,
-    capabilitiesConfirmed: raw?.capabilitiesConfirmed ?? Boolean(raw?.productMode || legacyRole),
-    learningExplanation: raw?.learningExplanation ?? legacyProfile.learningExplanation,
-    userRole: raw?.userRole || (productMode === "guided" ? "general" : "rehab"),
-    examSetup: raw?.examSetup || (operationTarget === "other" ? "professional-other" : "self"),
-    prioritySide: raw?.prioritySide === "左侧" || raw?.prioritySide === "右侧" ? raw.prioritySide : undefined,
-    bodyLocations: raw?.bodyLocations ?? [],
-    swellingLocations: raw?.swellingLocations ?? [],
-    tendernessLocations: raw?.tendernessLocations ?? [],
-    sensoryLocations: raw?.sensoryLocations ?? [],
-    symptoms: raw?.symptoms ?? [],
-    provocationTypes: raw?.provocationTypes ?? [],
-    reportedActions: raw?.reportedActions ?? [],
-    customAction: raw?.customAction ?? "",
-    actionSelectionConfirmed: raw?.actionSelectionConfirmed ?? Boolean(raw?.reproduction),
-    professionalNotes: raw?.professionalNotes ?? "",
-    priorCare: raw?.priorCare ?? [],
-  };
-}
-
-function canonicalIntakeField(field: string) {
-  if (field === "使用身份") return "使用方式";
-  if (field === "检查方式") return "操作对象";
-  return field;
-}
-
-function locationSelectionsLabel(items: LowerLimbLocationSelection[]) {
-  return items.map((item) => `${item.side}·${item.location}`).join("、");
-}
-
-function sideFromLocationSelections(items: LowerLimbLocationSelection[]) {
-  const sides = new Set(items.map((item) => item.side).filter((side) => side === "左侧" || side === "右侧"));
-  if (sides.size > 1) return "双侧/中间";
-  return items[0]?.side ?? "";
-}
-
-function extractProvokingAction(text: string) {
-  const actionWords = [
-    "走", "站", "蹲", "楼", "台阶", "跑", "跳", "抬", "举", "推", "拉", "拧", "转", "坐", "撑", "负重", "按压", "发力", "用力", "使劲",
-    "抬脚", "迈步", "踩地", "落脚", "一瘸一拐",
-    "低头", "仰头", "弯腰", "后仰", "侧屈", "前屈", "屈曲", "伸直", "弯曲", "摸背", "掌心向上", "掌心向下",
-    "外旋", "内旋", "外展", "内收", "勾脚", "踩油门", "提踵", "踮脚", "内翻", "外翻", "脚掌向内", "脚掌向外", "脚底向内", "脚底向外", "squat", "squatting", "walk", "walking",
-  ];
-  const symptomWords = ["痛", "疼", "不适", "不舒服", "刺", "针扎", "胀", "酸", "麻", "卡", "扯", "紧", "挤", "无力", "不稳", "腿软", "打软", "发软", "走不了", "站不了", "蹲不了", "动不了"];
-  const negativeWords = ["还好", "没事", "不痛", "不疼", "不会", "没有不适", "没感觉"];
-  const injuryEventWords = ["崴", "扭伤", "拉伤", "摔", "跌", "撞", "受伤", "弄伤"];
-  const timingWords = ["后开始", "后出现", "之后开始", "结束后", "跑完后", "第二天", "隔天"];
-  const goalWords = ["想恢复", "希望恢复", "目标是", "以后想", "重新开始", "回到运动"];
-  const clauses = text.split(/[，。；！？\n]/).map((part) => part.trim()).filter(Boolean);
-
-  const actionPriority = (part: string) => {
-    if (includesAny(part, ["走路", "行走", "步行", "上楼", "下楼", "台阶", "下蹲", "蹲起", "起身", "跑步", "慢跑", "跳", "落地", "单腿站", "站立", "久站"])) return 4;
-    if (includesAny(part, ["弯腰", "后仰", "转身", "转体", "勾脚", "踩油门", "提踵", "踮脚", "内翻", "外翻", "脚底向内", "脚底向外", "伸直", "弯曲", "屈曲"])) return 3;
-    if (includesAny(part, ["发力", "用力", "使劲", "抗阻", "对抗"])) return 2;
-    if (includesAny(part, ["按压", "压痛", "一按"])) return 1;
-    return 0;
-  };
-
-  const highestPriorityClause = (items: string[]) => items
-    .map((part, order) => ({ part, order, priority: actionPriority(part) }))
-    .sort((a, b) => b.priority - a.priority || a.order - b.order)[0]?.part ?? "";
-
-  const clearActionClauses = clauses.filter((part) => {
-    if (!includesAny(part, actionWords) || !includesAny(part, symptomWords)) return false;
-    if (includesAny(part, negativeWords) || includesAny(part, goalWords)) return false;
-    if (includesAny(part, timingWords) && !includesAny(part, ["会痛", "会疼", "不舒服", "酸", "胀", "麻", "紧", "扯", "卡"])) return false;
-    if (includesAny(part, injuryEventWords) && !includesAny(part, ["现在", "目前", "会痛", "会疼", "不舒服", "酸", "胀"])) return false;
-    if (part.includes("后") && !includesAny(part, ["现在", "目前", "会痛", "会疼", "不舒服", "酸", "胀", "麻", "紧", "扯", "卡"])) return false;
-    return true;
-  });
-  const clearActionClause = highestPriorityClause(clearActionClauses);
-  if (clearActionClause) return clearActionClause;
-
-  const fallbackActionClauses = clauses.filter((part) => {
-    if (!includesAny(part, actionWords)) return false;
-    if (includesAny(part, negativeWords) || includesAny(part, goalWords)) return false;
-    if (includesAny(part, injuryEventWords) && !includesAny(part, ["现在", "目前", "也不行", "不能", "一瘸一拐"])) return false;
-    if (includesAny(part, timingWords) && !includesAny(part, ["更明显", "加重", "难受", "也不行", "不能"])) return false;
-    return includesAny(part, ["更明显", "加重", "难受", "也不行", "不能", "一瘸一拐", "费劲", "受限"]);
-  });
-  return highestPriorityClause(fallbackActionClauses);
-}
-
-function analyzeChiefAction(text: string, regionId: string, forceDirection = "", preferredRaw = ""): ChiefActionAnalysis | null {
-  const preferred = preferredRaw.trim() || extractProvokingAction(text);
-  const raw = isUnclearAction(preferred) ? "" : preferred;
-  if (isUnclearAction(forceDirection)) forceDirection = "";
-  const source = `${raw} ${forceDirection}`.trim();
-  if (!raw && !forceDirection) return null;
-
-  const actionMap: Array<{ words: string[]; value: Omit<ChiefActionAnalysis, "raw"> }> = [
-    { words: ["转头"], value: { category: "颈部转动", task: includesAny(source, ["向左", "左转"]) ? "向左转头" : includesAny(source, ["向右", "右转"]) ? "向右转头" : "转头", function: "颈部旋转和查看侧后方", load: "非负重活动", direction: includesAny(source, ["向左", "左转"]) ? "向左旋转" : includesAny(source, ["向右", "右转"]) ? "向右旋转" : "旋转方向待确认", retest: "保持肩膀和躯干不动，用相同速度向原方向转头" } },
-    { words: ["低头"], value: { category: "脊柱活动", task: "低头", function: "颈部前屈和低头使用", load: "非负重活动", direction: "颈部前屈", retest: "保持坐姿和肩膀放松，用相同速度再低头一次" } },
-    { words: ["抬头", "仰头"], value: { category: "脊柱活动", task: "抬头", function: "颈部后伸和向上查看", load: "非负重活动", direction: "颈部后伸", retest: "保持躯干不后仰，用相同速度再抬头一次" } },
-    { words: ["侧屈", "歪头"], value: { category: "脊柱活动", task: includesAny(source, ["向左", "左侧屈"]) ? "向左侧屈" : includesAny(source, ["向右", "右侧屈"]) ? "向右侧屈" : "侧屈", function: "脊柱侧向活动和控制", load: "非负重活动", direction: includesAny(source, ["向左", "左侧屈"]) ? "向左侧屈" : includesAny(source, ["向右", "右侧屈"]) ? "向右侧屈" : "侧屈方向待确认", retest: "保持躯干不旋转，用相同速度向原方向侧屈" } },
-    { words: ["弯腰", "前屈"], value: { category: "躯干活动", task: "弯腰", function: "腰髋前屈和躯干控制", load: "站立活动", direction: "腰髋前屈", retest: "保持脚位和速度相同，再弯腰到原来的范围" } },
-    { words: ["后仰"], value: { category: "脊柱活动", task: regionId === "neck" ? "抬头或颈部后仰" : "躯干后仰", function: regionId === "neck" ? "颈部后伸" : "腰椎后伸和躯干控制", load: "站立活动", direction: "后伸", retest: "保持脚位和速度相同，再做一次后仰" } },
-    { words: ["转身", "转体"], value: { category: "躯干转动", task: includesAny(source, ["向左", "左转"]) ? "向左转身" : includesAny(source, ["向右", "右转"]) ? "向右转身" : "转身", function: "胸腰椎旋转和躯干控制", load: "日常活动", direction: includesAny(source, ["向左", "左转"]) ? "向左旋转" : includesAny(source, ["向右", "右转"]) ? "向右旋转" : "旋转方向待确认", retest: "固定脚位或坐姿，用相同速度向原方向转身" } },
-    { words: ["下楼", "下台阶"], value: { category: "楼梯", task: "下楼梯", function: "单腿承重、髋膝踝减速控制", load: "负重", direction: "屈髋、屈膝和踝背屈", retest: "用同一台阶、同一侧先下，再做一次" } },
-    { words: ["上楼", "上台阶"], value: { category: "楼梯", task: "上楼梯", function: "单腿承重、髋膝踝向上发力", load: "负重", direction: "伸髋、伸膝和踝跖屈", retest: "用同一台阶、同一侧先上，再做一次" } },
-    { words: ["深蹲", "下蹲", "蹲起", "蹲下", "蹲", "起身", "站起", "站起来", "squat", "squatting"], value: { category: "蹲起", task: includesAny(source, ["蹲", "squat"]) ? (includesAny(source, ["起身", "站起", "起来"]) && !includesAny(source, ["蹲下", "下蹲", "蹲起", "蹲", "squat"]) ? "起身" : "蹲起") : "起身", function: "髋膝踝协同屈伸", load: "负重", direction: "屈髋、屈膝和踝背屈", retest: "用相同深度和扶持方式，再做一次" } },
-    { words: ["跑步", "慢跑", "跑", "冲刺"], value: { category: "跑步", task: includesAny(source, ["冲刺"]) ? "冲刺" : "跑步", function: "单腿承重、缓冲和蹬地", load: "动态负重", direction: "髋膝踝连续屈伸", retest: "用相同速度和距离，再做一次" } },
-    { words: ["跳", "落地"], value: { category: "跳跃", task: includesAny(source, ["落地"]) ? "落地" : "跳跃", function: "下肢蹬伸、落地缓冲和稳定", load: "冲击负重", direction: "髋膝踝快速屈伸", retest: "用相同高度、方向和落地方式，再做一次" } },
-    { words: ["走路", "行走", "步行", "抬脚", "迈步", "踩地", "落脚", "一瘸一拐", "走", "walk", "walking"], value: { category: "走路", task: "走路", function: "连续承重、髋膝踝联动", load: "负重", direction: "脚跟着地到脚尖蹬地", retest: "走相同距离，保持相同速度和扶持方式" } },
-    { words: ["站立", "久站", "负重"], value: { category: "站立负重", task: includesAny(source, ["单脚", "单腿"]) ? "单腿站立" : "站立负重", function: "持续承重和身体稳定", load: includesAny(source, ["单脚", "单腿"]) ? "单腿负重" : "负重", direction: "保持身体与关节稳定", retest: "保持相同站立时间和扶持方式，再做一次" } },
-    { words: ["抬手", "举手", "上举"], value: { category: "抬手", task: "抬手", function: "肩胛骨稳定与肩关节抬举", load: "上肢活动", direction: "肩关节向前或向外抬起", retest: "用相同方向和高度，再抬一次" } },
-    { words: ["向前推", "推", "撑"], value: { category: "推", task: includesAny(source, ["撑", "俯卧撑"]) ? "支撑或推起" : "向前推", function: "肩胛骨稳定与上肢推力", load: "上肢发力", direction: "向前或向外推", retest: "用相同阻力和手臂位置，再推一次" } },
-    { words: ["向后拉", "拉"], value: { category: "拉", task: "向后拉", function: "肩胛骨稳定与上肢拉力", load: "上肢发力", direction: "向后拉", retest: "用相同阻力和手臂位置，再拉一次" } },
-    { words: ["拧", "旋转", "转动"], value: { category: "旋转", task: includesAny(source, ["拧毛巾"]) ? "拧毛巾" : "旋转动作", function: "关节旋转控制和握力配合", load: "旋转发力", direction: "向症状出现的方向旋转", retest: "用相同方向和阻力，再做一次" } },
-    { words: ["按压", "压痛", "一按"], value: { category: "按压", task: "按压患处", function: "局部触压反应", load: "轻触压", direction: "按压已记录的位置", retest: "后续只在同一位置轻柔比较，不反复重按" } },
-    { words: ["静止", "不动", "夜间", "晚上", "睡觉", "休息"], value: { category: "静息", task: includesAny(source, ["夜间", "晚上", "睡觉"]) ? "夜间或睡觉时" : "静止休息时", function: "静息状态", load: "无主动负重", direction: "保持原来容易出现症状的体位", retest: "记录持续时间和评分，留到稍后或下次比较" } },
-    { words: ["发力", "用力", "使劲", "抗阻", "对抗"], value: { category: "发力", task: forceDirection || "局部发力", function: "局部肌肉抗阻发力", load: "对抗阻力", direction: forceDirection || "需要在评估时确认", retest: "用相同方向和阻力，再发力一次" } },
-  ];
-
-  const matched = actionMap.find((item) => includesAny(source, item.words));
-  if (matched) return { raw: raw || matched.value.task, ...matched.value };
-  return {
-    raw: raw || forceDirection,
-    category: "其他动作",
-    task: raw || forceDirection,
-    function: regionId ? "需要结合身体区域在评估中确认" : "需要先确认身体区域",
-    load: includesAny(source, ["负重", "提", "抗阻", "用力", "发力"]) ? "有负荷" : "待确认",
-    direction: forceDirection || "待确认",
-    retest: `用相同方式再做一次“${raw || forceDirection}”`,
-  };
-}
-
-function inferRegion(text: string) {
-  const normalized = text.toLowerCase();
-  const map: Array<[string, string[]]> = [
-    ["neck", ["颈肩交界", "颈脖", "颈脖子", "颈部", "枕下", "转头"]],
-    ["thoracic-rib", ["胸椎", "肋骨", "胸廓", "上背", "胸背"]],
-    ["shoulder", ["肩关节", "肩胛", "肩顶部", "肩外侧", "肩前", "肩后", "抬手", "摸背", "肩"]],
-    ["elbow", ["网球肘", "高尔夫球肘", "肘"]],
-    ["wrist-hand", ["手脖子", "手腕", "腕", "拇指", "手指", "掌心"]],
-    ["lumbar-pelvis", ["腰骶", "腰", "骨盆", "坐骨"]],
-    ["hip-thigh", ["髋", "腹股沟", "臀部", "大腿根", "腿根"]],
-    ["thigh-local", ["大腿前侧", "大腿后侧", "大腿内侧", "大腿外侧", "大腿中段", "大腿"]],
-    ["knee", ["膝盖", "漆盖", "膝", "髌骨", "鹅足", "knee"]],
-    ["calf-local", ["小腿前侧", "小腿后侧", "小腿内侧", "小腿外侧", "小腿肚", "胫骨前侧", "腓肠肌", "小腿"]],
-    ["ankle-foot", ["脚脖子", "脚踝", "脚腕", "崴脚", "歪脚", "ankle", "踝", "足底", "足跟", "跟腱", "脚背", "脚面", "脚趾", "脚后跟", "脚跟", "后跟"]],
-  ];
-  const ranked = map.map(([id, words], order) => ({
-    id,
-    order,
-    score: words.reduce((score, word) => normalized.includes(word) ? score + Math.max(2, word.length * 2) : score, 0),
-  })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.order - b.order);
-  return ranked[0]?.id ?? "";
-}
-
-function inferPilotRegions(text: string): FullRegionId[] {
-  const normalized = text.toLowerCase();
-  const detected: FullRegionId[] = [];
-  if (includesAny(normalized, ["大腿前侧", "大腿后侧", "大腿内侧", "大腿外侧", "大腿中段", "大腿拉伤"])) detected.push("thigh-local");
-  if (includesAny(normalized, ["膝盖", "漆盖", "膝", "髌骨", "鹅足", "knee"])) detected.push("knee");
-  if (includesAny(normalized, ["小腿前侧", "小腿后侧", "小腿内侧", "小腿外侧", "小腿肚", "胫骨前侧", "腓肠肌", "小腿拉伤"])) detected.push("calf-local");
-  if (includesAny(normalized, ["脚脖子", "脚踝", "脚腕", "崴脚", "歪脚", "ankle", "踝", "足底", "足跟", "跟腱", "脚背", "脚面", "脚趾", "脚后跟", "脚跟", "后跟"])) detected.push("ankle-foot");
-  return detected;
-}
-
-function inferSymptomSide(text: string, currentSide = "") {
-  if (includesAny(text, ["双侧", "两侧", "两边", "两只", "双膝", "双踝", "正中", "中间"])) return "双侧/中间";
-  if (mentionsBothSymptomSides(text)) return "";
-  const bodyWords = "颈|肩|肘|腕|手|胸|背|腰|髋|腹股沟|大腿|膝|小腿|踝|脚腕|脚|足|跟";
-  const sideBeforeBody = text.match(new RegExp(`(左|右)侧?(?=(?:${bodyWords}))`));
-  if (sideBeforeBody) return sideBeforeBody[1] === "左" ? "左侧" : "右侧";
-  const bodyBeforeSide = text.match(new RegExp(`(?:${bodyWords})(?:部|关节)?(左|右)侧`));
-  if (bodyBeforeSide) return bodyBeforeSide[1] === "左" ? "左侧" : "右侧";
-  const plainSide = text.match(/(?:^|[，。；、\s])(左边|右边)(?=[^，。；]{0,6}(?:疼|痛|酸|胀|麻|不适|受限))/);
-  if (plainSide) return plainSide[1] === "左边" ? "左侧" : "右侧";
-  if (/\bleft\b/i.test(text)) return "左侧";
-  if (/\bright\b/i.test(text)) return "右侧";
-  return currentSide;
-}
-
-function mentionsBothSymptomSides(text: string) {
-  const bodyOrSymptom = "膝|腿|脚|足|踝|疼|痛|酸|胀|麻|不适|崴|扭|肿";
-  const mentionsLeft = new RegExp(`左(?:侧|边)?[^，。；]{0,8}(?:${bodyOrSymptom})|(?:${bodyOrSymptom})[^，。；]{0,8}左(?:侧|边)?`).test(text);
-  const mentionsRight = new RegExp(`右(?:侧|边)?[^，。；]{0,8}(?:${bodyOrSymptom})|(?:${bodyOrSymptom})[^，。；]{0,8}右(?:侧|边)?`).test(text);
-  return mentionsLeft && mentionsRight;
-}
-
-function inferImagingFromDescription(text: string) {
-  const inferred: string[] = [];
-  const mentionsImaging = includesAny(text, ["拍过片", "拍片", "核磁", "CT", "ct", "x光", "X光", "影像"]);
-  if (mentionsImaging && includesAny(text, ["没骨折", "没有骨折", "未见骨折", "排除骨折", "骨头没事"])) inferred.push("未见骨折");
-  else if (mentionsImaging && /(?:有|发现|提示|确认)(?:了)?(?:骨折|骨裂)|(?:骨折|骨裂)(?:异常|明确|已确认)/.test(text)) inferred.push("有骨折或骨裂异常");
-  if (includesAny(text, ["医生允许康复", "医生说可以康复", "医生让康复", "可以开始康复"])) inferred.push("医生已允许按建议康复");
-  if (includesAny(text, ["医生有限制", "医生说不能", "限制负重", "限制活动"])) inferred.push("医生有限制");
-  return inferred;
-}
-
-function getGoalLabel(level: number) {
-  return GOALS_PRO.find((goal) => goal.level === level)?.title ?? "尚未确认";
-}
-
-function forceDirectionOptions(regionId: string) {
-  const options: Record<string, string[]> = {
-    "thigh-local": ["弯曲膝盖", "伸直膝盖", "脚跟向后拉", "双腿向中间夹", "腿向外抬", "说不清，后面检查"],
-    "calf-local": ["向上勾脚", "提踵或蹬地", "脚掌向内转", "脚掌向外转", "说不清，后面检查"],
-    "ankle-foot": ["脚背向上勾", "脚背向下压", "踮脚或提踵", "脚掌向内转", "脚掌向外转", "脚趾或足弓用力", "说不清，后面检查"],
-    knee: ["伸直膝盖", "弯曲膝盖", "下蹲或起身", "上楼或下楼", "说不清，后面检查"],
-    "hip-thigh": ["向前抬腿", "腿向后伸", "腿向外打开", "夹腿", "转动髋部", "说不清，后面检查"],
-    shoulder: ["抬手", "手臂向外转", "手臂向内转", "向前推", "向后拉", "说不清，后面检查"],
-    elbow: ["弯曲手肘", "伸直手肘", "手掌向上或向下转", "握紧或提物", "说不清，后面检查"],
-    "wrist-hand": ["手腕向上抬", "手腕向下弯", "握紧", "旋转或拧动", "手指或拇指用力", "说不清，后面检查"],
-    neck: ["低头", "抬头", "向左或向右转头", "向一侧歪头", "说不清，后面检查"],
-    "lumbar-pelvis": ["弯腰", "后仰", "向一侧弯", "转身", "起身或翻身", "说不清，后面检查"],
-    "thoracic-rib": ["转身", "向一侧弯", "深呼吸", "抬手或推拉", "说不清，后面检查"],
-  };
-  return options[regionId] ?? ["弯曲", "伸直", "向内用力", "向外用力", "推或拉", "说不清，后面检查"];
-}
-
-/**
- * 症状收集阶段的动作只记录“用户想复现的动作”。
- * 评估阶段仍会单独记录活动范围和主动控制，不能用这组选项替代查体。
- */
-function reportedActionOptions(regionId: string): ReportedAction[] {
-  const common: ReportedAction[] = [
-    { id: "functional-walk", label: "走路", kind: "functional", raw: "走路" },
-    { id: "functional-squat", label: "下蹲或起身", kind: "functional", raw: "下蹲或起身" },
-    { id: "functional-stairs", label: "上下楼或下台阶", kind: "functional", raw: "上下楼或下台阶" },
-    { id: "functional-single-leg", label: "单腿站立或单腿下蹲", kind: "functional", raw: "单腿站立或单腿下蹲" },
-    { id: "functional-run-jump", label: "跑步、跳跃或落地", kind: "functional", raw: "跑步、跳跃或落地" },
-  ];
-  const direction: Record<string, ReportedAction[]> = {
-    "ankle-foot": [
-      { id: "ankle-dorsiflexion", label: "踝背屈｜把脚背向小腿方向勾", kind: "joint-direction", raw: "勾脚" },
-      { id: "ankle-plantarflexion", label: "踝跖屈｜把脚尖向下绷", kind: "joint-direction", raw: "绷脚或脚尖向下" },
-      { id: "ankle-inversion", label: "踝内翻｜把脚底转向身体内侧", kind: "joint-direction", raw: "脚底向内转" },
-      { id: "ankle-eversion", label: "踝外翻｜把脚底转向身体外侧", kind: "joint-direction", raw: "脚底向外转" },
-      { id: "ankle-heel-raise", label: "提踵｜踮脚或蹬地", kind: "joint-direction", raw: "踮脚或提踵" },
-    ],
-    "calf-local": [
-      { id: "calf-dorsiflexion", label: "踝背屈｜把脚背向小腿方向勾", kind: "joint-direction", raw: "勾脚" },
-      { id: "calf-plantarflexion", label: "踝跖屈｜把脚尖向下绷", kind: "joint-direction", raw: "绷脚或脚尖向下" },
-      { id: "calf-inversion", label: "踝内翻｜把脚底转向身体内侧", kind: "joint-direction", raw: "脚底向内转" },
-      { id: "calf-eversion", label: "踝外翻｜把脚底转向身体外侧", kind: "joint-direction", raw: "脚底向外转" },
-    ],
-    knee: [
-      { id: "knee-extension", label: "膝关节伸直｜把膝盖绷直", kind: "joint-direction", raw: "绷直膝盖" },
-      { id: "knee-flexion", label: "膝关节屈曲｜把膝盖弯曲", kind: "joint-direction", raw: "弯曲膝盖" },
-    ],
-    "thigh-local": [
-      { id: "thigh-front-length", label: "膝关节屈曲｜让大腿前侧拉长", kind: "joint-direction", raw: "弯曲膝盖" },
-      { id: "thigh-back-length", label: "膝关节伸直｜让大腿后侧拉长", kind: "joint-direction", raw: "绷直膝盖" },
-      { id: "thigh-medial-length", label: "髋关节外展｜把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
-      { id: "thigh-lateral-load", label: "单腿承重｜让大腿外侧参与稳定", kind: "functional", raw: "单腿承重" },
-    ],
-    "hip-thigh": [
-      { id: "hip-flexion", label: "髋关节屈曲｜把大腿向腹部方向抬", kind: "joint-direction", raw: "抬腿" },
-      { id: "hip-extension", label: "髋关节伸展｜把腿向身后伸", kind: "joint-direction", raw: "腿向后伸" },
-      { id: "hip-abduction", label: "髋关节外展｜把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
-      { id: "hip-adduction", label: "髋关节内收｜把腿向身体中线靠拢", kind: "joint-direction", raw: "夹腿" },
-    ],
-  };
-  const options = [...(direction[regionId] ?? []), ...common];
-  return options.filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index);
-}
-
-function inferForceDirection(regionId: string, text: string) {
-  const options = forceDirectionOptions(regionId);
-  const patterns: Array<[string[], number]> = regionId === "ankle-foot"
-    ? [[["勾脚", "背屈", "向上发力"], 0], [["脚背向下", "踩油门", "跖屈", "向下发力"], 1], [["提踵", "踮脚", "蹬地"], 2], [["内翻", "脚掌向内", "向内发力"], 3], [["外翻", "脚掌向外", "向外发力"], 4], [["脚趾", "足弓"], 5]]
-    : regionId === "thigh-local"
-      ? [[["弯膝", "大腿前侧拉长"], 0], [["伸膝", "踢腿", "大腿前侧发力"], 1], [["屈膝", "脚跟后拉", "大腿后侧"], 2], [["夹腿", "内收", "大腿内侧"], 3], [["外展", "向外抬腿", "大腿外侧"], 4]]
-    : regionId === "calf-local"
-      ? [[["勾脚", "小腿前"], 0], [["提踵", "蹬地", "小腿后"], 1], [["内翻", "小腿内"], 2], [["外翻", "小腿外"], 3]]
-    : regionId === "knee"
-      ? [[["伸膝", "伸直", "向前踢"], 0], [["屈膝", "弯膝", "向后勾"], 1], [["下蹲", "起身", "蹲起"], 2], [["上楼", "下楼", "台阶"], 3]]
-      : regionId === "shoulder"
-        ? [[["抬手", "上举"], 0], [["外旋", "向外转"], 1], [["内旋", "向内转", "摸背"], 2], [["推"], 3], [["拉"], 4]]
-        : [];
-  const match = patterns.find(([words]) => includesAny(text, words));
-  return match ? options[match[1]] : "";
-}
-
-function forceDirectionTags(value: string) {
-  const map: Array<[string[], string[]]> = [
-    [["勾脚", "向上抬"], ["dorsiflexion", "tibialis-anterior", "extensor"]],
-    [["脚背向下", "下压", "踩油门"], ["plantarflexion", "calf"]],
-    [["提踵", "踮脚", "蹬地"], ["plantarflexion", "calf", "heel-raise"]],
-    [["向内转"], ["inversion", "tibialis-posterior", "arch"]],
-    [["向外转"], ["eversion", "peroneal"]],
-    [["伸直膝盖"], ["quadriceps", "terminal-extension", "knee-extension"]],
-    [["弯曲膝盖"], ["hamstring", "knee-flexion"]],
-    [["下蹲", "起身"], ["quadriceps", "glute", "squat"]],
-    [["抬手"], ["arm-lift", "scapular-control", "cuff-control"]],
-    [["向外转"], ["external-rotation", "cuff-control"]],
-    [["向内转"], ["internal-rotation", "cuff-control"]],
-    [["推"], ["push", "serratus", "triceps"]],
-    [["拉"], ["pull", "scapular-control", "biceps"]],
-  ];
-  return map.filter(([words]) => includesAny(value, words)).flatMap(([, tags]) => tags);
-}
-
-function parseIntake(text: string, current: IntakeState): IntakeState {
-  const originalText = text;
-  text = currentComplaintText(text);
-  const inferredRegionId = inferRegion(text);
-  const regionId = isPilotRegion(inferredRegionId)
-    ? inferredRegionId
-    : isPilotRegion(current.regionId)
-      ? current.regionId
-      : "";
-  const region = FULL_REGIONS.find((item) => item.id === regionId);
-  // 当前症状文本会过滤掉只描述“怎么发生”的片段；如果侧别只写在
-  // “崴了右脚/摔到左膝”这一段，不能因为它没有疼痛词就丢失侧别。
-  // 先用当前症状判断，只有当前没有明确侧别时才回看原话，避免历史
-  // 左侧问题覆盖本次明确的右侧主诉。
-  const side = inferSymptomSide(text, "") || inferSymptomSide(originalText, current.side);
-  const onset = includesAny(text, ["今天", "昨天", "昨晚", "今早", "刚刚"]) ? "今天或昨天" : includesAny(text, ["两周", "2周", "三周", "一个月"]) ? "1～6周" : includesAny(text, ["几天", "一周", "7天"]) ? "2～7天" : includesAny(text, ["好几年", "几年", "多年"]) || /[一二两三四五六七八九十0-9]+年/.test(text) ? "超过6周" : includesAny(text, ["半年", "几个月", "长期", "很久", "超过"] ) || /[两三四五六七八九十0-9]+个?月/.test(text) ? "超过6周" : includesAny(text, ["反复", "断断续续", "时好时坏"]) ? "反复出现" : current.onset;
-  const deniesTwist = /(?:没|没有|并未|未曾)(?:有)?(?:崴|扭|歪脚)/.test(text);
-  const deniesImpact = /(?:没|没有|并未|未曾)(?:有)?(?:撞|摔|跌倒|跌伤)/.test(text);
-  const explicitlyNoInjury = includesAny(text, ["没有明确受伤", "没有明显受伤", "没有明显外伤", "没有外伤", "没有受伤", "没受伤", "不记得受伤"]) || (deniesTwist && deniesImpact);
-  const mechanism = includesAny(text, ["崴", "歪脚", "扭"]) && !deniesTwist ? "扭转或崴伤" : includesAny(text, ["跌", "撞", "摔"]) && !deniesImpact ? "跌倒或碰撞" : includesAny(text, ["拉伤", "冲刺"] ) ? "跑跳或拉伤" : explicitlyNoInjury ? "没有明确受伤" : includesAny(text, ["慢慢", "逐渐", "不知不觉"]) ? "逐渐出现" : current.mechanism;
-  const symptomType = includesAny(text, ["麻", "电感", "放射", "发麻"]) ? "麻或电感" : includesAny(text, ["针扎", "针刺", "扎", "刺", "锐"] ) ? "刺痛" : includesAny(text, ["烧灼", "火辣", "灼热", "烧痛"] ) ? "烧灼或火辣" : includesAny(text, ["胀"] ) ? "胀痛" : includesAny(text, ["牵", "扯", "紧"] ) ? "牵扯或紧绷" : includesAny(text, ["挤", "卡", "弹"] ) ? "挤、卡或弹响" : includesAny(text, ["无力", "不稳", "打软", "腿软", "发软", "没劲", "使不上劲", "发不上力"] ) ? "无力或不稳" : text.includes("酸") ? "酸痛" : (text.includes("疼") || text.includes("痛") || text.toLowerCase().includes("pain")) ? "疼痛，性质说不清" : includesAny(text, ["不舒服", "不得劲", "难受"]) ? "说不清的不适" : current.symptomType;
-  const painQualityConfirmed = current.painQualityConfirmed || includesAny(text, ["麻", "电感", "放射", "发麻", "针扎", "针刺", "扎", "刺", "锐", "烧灼", "火辣", "灼热", "烧痛", "胀", "牵", "扯", "紧", "挤", "卡", "弹", "无力", "不稳", "打软", "腿软", "发软", "没劲", "使不上劲", "发不上力", "酸"]);
-  const parsedProvokingAction = extractProvokingAction(text);
-  const symptoms = Array.from(new Set([
-    ...(current.symptoms ?? []),
-    ...(includesAny(text, ["肿", "积液", "淤青", "淤血"]) ? ["肿胀或淤青"] : []),
-    ...(includesAny(text, ["按压", "压痛", "一按"] ) ? ["按压痛"] : []),
-    ...(includesAny(text, ["受限", "伸不直", "弯不了", "抬不起来", "走不了", "站不了", "蹲不了", "动不了"] ) ? ["活动受限"] : []),
-    ...(includesAny(text, ["无力", "没劲", "不稳", "使不上劲", "发不上力", "打软", "腿软", "发软"] ) ? ["力量不足"] : []),
-    ...(includesAny(text, ["麻", "电感", "放电", "窜麻", "发麻"] ) ? ["麻、电或感觉变化"] : []),
-  ]));
-  const actionSource = `${parsedProvokingAction} ${text}`.toLowerCase();
-  const unclearProvocation = includesAny(text, ["说不清什么时候", "不知道什么时候", "没有固定动作", "没固定动作", "不一定什么时候", "随机出现"]);
-  const provocationTypes = Array.from(new Set([
-    ...(current.provocationTypes ?? []),
-    ...(includesAny(parsedProvokingAction, ["角度", "抬手", "弯曲", "伸直", "转动", "转头", "侧屈", "低头", "抬头", "弯腰", "后仰", "转身", "转体", "勾脚", "下压"] ) ? ["活动到某个角度"] : []),
-    ...(includesAny(actionSource, ["发力", "用力", "使劲", "抗阻", "一撑"] ) ? ["用力或对抗阻力"] : []),
-    ...(includesAny(actionSource, ["走", "站", "负重", "楼", "台阶", "蹲", "起身", "跑", "跳", "抬脚", "迈步", "踩地", "落脚", "一瘸一拐", "walk", "squat", "run", "jump"] ) ? ["走路、站立或负重"] : []),
-    ...(includesAny(parsedProvokingAction, ["按压", "压痛", "一按"] ) ? ["按压"] : []),
-    ...(includesAny(text, ["静止", "不动", "夜间", "晚上", "睡觉"] ) ? ["静止或夜间"] : []),
-    ...(includesAny(parsedProvokingAction, ["运动时", "训练时", "跑步时", "运动过程中", "跑步", "训练"] ) ? ["运动过程中"] : []),
-    ...(includesAny(text, ["运动后", "训练后", "跑步后", "跑完", "结束后"] ) ? ["运动结束后"] : []),
-    ...(unclearProvocation ? ["说不清 / 没有固定动作"] : []),
-  ]));
-  const pilotLocationAliases: Partial<Record<FullRegionId, Array<[string[], string]>>> = {
-    "thigh-local": [
-      [["大腿前侧", "大腿前面"], "大腿前侧"], [["大腿后侧", "大腿后面"], "大腿后侧"],
-      [["大腿内侧", "大腿里面"], "大腿内侧"], [["大腿外侧", "大腿外面"], "大腿外侧"],
-    ],
-    knee: [
-      [["大腿前侧", "大腿前面"], "大腿前侧"],
-      [["大腿后侧", "大腿后面"], "大腿后侧"],
-      [["大腿内侧", "大腿里面"], "大腿内侧"],
-      [["大腿外侧", "大腿外面"], "大腿外侧"],
-      [["膝前", "髌骨周围"], "膝前 / 髌骨周围"],
-      [["髌骨下", "髌腱"], "髌骨下方"],
-      [["膝内侧", "膝盖内侧"], "膝内侧"],
-      [["膝外侧", "膝盖外侧"], "膝外侧"],
-      [["膝后", "腘窝"], "膝后侧 / 腘窝"],
-      [["关节线", "关节缝"], "关节线"],
-      [["小腿上端", "胫骨上端", "腓骨头"], "小腿上端"],
-    ],
-    "ankle-foot": [
-      [["小腿前侧", "小腿前面"], "小腿前侧"],
-      [["小腿后侧", "小腿后面", "小腿肚"], "小腿后侧"],
-      [["小腿内侧", "小腿里面"], "小腿内侧"],
-      [["小腿外侧", "小腿外面"], "小腿外侧"],
-      [["外踝", "脚踝外侧", "踝外侧", "前外侧"], "外踝 / 前外侧"],
-      [["内踝", "脚踝内侧", "踝内侧", "足弓内侧"], "内踝 / 足弓内侧"],
-      [["踝前", "脚踝前方"], "踝前方"],
-      [["足背", "脚背"], "足背"],
-      [["足底", "脚底", "脚跟", "足跟"], "足底 / 足跟"],
-      [["跟腱", "踝后", "脚踝后方"], "跟腱 / 踝后方"],
-      [["脚趾根", "足趾根", "大脚趾"], "足趾根部"],
-    ],
-    "calf-local": [
-      [["小腿前侧", "小腿前面", "胫骨前侧"], "小腿前侧"], [["小腿后侧", "小腿后面", "小腿肚", "腓肠肌"], "小腿后侧"],
-      [["小腿内侧", "小腿里面"], "小腿内侧"], [["小腿外侧", "小腿外面"], "小腿外侧"],
-    ],
-  };
-  const exactLocation = region?.locations.find((location) => text.includes(location));
-  const aliasLocation = (pilotLocationAliases[regionId as FullRegionId] ?? []).find(([words]) => includesAny(text, words))?.[1];
-  const locationUnclear = includesAny(text, ["不知道具体哪", "不知道具体哪里", "说不清具体位置", "说不清哪里", "不知道哪儿", "位置说不清"]);
-  const location = exactLocation ?? aliasLocation ?? region?.locations
-    .map((location) => ({ location, core: location.replace(/[部区周围 /]/g, "") }))
-    .sort((a, b) => b.core.length - a.core.length)
-    .find((item) => item.core.length >= 2 && text.includes(item.core))?.location ?? (locationUnclear ? "说不清" : current.location);
-  const bodyLocations = current.locationConfirmed ? current.bodyLocations : [];
-  const resolveLocationInClause = (clause?: string) => {
-    if (!clause) return "";
-    return region?.locations.find((entry) => clause.includes(entry))
-      ?? (pilotLocationAliases[regionId as FullRegionId] ?? []).find(([words]) => includesAny(clause, words))?.[1]
-      ?? "";
-  };
-  const clauses = text.split(/[，。；！？\n]/).map((clause) => clause.trim()).filter(Boolean);
-  const swellingLocation = current.swellingLocation || resolveLocationInClause(clauses.find((clause) => includesAny(clause, ["肿", "积液", "淤青", "淤血"])));
-  const tendernessLocation = current.tendernessLocation || resolveLocationInClause(clauses.find((clause) => includesAny(clause, ["按压", "压痛", "一按"])));
-  const sensoryLocation = current.sensoryLocation || resolveLocationInClause(clauses.find((clause) => includesAny(clause, ["麻", "电感", "放电", "窜麻", "发麻"])));
-  const parsedSwellingLocation = swellingLocation && side !== "双侧/中间" ? makeLowerLimbLocationSelection(side, swellingLocation, regionId) : null;
-  const parsedTendernessLocation = tendernessLocation && side !== "双侧/中间" ? makeLowerLimbLocationSelection(side, tendernessLocation, regionId) : null;
-  const parsedSensoryLocation = sensoryLocation && side !== "双侧/中间" ? makeLowerLimbLocationSelection(side, sensoryLocation, regionId) : null;
-  const swellingLocations = current.swellingLocations?.length ? current.swellingLocations : parsedSwellingLocation ? [parsedSwellingLocation] : [];
-  const tendernessLocations = current.tendernessLocations?.length ? current.tendernessLocations : parsedTendernessLocation ? [parsedTendernessLocation] : [];
-  const sensoryLocations = current.sensoryLocations?.length ? current.sensoryLocations : parsedSensoryLocation ? [parsedSensoryLocation] : [];
-  const reproduction = parsedProvokingAction || current.reproduction;
-  const goalClause = text.split(/[，。；！？\n]/).map((part) => part.trim()).find((part) => includesAny(part, ["想恢复", "希望恢复", "目标", "回到", "重新开始", "恢复正常", "恢复日常"])) ?? "";
-  const goal = includesAny(goalClause, ["对抗", "比赛", "高强度"]) ? 5 : includesAny(goalClause, ["运动", "跑步", "健身", "球", "训练"]) ? 4 : includesAny(goalClause, ["正常生活", "日常生活", "办公", "工作", "开车", "驾驶", "家务"]) ? 3 : current.goal;
-  const inferredForceDirection = inferForceDirection(regionId, text);
-  const deniesToeDirection = /(?:脚趾|足趾|大脚趾)[^，。；]{0,6}(?:没有|没|不)(?:受伤|疼|痛|不适|问题)|(?:没有|没|不)[^，。；]{0,6}(?:脚趾|足趾|大脚趾)(?:受伤|疼|痛|不适|有问题)?/.test(text);
-  const forceDirection = deniesToeDirection && inferredForceDirection === "脚趾或足弓用力" ? current.forceDirection : inferredForceDirection || current.forceDirection;
-  const actionAnalysis = analyzeChiefAction(text, regionId, forceDirection, reproduction);
-  const priorCare = Array.from(new Set([
-    ...(current.priorCare ?? []),
-    ...(includesAny(originalText, ["看过医生", "去过医院", "医生看过"]) ? ["看过医生"] : []),
-    ...(includesAny(originalText, ["拍过片", "拍片", "核磁", "CT", "x光", "X光"]) ? ["拍过片"] : []),
-    ...(includesAny(originalText, ["膏药", "贴膏"]) ? ["用过膏药"] : []),
-    ...(includesAny(originalText, ["针灸", "理疗"]) ? ["做过针灸或理疗"] : []),
-    ...(includesAny(originalText, ["冰敷", "冷敷"]) ? ["用过冰敷"] : []),
-  ]));
-  const stabbingSpread: IntakeState["stabbingSpread"] = symptomType === "刺痛"
-    ? includesAny(text, ["不动", "静止", "躺着", "晚上", "夜间", "睡觉", "休息时"]) ? "rest" : current.stabbingSpread
-    : "";
-  return {
-    ...current,
-    parsed: true,
-    regionId,
-    side,
-    location,
-    bodyLocations,
-    locationConfirmed: current.locationConfirmed,
-    onset,
-    mechanism,
-    symptomType,
-    painQualityConfirmed,
-    symptoms,
-    provocationTypes,
-    forceDirection,
-    swellingLocation,
-    swellingLocations,
-    tendernessLocation,
-    tendernessLocations,
-    sensoryLocation,
-    sensoryLocations,
-    reproduction,
-    customAction: current.customAction || (actionAnalysis?.category === "其他动作" ? reproduction : ""),
-    actionSelectionConfirmed: current.actionSelectionConfirmed || Boolean(reproduction) || provocationTypes.includes("说不清 / 没有固定动作"),
-    actionAnalysis,
-    goal,
-    priorCare,
-    stabbingSpread,
-    stabbingPalpation: symptomType === "刺痛" ? current.stabbingPalpation : "",
-  };
-}
-
-function scoreChange(before: number, after: number) {
-  const delta = before - after;
-  const percent = before > 0 ? Math.round((delta / before) * 100) : null;
-  return { delta, percent };
-}
-
-function firstNumber(value: string, fallback = 10) {
-  const match = value.match(/\d+/);
-  return match ? Number(match[0]) : fallback;
-}
-
-/**
- * Keep the route short without cutting off its later clinical branches.
- * Muscle candidates are tried by relevance; joint and control candidates are
- * retained as conditional exits when the range still has not reached its goal.
- */
-type DynamicMuscleHistoryRecord = Pick<TrialRecord, "candidateId" | "candidateTitle" | "action" | "timeBased" | "rangeOutcomes"> & {
-  treatmentName?: string;
-};
-
-function dynamicMuscleCandidateFromRecord(record: TrialRecord): FullCandidate | undefined;
-function dynamicMuscleCandidateFromRecord(record: DynamicMuscleHistoryRecord | FollowupTreatmentRecord): FullCandidate | undefined;
-function dynamicMuscleCandidateFromRecord(record: DynamicMuscleHistoryRecord | FollowupTreatmentRecord): FullCandidate | undefined {
-  if (record.timeBased || !record.candidateId.startsWith("tension-muscle:")) return undefined;
-  const source = `${record.treatmentName ?? ""} ${record.candidateTitle} ${record.action}`;
-  const normalizedRegion = normalizePilotMuscleRegion(source);
-  if (!normalizedRegion) return undefined;
-  const retestIds = Object.keys(record.rangeOutcomes ?? {});
-  return {
-    id: record.candidateId,
-    title: record.treatmentName ?? record.candidateTitle,
-    type: "muscle",
-    access: "self",
-    do: record.action || `按图示在${normalizedRegion.label}两侧轻按一次，以按压时更酸或更胀的一侧为重点，轻柔处理30～60秒。`,
-    observe: "只做轻柔按压；出现明显刺痛、麻或电感就停止。",
-    retest: "处理后比较仍未恢复的相关活动和主诉动作。",
-    tags: [`tension:${normalizedRegion.label}`],
-    retestIds,
-    siteLabel: normalizedRegion.label,
-    targetLabel: `${normalizedRegion.label}紧张区域`,
-    actionLabel: "轻柔肌肉松解",
-  };
-}
-
-function optionalTreatmentSelectionKey(targetId: string, candidateId: string) {
-  return `${targetId}::${candidateId}`;
-}
-
-const RESIDUAL_REVIEW_ID = "review-existing-findings";
-
-function localizeTreatmentSite(site: string, side: string) {
-  if (!side || side === "双侧/中间" || /左侧|右侧/.test(site)) return site;
-  if (site.includes("两侧")) return site.replace("两侧", side);
-  return `${side}${site}`;
-}
-
-type TreatmentDisplay = {
-  site: string;
-  target: string;
-  action: string;
-};
-
-type ActionImageVariant = "self" | "pro";
-
-type ActionVisual = {
-  src: string;
-  alt: string;
-};
-
-function actionImageVariant(intake: IntakeState): ActionImageVariant {
-  const profile = intake.productMode
-    ? normalizeWorkflowProfile({ productMode: intake.productMode, operationTarget: intake.operationTarget, capabilities: intake.capabilities })
-    : workflowProfileFromLegacy(intake.userRole, intake.examSetup);
-  return profile.operationTarget === "other" ? "pro" : "self";
-}
-
-function actionVisual(src: string, alt: string): ActionVisual {
-  return { src: `/rehab-actions/${src}`, alt };
-}
-
-function exerciseActionVisual(exercise: FullExercise, variant: ActionImageVariant): ActionVisual | null {
-  const files: Partial<Record<string, [string, string]>> = {
-    "knee-side-abduction": ["k-a03-glute-med-activation-{variant}.png", "侧卧髋外展训练臀中肌"],
-    "knee-hamstring-isometric": ["k-a04-hamstring-activation-{variant}.png", "低负荷腘绳肌等长发力"],
-    "knee-heel-slide-quad-set": ["k-a05-quad-set-{variant}.png", "膝后下压与股四头肌发力"],
-    "ankle-plantarflexion-control": ["a-a01-plantarflexor-activation-{variant}.png", "坐姿提踵训练小腿后侧"],
-    "ankle-dorsiflexion-control": ["a-a02-dorsiflexor-activation-{variant}.png", "主动勾脚训练小腿前侧"],
-    "ankle-eversion-control": ["a-a03-evertor-activation-{variant}.png", "主动外翻训练小腿外侧"],
-  };
-  const match = files[exercise.id];
-  // 普通版K-A05把目标错误写成股内斜肌，暂不向用户展示。
-  if (!match || (exercise.id === "knee-heel-slide-quad-set" && variant === "self")) return null;
-  return actionVisual(match[0].replace("{variant}", variant), match[1]);
-}
-
-function ActionReferenceFigure({ visual }: { visual: ActionVisual }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return <figure className="rm-action-reference">
-    {/* 本地生成的临床动作图保持原始比例和清晰度，不走远端图片优化。 */}
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={visual.src} alt={visual.alt} loading="lazy" onError={() => setFailed(true)} />
-    <figcaption>动作参考</figcaption>
-  </figure>;
-}
-
-function treatmentDisplay(candidate: FullCandidate, fallbackSite: string, swellingSite = "", side = ""): TreatmentDisplay {
-  const controlDirection = candidate.type === "control" && candidate.retestIds?.length === 1 ? candidate.retestIds[0] : "";
-  const subject = candidateSubject(candidate);
-  const controlSite = subject.replace(/(?:控制|稳定)(?:练习|训练)$|(?:练习|训练)$/u, "");
-  const site = candidate.type === "muscle"
-    ? candidateMuscleFocus(candidate).label
-    : candidate.type === "control"
-      ? candidate.siteLabel || fallbackSite || controlSite || candidate.targetLabel
-      : candidate.siteLabel || (candidate.type === "swelling" && swellingSite ? swellingSite : fallbackSite) || "当前不适部位";
-  return {
-    site: localizeTreatmentSite(site || "当前不适部位", side),
-    target: ["muscle", "control"].includes(candidate.type) ? "" : candidate.targetLabel || (candidate.siteLabel ? subject : ""),
-    action: candidate.type === "muscle" && controlPlansForMotions(candidatePilotMotionIds(candidate)).length
-      ? "轻柔松解＋主动控制"
-      : candidate.type === "joint" || controlDirection
-        ? candidateTreatmentName(candidate)
-        : candidate.actionLabel || candidateTreatmentName(candidate),
-  };
-}
-
-function TreatmentActionCard({ candidate, display, priorityLabel, controlMotionIds }: { candidate: FullCandidate; display: TreatmentDisplay; priorityLabel?: "先做" | "配合处理"; controlMotionIds?: string[] }) {
-  const candidateMotionIds = candidatePilotMotionIds(candidate);
-  // undefined means that the caller has no assessment context and the
-  // candidate's own directions may be used. An explicit empty list means
-  // that no currently unresolved motion direction needs embedded control.
-  const relevantRetestMotionIds = controlMotionIds
-    ? candidateMotionIds.filter((id) => controlMotionIds.includes(id))
-    : candidateMotionIds;
-  const relevantMotionIds = candidateControlMotionIds(candidate, controlMotionIds);
-  const controlPlans = candidate.type === "muscle" ? controlPlansForMotions(relevantMotionIds) : [];
-  const retestPlans = controlPlansForMotions(relevantRetestMotionIds);
-  const patellaUnit = isPatellaTreatmentCandidate(candidate);
-  const displayAction = candidate.type === "muscle"
-    ? controlPlans.length ? "轻柔松解＋主动控制" : "轻柔松解"
-    : display.action;
-  const muscleSource = `${candidate.siteLabel ?? ""} ${candidate.targetLabel ?? ""} ${candidate.title} ${candidate.do} ${candidate.tags.join(" ")}`;
-  const normalizedRegion = candidate.type === "muscle" ? normalizePilotMuscleRegion(muscleSource) : undefined;
-  const relationRoles = normalizedRegion
-    ? controlPlans.map((plan) => regionRelationForMotion(plan.id, normalizedRegion.id)?.role).filter(Boolean)
-    : [];
-  const roleLabel = relationRoles.includes("agonist") && relationRoles.includes("antagonist")
-    ? "动作肌 / 拮抗肌候选"
-    : relationRoles.includes("agonist") ? "动作肌候选"
-      : relationRoles.includes("antagonist") ? "拮抗肌候选"
-        : relationRoles.includes("stabilizer") ? "稳定肌候选" : "检查支持区域";
-  return <article className={`rm-candidate rm-treatment-card is-${candidate.type}`} data-candidate-id={candidate.id}>
-    {priorityLabel ? <b className={`rm-treatment-priority is-${priorityLabel === "先做" ? "primary" : "support"}`}>{priorityLabel}</b> : null}
-    <header className="rm-treatment-ribbon">
-      <section className="rm-treatment-site">
-        <span>处理部位</span>
-        <h2>{display.site}</h2>
-        {display.target ? <strong>{display.target}</strong> : null}
-        {candidate.type === "muscle" ? <small className="rm-muscle-role">{roleLabel}</small> : null}
-      </section>
-      <section className="rm-treatment-action">
-        <span>现在做</span>
-        <h2>{displayAction}</h2>
-      </section>
-    </header>
-    {normalizedRegion ? <MuscleRegionTreatmentMap locations={[normalizedRegion.label]} /> : null}
-    {candidate.type === "muscle" && controlPlans.length ? <div className="rm-treatment-unit-steps">
-      <section className="is-release"><header><i>1</i><span>轻柔松解</span></header><p>{candidate.do}</p></section>
-      <section className="is-control"><header><i>2</i><span>主动控制</span></header>{controlPlans.map((plan) => <article key={plan.id}><strong>{plan.controlTitle}</strong><p>{plan.controlInstruction}{plan.controlRepetitions}。</p></article>)}</section>
-      <footer><b>完成后统一复测</b><span>{retestPlans.map((plan) => plan.userAction).join("、")}</span></footer>
-    </div> : <section className="rm-treatment-do"><strong>怎么做</strong><p>{candidateAction(candidate, relevantMotionIds)}</p></section>}
-    {patellaUnit ? <section className="rm-treatment-unit-followup is-patella"><b>完成后立即复测</b><span>只复测刚才发现受限的髌骨方向，记录活动范围和不适。</span></section> : null}
-  </article>;
-}
-
-function adaptExerciseForCurrentStage(exercise: FullExercise, currentStage: number): FullExercise {
-  if (currentStage <= 1) {
-    const isGait = exercise.tags.some((tag) => ["gait", "weight-shift"].includes(tag));
-    const isMultiDirectionMotion = exercise.tags.includes("ankle-rom");
-    const regressedPosition: FullExercise["startPosition"] = exercise.startPosition === "站立"
-      ? "坐位"
-      : exercise.startPosition === "四点跪"
-        ? "仰卧"
-        : exercise.startPosition;
-    const regressedHow = exercise.stage > 1 ? exercise.easier : exercise.how;
-    return {
-      ...exercise,
-      title: exercise.stage > 1 ? `${exercise.title}（基础版）` : exercise.title,
-      stage: 1,
-      sets: "1～2组",
-      reps: isGait ? "每组5～10次重心转移或短距离练习" : isMultiDirectionMotion ? "每个方向5～8个" : "每组5～8个",
-      startPosition: regressedPosition,
-      how: regressedPosition !== exercise.startPosition ? `${regressedPosition}开始，先用较小范围完成。${regressedHow}` : regressedHow,
-      harder: exercise.how,
-    };
-  }
-  if (exercise.stage <= currentStage) return exercise;
-  const isGait = exercise.tags.some((tag) => ["gait", "weight-shift"].includes(tag));
-  return {
-    ...exercise,
-    title: `${exercise.title}（基础版）`,
-    stage: currentStage as FullExercise["stage"],
-    sets: isGait ? "2～3组" : "2组",
-    reps: isGait ? "每组5～10次重心转移或短距离练习" : "每组6～8个",
-    how: exercise.easier,
-    harder: exercise.how,
-    startPosition: exercise.startPosition === "站立" ? "坐位" : exercise.startPosition,
-  };
-}
-
-const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: string; observe: string }> = {
-  "neck-flexion": { title: "低头", how: "坐直，肩膀放松，慢慢低头，让下巴靠近胸口。", observe: "能低到哪里；哪里不舒服；肩膀或上背有没有跟着动。" },
-  "neck-extension": { title: "抬头", how: "坐直，慢慢抬头看向上方，不要把身体向后倒。", observe: "能抬到哪里；颈后有没有挤压感；是否头晕。" },
-  "neck-rotation-left": { title: "向左转头", how: "坐直，肩膀不动，慢慢把头转向左边。", observe: "与向右转相比；哪里不舒服；肩膀有没有跟着转。" },
-  "neck-rotation-right": { title: "向右转头", how: "坐直，肩膀不动，慢慢把头转向右边。", observe: "与向左转相比；哪里不舒服；肩膀有没有跟着转。" },
-  "neck-sidebend-left": { title: "左耳靠近左肩", how: "鼻尖朝前，慢慢让左耳靠近左肩，肩膀不要抬起。", observe: "与另一边相比；哪边牵扯或挤压；身体有没有跟着歪。" },
-  "neck-sidebend-right": { title: "右耳靠近右肩", how: "鼻尖朝前，慢慢让右耳靠近右肩，肩膀不要抬起。", observe: "与另一边相比；哪边牵扯或挤压；身体有没有跟着歪。" },
-
-  "shoulder-flexion": { title: "手臂从前面举过头", how: "拇指朝上，手臂伸直，从身体前面慢慢举过头。", observe: "与另一侧相比能举多高；哪里不舒服；有没有耸肩或挺腰。" },
-  "shoulder-extension": { title: "手臂向身后抬", how: "站直，手臂伸直向身后抬，不要挺腰或转身。", observe: "与另一侧相比；肩前有没有牵扯；身体有没有跟着动。" },
-  "shoulder-abduction": { title: "手臂从侧面举起", how: "掌心向前，手臂伸直，从身体侧面慢慢举高。", observe: "与另一侧相比能举多高；在哪个位置不舒服；有没有耸肩。" },
-  "shoulder-internal-rotation": { title: "手从背后向上摸", how: "手背贴着后背，慢慢向上摸，不要扭腰。", observe: "与另一侧相比能摸到哪里；肩前或肩后哪里不舒服。" },
-  "shoulder-external-rotation": { title: "前臂向外转", how: "手肘弯成直角并贴住身体，慢慢把前臂向外转。", observe: "与另一侧相比；哪里不舒服；手肘有没有离开身体。" },
-
-  "thoracic-extension": { title: "上背向后伸展", how: "坐在有靠背的椅子上，双手抱头，让上背轻轻越过椅背。", observe: "上背能否伸展开；哪里卡或痛；腰有没有明显向后顶。" },
-  "thoracic-rotation-left": { title: "上半身向左转", how: "坐稳，双臂抱胸，膝盖朝前，上半身慢慢向左转。", observe: "与向右转相比；哪里不舒服；骨盆有没有跟着转。" },
-  "thoracic-rotation-right": { title: "上半身向右转", how: "坐稳，双臂抱胸，膝盖朝前，上半身慢慢向右转。", observe: "与向左转相比；哪里不舒服；骨盆有没有跟着转。" },
-  "thoracic-sidebend-left": { title: "上半身向左弯", how: "坐直，身体慢慢向左弯，保持胸口朝前。", observe: "与另一边相比；哪边牵扯或挤压；骨盆有没有移动。" },
-  "thoracic-sidebend-right": { title: "上半身向右弯", how: "坐直，身体慢慢向右弯，保持胸口朝前。", observe: "与另一边相比；哪边牵扯或挤压；骨盆有没有移动。" },
-
-  "elbow-flexion": { title: "弯曲手肘", how: "上臂贴住身体，掌心朝上，慢慢弯手肘，让手靠近肩膀。", observe: "与另一侧相比；肘前或肘后哪里不舒服；肩膀有没有跟着动。" },
-  "elbow-extension": { title: "伸直手肘", how: "上臂贴住身体，慢慢把手肘伸直到自然尽头。", observe: "与另一侧相比能否伸直；哪里不舒服；肩膀有没有跟着动。" },
-  "elbow-pronation": { title: "掌心转向下", how: "手肘弯成直角并贴住身体，慢慢把掌心转向下。", observe: "与另一侧相比；前臂或手腕哪里不舒服；手肘有没有移开。" },
-  "elbow-supination": { title: "掌心转向上", how: "手肘弯成直角并贴住身体，慢慢把掌心转向上。", observe: "与另一侧相比；前臂或手腕哪里不舒服；手肘有没有移开。" },
-
-  "wrist-flexion": { title: "手掌向下弯", how: "前臂放在桌上，手伸出桌边，慢慢把手掌向下弯。", observe: "与另一侧相比；手腕哪一面不舒服；手指有没有用力握紧。" },
-  "wrist-extension": { title: "手背向上抬", how: "前臂放在桌上，手伸出桌边，慢慢把手背向上抬。", observe: "与另一侧相比；手腕哪里卡或痛；手指有没有跟着用力。" },
-  "wrist-radial-deviation": { title: "手向拇指侧移动", how: "前臂和手掌放平，手保持平放，慢慢向拇指一侧移动。", observe: "与另一侧相比；拇指侧是否不舒服；前臂有没有跟着转。" },
-  "wrist-ulnar-deviation": { title: "手向小指侧移动", how: "前臂和手掌放平，手保持平放，慢慢向小指一侧移动。", observe: "与另一侧相比；小指侧是否不舒服；前臂有没有跟着转。" },
-  "wrist-pronation": { title: "掌心转向下", how: "手肘弯成直角并贴住身体，慢慢把掌心转向下。", observe: "与另一侧相比；前臂或手腕哪里不舒服；手肘有没有移开。" },
-  "wrist-supination": { title: "掌心转向上", how: "手肘弯成直角并贴住身体，慢慢把掌心转向上。", observe: "与另一侧相比；前臂或手腕哪里不舒服；手肘有没有移开。" },
-
-  "lumbar-flexion": { title: "站立弯腰", how: "双脚自然站立，膝盖放松，慢慢弯腰，双手沿大腿向下。", observe: "能弯到哪里；哪里不舒服；身体有没有偏向一边；起身是否困难。" },
-  "lumbar-extension": { title: "站立后仰", how: "双手扶髋，慢慢向后仰到舒适范围，不要猛顶。", observe: "能后仰到哪里；腰部哪边有挤压感；膝盖有没有弯曲。" },
-  "lumbar-sidebend-left": { title: "身体向左弯", how: "站直，左手沿左腿向下滑，胸口保持朝前。", observe: "与另一边相比；哪边牵扯或挤压；身体有没有转动。" },
-  "lumbar-sidebend-right": { title: "身体向右弯", how: "站直，右手沿右腿向下滑，胸口保持朝前。", observe: "与另一边相比；哪边牵扯或挤压；身体有没有转动。" },
-  "lumbar-rotation-left": { title: "坐着向左转身", how: "坐稳，双臂抱胸，膝盖朝前，上半身慢慢向左转。", observe: "与向右转相比；腰或臀腿哪里不舒服；骨盆有没有跟着转。" },
-  "lumbar-rotation-right": { title: "坐着向右转身", how: "坐稳，双臂抱胸，膝盖朝前，上半身慢慢向右转。", observe: "与向左转相比；腰或臀腿哪里不舒服；骨盆有没有跟着转。" },
-
-  "hip-flexion": { title: "膝盖靠近胸口", how: "仰卧，一条腿放松，另一侧膝盖慢慢靠近胸口。", observe: "与另一侧相比；腹股沟、臀部或腰哪里不舒服；骨盆有没有卷起。" },
-  "hip-extension": { title: "大腿向后伸", how: "扶墙站稳，身体保持直立，把一条腿慢慢向后伸。", observe: "与另一侧相比；髋前是否牵扯；腰有没有跟着后仰。" },
-  "hip-abduction": { title: "腿向外打开", how: "仰卧或侧卧，脚尖朝前，把一条腿慢慢向外打开。", observe: "与另一侧相比；髋外侧是否不舒服；骨盆有没有翻转。" },
-  "hip-adduction": { title: "腿向身体中间靠", how: "仰卧，腿保持伸直，慢慢向身体中间移动。", observe: "与另一侧相比；大腿内侧是否牵扯；骨盆有没有转动。" },
-  "hip-internal-rotation": { title: "小腿向外摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向外摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
-  "hip-external-rotation": { title: "小腿向内摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向内摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
-
-  "knee-extension": { title: "把膝盖绷直", how: "仰卧，两条腿放平，脚跟位置保持一致。先绷紧一侧大腿前侧，把膝盖后方向床面压，再换另一侧。", observe: "比较两侧膝后离床面的空隙，以及哪一侧更难向下压。" },
-  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
-  "knee-quadriceps": { title: "把膝盖伸直的力量", how: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。", observe: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。" },
-  "knee-hamstring": { title: "脚跟向后拉的力量", how: "坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。", observe: "哪边更难发力；大腿后侧是否容易抽筋；用力时哪里不舒服。" },
-  "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
-  "knee-adductor-pes": { title: "夹枕头的力量", how: "仰卧屈膝，在两膝之间放一个软枕，轻轻夹住5秒。两边分别侧重发力，比较哪边更难保持。", observe: "比较哪边大腿内侧更难发力；留意膝内侧会不会出现平时的不适。" },
-  "knee-glute": { title: "单腿支撑时臀部能不能稳住", how: "扶住墙，一只脚站立10秒，再换另一边。", observe: "哪边更容易晃；骨盆是否明显歪向一边；膝盖是否跟着向内倒。" },
-  "knee-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。两边都能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
-  "knee-squat": { title: "下蹲", how: "扶住稳固的桌面，慢慢下蹲到舒服的深度，再站起来，做3次。", observe: "哪一段不舒服；膝盖有没有明显向内倒；脚跟是否提前抬起。" },
-  "knee-step-up": { title: "上台阶", how: "扶住栏杆，用一侧腿先踏上低台阶并站起，做3次，再换另一边。", observe: "哪边更难站起；是否明显借助手臂；哪里不舒服。" },
-  "knee-step-down": { title: "下台阶", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑腿膝盖是否向内倒；哪边更难控制。" },
-  "knee-single-leg": { title: "单脚站立", how: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。", observe: "哪边更容易晃、站不住或引起不适。" },
-  "knee-single-leg-squat": { title: "扶着做单腿浅蹲", how: "只有下蹲和单脚站都能完成时再做。扶住固定物，单腿小幅下蹲3次。", observe: "膝盖是否向内倒；骨盆是否歪；足弓是否塌下；哪里不舒服。" },
-  "knee-patella-superior": { title: "髌骨向上移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向上推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
-  "knee-patella-inferior": { title: "髌骨向下移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向下推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
-  "knee-patella-medial": { title: "髌骨向内移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向内推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
-  "knee-patella-lateral": { title: "髌骨向外移动", how: "由熟悉检查的人让膝盖完全放松，再轻轻把髌骨向外推。", observe: "与另一侧相比；是否明显更紧或会引起原来的不适。" },
-
-  "ankle-dorsiflexion": { title: "把脚背向上勾", how: "坐稳，脚跟放在地上。先做没有不适的一边，再把另一边脚背慢慢向小腿靠近。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
-  "ankle-plantarflexion": { title: "踝关节主动跖屈", how: "坐稳，小腿放松。先做没有不适的一边，再把另一边脚背缓慢向下压。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
-  "ankle-inversion": { title: "把脚掌转向内侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢转向身体中间。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
-  "ankle-eversion": { title: "把脚掌转向外侧", how: "坐稳，小腿保持不动。先做没有不适的一边，再把另一边脚掌慢慢向外转。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
-  "ankle-great-toe-extension": { title: "大脚趾向上抬", how: "脚掌放松，用手轻轻把大脚趾向上抬。", observe: "与另一侧相比；大脚趾或足底哪里不舒服。" },
-  "ankle-toe-flexion": { title: "脚趾弯曲和伸直", how: "脚跟着地，先把脚趾全部抬起，再轻轻放下和弯曲。", observe: "脚趾能否分别控制；哪里不舒服；是否只有某个脚趾受限。" },
-  "ankle-dorsiflexor": { title: "勾脚力量", how: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。", observe: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。" },
-  "ankle-evertor": { title: "脚掌向外推的力量", how: "坐稳，用另一只脚挡在脚的外侧，再把脚掌向外顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；外踝或小腿外侧是否不舒服。" },
-  "ankle-invertor": { title: "脚掌向内推的力量", how: "坐稳，用另一只脚挡在脚的内侧，再把脚掌向内顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；内踝后方或足弓是否不舒服。" },
-  "ankle-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
-  "ankle-weight-bearing": { title: "走几步看看", how: "在能扶住的地方自然走几步，不用故意走快。", observe: "不舒服这边能不能踩地；哪一步会不舒服；有没有明显一瘸一拐。" },
-  "ankle-squat": { title: "扶着下蹲", how: "双脚自然站立，扶住固定物，慢慢下蹲到舒服的深度，再站起来。", observe: "脚跟会不会提前抬起；哪边脚踝更难向前弯；哪里不舒服。" },
-  "ankle-single-leg": { title: "单脚站立", how: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。", observe: "哪边更容易晃、站不住或引起不适。" },
-  "ankle-heel-raise": { title: "踮脚", how: "扶住墙，双脚慢慢踮起再落下，做5次。", observe: "两边脚跟抬起的高度是否接近；哪里不舒服；身体是否明显偏向一边。" },
-  "ankle-knee-wall": { title: "脚跟不抬，膝盖向前碰墙", how: "面对墙站立，脚跟贴地，膝盖慢慢向前靠近墙。左右脚使用相同距离各做一次。", observe: "哪边更难碰到墙；脚跟是否抬起；踝前或小腿哪里不舒服。" },
-};
-
-function assessmentTitle(id: string, title: string) {
-  const friendly: Record<string, string> = {
-    "ankle-dorsiflexion": "脚背向上勾",
-    "ankle-plantarflexion": "脚背向下压",
-    "ankle-inversion": "脚掌向内转",
-    "ankle-eversion": "脚掌向外转",
-    "ankle-great-toe-extension": "大脚趾向上抬",
-    "ankle-toe-flexion": "脚趾弯曲和伸直",
-    "ankle-dorsiflexor": "勾脚力量（胫骨前肌）",
-    "ankle-evertor": "脚掌向外推的力量（腓骨肌）",
-    "ankle-invertor": "脚掌向内推和足弓支撑（胫骨后肌）",
-    "ankle-calf": "提踵力量（小腿后侧）",
-    "ankle-intrinsic": "足弓主动控制",
-    "ankle-gait": "走路时脚跟到脚尖的过渡",
-    "ankle-knee-wall": "脚跟不抬的屈膝碰墙",
-    "ankle-weight-bearing": "不舒服这边承重和走路",
-    "ankle-anterior-drawer": "脚踝外侧稳定性检查（专业人员操作）",
-    "ankle-thompson": "跟腱连续性检查（小腿挤压）",
-    "ankle-windlass": "大脚趾抬起时的足底反应",
-  };
-  return FRIENDLY_ASSESSMENT_COPY[id]?.title ?? friendly[id] ?? title;
-}
-
-function assessmentCopy(id: string, how: string, observe: string) {
-  const plain = (value: string) => value
-    .replaceAll("屈曲90度", "弯成直角")
-    .replaceAll("屈90度", "弯成直角")
-    .replaceAll("躯干", "上半身")
-    .replaceAll("固定骨盆", "骨盆保持不动")
-    .replaceAll("末端", "能到的位置")
-    .replaceAll("代偿", "跟着帮忙")
-    .replaceAll("抗阻", "对抗轻微阻力")
-    .replaceAll("等长", "保持不动发力")
-    .replaceAll("没受伤的那边", "健侧");
-  return FRIENDLY_ASSESSMENT_COPY[id] ?? { title: "", how: plain(how), observe: plain(observe) };
-}
-
-/**
- * 专业工作台使用标准检查术语，操作说明仍保持短句，避免把自助用户文案
- * （如“勾脚”“温和活动”）直接带进专业流程。
- */
-function professionalAssessmentCopy(id: string, how: string, observe: string) {
-  const normalizedId = id.replace(/^(motion|strength|function|special):/, "");
-  const motionCopy: Record<string, { how: string; observe: string }> = {
-    "knee-extension": {
-      how: "受检者仰卧，双下肢自然伸直；完成膝关节主动伸直（AROM），记录膝后间隙与末端控制。",
-      observe: "与对侧比较主动伸直范围、末端控制及症状诱发。",
-    },
-    "knee-flexion": {
-      how: "受检者仰卧，足跟沿床面滑向臀部，骨盆保持稳定；记录膝关节主动屈曲（AROM）。",
-      observe: "与对侧比较屈曲范围、终末阻挡及症状诱发。",
-    },
-    "ankle-dorsiflexion": {
-      how: "受检者坐位，足跟支撑，完成踝关节主动背屈（AROM）；避免足趾代偿。",
-      observe: "与对侧比较背屈幅度、运动轨迹及症状诱发。",
-    },
-    "ankle-plantarflexion": {
-      how: "受检者坐位，小腿稳定，完成踝关节主动跖屈（AROM）；避免足趾抓地。",
-      observe: "与对侧比较跖屈幅度、运动轨迹及症状诱发。",
-    },
-    "ankle-inversion": {
-      how: "受检者坐位，小腿固定，完成踝足主动内翻（AROM）；避免膝关节随动。",
-      observe: "与对侧比较内翻幅度、足部轨迹及症状诱发。",
-    },
-    "ankle-eversion": {
-      how: "受检者坐位，小腿固定，完成踝足主动外翻（AROM）；避免膝关节随动。",
-      observe: "与对侧比较外翻幅度、足部轨迹及症状诱发。",
-    },
-    "knee-patella-superior": {
-      how: "受检者仰卧并完全放松膝关节；检查者比较两侧髌骨向上滑动（PROM）的幅度与终末感。",
-      observe: "记录与对侧的活动差异、终末感及是否诱发熟悉症状。",
-    },
-    "knee-patella-inferior": {
-      how: "受检者仰卧并完全放松膝关节；检查者比较两侧髌骨向下滑动（PROM）的幅度与终末感。",
-      observe: "记录与对侧的活动差异、终末感及是否诱发熟悉症状。",
-    },
-    "knee-patella-medial": {
-      how: "受检者仰卧并完全放松膝关节；检查者比较两侧髌骨向内滑动（PROM）的幅度与终末感。",
-      observe: "记录与对侧的活动差异、终末感及是否诱发熟悉症状。",
-    },
-    "knee-patella-lateral": {
-      how: "受检者仰卧并完全放松膝关节；检查者比较两侧髌骨向外滑动（PROM）的幅度与终末感。",
-      observe: "记录与对侧的活动差异、终末感及是否诱发熟悉症状。",
-    },
-  };
-  const direct = motionCopy[normalizedId];
-  if (direct) return direct;
-  const professionalHow = how
-    .replaceAll("先做没有不适的一边，再", "先完成对侧，再")
-    .replaceAll("把脚背向小腿靠近", "完成踝关节背屈（AROM）")
-    .replaceAll("把脚掌慢慢转向身体中间", "完成踝足内翻（AROM）")
-    .replaceAll("脚掌慢慢向外转", "完成踝足外翻（AROM）")
-    .replaceAll("轻轻", "低刺激")
-    .replaceAll("由熟悉检查的人", "由检查者")
-    .replaceAll("让膝盖完全放松", "使膝关节完全放松")
-    .replaceAll("把髌骨", "使髌骨");
-  const professionalObserve = observe
-    .replaceAll("哪里不舒服", "症状诱发部位")
-    .replaceAll("会不会不舒服", "是否诱发症状")
-    .replaceAll("与另一侧相比", "与对侧比较")
-    .replaceAll("哪边", "哪侧")
-    .replaceAll("活动到最大范围时会不会牵拉或卡住", "主动活动到最大范围时是否诱发症状");
-  return { how: professionalHow, observe: professionalObserve };
-}
-
-function assessmentLocationAreas(itemId: string): LowerLimbAreaId[] {
-  const id = itemId.replace(/^(motion|strength|function|special):/, "");
-  if (id.startsWith("knee-")) return ["thigh", "knee", "calf"];
-  if (id.startsWith("ankle-")) return ["calf", "ankle", "foot"];
-  if (id.startsWith("thigh-")) return ["thigh"];
-  if (id.startsWith("calf-")) return ["calf"];
-  return ["thigh", "knee", "calf", "ankle", "foot"];
-}
-
-function assessmentObservationSentence(item: AssessmentItem, record: AssessmentRecord) {
-  const location = record.discomfortLocation?.trim();
-  const feeling = record.discomfortType;
-  const score = typeof record.symptomScore === "number" ? `${record.symptomScore}/10` : "";
-  return [item.title, location, feeling, score].filter(Boolean).join(" · ");
-}
-
-function familiarSymptomRequired(record: AssessmentRecord, hasChiefAction: boolean) {
-  return !hasChiefAction && (record.discomfort === "yes" || functionDiscomfortValue(record) === "yes" || record.simple === "painful");
-}
-
-function motionComparisonMode(regionId: string, itemId: string): MotionComparison {
-  if (!isSpinalRegion(regionId)) return "contralateral";
-  if (/(left|right)$/.test(itemId)) return "opposite-direction";
-  return "midline";
-}
-
-function isSpinalRegion(regionId: string) {
-  return ["neck", "thoracic-rib", "lumbar-pelvis"].includes(regionId);
-}
-
-function operationTargetLabel(target: OperationTarget | "") {
-  return target === "other" ? "给别人检查" : target === "study" ? "只学习案例" : target === "self" ? "给自己检查" : "待确认";
-}
-
-function profileLabelForIntake(intake: Pick<IntakeState, "productMode" | "operationTarget">, profile: ReturnType<typeof normalizeWorkflowProfile>) {
-  if (profile.isStudy) return "案例学习";
-  if (intake.productMode === "guided") return "自助康复";
-  return "康复思路模式";
-}
-
-function spineModeLabel(mode: SpineAssessmentMode) {
-  return mode === "reference" ? "参考角度判断" : mode === "guided" ? "跟随提示观察" : "待确认";
-}
-
-function motionComparisonTarget(mode: MotionComparison = "contralateral") {
-  if (mode === "opposite-direction") return "另一方向";
-  if (mode === "midline") return "自己平时的活动范围";
-  return "健侧";
-}
-
-function motionAmplitudeLabel(itemId: string) {
-  const id = itemId.replace(/^motion:/, "");
-  const labels: Record<string, string> = {
-    "ankle-dorsiflexion": "脚背向上的幅度",
-    "calf-dorsiflexion": "脚背向上的幅度",
-    "ankle-plantarflexion": "脚背向下的幅度",
-    "calf-plantarflexion": "脚背向下的幅度",
-    "ankle-inversion": "足部向内翻的幅度",
-    "calf-inversion": "足部向内翻的幅度",
-    "ankle-eversion": "足部向外翻的幅度",
-    "calf-eversion": "足部向外翻的幅度",
-    "knee-extension": "膝关节伸直幅度",
-    "knee-flexion": "膝关节屈曲幅度",
-    "knee-patella-superior": "髌骨向上滑动幅度",
-    "knee-patella-inferior": "髌骨向下滑动幅度",
-    "knee-patella-medial": "髌骨向内滑动幅度",
-    "knee-patella-lateral": "髌骨向外滑动幅度",
-    "thigh-front-length": "屈膝时大腿前侧拉长幅度",
-    "thigh-back-length": "抬腿伸膝时大腿后侧拉长幅度",
-    "thigh-medial-length": "髋外展时大腿内侧拉长幅度",
-    "thigh-lateral-load": "腿向中线靠近时大腿外侧拉长幅度",
-  };
-  return labels[id] ?? "该方向的主动活动幅度";
-}
-
-function activeMotionRangeQuestion(itemId: string, bilateral = false, passiveOnly = false) {
-  const amplitude = motionAmplitudeLabel(itemId);
-  const passiveAmplitude = passiveOnly ? amplitude.replace(/的幅度$/, "的被动活动幅度") : amplitude;
-  return bilateral ? `比较左右两侧的${passiveAmplitude}` : `与对侧相比，患侧的${passiveAmplitude}`;
-}
-
-function activeMotionRangeOptions(mode: MotionComparison = "contralateral", spinal = false, assessmentMode: SpineAssessmentMode = "guided", professional = false): Array<[MotionAnswer, string]> {
-  if (spinal && assessmentMode === "reference") return [
-    ["same", "角度基本正常｜接近参考范围"],
-    ["limited", "角度偏小｜低于参考范围"],
-    ["excessive", "角度偏大｜高于参考范围"],
-    ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法测量或比较"],
-  ];
-  if (spinal && mode === "opposite-direction") return [
-    ["same", "与另一方向接近｜幅度差不明显"],
-    ["limited", "该方向偏小｜明显受限"],
-    ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
-  ];
-  if (spinal) return [
-    ["same", "可以完成｜动作顺畅"],
-    ["limited", "范围偏小｜动作受限"],
-    ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
-  ];
-  const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
-    ["unable", "无法完成｜疼痛、担心或不会做"],
-    ["unsure", "暂不判断｜今天先跳过"],
-  ];
-  if (professional) options.splice(2, 0, ["excessive", "患侧偏大｜活动范围明显更大"]);
-  return options;
-}
-
-function localLimbMotionRangeOptions(professional = false): Array<[MotionAnswer, string]> {
-  const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
-    ["unable", "无法完成｜疼痛、担心或不会做"],
-    ["unsure", "暂不判断｜今天先跳过"],
-  ];
-  if (professional) options.splice(2, 0, ["excessive", "患侧偏大｜活动范围明显更大"]);
-  return options;
-}
-
-const TENSION_LOCATION_OPTIONS: Record<string, string[]> = {
-  "hip-flexion": ["大腿前侧", "腹股沟附近", "腰侧"],
-  "hip-extension": ["髋前侧", "大腿前侧", "腰侧"],
-  "hip-abduction": ["大腿内侧", "髋外侧", "腰侧"],
-  "hip-adduction": ["大腿外侧", "臀外侧", "腹股沟附近"],
-  "hip-internal-rotation": ["臀后外侧", "髋外侧", "大腿内侧"],
-  "hip-external-rotation": ["大腿内侧", "臀后侧", "髋前侧"],
-  "shoulder-flexion": ["胸前", "肩后侧", "腋窝后侧"],
-  "shoulder-extension": ["胸前", "肩前侧", "上臂前侧"],
-  "shoulder-abduction": ["胸前", "肩上方", "腋窝后侧"],
-  "elbow-flexion": ["上臂后侧", "肘后侧", "前臂后侧"],
-  "elbow-extension": ["上臂前侧", "肘前侧", "前臂前侧"],
-  "wrist-flexion": ["前臂背侧", "手腕背侧"],
-  "wrist-extension": ["前臂掌侧", "手腕掌侧"],
-  "thigh-front-length": ["大腿前侧", "髋前"],
-  "thigh-back-length": ["大腿后侧", "膝后"],
-  "thigh-medial-length": ["大腿内侧", "腹股沟附近"],
-  "thigh-lateral-load": ["大腿外侧", "髋外侧"],
-  "calf-dorsiflexion": ["小腿后侧"],
-  "calf-plantarflexion": ["小腿前侧"],
-  "calf-inversion": ["小腿外侧"],
-  "calf-eversion": ["小腿内侧"],
-};
-
-function tensionLocationOptions(itemId: string, context = "") {
-  const motion = pilotMotionKnowledge(itemId);
-  if (!motion) return TENSION_LOCATION_OPTIONS[itemId] ?? ["动作方向前侧", "动作方向后侧", "关节附近"];
-  const primary = motion.relations.filter((relation) => relation.role !== "stabilizer");
-  const supportedStabilizers = motion.relations.filter((relation) => relation.role === "stabilizer" && (
-    relation.regionId === "thigh-lateral" && /外侧|外链|阔筋膜|髂胫束|膝内侧|下楼/.test(context)
-    || relation.regionId === "thigh-medial" && /内侧|鹅足|内收/.test(context)
-    || relation.regionId === "calf-lateral" && /外侧|外踝|不稳/.test(context)
-    || relation.regionId === "calf-medial" && /内侧|内踝|足弓/.test(context)
-    || relation.regionId === "calf-posterior" && /膝后|小腿后/.test(context)
-    || relation.regionId === "plantar" && /足底|足弓|脚底/.test(context)
-  ));
-  return [...primary, ...supportedStabilizers]
-    .filter((relation, index, list) => list.findIndex((entry) => entry.regionId === relation.regionId) === index)
-    .map((relation) => pilotMuscleRegion(relation.regionId).label);
-}
-
-function bilateralAssessmentCopy(text: string) {
-  return text
-    .replaceAll("先做健侧，再做患侧", "左、右两侧分别做一次")
-    .replaceAll("先做健侧，再用患侧", "左、右两侧分别")
-    .replaceAll("先做健侧，再用同样姿势做不舒服的一侧", "左、右两侧分别用同样姿势完成")
-    .replaceAll("先做健侧", "左、右两侧分别做")
-    .replaceAll("患侧先上", "左、右腿分别先上")
-    .replaceAll("患侧支撑", "左、右腿分别支撑")
-    .replaceAll("不舒服这边", "左右两侧")
-    .replaceAll("不舒服的一侧", "左右两侧")
-    .replaceAll("患侧", "左右两侧")
-    .replaceAll("健侧", "另一侧");
-}
-
-function sharedTensionLocationsForMotion(itemId: string, record: AssessmentRecord, sharedRecord?: AssessmentRecord) {
-  const directionId = itemId.replace(/^motion:/, "");
-  const direct = record.tensionLocations ?? [];
-  const shared = (sharedRecord?.tensionLocations ?? []).filter((location) => {
-    if (["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)) return false;
-    const normalized = normalizePilotMuscleRegion(location);
-    return Boolean(normalized && primaryRetestMotionIdsForRegion(normalized.id).some((motionId) => samePhysicalAction(motionId, directionId)));
-  });
-  return [...new Set([...direct, ...shared])];
-}
-
-function motionUnableGuidance(item: AssessmentItem, reason?: AssessmentRecord["unableReason"]) {
-  if (!reason) return null;
-  if (reason === "pain") return {
-    action: "改成坐稳或躺稳，只做不会明显加重的小幅动作。",
-    fallback: "仍会痛就停止；这次记录为“因不适未完成”，不强行测完整范围。",
-  };
-  if (reason === "fear") return {
-    action: "扶住固定物，把动作缩小到你觉得安全的范围，再慢慢试一次。",
-    fallback: "仍不敢做就停止；这次只记为暂时无法判断。",
-  };
-  if (reason === "instruction") return {
-    action: `先回到起始姿势，只做一小段：${item.how}`,
-    fallback: "仍不知道怎么做就先跳过；这次不把它算成正常或受限。",
-  };
-  return {
-    action: "换成更稳定的坐位或卧位，只尝试一小段舒适动作。",
-    fallback: "仍做不了就停止；这次保留为待确认。",
-  };
-}
-
-function strengthUnableGuidance(item: AssessmentItem, reason?: StrengthUnableReason, professional = false) {
-  if (!reason) return null;
-  if (reason === "pain") return {
-    action: "减小用力，只尝试轻轻保持3秒。",
-    fallback: "仍会痛就停止；记录为发力会引起不适。",
-  };
-  if (reason === "weak" || reason === "control") return {
-    action: "先不加阻力，在舒适范围找到位置并保持3秒。",
-    fallback: "仍保持不住就记录为力量或控制不足，后续安排基础训练。",
-  };
-  if (reason === "no-helper") return {
-    action: `改用自助等长：${item.how}`,
-    fallback: "不需要他人按压；仍无法判断就先跳过。",
-  };
-  if (reason === "fear") return {
-    action: "把用力减到很轻，先保持3秒，不追求最大力量。",
-    fallback: "仍担心加重就停止；这次不判断强弱。",
-  };
-  return {
-    action: professional ? `先不加阻力，让对方主动完成并保持3秒：${item.how}` : `先照着动作做一次，不加阻力：${item.how}`,
-    fallback: "仍不会做就先跳过；这次不把它算成正常或偏弱。",
-  };
-}
-
-function functionSimpleAnswer(record: AssessmentRecord): SimpleAnswer | undefined {
-  const completion = functionCompletionValue(record);
-  if (completion === "skip") return "skip";
-  if (completion === "unable") {
-    if (record.functionUnableReason === "pain") return "unable";
-    if (record.functionUnableReason === "weak") return "weak";
-    if (["fear", "instruction"].includes(record.functionUnableReason ?? "")) return "skip";
-    return undefined;
-  }
-  if (record.functionCompletion === "complete") {
-    if (!record.functionControl || !record.functionDiscomfort) return undefined;
-    if (record.functionDiscomfort === "yes") return "painful";
-    if (record.functionControl === "compensated") return "present";
-    return "normal";
-  }
-  if (functionDiscomfortValue(record) === "yes") return "painful";
-  if (functionControlValue(record) === "compensated") return "present";
-  if (completion === "complete") return "normal";
-  return undefined;
-}
-
-function spinalRangeQuestion(mode: MotionComparison = "midline", assessmentMode: SpineAssessmentMode = "guided") {
-  if (assessmentMode === "reference") return "与参考角度相比";
-  if (mode === "opposite-direction") return "与另一个方向相比怎么样？";
-  return "这个动作完成得怎么样？";
-}
-
-function passiveMotionOptions(mode: MotionComparison = "contralateral", useReferenceAngle = false, bilateral = false): Array<[PassiveAnswer, string]> {
-  if (bilateral) return [["same", "两侧接近｜被动范围差异不明显"], ["left-limited", "左侧偏小｜左侧相对更差"], ["right-limited", "右侧偏小｜右侧相对更差"], ["both-limited", "两侧都偏小｜两侧都有受限"], ["skip", "未检查｜无法判断"]];
-  if (useReferenceAngle) return [["same", "角度基本正常｜接近参考范围"], ["limited", "角度偏小｜低于参考范围"], ["excessive", "角度偏大｜高于参考范围"], ["skip", "未检查｜无法判断"]];
-  if (mode === "opposite-direction") return [["same", "与另一方向接近｜差异不明显"], ["limited", "该方向偏小｜仍明显受限"], ["excessive", "该方向偏大｜范围明显增加"], ["skip", "未检查｜无法判断"]];
-  if (mode === "midline") return [["same", "接近平时范围｜差异不明显"], ["limited", "范围偏小｜仍明显受限"], ["excessive", "范围偏大｜超过平时范围"], ["skip", "未检查｜无法判断"]];
-  return [["same", "接近健侧｜被动范围差异不明显"], ["limited", "患侧偏小｜仍明显受限"], ["excessive", "患侧偏大｜范围明显增加"], ["skip", "未检查｜无法判断"]];
-}
-
-const PASSIVE_END_FEEL_OPTIONS: Array<[PassiveEndFeel, string]> = [
-  ["soft", "软性终末感"],
-  ["elastic", "弹性终末感"],
-  ["firm", "坚实终末感"],
-  ["hard", "硬性阻挡"],
-  ["painful", "疼痛性终止"],
-  ["unknown", "无法判断"],
-];
-
-function passiveEndFeelLabel(value?: PassiveEndFeel) {
-  return PASSIVE_END_FEEL_OPTIONS.find(([key]) => key === value)?.[1] ?? "";
-}
-
-function passiveMotionInstruction(mode: MotionComparison = "contralateral", bilateral = false) {
-  if (bilateral) return "让对方放松，左右分别轻柔带动，记录哪一侧范围更小；不熟悉时选择“未做/不确定”。";
-  if (mode === "opposite-direction") return "由受训者在放松体位轻柔带动，再与相反方向的末端角度和弹性比较；不熟悉时选择“未做/不确定”。";
-  if (mode === "midline") return "由受训者在放松体位轻柔辅助动作，比较是否更接近平时可用范围；不熟悉时选择“未做/不确定”。";
-  return "让对方放松，轻柔带动不舒服的一侧，再与健侧比较活动范围；不熟悉时选择“未做/不确定”。";
-}
-
-function professionalPassiveMotionInstruction(item: AssessmentItem, bilateral = false) {
-  if (item.testMode === "passive") return item.professionalHow ?? "受检者放松相关关节，检查者与对侧比较被动活动幅度和终末感。";
-  if (bilateral) return "受检者放松，检查者以相同体位和力度分别完成左右被动活动（PROM），记录幅度、终末感及症状反应。";
-  return "受检者放松，检查者以低刺激完成患侧被动活动（PROM），再与对侧比较幅度、终末感及症状反应。";
-}
-
-function rangeRetestOptions(mode: MotionComparison = "contralateral", canAssessPassive = true, bilateral = false, passiveOnly = false): Array<[CompletedRangeRetestAnswer, string]> {
-  const target = bilateral ? "较好一侧或原有活动范围" : motionComparisonTarget(mode);
-  if (passiveOnly) return [
-    ["both-match", `接近目标｜被动活动幅度与${target}接近`],
-    ["better-passive-limited", `有所改善｜被动活动幅度增加但仍小于${target}`],
-    ["passive-limited", `仍受限｜被动活动幅度仍小于${target}`],
-    ["worse", "变差｜被动活动幅度减小或不适加重"],
-  ];
-  if (!canAssessPassive) return [
-    ["both-match", `接近目标｜主动活动幅度与${target}接近`],
-    ["better-passive-limited", `有所改善｜幅度增加但仍小于${target}`],
-    ["passive-limited", `仍受限｜主动活动幅度仍小于${target}`],
-    ["worse", "变差｜幅度减小或不适加重"],
-  ];
-  return [
-    ["both-match", `均接近目标｜主动和被动范围都接近${target}`],
-    ["passive-match-active-limited", `控制仍不足｜被动接近${target}，主动仍偏小`],
-    ["better-passive-limited", `部分改善｜主动有改善，被动仍小于${target}`],
-    ["passive-limited", `被动仍受限｜被动活动幅度仍小于${target}`],
-    ["worse", "变差｜幅度减小或不适加重"],
-  ];
-}
-
-function shouldCollectBaselineScore(intake: IntakeState) {
-  // 分数必须绑定一个能重复完成的具体动作。只有选择“走路/按压/静息”
-  // 等场景，仍没有说清动作时，不显示初始评分条，避免把泛泛症状变成
-  // 一个后面无法复现的主诉分数。多个动作也不共用一个分数，避免后续
-  // 把“下蹲、下楼”误显示成同一个复测条件。
-  return reportedActionSummary(intake).length === 1;
-}
-
-function chiefComplaintLabel(intake: IntakeState) {
-  if (hasClearChiefAction(intake)) return chiefActionLabel(intake);
-  return [intake.side, intake.location && intake.location !== "说不清" ? intake.location : "具体位置待确认", intake.symptomType].filter(Boolean).join(" · ") || "当前主要问题";
-}
-
-function retestConditionLabel(intake: IntakeState) {
-  return hasClearChiefAction(intake) ? chiefActionLabel(intake) : "当前主要症状（没有固定动作）";
-}
-
-function chiefFunctionAssessmentId(intake: IntakeState, regionId: string) {
-  return chiefFunctionAssessmentIds(intake, regionId)[0] ?? "";
-}
-
-function effectiveAssessmentRecord(_item: AssessmentItem, stored: AssessmentRecord | undefined, _intake: IntakeState, _regionId: string) {
-  // 主诉是上下文，不是已经完成的功能检查；没有现场记录就不生成默认 assessment record。
-  void _intake;
-  void _regionId;
-  return stored;
-}
-
-function canonicalRetestAction(label: string) {
-  return canonicalActionKey(label);
-}
-
-function directionIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
-  const source = chiefActionSource(intake);
-  if (regionId === "ankle-foot" && ["ankle-great-toe-extension", "ankle-toe-flexion"].includes(itemId)) {
-    const explicitFootSource = `${intake.description} ${intake.location} ${intake.reproduction}`;
-    const deniesToeProblem = /(?:脚趾|足趾|大脚趾)[^，。；]{0,6}(?:没有|没|不)(?:受伤|疼|痛|不适|问题)|(?:没有|没|不)[^，。；]{0,6}(?:脚趾|足趾|大脚趾)(?:受伤|疼|痛|不适|有问题)?/.test(explicitFootSource);
-    const toeOnlyMention = includesAny(explicitFootSource, ["脚趾", "足趾", "大脚趾"]);
-    if (toeOnlyMention && deniesToeProblem && !includesAny(explicitFootSource, ["前脚掌", "足底", "脚底", "足跟", "脚跟", "足弓"])) return false;
-    return includesAny(explicitFootSource, ["脚趾", "足趾", "大脚趾", "前脚掌", "足底", "脚底", "足跟", "脚跟", "足弓"]);
-  }
-  if (regionId === "knee" && itemId.includes("knee-patella")) {
-    const profile = intake.productMode
-      ? normalizeWorkflowProfile({ productMode: intake.productMode, operationTarget: intake.operationTarget, capabilities: intake.capabilities })
-      : workflowProfileFromLegacy(intake.userRole, intake.examSetup);
-    if (profile.operationTarget !== "other") return false;
-    return includesAny(source, ["膝前", "髌骨", "下楼", "上楼", "蹲", "伸不直", "弯不了", "活动受限"]);
-  }
-  if (regionId === "thigh-local") {
-    // 局部模块的“主方向＋条件式协同/相反方向”由统一排序器决定。
-    // 这里不再提前按点击位置删掉候选，否则排序器无法补查高价值方向。
-    return itemId.startsWith("thigh-");
-  }
-  if (regionId === "calf-local") {
-    return itemId.startsWith("calf-");
-  }
-  return true;
-}
-
-function strengthIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
-  if (["thigh-local", "calf-local"].includes(regionId)) return directionIsRelevant(regionId, itemId, intake);
-  if (regionId !== "ankle-foot") return true;
-  const source = chiefActionSource(intake);
-  // 急性踝扭伤的常用能力优先看背屈和外翻控制。主诉动作只负责
-  // 追加高相关项目，不能因为“跖屈会痛”就把外翻控制挤掉。
-  const relevant = new Set<string>();
-  if (isAcuteTrauma(intake) && includesAny(`${source} ${intake.mechanism}`, ["崴脚", "崴伤", "扭伤", "扭到", "外踝", "脚踝"])) {
-    relevant.add("ankle-dorsiflexor");
-    relevant.add("ankle-evertor");
-  }
-  if (intake.forceDirection.includes("向上勾脚") || intake.forceDirection.includes("脚背向上勾")) relevant.add("ankle-dorsiflexor");
-  if (intake.forceDirection.includes("脚背向下压")) relevant.add("ankle-calf");
-  if (intake.forceDirection.includes("提踵") || intake.forceDirection.includes("踮脚")) ["ankle-calf", "ankle-intrinsic"].forEach((id) => relevant.add(id));
-  if (intake.forceDirection.includes("向内转")) relevant.add("ankle-invertor");
-  if (intake.forceDirection.includes("向外转")) relevant.add("ankle-evertor");
-  if (intake.forceDirection.includes("脚趾") || intake.forceDirection.includes("足弓")) ["ankle-invertor", "ankle-calf", "ankle-intrinsic"].forEach((id) => relevant.add(id));
-  if (relevant.size) return relevant.has(itemId);
-  if (includesAny(source, ["足趾", "脚趾", "足弓", "足底"])) return ["ankle-invertor", "ankle-calf", "ankle-intrinsic"].includes(itemId);
-  if (includesAny(source, ["内踝", "内侧"])) return ["ankle-invertor", "ankle-calf", "ankle-dorsiflexor"].includes(itemId);
-  if (includesAny(source, ["外踝", "崴脚", "外侧"])) return (isAcuteTrauma(intake) ? ["ankle-evertor", "ankle-dorsiflexor"] : ["ankle-evertor", "ankle-dorsiflexor", "ankle-calf"]).includes(itemId);
-  return ["ankle-dorsiflexor", "ankle-evertor", "ankle-calf"].includes(itemId);
-}
-
-function strengthRelatedMotionId(strengthItemId: string) {
-  const map: Record<string, string> = {
-    "strength:knee-quadriceps": "motion:knee-extension",
-    "strength:knee-hamstring": "motion:knee-flexion",
-    "strength:ankle-dorsiflexor": "motion:ankle-dorsiflexion",
-    "strength:ankle-calf": "motion:ankle-plantarflexion",
-    "strength:ankle-invertor": "motion:ankle-inversion",
-    "strength:ankle-evertor": "motion:ankle-eversion",
-    "strength:thigh-front-strength": "motion:thigh-front-length",
-    "strength:thigh-back-strength": "motion:thigh-back-length",
-    "strength:thigh-medial-strength": "motion:thigh-medial-length",
-    "strength:thigh-lateral-strength": "motion:thigh-lateral-load",
-    "strength:calf-dorsiflexor-strength": "motion:calf-dorsiflexion",
-    "strength:calf-heel-raise-strength": "motion:calf-plantarflexion",
-    "strength:calf-invertor-strength": "motion:calf-inversion",
-    "strength:calf-evertor-strength": "motion:calf-eversion",
-  };
-  return map[strengthItemId] ?? "";
-}
-
-export default function RehabMindCompleteDemo() {
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StageTransition } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { OnceHint } from "@/src/features/rehabmind/components/shared/once-hint";
+import { RehabMindOnboarding } from "@/src/features/rehabmind/components/onboarding/rehabmind-onboarding";
+import { SymptomStage } from "@/src/features/rehabmind/components/stages/symptom-stage";
+import { ConfirmationStage } from "@/src/features/rehabmind/components/stages/confirmation-stage";
+import { AssessmentStage } from "@/src/features/rehabmind/components/stages/assessment-stage";
+import { TreatmentRetestStage } from "@/src/features/rehabmind/components/stages/treatment-retest-stage";
+import { TrainingStage } from "@/src/features/rehabmind/components/stages/training-stage";
+import { SummaryStage } from "@/src/features/rehabmind/components/stages/summary-stage";
+import { MobileMoreMenu, MobileStageNavigation, MobileTopActions } from "@/src/features/rehabmind/components/navigation/mobile-app-navigation";
+import { RehabRecordsPage } from "@/src/features/rehabmind/components/records/rehab-records-page";
+import { useFunctionRetestState } from "@/src/features/rehabmind/controllers/use-function-retest";
+import { useTrainingFlow } from "@/src/features/rehabmind/controllers/use-training-flow";
+import { resultFromScore } from "@/src/domain/rehab/treatment/trial-record-builder";
+import { computeBatchResult } from "@/src/domain/rehab/retest/batch-retest-compute";
+import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import { makeLowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
+import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegion, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
+import { buildPilotTreatmentUnits, classifyPilotAssessmentEvidence, matchPilotRelations, rankPilotAssessmentIds, type PilotFindingInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
+import { buildKneeDecision } from "@/src/domain/rehab/shared/knee-decision-core";
+import { buildLocalLimbDecision, localLimbArea, type LocalLimbFinding } from "@/src/domain/rehab/shared/local-limb-decision-core";
+import { buildTissuePathway } from "@/src/domain/rehab/safety/tissue-pathway-core";
+import { classifyTreatmentResponse, resolvedTreatmentCombination, treatmentResponsePriority, type TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
+import { findNextCandidateIndex, type PendingQueueAdvance } from "@/src/domain/rehab/shared/workflow-state-core";
+import { keepOtherSessionRecords, resolveDownstreamInvalidation, shouldInvalidateFollowupWork } from "@/src/domain/rehab/shared/downstream-invalidation-core";
+import { resolveRestoredAssessmentProgress, restoredAssessmentNotice } from "@/src/domain/rehab/assessment/restored-position-core";
+import { PilotConsentGate } from "@/src/features/rehabmind/components/onboarding/pilot-consent-gate";
+import { PilotSourceGate } from "@/src/features/rehabmind/components/onboarding/pilot-source-gate";
+import { GuideCards, hasSeenGuideCards, markGuideCardsSeen } from "@/src/features/rehabmind/components/onboarding/guide-cards";
+import { DevToolbar } from "@/src/features/rehabmind/components/onboarding/dev-toolbar";
+import { attachPilotConsent, buildPilotConsentRecord, isPilotConsentDeclined, markPilotConsentDeclined, readPilotConsent, writePilotConsent, type PilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
+import { readPilotSource, writePilotSource, type PilotSourceRecord } from "@/src/infrastructure/pilot/onboarding/source-channel";
+import { useWorkflowController } from "@/src/features/rehabmind/controllers/use-workflow-controller";
+import { createPilotCase, createPilotAccessToken, createPilotClientCreationId, deletePilotCase, PilotCaseClientError, readPilotCase, savePilotCaseProgress, submitPilotCaseFeedback, type PilotCaseAccess, type PilotTestContext } from "@/src/infrastructure/pilot/api/case-client";
+import { resolvePilotFirstUseOverlay } from "@/src/infrastructure/pilot/telemetry/first-use-core";
+import { recordPilotCaseOperation, recordPilotFirstUseEvent } from "@/src/infrastructure/pilot/api/trial-operations-client";
+import { createLocalCaseId, findLocalCaseRecord, savedRecordIdentity } from "@/src/infrastructure/pilot/persistence/local-case-identity";
+import { clearLocalCaseRecords, clearLocalDraft, loadLocalCaseRecords, loadLocalDraftWithDiagnostics, saveLocalCaseRecords, saveLocalDraft } from "@/src/infrastructure/pilot/persistence/local-case-store";
+import { createPilotDraftPersistenceController, createPilotKeyedPersistenceQueue, createPilotSerialPersistenceQueue, type PilotSerialPersistenceQueue } from "@/src/infrastructure/pilot/persistence/persistence-controller";
+import { markStageEventSeen, pickStageAdvanceEvent, pilotProgressEventId } from "@/src/features/rehabmind/workflow/stage-events";
+import { contentFingerprint, buildPilotConflictCaseCopy, createPilotSyncMachineState, decidePilotRestoreSource, reducePilotSyncState, summarizePilotSnapshotConflict, type PilotSyncEvent, type PilotSyncMachineState, type PilotSyncOperation } from "@/src/infrastructure/pilot/persistence/sync-core";
+
+import { PILOT_SNAPSHOT_SCHEMA_VERSION } from "@/src/infrastructure/pilot/api/case-contracts";
+import { PilotFeedbackPanel } from "@/src/features/rehabmind/components/feedback/feedback-panel";
+import { PilotConflictPanel } from "@/src/features/rehabmind/components/feedback/conflict-panel";
+import { capturePilotFeedbackSourceContext, PilotFeedbackSubmissionError, type PilotFeedbackDraft, type PilotFeedbackSourceContext } from "@/src/infrastructure/pilot/feedback/feedback-context";import { buildNextFocus, upsertSessionSummary, type RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
+import { INITIAL_TRAINING_PRIORITY, nextSessionTrainingIds } from "@/src/domain/rehab/training/training-progression-core";
+import { KNEE_CORE_CANDIDATE_IDS, kneeDecisionInputFromWorkflow, kneeExerciseIdsForDecision, kneeLegacyCandidateIdsForUnit, kneeRetestInstruction, kneeTreatmentInstruction } from "@/src/domain/rehab/shared/knee-workflow-adapter";
+import { normalizePilotMuscleRegion, pilotMotionKnowledge, primaryRetestMotionIdsForRegion, professionalAssessmentTitle } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
+import { strengthAnswerForWorkflow, strengthAnswerResult } from "@/src/domain/rehab/assessment/assessment-answer-core";
+import { firstAssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, treatmentRelatesToChief, valueForPhysicalAction } from "@/src/domain/rehab/intake/action-identity-core";import { mergeSessionReviewResults, previousSessionEndingScore, trendFromAssessmentResult, type AssessmentReviewResult, type ReviewResult } from "@/src/domain/rehab/followup/followup-review-core";
+import { buildProblemLedger, emptyTreatmentMessage, hasUnroutedImmediateProblem, unresolvedImmediateProblems } from "@/src/domain/rehab/shared/problem-ledger-core";import { needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/domain/rehab/treatment/treatment-session-core";
+import { capturesChiefRetestScore, nextRangeCandidateType, shouldRequestChiefRetest } from "@/src/domain/rehab/retest/retest-routing-core";
+import { canExecutePlan, createAdverseResponse, focusedReassessmentIds, focusedReassessmentComplete, nextAssessmentRevision, resolveAdverseResponse, type AdverseResponseEvent, type AdverseSource, type AdverseTiming } from "@/src/domain/rehab/followup/adverse-response-core";
+import { buildMuscleTensionFindings, needsMuscleTensionCheck } from "@/src/domain/rehab/assessment/muscle-tension-assessment-core";
+import { normalizeWorkflowProfile, toggleCapability, workflowProfileFromLegacy, type CapabilityKey } from "@/src/domain/rehab/intake/workflow-profile-core";
+import { buildHomeRelaxationTargets, exerciseMuscleLabels } from "@/src/domain/rehab/training/home-relaxation-core";
+import { candidateDedupKey, candidateMuscleFocus, candidateMuscleUnits, candidateTreatmentKey, candidateTreatmentName } from "@/src/domain/rehab/treatment/candidate-treatment-core";
+import { candidateAction, candidatePilotMotionIds } from "@/src/domain/rehab/treatment/candidate-action-core";
+import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, reportedActionSummary } from "@/src/domain/rehab/intake/chief-action-core";
+import { candidateRelevance } from "@/src/domain/rehab/treatment/candidate-scoring-core";
+import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "@/src/domain/rehab/treatment/trial-target-core";
+import { bilateralAssessmentGate, orderBilateralSides, resolveBilateralPriority, type BilateralSide } from "@/src/domain/rehab/shared/bilateral-flow-core";
+import { buildTrialTargets } from "@/src/domain/rehab/treatment/build-trial-targets-core";
+import { type DecisionContext } from "@/src/domain/rehab/treatment/trial-target-types";
+import { candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-safety-core";
+import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
+import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
+import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
+import { functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
+import { chiefFunctionAssessmentIds, selectFunctionAssessmentPlan } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
+import { functionEvidenceDecisionTags, functionEvidenceFromRecord } from "@/src/domain/rehab/retest/function-evidence-core";
+import { resolveFunctionRetestTransition } from "@/src/domain/rehab/retest/function-retest-transition-core";
+import { completedProblemIdsFromTreatmentRecords } from "@/src/domain/rehab/treatment/treatment-ledger-core";
+import { buildRangeTreatmentRecords, resolveChiefRetestCapture, resolveRangeChiefRetestCapture, resolveTreatmentRecordFlow } from "@/src/domain/rehab/treatment/treatment-record-flow-core";
+import { retestBaselineModeFromEvidence, retestEligibility } from "@/src/domain/rehab/retest/retest-eligibility-core";
+import { activeMotionRecordComplete } from "@/src/domain/rehab/assessment/motion-assessment-core";
+import { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessment-record-complete-core";
+import { hasRecordedChiefRetest, latestRecordedChiefScore } from "@/src/domain/rehab/retest/chief-retest-history-core";
+import { isTreatmentQueueCandidateEligible } from "@/src/domain/rehab/treatment/treatment-queue-eligibility-core";
+import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant } from "./workbench-support";
+
+
+export default function RehabMindCompleteDemo({ testContext }: { testContext?: PilotTestContext } = {}) {
+  const storageScope = testContext ? "test" : "user";
+  const workflowController = useWorkflowController();
   const onboardingStorageKey = "rehabmind-onboarding-v1";
   const [step, setStep] = useState<Step>(0);
   const [reviewStep, setReviewStep] = useState<Step | null>(null);
@@ -2240,20 +168,36 @@ export default function RehabMindCompleteDemo() {
   const [savedRecords, setSavedRecords] = useState<SavedDemoRecord[]>([]);
   const savedRecordsRef = useRef<SavedDemoRecord[]>([]);
   const [localCaseId, setLocalCaseId] = useState(() => createLocalCaseId());
+  const activeCaseIdentityRef = useRef(localCaseId);
   const draftHydratedRef = useRef(false);
   const draftPersistenceRef = useRef<ReturnType<typeof createPilotDraftPersistenceController<PilotDraftEnvelope>> | null>(null);
+  const recordsPersistenceRef = useRef<PilotSerialPersistenceQueue<SavedDemoRecord[]> | null>(null);
+  if (!recordsPersistenceRef.current) recordsPersistenceRef.current = createPilotSerialPersistenceQueue((records) => saveLocalCaseRecords(records, storageScope));
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const pilotSaveQueuesRef = useRef<Record<string, Promise<void>>>({});
+  const [mobileStageOpen, setMobileStageOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const firstUseIntentRef = useRef<"new" | "continue">("new");
+  const pendingNewCaseCreationRef = useRef<string | null>(null);
+  const pilotSaveQueueRef = useRef(createPilotKeyedPersistenceQueue());
+  const pilotSyncMachinesRef = useRef<Record<string, PilotSyncMachineState>>({
+    [localCaseId]: createPilotSyncMachineState(localCaseId, 0, false),
+  });
+  const deletedCaseIdentitiesRef = useRef<Set<string>>(new Set());
   // AUDIT-02：阶段推进事件的已发清单（按案例）与上一阶段游标。
   const stageEventSeenRef = useRef<Record<string, string[]>>({});
-  const lastStageForEventsRef = useRef<number>(-1);
+  const lastStageForEventsRef = useRef<Record<string, number>>({});
 
-  const pilotConsentRef = useRef<PilotConsentRecord | null>(null);
+  const pilotConsentRef = useRef<PilotConsentRecord | null>(testContext ? buildPilotConsentRecord(new Date().toISOString()) : null);
+  const pilotSourceRef = useRef<PilotSourceRecord | null>(testContext ? { channel: "internal_test", detail: null } : null);
+  const [pilotSourceGateOpen, setPilotSourceGateOpen] = useState(false);
   const [pilotConsentGateOpen, setPilotConsentGateOpen] = useState(false);
+  const [guideCardsOpen, setGuideCardsOpen] = useState(false);
+  const [pilotConsentDeclined, setPilotConsentDeclined] = useState(false);
   // SAVE-02：恢复到评估阶段后，等待派生队列就绪再推导落点
   const [restoredAssessmentCheck, setRestoredAssessmentCheck] = useState<{ token: number } | null>(null);
-  const [lastPilotEventId, setLastPilotEventId] = useState<string | null>(null);
-  const [pilotSyncState, setPilotSyncState] = useState<PilotSyncState>("idle");
+  const lastPilotEventIdsRef = useRef<Record<string, string | null>>({});
+  const [feedbackSourceContext, setFeedbackSourceContext] = useState<Readonly<PilotFeedbackSourceContext> | null>(null);
+  const [pilotSyncState, setPilotSyncState] = useState<PilotSyncDisplayState>("idle");
   const [followupMode, setFollowupMode] = useState(false);
   const [sessionNumber, setSessionNumber] = useState(1);
   const [followupScore, setFollowupScore] = useState(0);
@@ -2285,17 +229,31 @@ export default function RehabMindCompleteDemo() {
   const [adverseConfirmedAssessmentIds, setAdverseConfirmedAssessmentIds] = useState<string[]>([]);
 
   useEffect(() => {
-    getPilotInviteToken();
-  }, []);
-
-  useEffect(() => {
     assessmentResultsRef.current = assessmentResults;
   }, [assessmentResults]);
+
+  function syncDisplayState(state: PilotSyncMachineState): PilotSyncDisplayState {
+    if (state.status === "syncing" || state.status === "deleting") return "syncing";
+    if (state.status === "synced") return "synced";
+    if (state.status === "conflict") return "conflict";
+    if (state.status === "failed" || state.status === "local_only") return "offline";
+    if (state.status === "dirty") return "local-saved";
+    return "idle";
+  }
+
+  function dispatchPilotSync(identity: string, event: PilotSyncEvent) {
+    const current = pilotSyncMachinesRef.current[identity]
+      ?? createPilotSyncMachineState(identity, 0, Boolean(pilotConsentRef.current));
+    const next = reducePilotSyncState(current, event);
+    pilotSyncMachinesRef.current[identity] = next;
+    if (activeCaseIdentityRef.current === identity) setPilotSyncState(syncDisplayState(next));
+    return { state: next, accepted: next !== current };
+  }
 
   useEffect(() => {
     const controller = createPilotDraftPersistenceController<PilotDraftEnvelope>({
       delayMs: 800,
-      save: (draft) => saveLocalDraft(draft),
+      save: (draft) => saveLocalDraft(draft, storageScope),
       onState: (state) => setPilotSyncState(state),
     });
     draftPersistenceRef.current = controller;
@@ -2303,20 +261,23 @@ export default function RehabMindCompleteDemo() {
       controller.dispose();
       draftPersistenceRef.current = null;
     };
-  }, []);
+  }, [storageScope]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
-          const result = await loadLocalCaseRecords<SavedDemoRecord>();
+          const result = await loadLocalCaseRecords<SavedDemoRecord>(storageScope);
           const records = result.records;
           savedRecordsRef.current = records;
           setSavedRecords(records);
-          const draft = await loadLocalDraft<PilotDraftEnvelope>();
+          const draftResult = await loadLocalDraftWithDiagnostics<PilotDraftEnvelope>(storageScope);
+          const draft = draftResult.draft;
           const draftSnapshot = draft ? normalizeSavedDemoSnapshot(draft.snapshot) : null;
-          if (!records.length && draft && draftSnapshot) {
+          if (draft && draftSnapshot) {
+            const storedRecord = records.find((record) => savedRecordIdentity(record) === draft.localCaseId);
             await restoreRecord({
+              ...storedRecord,
               id: "active-draft",
               localCaseId: draft.localCaseId,
               savedAt: draft.savedAt,
@@ -2329,19 +290,35 @@ export default function RehabMindCompleteDemo() {
               sessionCount: draftSnapshot.sessionNumber,
               status: "康复中",
               snapshot: draftSnapshot,
-            });
+              pilotDirty: Boolean(storedRecord?.pilotCaseId) || storedRecord?.pilotDirty,
+              localContentFingerprint: contentFingerprint(draftSnapshot),
+            }, { preferLocalSnapshot: true });
             setToast("已恢复本机草稿");
             window.setTimeout(() => setToast(""), 2400);
+          } else if (result.diagnostic || draftResult.diagnostic) {
+            setPilotSyncState("error");
+            setToast("发现无法读取的本机记录，原始副本已保留；请勿清理浏览器数据");
           }
           draftHydratedRef.current = true;
+          if (testContext) {
+            setOnboardingOpen(false);
+            setPilotSourceGateOpen(false);
+            setPilotConsentGateOpen(false);
+            return;
+          }
           const storedConsent = readPilotConsent(window.localStorage);
+          const consentState = storedConsent ? "confirmed" : isPilotConsentDeclined(window.localStorage) ? "declined" : "missing";
           if (storedConsent) {
             pilotConsentRef.current = storedConsent;
-
-          } else if (!isPilotConsentDeclined(window.localStorage)) {
-            setPilotConsentGateOpen(true);
           }
-          if (localStorage.getItem(onboardingStorageKey) !== "seen") setOnboardingOpen(true);
+          const storedSource = readPilotSource(window.localStorage);
+          if (storedSource) pilotSourceRef.current = storedSource;
+          const tutorialSeen = localStorage.getItem(onboardingStorageKey) === "seen";
+          const firstOverlay = resolvePilotFirstUseOverlay({ tutorialSeen, sourceSelected: Boolean(storedSource), consent: consentState });
+          setOnboardingOpen(firstOverlay === "tutorial");
+          setPilotSourceGateOpen(firstOverlay === "source");
+          setPilotConsentGateOpen(firstOverlay === "consent" || firstOverlay === "blocked");
+          setPilotConsentDeclined(firstOverlay === "blocked");
         } catch {
           savedRecordsRef.current = [];
           setSavedRecords([]);
@@ -2353,49 +330,194 @@ export default function RehabMindCompleteDemo() {
       })();
     }, 0);
     return () => window.clearTimeout(timer);
-    // The initial restore intentionally runs once; restoreRecord is a stable local action, not a state dependency.
+    // Restore runs again only when a test shell deliberately changes its isolated context.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storageScope, testContext]);
 
   async function persistLocalRecords(records: SavedDemoRecord[]) {
-    await saveLocalCaseRecords(records);
+    await recordsPersistenceRef.current?.enqueue(records);
   }
 
-  function closeOnboarding() {
+  function closeOnboarding(outcome: "completed" | "skipped") {
     try {
       localStorage.setItem(onboardingStorageKey, "seen");
     } catch {
       // The guide still closes for this session when storage is unavailable.
     }
     setOnboardingOpen(false);
+    void recordPilotFirstUseEvent(outcome === "completed" ? "tutorial_completed" : "tutorial_skipped");
+    if (!pilotSourceRef.current) {
+      setPilotSourceGateOpen(true);
+    } else if (!pilotConsentRef.current) {
+      const declined = isPilotConsentDeclined(window.localStorage);
+      setPilotConsentDeclined(declined);
+      setPilotConsentGateOpen(true);
+    } else if (firstUseIntentRef.current === "continue") {
+      setRecordsOpen(true);
+    }
   }
 
-  function handlePilotConsentAgree() {
-    const record = buildPilotConsentRecord(new Date().toISOString());
-    pilotConsentRef.current = record;
+  function startFromWelcome() {
+    firstUseIntentRef.current = "new";
+    if (!hasSeenGuideCards()) {
+      setOnboardingOpen(false);
+      setGuideCardsOpen(true);
+      return;
+    }
+    closeOnboarding("completed");
+  }
 
-    setPilotConsentGateOpen(false);
+  function handleGuideCardsComplete() {
+    markGuideCardsSeen();
+    setGuideCardsOpen(false);
+    closeOnboarding("completed");
+  }
+
+  function handleGuideCardsSkip() {
+    markGuideCardsSeen();
+    setGuideCardsOpen(false);
+    closeOnboarding("skipped");
+  }
+
+  function devResetFlow() {
     try {
-      writePilotConsent(window.localStorage, record);
+      localStorage.removeItem("rehabmind-guide-cards-seen");
+      localStorage.removeItem(onboardingStorageKey);
+    } catch {}
+    window.location.reload();
+  }
+
+  function devClearAllData() {
+    try {
+      localStorage.clear();
+    } catch {}
+    indexedDB.deleteDatabase("rehabmind-local-cases");
+    window.location.reload();
+  }
+
+  function devJumpToStep(target: Step) {
+    setStep(target);
+    setToast(`已跳转到「${STEPS[target]}」（开发模式）`);
+    window.setTimeout(() => setToast(""), 2000);
+  }
+
+  function continueFromWelcome() {
+    firstUseIntentRef.current = "continue";
+    closeOnboarding("skipped");
+  }
+
+  function handlePilotSourceContinue(source: PilotSourceRecord) {
+    pilotSourceRef.current = source;
+    setPilotSourceGateOpen(false);
+    try {
+      writePilotSource(window.localStorage, source);
     } catch {
       // 会话内仍然生效；存储被禁用时下次访问会再次询问。
     }
-    setToast("已同意试用条款，云端同步已开启");
+    if (!pilotConsentRef.current) {
+      setPilotConsentDeclined(isPilotConsentDeclined(window.localStorage));
+      setPilotConsentGateOpen(true);
+    }
+  }
+
+  async function createInitialPilotCaseRecord(consent: PilotConsentRecord) {
+    const source = pilotSourceRef.current;
+    if (!source) throw new Error("source is required before case creation");
+    const existing = findLocalCaseRecord(savedRecordsRef.current, localCaseId);
+    if (existing?.pilotCaseId) return existing;
+    const snapshot = buildCurrentSnapshot();
+    const clientCreationId = existing?.pilotClientCreationId ?? createPilotClientCreationId();
+    const accessToken = existing?.pilotAccessToken ?? createPilotAccessToken();
+    const access = await createPilotCase({
+      clientCreationId,
+      accessToken,
+      initialSnapshot: snapshot,
+      currentStage: STEPS[snapshot.step] ?? STEPS[0],
+      isBilateral: snapshot.intake.side === "双侧/中间",
+      hasSafetyStop: Object.values(snapshot.safety).some((value) => value === "yes"),
+      source,
+      consent,
+    });
+    const initialRecord: SavedDemoRecord = {
+      id: `case-${sessionNumber}-${Math.max(0, ...savedRecordsRef.current.map((item) => Number(item.id.match(/-(\d+)$/)?.[1] ?? 0))) + 1}`,
+      localCaseId,
+      savedAt: "案例已创建",
+      region: "待确认",
+      complaint: intake.description.trim() || "待描述",
+      goal: intake.goal ? getGoalLabel(intake.goal) : "待确认",
+      initialScore: intake.baselineScore,
+      latestScore: intake.baselineScore,
+      scoreComparable: false,
+      sessionCount: sessionNumber,
+      status: "评估未完成",
+      snapshot,
+      pilotCaseId: access.caseId,
+      pilotClientCreationId: clientCreationId,
+      pilotPublicCode: access.publicCode,
+      pilotAccessToken: access.accessToken,
+      pilotRevision: access.revision,
+      pilotLastSyncedRevision: access.revision,
+      pilotDirty: false,
+      localContentFingerprint: contentFingerprint(snapshot),
+      lastSyncedContentFingerprint: contentFingerprint(snapshot),
+      pilotVersions: access.versions,
+    };
+    const next = [initialRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
+    savedRecordsRef.current = next;
+    setSavedRecords(next);
+    await persistLocalRecords(next);
+    dispatchPilotSync(localCaseId, { type: "restore-succeeded", caseId: localCaseId, revision: access.revision });
+    return initialRecord;
+  }
+
+  async function handlePilotConsentAgree() {
+    const record = buildPilotConsentRecord(new Date().toISOString());
+    pilotConsentRef.current = record;
+
+    try {
+      if (firstUseIntentRef.current === "new" || !savedRecordsRef.current.length) {
+        await createInitialPilotCaseRecord(record);
+      }
+    } catch (error) {
+      pilotConsentRef.current = null;
+      throw error;
+    }
+
+    setPilotConsentGateOpen(false);
+    setPilotConsentDeclined(false);
+    void recordPilotFirstUseEvent("consent_confirmed");
+    try {
+      writePilotConsent(window.localStorage, record);
+      window.localStorage.removeItem("rehabmind-pilot-consent-declined");
+    } catch {
+      // 会话内仍然生效；存储被禁用时下次访问会再次询问。
+    }
+    if (firstUseIntentRef.current === "continue") setRecordsOpen(true);
+    setToast(firstUseIntentRef.current === "continue" ? "请选择以前的康复记录" : "匿名案例已创建，可以开始描述问题");
     window.setTimeout(() => setToast(""), 2400);
   }
 
   function handlePilotConsentDecline() {
-    setPilotConsentGateOpen(false);
+    setPilotConsentDeclined(true);
+    void recordPilotFirstUseEvent("consent_declined");
     try {
       markPilotConsentDeclined(window.localStorage);
     } catch {
       // 存储被禁用时仅本次会话不再询问。
     }
-    setToast("仅本机使用：记录只保存在这台设备，不会上传");
-    window.setTimeout(() => setToast(""), 2800);
+  }
+
+  function handlePilotConsentReconsider() {
+    setPilotConsentDeclined(false);
+    try {
+      window.localStorage.removeItem("rehabmind-pilot-consent-declined");
+    } catch {
+      // 会话内仍可重新确认。
+    }
   }
 
   function updateStoredPilotRecord(identity: string, patch: Partial<SavedDemoRecord>) {
+    if (deletedCaseIdentitiesRef.current.has(identity)) return;
     const next = savedRecordsRef.current.map((item) => savedRecordIdentity(item) === identity ? { ...item, ...patch } : item);
     savedRecordsRef.current = next;
     setSavedRecords(next);
@@ -2432,24 +554,37 @@ export default function RehabMindCompleteDemo() {
 
   async function deleteSavedRecord(record: SavedDemoRecord) {
     const identity = savedRecordIdentity(record);
-    await (pilotSaveQueuesRef.current[identity] ?? Promise.resolve()).catch(() => undefined);
+    const deleteRequestId = `delete:${identity}:${Date.now()}`;
+    dispatchPilotSync(identity, { type: "delete-started", caseId: identity, requestId: deleteRequestId });
+    deletedCaseIdentitiesRef.current.add(identity);
+    pilotSaveQueueRef.current.block(identity);
+    await pilotSaveQueueRef.current.drain(identity).catch(() => undefined);
     const latestRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === identity) ?? record;
     const access = pilotAccessFromRecord(latestRecord);
     if (access) {
-      setPilotSyncState("syncing");
       try {
         await deletePilotCase(access);
       } catch {
-        setPilotSyncState("offline");
+        deletedCaseIdentitiesRef.current.delete(identity);
+        pilotSaveQueueRef.current.unblock(identity);
+        dispatchPilotSync(identity, { type: "delete-failed", caseId: identity, requestId: deleteRequestId, code: "remote-delete-failed" });
         setToast("服务器暂时无法删除，请恢复连接后再试");
         window.setTimeout(() => setToast(""), 2800);
         return;
       }
     }
     const next = savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== identity && item.id !== record.id);
+    delete lastPilotEventIdsRef.current[identity];
+    delete stageEventSeenRef.current[identity];
+    delete lastStageForEventsRef.current[identity];
+    pilotSaveQueueRef.current.clear(identity);
+    if (identity === activeCaseIdentityRef.current) {
+      draftPersistenceRef.current?.cancel();
+      void clearLocalDraft(storageScope);
+    }
     savedRecordsRef.current = next;
     setSavedRecords(next);
-    setPilotSyncState(access ? "synced" : "idle");
+    dispatchPilotSync(identity, { type: "delete-succeeded", caseId: identity, requestId: deleteRequestId });
     try {
       await persistLocalRecords(next);
     } catch {
@@ -2463,11 +598,18 @@ export default function RehabMindCompleteDemo() {
 
   async function clearAllLocalRecords() {
     try {
-      await clearLocalCaseRecords();
+      await recordsPersistenceRef.current?.drain();
+      await clearLocalCaseRecords(storageScope);
       draftPersistenceRef.current?.cancel();
-      await clearLocalDraft();
+      await clearLocalDraft(storageScope);
       savedRecordsRef.current = [];
       setSavedRecords([]);
+      lastPilotEventIdsRef.current = {};
+      stageEventSeenRef.current = {};
+      lastStageForEventsRef.current = {};
+      deletedCaseIdentitiesRef.current.clear();
+      pilotSaveQueueRef.current.clearAll();
+      pilotSyncMachinesRef.current = {};
       setPilotSyncState("idle");
       setToast("本机案例已清空");
     } catch {
@@ -2493,21 +635,22 @@ export default function RehabMindCompleteDemo() {
   }
 
   function enqueuePilotRecordSync(record: SavedDemoRecord, options?: { eventType?: string }) {
-    if (!record.snapshot) return;
+    if (!record.snapshot) return Promise.resolve(false);
     // PRIV-01：未同意试用条款前，任何记录都只保存在本机，不创建远端案例。
     const consentRecord = pilotConsentRef.current;
-    if (!consentRecord) return;
+    const sourceRecord = pilotSourceRef.current;
+    if (!consentRecord || !sourceRecord) return Promise.resolve(false);
     const snapshot = record.snapshot;
     const identity = savedRecordIdentity(record);
-    const previous = pilotSaveQueuesRef.current[identity] ?? Promise.resolve();
-    const task = previous
-      .catch(() => undefined)
-      .then(async () => {
-        setPilotSyncState("syncing");
+    if (deletedCaseIdentitiesRef.current.has(identity)) return Promise.resolve(false);
+    let operation: PilotSyncOperation | null = null;
+    let telemetryAccess = pilotAccessFromRecord(record);
+    const task = pilotSaveQueueRef.current.enqueue(identity, async () => {
         const latestRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === identity) ?? record;
         const currentSnapshot = latestRecord.snapshot ?? snapshot;
         let access = pilotAccessFromRecord(latestRecord);
         if (!access) {
+          dispatchPilotSync(identity, { type: "remote-create-started", caseId: identity });
           const clientCreationId = latestRecord.pilotClientCreationId ?? createPilotClientCreationId();
           const accessToken = latestRecord.pilotAccessToken ?? createPilotAccessToken();
           updateStoredPilotRecord(identity, {
@@ -2517,11 +660,15 @@ export default function RehabMindCompleteDemo() {
           access = await createPilotCase({
             clientCreationId,
             accessToken,
-            initialSnapshot: attachPilotConsent(currentSnapshot as unknown as Record<string, unknown>, consentRecord),
+            initialSnapshot: currentSnapshot,
             currentStage: STEPS[currentSnapshot.step] ?? STEPS[0],
             isBilateral: currentSnapshot.intake.side === "双侧/中间",
             hasSafetyStop: Object.values(currentSnapshot.safety).some((value) => value === "yes"),
+            source: sourceRecord,
+            consent: consentRecord,
+            testContext,
           });
+          telemetryAccess = access;
           updateStoredPilotRecord(identity, {
             pilotCaseId: access.caseId,
             pilotPublicCode: access.publicCode,
@@ -2533,21 +680,39 @@ export default function RehabMindCompleteDemo() {
           });
         }
 
+        const eventType = options?.eventType ?? "session_saved";
+        const eventId = pilotProgressEventId(access.caseId, eventType, contentFingerprint(currentSnapshot));
+        operation = {
+          caseId: identity,
+          sessionId: `${identity}:session-${latestRecord.sessionCount}`,
+          requestId: `request:${eventId}`,
+          baseRevision: access.revision,
+        };
+        dispatchPilotSync(identity, { type: "remote-save-started", operation });
         const progress = await savePilotCaseProgress({
           access,
-          snapshot: currentSnapshot,
-          eventId: `session-save:${access.caseId}:${contentFingerprint(currentSnapshot)}`,
-          eventType: options?.eventType ?? "session_saved",
+          snapshot: attachPilotConsent(currentSnapshot as unknown as Record<string, unknown>, consentRecord),
+          requestId: operation.requestId,
+          sessionId: operation.sessionId,
+          eventId,
+          eventType,
           eventPayload: {
             raw: { complaint: latestRecord.complaint },
             parsed: { localCaseId: identity, legacyCaseKey: latestRecord.caseKey, status: latestRecord.status, step: currentSnapshot.step },
             inferred: { sessionNumber: latestRecord.sessionCount },
+            workflow: { projectionInput: workflowProjection.input },
           },
           currentStage: STEPS[currentSnapshot.step] ?? STEPS[0],
           isBilateral: currentSnapshot.intake.side === "双侧/中间",
           hasSafetyStop: Object.values(currentSnapshot.safety).some((value) => value === "yes"),
           sessionCount: latestRecord.sessionCount,
         });
+        const syncResult = dispatchPilotSync(identity, {
+          type: "remote-save-succeeded",
+          operation,
+          revision: progress.snapshot.revision,
+        });
+        if (!syncResult.accepted) return false;
         updateStoredPilotRecord(identity, {
           pilotCaseId: access.caseId,
           pilotPublicCode: access.publicCode,
@@ -2559,23 +724,48 @@ export default function RehabMindCompleteDemo() {
           lastSyncedContentFingerprint: contentFingerprint(currentSnapshot),
           pilotVersions: access.versions,
         });
-        setLastPilotEventId(typeof progress.event.id === "string" ? progress.event.id : null);
-        setPilotSyncState("synced");
+        lastPilotEventIdsRef.current[identity] = typeof progress.event.id === "string" ? progress.event.id : null;
+        return true;
       })
       .catch((error: unknown) => {
-        const inviteBlocked = error instanceof PilotCaseClientError && error.code === "invite_required";
-        setPilotSyncState(inviteBlocked ? "invite" : error instanceof PilotCaseClientError && error.status === 409 ? "conflict" : "offline");
-        setToast(inviteBlocked
-          ? "本机已保存，请通过邀请链接进入试用后再同步案例"
-          : error instanceof PilotCaseClientError && error.status === 409
-            ? "本机已保存，但服务器记录已变化，请刷新后继续"
-            : "本机已保存，服务器暂时未同步");
-        window.setTimeout(() => setToast(""), 2800);
-      })
-      .then(() => {
-        if (pilotSaveQueuesRef.current[identity] === task) delete pilotSaveQueuesRef.current[identity];
+        if (operation) {
+          dispatchPilotSync(identity, error instanceof PilotCaseClientError && error.status === 409
+            ? { type: "conflict-detected", operation }
+            : { type: "remote-save-failed", operation, code: "remote-save-failed" });
+        } else {
+          dispatchPilotSync(identity, { type: "remote-create-failed", caseId: identity, code: "remote-create-failed" });
+        }
+        if (activeCaseIdentityRef.current === identity) {
+          setToast(error instanceof PilotCaseClientError && error.status === 409
+              ? "本机已保存，但服务器记录已变化，请刷新后继续"
+              : "本机已保存，服务器暂时未同步");
+          window.setTimeout(() => setToast(""), 2800);
+        }
+        if (telemetryAccess) {
+          void recordPilotCaseOperation(
+            error instanceof PilotCaseClientError && error.status === 409 ? "save_conflict" : "save_failed",
+            telemetryAccess,
+          );
+        }
+        return false;
       });
-    pilotSaveQueuesRef.current[identity] = task;
+    return task.then((succeeded) => succeeded ?? false);
+  }
+
+  function savePilotConflictAsNew(record: SavedDemoRecord) {
+    const nextIdentity = createLocalCaseId();
+    const copied = buildPilotConflictCaseCopy(record as unknown as Record<string, unknown>, {
+      id: nextIdentity,
+      localCaseId: nextIdentity,
+    }) as unknown as SavedDemoRecord;
+    const next = [copied, ...savedRecordsRef.current];
+    savedRecordsRef.current = next;
+    setSavedRecords(next);
+    void persistLocalRecords(next);
+    void restoreRecord(copied);
+    void enqueuePilotRecordSync(copied);
+    setToast("已另存为新案例，原案例的两个版本都未被覆盖");
+    window.setTimeout(() => setToast(""), 2800);
   }
 
   // AUDIT-02：阶段首次推进时向服务器时间线写入对应字典事件，
@@ -2583,20 +773,28 @@ export default function RehabMindCompleteDemo() {
   useEffect(() => {
     if (reviewStep !== null) return;
     if (!pilotConsentRef.current) return;
-    const active = [...savedRecordsRef.current].reverse().find((item) => item.pilotCaseId);
+    const identity = localCaseId;
+    const active = findLocalCaseRecord(savedRecordsRef.current, identity);
     if (!active) {
-      lastStageForEventsRef.current = step;
+      lastStageForEventsRef.current[identity] = step;
       return;
     }
-    const identity = savedRecordIdentity(active);
+    if (!active.pilotCaseId) {
+      lastStageForEventsRef.current[identity] = step;
+      return;
+    }
     const seen = (stageEventSeenRef.current[identity] ??= []);
-    let cursor = lastStageForEventsRef.current;
+    let cursor = lastStageForEventsRef.current[identity] ?? -1;
     if (cursor < 0) cursor = step; // 首次挂载不回放历史阶段
-    lastStageForEventsRef.current = step;
+    lastStageForEventsRef.current[identity] = step;
     const eventType = pickStageAdvanceEvent({ prev: cursor, next: step, seen });
     if (!eventType) return;
-    enqueuePilotRecordSync(active, { eventType });
-  }, [step, reviewStep]);
+    void enqueuePilotRecordSync(active, { eventType }).then((saved) => {
+      if (saved) markStageEventSeen(seen, eventType);
+    });
+    // The sync action intentionally reads current refs; adding its render-local identity would replay stage events.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, reviewStep, localCaseId]);
 
   const region = useMemo<FullRegion | undefined>(() => FULL_REGIONS.find((item) => item.id === intake.regionId), [intake.regionId]);
   const workflowProfile = useMemo(() => intake.productMode
@@ -3709,11 +1907,16 @@ export default function RehabMindCompleteDemo() {
 
   useEffect(() => {
     if (!pendingTrialAdvance) return;
-    const resolvedIndex = resolveDynamicQueueAdvanceForTargets(trialTargetIndex, trialTargets, pendingTrialAdvance);
+    const decision = workflowController.recomputeTreatmentQueue({
+      currentIndex: trialTargetIndex,
+      targets: trialTargets,
+      pending: pendingTrialAdvance,
+    });
+    const resolvedIndex = decision.resolvedIndex;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (trialTargetIndex !== resolvedIndex) setTrialTargetIndex(resolvedIndex);
     setPendingTrialAdvance(null);
-  }, [trialTargets, trialTargetIndex, pendingTrialAdvance]);
+  }, [trialTargets, trialTargetIndex, pendingTrialAdvance, workflowController]);
 
   useEffect(() => {
     if (!trialTargets.length) {
@@ -3746,7 +1949,7 @@ export default function RehabMindCompleteDemo() {
   function advanceToNextTrialTarget(rebuildFromQueue = false) {
     if (!activeTarget) return;
     const nextTarget = trialTargets[trialTargetIndex + 1];
-    setPendingTrialAdvance(buildPendingQueueAdvance(activeTarget, nextTarget));
+    setPendingTrialAdvance(workflowController.createPendingQueueAdvance(activeTarget, nextTarget));
     // Time-based items such as swelling are removed from the live queue after
     // saving. Rebuild from index 0 so a newly exposed treatment cannot be
     // skipped when the queue changes shape in the same render cycle.
@@ -3959,7 +2162,7 @@ export default function RehabMindCompleteDemo() {
     // 后续相邻肌肉处理不再重复复测这个动作；只有仍未解决的方向才重新进入清单。
     .filter((finding) => isResidualReviewStep || !["both-match", "worse"].includes(latestOutcomeForDirection(motionIdFromFinding(finding)) ?? ""))
     .filter((finding) => isResidualReviewStep || activeCandidateGroup.some((candidate) => directionNeedsCandidate(candidate, motionIdFromFinding(finding)))));
-  const activeRetestFindings = readyToRetest && retestPlan?.targetId === activeTarget?.id && retestPlan.candidateId === activeCandidate?.id
+  const activeRetestFindings = readyToRetest && retestPlan && retestPlan.targetId === activeTarget?.id && retestPlan.candidateId === activeCandidate?.id
     ? dedupeRetestFindingsByAction(activeTargetRetestFindings.filter((finding) => retestPlan.directionIds.some((id) => samePhysicalAction(id, motionIdFromFinding(finding)))))
     : liveActiveRetestFindings;
   const activeControlMotionIds = [...new Set(activeRetestFindings.map(motionIdFromFinding))];
@@ -4444,7 +2647,13 @@ export default function RehabMindCompleteDemo() {
   const hasSafetySignal = activeSafetyItems.some((item) => safety[item.id] === "yes");
   const hasClearance = imaging.includes("医生已允许按建议康复");
   const structuralImagingSignal = imaging.some((item) => ["有骨折或骨裂异常", "韧带损伤或撕裂", "肌腱损伤或撕裂"].includes(item));
-  const canContinueSafety = safetyAnswered && boneQuestionsAnswered && imaging.length > 0 && (!hasSafetySignal || hasClearance) && (!structuralImagingSignal || hasClearance);
+  const canContinueSafety = workflowController.resolveSafety({
+    answersComplete: safetyAnswered && boneQuestionsAnswered,
+    imagingSelected: imaging.length > 0,
+    safetySignal: hasSafetySignal,
+    structuralSignal: structuralImagingSignal,
+    medicalClearance: hasClearance,
+  }).canContinue;
   const assessmentComplete = assessments.length > 0 && assessments.every((item) => assessmentRecordComplete(
     item,
     effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? ""),
@@ -4501,13 +2710,18 @@ export default function RehabMindCompleteDemo() {
   const treatmentQueueIsRefreshing = pendingTrialAdvance !== null;
   const pendingKneeAssessmentCheck = region?.id === "knee" ? kneeDecision?.assessmentChecks[0] : undefined;
   // 膝核心仍要求补查时，空处理队列不能被解释为“本次已结束”。
-  const treatmentComplete = !treatmentQueueIsRefreshing
-    && !pendingKneeAssessmentCheck
-    // 未路由问题会在处理页提供精确的“返回补充检查”出口，但不把已经
-    // 完成的评估步骤重新锁死，避免用户既进不了处理也无法定位缺口。
-    && (trialTargets.length === 0 || trialTargetIndex >= trialTargets.length);
   const assessmentNeedsReferral = highIrritabilityReferral || assessmentNeuralReferral || sharpSpecialReferral;
-  const trainingStageGate = resolveTrainingStageGate({
+  const workflowProjection = workflowController.project({
+    intakeComplete,
+    safetyComplete: canContinueSafety,
+    adverseResponse: Boolean(adverseResponse),
+    planIsCurrent: canExecutePlan(treatmentPlanRevision, assessmentRevision),
+    assessmentReadyForTreatment,
+    assessmentNeedsReferral,
+    queueRefreshing: treatmentQueueIsRefreshing,
+    pendingAssessmentCheck: Boolean(pendingKneeAssessmentCheck),
+    queueLength: trialTargets.length,
+    queueIndex: trialTargetIndex,
     bilateral: intake.side === "双侧/中间",
     assessmentComplete: bilateralAssessmentComplete,
     safetySignal: assessmentNeedsReferral || hasSafetySignal,
@@ -4515,11 +2729,12 @@ export default function RehabMindCompleteDemo() {
     trainingComplete,
     trainingPlanSaved,
   });
+  const treatmentComplete = workflowProjection.treatmentComplete;
+  const trainingStageGate = workflowProjection.trainingStageGate;
   const bilateralTrainingGateState = trainingStageGate.bilateralGate;
   const adverseResolution = adverseResponse ? resolveAdverseResponse(adverseResponse) : null;
-  const planIsCurrent = canExecutePlan(treatmentPlanRevision, assessmentRevision);
-  const trainingStageClosed = trainingStageGate.closed;
-  const maxUnlocked: Step = !intakeComplete ? 0 : !canContinueSafety ? 1 : adverseResponse || !planIsCurrent ? 2 : !assessmentReadyForTreatment || assessmentNeedsReferral ? 2 : !treatmentComplete ? 3 : !trainingStageClosed ? 4 : 5;
+  const trainingStageClosed = workflowProjection.trainingStageClosed;
+  const maxUnlocked: Step = workflowProjection.maxUnlocked;
 
   function toggleArray(value: string, current: string[], setter: (next: string[]) => void) {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
@@ -4681,11 +2896,16 @@ export default function RehabMindCompleteDemo() {
   }
 
   function goToStep(next: Step) {
-    if (next <= maxUnlocked || next <= step) {
+    const decision = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: { type: "navigate-requested", targetStep: next },
+    });
+    workflowController.execute(decision.commands, { navigateToStep: (acceptedStep) => {
       setReviewStep(null);
       setReviewStepEditable(false);
       const transitionByStep: Partial<Record<Step, TransitionTarget>> = { 2: "assessment", 3: "treatment", 4: "training", 5: "summary" };
-      const target = next > step ? transitionByStep[next] : undefined;
+      const target = acceptedStep > step ? transitionByStep[acceptedStep] : undefined;
       if (target) {
         setTransitionTarget(target);
         if (target === "assessment" && isThinkingMode) setThinkingWorkbenchOpen(true);
@@ -4693,27 +2913,60 @@ export default function RehabMindCompleteDemo() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      setStep(next);
+      setStep(acceptedStep);
       setTransitionTarget(null);
       setSummaryOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    } });
   }
 
   function reviewCompletedStep(target: Step) {
-    setTransitionTarget(null);
-    setReviewStepEditable(false);
-    setReviewStep(target);
-    setSummaryOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const decision = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: { type: "review-requested", targetStep: target },
+    });
+    workflowController.execute(decision.commands, { openReadonlyReview: (acceptedStep) => {
+      setTransitionTarget(null);
+      setReviewStepEditable(false);
+      setReviewStep(acceptedStep);
+      setSummaryOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } });
+  }
+
+  function openWorkflowStage(target: Step) {
+    if (target < railStep) reviewCompletedStep(target);
+    else if (target === railStep) {
+      setReviewStep(null);
+      setReviewStepEditable(false);
+    } else goToStep(target);
+    setMobileStageOpen(false);
   }
 
   function editCompletedAssessment() {
-    setTransitionTarget(null);
-    setReviewStepEditable(true);
-    setReviewStep(2);
-    setSummaryOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      const hintKey = "rehabmind-once-hint:edit-old-answer";
+      if (window.localStorage.getItem(hintKey) !== "seen") {
+        const accepted = window.confirm("修改后，受影响的后续内容需要重新确认。是否继续修改？");
+        if (!accepted) return;
+        window.localStorage.setItem(hintKey, "seen");
+      }
+    } catch {
+      if (!window.confirm("修改后，受影响的后续内容需要重新确认。是否继续修改？")) return;
+    }
+    const decision = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: { type: "edit-requested", targetStep: 2, explicitlyEnabled: true },
+    });
+    workflowController.execute(decision.commands, { openExplicitEdit: (acceptedStep) => {
+      setTransitionTarget(null);
+      setReviewStepEditable(true);
+      setReviewStep(acceptedStep);
+      setSummaryOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } });
   }
 
   function returnFromRetestToTreatment() {
@@ -4759,6 +3012,16 @@ export default function RehabMindCompleteDemo() {
     afterScore: number;
     relatedAssessmentIds: string[];
   }) {
+    const navigation = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: { type: "adverse-reported", source: input.source },
+    });
+    let accepted = false;
+    workflowController.execute(navigation.commands, {
+      captureAdverseResponse: (source) => { accepted = source === input.source; },
+    });
+    if (!accepted) return;
     const revision = nextAssessmentRevision(assessmentRevision);
     const existingIds = input.relatedAssessmentIds.filter((id) => assessments.some((item) => item.id === id));
     const chiefId = chiefFunctionAssessmentId(intake, region?.id ?? "");
@@ -4855,47 +3118,6 @@ export default function RehabMindCompleteDemo() {
       return;
     }
     finishFocusedReassessment(adverseResponse);
-  }
-
-  function renderThinkingWorkbench() {
-    const completedAssessmentIds = new Set(assessmentDisplayItems.filter((item) => displayAssessmentComplete(item)).map((item) => item.id));
-    const groupedSpecials = [
-      { key: "localization", label: "定位筛查" },
-      { key: "response", label: "反应实验" },
-      { key: "safety", label: "安全分流" },
-      { key: "professional-special", label: "专项检查" },
-    ] as const;
-    const unresolved = findings.filter((finding) => !finding.internal && !["track:swelling", "track:tender"].includes(finding.id));
-    const stageStates = workbenchStageStates({
-      canContinueSafety,
-      assessmentFlowComplete: assessmentReadyForTreatment,
-      completedAssessmentCount: completedAssessmentIds.size,
-      totalAssessmentCount: assessmentDisplayItems.length,
-      unresolvedProblemCount: unresolved.length,
-      trialRecordCount: trialRecords.length,
-      trainingComplete,
-      trainingPlanSaved,
-      exerciseCount: exercises.length,
-      isSummaryStep: step === 5,
-    });
-    const stageItems = [
-      { label: "症状与安全", state: stageStates[0], detail: `${intake.location || "未定位"} · ${intake.symptomType || "感觉待确认"}`, onClick: () => goToStep(1) },
-      { label: "评估", state: stageStates[1], detail: "活动度、力量、功能和必要专项检查", onClick: () => { setThinkingWorkbenchOpen(false); const next = assessmentDisplayItems.findIndex((item) => !displayAssessmentComplete(item)); setAssessmentIndex(next >= 0 ? next : 0); } },
-      { label: "问题台账", state: stageStates[2], detail: "按活动度、肌肉、控制和局部体征分组", onClick: () => { setThinkingWorkbenchOpen(false); setAssessmentSummaryOpen(true); } },
-      { label: "处理与复测", state: stageStates[3], detail: "同类双侧处理合并展示，左右分别记录反应", onClick: () => { if (assessmentReadyForTreatment) { setTransitionTarget("treatment"); setThinkingWorkbenchOpen(false); } } },
-      { label: "训练", state: stageStates[4], detail: "按力量、控制和功能目标安排进阶", onClick: () => { if (treatmentComplete) { setTransitionTarget("training"); setThinkingWorkbenchOpen(false); } } },
-      { label: "总结", state: stageStates[5], detail: "保留有效方向、未解决问题和下次重点", onClick: () => { if (trainingStageClosed) { setTransitionTarget("summary"); setThinkingWorkbenchOpen(false); } } },
-    ];
-    return <section className="rm-page rm-thinking-workbench">
-      <StepHeading eyebrow="康复思路模式 · 阶段工作台" title="按阶段查看这次康复" note="先完成当前阶段，再进入下一阶段；可直接打开需要记录的项目。" />
-      <section className="rm-workbench-stage-grid">{stageItems.map((stage, index) => <button type="button" key={stage.label} className={`rm-workbench-stage ${stage.state === "已完成" ? "is-done" : index === 1 ? "is-current" : ""}`} disabled={index > 1 && stage.state === "待开始"} onClick={stage.onClick}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage.label}</strong><b>{stage.state}</b><small>{stage.detail}</small></button>)}</section>
-      <section className="rm-workbench-columns">
-        <article className="rm-workbench-module"><header><div><span>评估项目</span><strong>{completedAssessmentIds.size}/{assessmentDisplayItems.length}</strong></div><button type="button" onClick={() => { setThinkingWorkbenchOpen(false); const next = assessmentDisplayItems.findIndex((item) => !displayAssessmentComplete(item)); setAssessmentIndex(next >= 0 ? next : 0); }}>打开检查</button></header><div className="rm-workbench-list">{assessmentDisplayItems.map((item) => <button type="button" key={item.id} className={displayAssessmentComplete(item) ? "is-done" : ""} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentIndex(assessmentDisplayItems.findIndex((entry) => entry.id === item.id)); }}><i>{displayAssessmentComplete(item) ? "✓" : "·"}</i><span>{item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)}</span><b>{displayAssessmentComplete(item) ? "已记录" : "待记录"}</b></button>)}</div></article>
-         <article className="rm-workbench-module"><header><div><span>问题台账</span><strong>{unresolved.length}项</strong></div><button type="button" disabled={!assessmentFlowComplete} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentSummaryOpen(true); }}>查看</button></header>{unresolved.length ? <div className="rm-workbench-ledger">{buildFindingGroups(unresolved).map((group) => <section key={group.key}><b>{group.label}</b><ul>{group.items.slice(0, 6).map((finding) => <li key={finding.id}>{professionalFindingLabel(finding)}</li>)}</ul></section>)}</div> : <p className="rm-workbench-empty">完成评估后，这里会按类别显示需要处理的问题。</p>}</article>
-        <article className="rm-workbench-module"><header><div><span>专项检查</span><strong>{assessments.filter((item) => item.kind === "special").length}项</strong></div><span className="rm-workbench-capability">{canRunSpecialTest ? "已开放" : canAssessEndFeel ? "按权限" : "未开放"}</span></header>{groupedSpecials.map((group) => { const items = assessments.filter((item) => item.kind === "special" && item.specialCategory === group.key); return items.length ? <section className="rm-workbench-special-group" key={group.key}><b>{group.label}</b><span>{items.map((item) => professionalAssessmentTitle(item.id, item.title)).join("、")}</span></section> : null; })}</article>
-      </section>
-      <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(1)}>返回安全确认</button><button type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={() => { setTransitionTarget("treatment"); setThinkingWorkbenchOpen(false); }}>评估完成，进入处理</button></div>
-    </section>;
   }
 
   function openAssessmentItem(id: string, message: string) {
@@ -5035,7 +3257,7 @@ export default function RehabMindCompleteDemo() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function finishTrial(requestedResult: TrialResult, timeBased = false, nextCandidateType?: FullCandidate["type"], finishTarget = false, deferredRetest = false) {
+  function finishTrial(requestedResult: TrialResult, timeBased = false, nextCandidateType?: FullCandidate["type"], deferredRetest = false) {
     if (!activeTarget || !activeCandidate) return;
     const beforeScore = targetScoreBeforeRetest(activeTarget);
     const recordCandidates = activeNewCandidates.length ? activeNewCandidates : [activeCandidate];
@@ -5164,44 +3386,27 @@ export default function RehabMindCompleteDemo() {
     const records = treatmentRecordFlow.records;
     setFinishSnapshots((current) => [...current, { trialRecords, trialTargetIndex, candidateIndex, pendingTrialAdvance }]);
     setTrialRecords((current) => [...current, ...records]);
-    const requestedNextIndex = resolveTreatmentQueueAdvance({
+    const treatmentDecision = workflowController.recordTreatmentRetest({
       candidates: activeTarget.candidates,
       startIndex: activeGroupEndIndex,
       preferredTypes: nextCandidateType ? [nextCandidateType] : [],
       getType: (candidate) => candidate.type,
       result,
       activityWorsened,
-    }).nextCandidateIndex;
-    const activeDirectionResolved = Boolean(activeDirectionIdForTrial && movementResponse === "both-match");
-    const chiefFullyResolved = activeTarget.id === "target:chief" && chiefWasActuallyRetested && recordedAfterScore === 0;
-    const strengthSymptomResolved = activeTarget.finding.id.startsWith("strength:") && postScoreConfirmed && recordedAfterScore === 0;
-    // 全部区域共用：主诉改善不能清除活动度、力量、控制等独立问题。
-    const hasUnresolvedSupportProblem = findings.some((finding) => {
-      if (finding.priority !== "support") return false;
-      const directionId = anyMotionIdFromFinding(finding);
-      if (!directionId) return true;
-      if (samePhysicalAction(directionId, mergedChiefDirection)) return false;
-      const currentOutcome = activeDirectionIdForTrial && samePhysicalAction(activeDirectionIdForTrial, directionId) && movementResponse ? movementResponse : latestOutcomeForDirection(directionId);
-      return currentOutcome !== "both-match";
     });
-    const targetFinished = finishTarget
-      || result === "worse"
-      || activityWorsened
-      || activeDirectionResolved
-      || (result === "better" && chiefFullyResolved && !hasUnresolvedSupportProblem && !activeTarget.retestFindings?.length)
-      || (result === "better" && strengthSymptomResolved)
-      || activeGroupEndIndex >= activeTarget.candidates.length - 1;
-    if (isChiefTreatmentPhase && result === "better" && chiefFullyResolved) {
+    const chiefFullyResolved = activeTarget.id === "target:chief" && chiefWasActuallyRetested && recordedAfterScore === 0;
+    if (treatmentDecision.queueAdvance.stopped) {
+      workflowController.execute(treatmentDecision.commands, { stopTreatment: () => undefined });
+    } else if (isChiefTreatmentPhase && result === "better" && chiefFullyResolved) {
       if (chiefReviewIndex >= 0) setCandidateIndex(chiefReviewIndex);
       else {
         advanceToNextTrialTarget();
       }
-    } else if (requestedNextIndex >= 0) {
-      setCandidateIndex(requestedNextIndex);
-    } else if (targetFinished || nextCandidateType) {
-      advanceToNextTrialTarget(timeBased);
     } else {
-      setCandidateIndex(activeGroupEndIndex + 1);
+      workflowController.execute(treatmentDecision.commands, {
+        selectTreatmentCandidate: setCandidateIndex,
+        advanceTreatmentTarget: () => advanceToNextTrialTarget(timeBased),
+      });
     }
     setPostScore(["better", "partial"].includes(result) ? recordedAfterScore : beforeScore);
     setMovementResponse("");
@@ -5384,7 +3589,7 @@ export default function RehabMindCompleteDemo() {
       samePhysicalAction,
       directionNeedsCandidate,
     });
-    const queueAdvance = resolveTreatmentQueueAdvance({
+    const treatmentDecision = workflowController.recordTreatmentRetest({
       candidates: activeTarget.candidates,
       startIndex: activeGroupEndIndex,
       preferredTypes: preferredNextTypes,
@@ -5396,26 +3601,17 @@ export default function RehabMindCompleteDemo() {
       startTargetIndex: trialTargetIndex,
       isEligibleAcrossTargets: (candidate, target) => canUseNextCandidate(candidate, target),
     });
-    const nextIndex = queueAdvance.nextCandidateIndex;
-    const nextTargetPosition = queueAdvance.nextTargetPosition;
-    const nextTargetCandidate = nextTargetPosition
-      ? {
-        target: trialTargets[nextTargetPosition.targetIndex],
-        targetIndex: nextTargetPosition.targetIndex,
-        candidate: trialTargets[nextTargetPosition.targetIndex].candidates[nextTargetPosition.candidateIndex],
-        candidateIndex: nextTargetPosition.candidateIndex,
-      }
-      : undefined;
-    if (nextIndex >= 0) {
-      setCandidateIndex(nextIndex);
-    } else if (nextTargetCandidate) {
-      const nextTarget = nextTargetCandidate.target;
-      setPendingTrialAdvance(buildPendingQueueAdvance(activeTarget, nextTarget));
-      setTrialTargetIndex(nextTargetCandidate.targetIndex);
-      setCandidateIndex(nextTargetCandidate.candidateIndex);
-    } else {
-      advanceToNextTrialTarget();
-    }
+    workflowController.execute(treatmentDecision.commands, {
+      selectTreatmentCandidate: setCandidateIndex,
+      selectTreatmentTarget: (targetIndex, nextCandidateIndex) => {
+        const nextTarget = trialTargets[targetIndex];
+        setPendingTrialAdvance(workflowController.createPendingQueueAdvance(activeTarget, nextTarget));
+        setTrialTargetIndex(targetIndex);
+        setCandidateIndex(nextCandidateIndex);
+      },
+      advanceTreatmentTarget: () => advanceToNextTrialTarget(),
+      stopTreatment: () => undefined,
+    });
     setPostScore(["better", "partial"].includes(result) ? recordedChiefScore : chiefBeforeScore);
     setMovementResponse("");
     setMovementResponses({});
@@ -5673,6 +3869,8 @@ export default function RehabMindCompleteDemo() {
       localContentFingerprint: contentFingerprint(snapshot),
       lastSyncedContentFingerprint: previousRecord?.lastSyncedContentFingerprint,
       pilotVersions: previousRecord?.pilotVersions,
+      testRunId: testContext?.testRunId,
+      scenarioId: testContext?.scenarioId,
     };
     // 同一案例保留一个入口；每次康复追加在 sessionHistory 中。重复保存
     // 同一次只更新当前案例快照，不生成一排难以辨认的重复卡片。
@@ -5681,9 +3879,10 @@ export default function RehabMindCompleteDemo() {
     const next = [record, ...currentRecords.filter((item) => savedRecordIdentity(item) !== localCaseId && item.id !== record.id)];
     savedRecordsRef.current = next;
     setSavedRecords(next);
+    dispatchPilotSync(localCaseId, { type: "local-changed", caseId: localCaseId });
     setSessionHistory(nextSessionHistory);
     draftPersistenceRef.current?.cancel();
-    void clearLocalDraft();
+    void clearLocalDraft(storageScope);
     void persistLocalRecords(next)
       .then(() => setToast(status === "等待影像" ? "本次信息已保存，获得影像后可继续" : status === "待医学评估" ? "本次信息已保存，可在完成医学评估后继续" : `第${sessionNumber}次康复记录已保存到本机`))
       .catch(() => {
@@ -5694,16 +3893,31 @@ export default function RehabMindCompleteDemo() {
     window.setTimeout(() => setToast(""), 2400);
   }
 
-  async function restoreRecord(record: SavedDemoRecord) {
+  async function restoreRecord(record: SavedDemoRecord, options: { preferLocalSnapshot?: boolean } = {}) {
     let latestRecord = record;
     let remoteReadNotice = "";
     const identity = savedRecordIdentity(record);
-    setLocalCaseId(record.localCaseId ?? identity);
+    const nextIdentity = record.localCaseId ?? identity;
+    activeCaseIdentityRef.current = nextIdentity;
+    setLocalCaseId(nextIdentity);
     const access = pilotAccessFromRecord(record);
-    if (access) {
-      setPilotSyncState("syncing");
+    const restoredSyncState = reducePilotSyncState(
+      pilotSyncMachinesRef.current[nextIdentity]
+        ?? createPilotSyncMachineState(nextIdentity, record.pilotRevision ?? 0, Boolean(access)),
+      {
+        type: "case-selected",
+        caseId: nextIdentity,
+        serverRevision: record.pilotRevision ?? 0,
+        remoteEnabled: Boolean(access),
+      },
+    );
+    pilotSyncMachinesRef.current[nextIdentity] = restoredSyncState;
+    setPilotSyncState(syncDisplayState(restoredSyncState));
+    if (access && !options.preferLocalSnapshot) {
+      dispatchPilotSync(nextIdentity, { type: "restore-started", caseId: nextIdentity });
       try {
         const remote = await readPilotCase(access);
+        void recordPilotCaseOperation("case_recovered", access);
         const remoteSnapshot = normalizeSavedDemoSnapshot(remote.snapshot.payload);
         if (remoteSnapshot) {
           const decision = decidePilotRestoreSource(
@@ -5737,12 +3951,13 @@ export default function RehabMindCompleteDemo() {
               pilotConflictSnapshot: undefined,
               pilotConflictRevision: undefined,
             });
-            setPilotSyncState("synced");
+            dispatchPilotSync(nextIdentity, { type: "restore-succeeded", caseId: nextIdentity, revision: remote.snapshot.revision });
           } else if (decision === "use-local") {
-            setPilotSyncState("conflict");
+            dispatchPilotSync(nextIdentity, { type: "restore-conflict", caseId: nextIdentity });
             remoteReadNotice = "服务器没有更新到本机之后，已保留本机未同步版本";
           } else {
-            setPilotSyncState("conflict");
+            dispatchPilotSync(nextIdentity, { type: "restore-conflict", caseId: nextIdentity });
+            void recordPilotCaseOperation("save_conflict", access);
             updateStoredPilotRecord(identity, {
               pilotConflictSnapshot: remoteSnapshot,
               pilotConflictRevision: remote.snapshot.revision,
@@ -5750,11 +3965,11 @@ export default function RehabMindCompleteDemo() {
             remoteReadNotice = "本机和服务器都有更新，已保留本机版本，未静默覆盖；请处理冲突";
           }
         } else {
-          setPilotSyncState("offline");
+          dispatchPilotSync(nextIdentity, { type: "restore-failed", caseId: nextIdentity, code: "invalid-remote-snapshot" });
           remoteReadNotice = "服务器返回的案例快照无法识别，已使用本机副本";
         }
       } catch {
-        setPilotSyncState("offline");
+        dispatchPilotSync(nextIdentity, { type: "restore-failed", caseId: nextIdentity, code: "remote-read-failed" });
         remoteReadNotice = "服务器暂时无法读取，已使用本机副本";
       }
     }
@@ -5869,11 +4084,16 @@ export default function RehabMindCompleteDemo() {
 
   function resetDemo() {
     draftPersistenceRef.current?.cancel();
-    void clearLocalDraft();
+    void clearLocalDraft(storageScope);
     setStep(0);
     setReviewStep(null);
     setTransitionTarget(null);
-    setLocalCaseId(createLocalCaseId());
+    const nextIdentity = createLocalCaseId();
+    activeCaseIdentityRef.current = nextIdentity;
+    setLocalCaseId(nextIdentity);
+    const nextSyncState = createPilotSyncMachineState(nextIdentity, 0, false);
+    pilotSyncMachinesRef.current[nextIdentity] = nextSyncState;
+    setPilotSyncState("idle");
     setIntake(DEFAULT_INTAKE);
     setShowAllIntakeFields(false);
     setGuidedIntakeField("");
@@ -5948,7 +4168,43 @@ export default function RehabMindCompleteDemo() {
     setTreatmentPlanRevision(0);
     setAdverseResponse(null);
     setAdverseConfirmedAssessmentIds([]);
+    return nextIdentity;
   }
+
+  function createNewCaseFromRecords() {
+    setRecordsOpen(false);
+    firstUseIntentRef.current = "new";
+    if (!pilotSourceRef.current) {
+      setPilotSourceGateOpen(true);
+      return;
+    }
+    if (!pilotConsentRef.current) {
+      setPilotConsentDeclined(isPilotConsentDeclined(window.localStorage));
+      setPilotConsentGateOpen(true);
+      return;
+    }
+    const nextIdentity = resetDemo();
+    pendingNewCaseCreationRef.current = nextIdentity;
+    setToast("正在创建匿名案例");
+  }
+
+  useEffect(() => {
+    if (pendingNewCaseCreationRef.current !== localCaseId) return;
+    pendingNewCaseCreationRef.current = null;
+    const consent = pilotConsentRef.current;
+    if (!consent) return;
+    void createInitialPilotCaseRecord(consent)
+      .then(() => {
+        setToast("匿名案例已创建，可以开始描述问题");
+        window.setTimeout(() => setToast(""), 2400);
+      })
+      .catch(() => {
+        setPilotSyncState("error");
+        setToast("案例创建失败，请检查网络后重试");
+      });
+    // The reset render supplies the fresh snapshot consumed by case creation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localCaseId]);
 
   function invalidateAfterIntake(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
     const next = typeof nextOrUpdater === "function" ? nextOrUpdater(intakeRef.current) : nextOrUpdater;
@@ -6245,6 +4501,21 @@ export default function RehabMindCompleteDemo() {
   }
 
   function startNextFollowupSession() {
+    const nextSessionNumber = sessionNumber + 1;
+    const navigation = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: {
+        type: "followup-started",
+        sessionNumber: nextSessionNumber,
+        priorSessionExists: sessionHistory.some((item) => item.sessionNumber === sessionNumber),
+      },
+    });
+    let accepted = false;
+    workflowController.execute(navigation.commands, {
+      startFollowup: (acceptedSessionNumber) => { accepted = acceptedSessionNumber === nextSessionNumber; },
+    });
+    if (!accepted) return;
     setSessionNumber((current) => current + 1);
     setFollowupStage("review");
     setFollowupScore(0);
@@ -6308,6 +4579,20 @@ export default function RehabMindCompleteDemo() {
     // 每次进入第二次康复都依据真实处理记录重建首诊摘要，以便旧版快照
     // 自动移除肿胀管理，并补回动态生成的有效肌肉处理。
     const firstHistory = upsertSessionSummary(sessionHistory, firstSummary);
+    const navigation = workflowController.navigate({
+      currentStep: step,
+      maxUnlocked,
+      event: {
+        type: "followup-started",
+        sessionNumber: 2,
+        priorSessionExists: firstHistory.some((item) => item.sessionNumber === 1),
+      },
+    });
+    let accepted = false;
+    workflowController.execute(navigation.commands, {
+      startFollowup: (acceptedSessionNumber) => { accepted = acceptedSessionNumber === 2; },
+    });
+    if (!accepted) return;
     setSessionHistory(firstHistory);
     if (!firstSessionSaved) {
       saveRecord("待复查", sessionEndScore, { sessionHistory: firstHistory });
@@ -6333,2209 +4618,6 @@ export default function RehabMindCompleteDemo() {
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function renderIntake() {
-    const hasTenderness = intakeHasTenderness;
-    const hasSensorySymptoms = intakeHasSensorySymptoms;
-    // 选择“康复思路模式”只完成当前字段的选择；在当前问题点击“下一步”
-    // 之前仍保持逐项信息收集页面，避免模式按钮本身把用户带到下一题。
-    const professionalIntake = isThinkingMode && !workflowProfile.isStudy && currentIntakeField !== "使用方式";
-    const fieldMissing = (label: string) => showAllIntakeFields && intakeMissingFields.includes(label);
-    const fieldLabel = (label: string) => ({
-      id: `field-${label}`,
-      className: `rm-label${fieldMissing(label) ? " is-missing" : ""}`,
-    });
-    const autoProvocationTypes = new Set(parseIntake(intake.description, { ...DEFAULT_INTAKE, description: intake.description }).provocationTypes);
-    const regionWasNotDetected = Boolean(intake.description.trim() && !describedRegionId);
-    const describedPilotRegions = inferPilotRegions(currentComplaintText(intake.description));
-    const hasMultiplePilotRegions = describedPilotRegions.length > 1;
-    const mentionedBothSides = mentionsBothSymptomSides(intake.description);
-    const vascularDescriptionSignal = includesAny(intake.description, ["发凉", "发白", "冰凉", "苍白"]);
-    const missingFields = intakeMissingFields;
-    const nextMissingField = currentIntakeField;
-    const showIntakeQuestion = (...labels: string[]) => showAllIntakeFields || labels.includes(nextMissingField);
-    const bilateralPriorityChoice = intake.side === "双侧/中间" && (professionalIntake || showIntakeQuestion("本次优先侧"))
-      ? <div id="field-本次优先侧" data-intake-field="本次优先侧" className="rm-form-block rm-bilateral-priority">
-        <div className="rm-label"><span>这次先处理哪一侧？</span><b>必须选择；只决定处理顺序，不代表另一侧正常</b></div>
-        <PillOptions options={["左侧", "右侧"]} value={intake.prioritySide ?? ""} onChange={(value) => invalidateAfterIntake({ ...intake, prioritySide: value === "左侧" || value === "右侧" ? value : undefined })} columns={2} />
-        <p className="rm-choice-hint">另一侧仍会保留记录；完成一侧后可以返回另一侧继续评估或处理。</p>
-        <p className="rm-pilot-hint">双侧完整流程正在试用完善中；如后续步骤受阻，可返回这里改为单侧，分别评估左、右两侧。</p>
-      </div> : null;
-    const actionOptions = reportedActionOptions(intake.regionId);
-    const selectedReportedActionIds = new Set((intake.reportedActions ?? []).map((action) => action.id));
-    const updateReportedActions = (nextActions: ReportedAction[], customAction = intake.customAction) => {
-      const primaryRaw = nextActions[0]?.raw || customAction.trim() || "";
-      invalidateAfterIntake({
-        ...intake,
-        reportedActions: nextActions,
-        customAction,
-        actionSelectionConfirmed: true,
-        reproduction: primaryRaw,
-        actionAnalysis: analyzeChiefAction(intake.description, intake.regionId, intake.forceDirection, primaryRaw),
-      });
-    };
-    if (professionalIntake && intake.parsed) {
-      const professionalSymptoms = intake.symptoms ?? [];
-      const professionalActionSummary = reportedActionSummary(intake);
-      const professionalLocationTabs = [
-        ...(professionalSymptoms.includes("肿胀或淤青") ? [{ id: "swelling" as const, label: "肿胀/淤青", count: intake.swellingLocations.length, emptyLabel: "位置不清楚" }] : []),
-        ...(hasTenderness ? [{ id: "tenderness" as const, label: "按压痛", count: intake.tendernessLocations.length, emptyLabel: "位置不清楚" }] : []),
-        ...(hasSensorySymptoms ? [{ id: "sensory" as const, label: "麻/电感", count: intake.sensoryLocations.length, emptyLabel: "范围不清楚" }] : []),
-      ];
-      const activeProfessionalLocationTab = professionalLocationTabs.some((tab) => tab.id === professionalLocationTab)
-        ? professionalLocationTab
-        : professionalLocationTabs[0]?.id;
-      const professionalComplete = keyConfirmationReady && !unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal;
-      const selectProfessionalMode = (mode: ProductMode | "study") => {
-        invalidateAfterIntake({
-          ...intake,
-          productMode: mode === "study" ? "thinking" : mode,
-          operationTarget: mode === "guided" ? "self" : mode === "study" ? "study" : intake.operationTarget,
-          userRole: mode === "guided" ? "general" : "rehab",
-          examSetup: mode === "guided" ? "self" : mode === "study" ? "self" : intake.examSetup,
-          capabilitiesConfirmed: mode !== "thinking" || intake.operationTarget !== "other" ? true : intake.capabilitiesConfirmed,
-          learningExplanation: mode === "study",
-          spineAssessmentMode: mode === "guided" ? "guided" : intake.spineAssessmentMode,
-        });
-      };
-      const updateProfessionalSymptoms = (symptoms: string[]) => {
-        setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true }));
-        invalidateAfterIntake({
-          ...intake,
-          symptoms,
-          swellingLocation: symptoms.includes("肿胀或淤青") ? intake.swellingLocation : "",
-          swellingLocations: symptoms.includes("肿胀或淤青") ? intake.swellingLocations : [],
-          swellingLocationConfirmed: symptoms.includes("肿胀或淤青") ? intake.swellingLocationConfirmed : false,
-          tendernessLocation: symptoms.includes("按压痛") ? intake.tendernessLocation : "",
-          tendernessLocations: symptoms.includes("按压痛") ? intake.tendernessLocations : [],
-          tendernessLocationConfirmed: symptoms.includes("按压痛") ? intake.tendernessLocationConfirmed : false,
-          stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "",
-        });
-      };
-      const updateProfessionalProvocation = (item: string) => {
-        const unknownOption = "说不清 / 没有固定动作";
-        const selected = intake.provocationTypes.includes(item);
-        const selectingUnknown = item === unknownOption && !selected;
-        const provocationTypes = item === unknownOption
-          ? selected ? [] : [unknownOption]
-          : selected
-            ? intake.provocationTypes.filter((value) => value !== item)
-            : [...intake.provocationTypes.filter((value) => value !== unknownOption), item];
-        setConfirmedIntakeMulti((current) => ({ ...current, provocationTypes: provocationTypes.length > 0 }));
-        const nextIntake = {
-          ...intake,
-          provocationTypes,
-          reproduction: selectingUnknown ? "" : intake.reproduction,
-          reportedActions: selectingUnknown ? [] : intake.reportedActions,
-          customAction: selectingUnknown ? "" : intake.customAction,
-          actionSelectionConfirmed: selectingUnknown ? true : intake.actionSelectionConfirmed,
-          forceDirection: selectingUnknown ? "" : provocationTypes.includes("用力或对抗阻力") ? intake.forceDirection : "",
-          stabbingPalpation: intake.symptomType === "刺痛" || provocationTypes.includes("按压") || intake.symptoms.includes("按压痛") ? intake.stabbingPalpation : "",
-          actionAnalysis: selectingUnknown ? analyzeChiefAction(intake.description, intake.regionId, "", "") : intake.actionAnalysis,
-        };
-        invalidateAfterIntake({
-          ...nextIntake,
-          baselineScore: shouldCollectBaselineScore(nextIntake) ? intake.baselineScore : 0,
-          baselineScoreConfirmed: shouldCollectBaselineScore(nextIntake) ? intake.baselineScoreConfirmed : false,
-        });
-      };
-      return <section className="rm-page rm-professional-intake">
-        <StepHeading eyebrow="第1步 · 专业症状收集" title="记录主诉与评估条件" note="一次展开填写；患者原话、专业判断和后续检查分开保存。" />
-
-        <section className="rm-professional-banner">
-          <div><span>专业工作台</span><strong>结构化录入</strong><small>不按普通用户逐题跳转，填写完需要的字段后再进入关键确认。</small></div>
-          <button type="button" onClick={() => selectProfessionalMode("guided")}>切换为自助模式</button>
-        </section>
-
-        <section className="rm-professional-source">
-          <header><div><span>患者原话</span><strong>不改写，作为本次主诉依据</strong></div><button type="button" onClick={rewriteIntakeDescription}>重新整理</button></header>
-          <p>{intake.description || "未记录患者原话"}</p>
-        </section>
-
-        <section className="rm-professional-section">
-          <header><span>01</span><div><h2>主诉部位</h2><p>先确定本次只解决的一个主要问题；同一大部位可以标记多个具体位置。</p></div></header>
-          {hasMultiplePilotRegions ? <div className="rm-pilot-hint">描述涉及多个大部位。本次只保留一个主要问题，其他部位请另开评估。</div> : null}
-          {mentionedBothSides ? <div className="rm-pilot-hint">双侧都不舒服时，先选择本次优先处理的一侧。</div> : null}
-          <LowerLimbLocationPicker
-            professional
-            value={intake.bodyLocations}
-            initialRegionId={intake.regionId}
-            initialSide={intake.side}
-            initialLocation={intake.location}
-            onChange={(bodyLocations) => {
-              const primary = bodyLocations[0];
-              const regionId = primary?.regionId ?? "";
-              const forceDirection = intake.regionId === regionId ? intake.forceDirection : "";
-              invalidateAfterIntake({
-                ...intake,
-                bodyLocations,
-                locationConfirmed: Boolean(primary),
-                regionId,
-                side: sideFromLocationSelections(bodyLocations),
-                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间"
-                  ? intake.prioritySide ?? extractComplaintPrioritySide(currentComplaintText(intake.description))
-                  : undefined,
-                location: bodyLocations.map((item) => item.location).join("、"),
-                forceDirection,
-                actionAnalysis: analyzeChiefAction(intake.description, regionId, forceDirection, primaryReportedAction(intake)),
-              });
-            }}
-          />
-          {bilateralPriorityChoice}
-        </section>
-
-        {needsSpineModeChoice ? <section className="rm-professional-section rm-professional-spine-mode"><header><span>01A</span><div><h2>脊柱活动度记录方式</h2><p>普通用户按不适和左右差异记录；有测量工具时再填写参考角度。</p></div></header><div className="rm-options rm-professional-options" style={{ "--columns": 2 } as CSSProperties}><button type="button" className={intake.spineAssessmentMode === "guided" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, spineAssessmentMode: "guided" })}><strong>观察不适与左右差异</strong><small>不需要测量工具</small></button><button type="button" className={intake.spineAssessmentMode === "reference" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, spineAssessmentMode: "reference" })}><strong>按参考角度记录</strong><small>有规范测量工具和协助者</small></button></div></section> : null}
-
-        <section className="rm-professional-section">
-          <header><span>02</span><div><h2>病程与发生机制</h2><p>记录时间和出现方式，供后续判断急性、反复或代偿线索。</p></div></header>
-          <div className="rm-professional-fields">
-            <label><b>病程</b><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value })}><option value="">请选择</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label><b>发生机制</b><select value={intake.mechanism} onChange={(event) => invalidateAfterIntake({ ...intake, mechanism: event.target.value })}><option value="">请选择</option>{MECHANISMS.map((item) => <option key={item}>{item}</option>)}</select></label>
-           </div>
-         </section>
-
-        <section className="rm-professional-section">
-          <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的内容保留为空，不代替患者做判断。</p></div></header>
-          <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title} className="rm-symptom-group is-flat"><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div>
-          {showAllIntakeFields && (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适") ? null : null}
-          <div className="rm-label rm-professional-symptom-label"><span>伴随表现</span><b>可多选；没有就选“没有以上情况”</b></div>
-          <div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={professionalSymptoms.includes(symptom) ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms(professionalSymptoms.includes(symptom) ? professionalSymptoms.filter((item) => item !== symptom) : [...professionalSymptoms, symptom])}><i>{professionalSymptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "is-selected" : ""} onClick={() => updateProfessionalSymptoms([])}><i>{confirmedIntakeMulti.symptoms && !professionalSymptoms.length ? "✓" : ""}</i>没有以上情况</button></div>
-          {professionalLocationTabs.length ? <div className="rm-professional-location-workbench">
-            <nav className="rm-professional-location-tabs" aria-label="选择要标记的位置类型">
-              {professionalLocationTabs.map((tab) => <button type="button" key={tab.id} className={activeProfessionalLocationTab === tab.id ? "is-active" : ""} onClick={() => setProfessionalLocationTab(tab.id)}><strong>{tab.label}</strong><small>{tab.count ? `已标记 ${tab.count} 处` : "尚未标记"}</small></button>)}
-            </nav>
-            <div className="rm-professional-location-panel">
-              {activeProfessionalLocationTab === "swelling" ? <div><header><b>肿胀或淤青位置</b><span>标记所有明显区域</span></header><LowerLimbLocationPicker professional mode="swelling" value={intake.swellingLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.swellingLocation || intake.location} onChange={(swellingLocations) => invalidateAfterIntake({ ...intake, swellingLocations, swellingLocation: locationSelectionsLabel(swellingLocations), swellingLocationConfirmed: Boolean(swellingLocations.length) })} />{!intake.swellingLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, swellingLocation: "说不清", swellingLocations: [], swellingLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
-              {activeProfessionalLocationTab === "tenderness" ? <div><header><b>按压痛位置</b><span>轻按后标记出现明显疼痛的区域</span></header><LowerLimbLocationPicker professional mode="tenderness" value={intake.tendernessLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.tendernessLocation || intake.location} onChange={(tendernessLocations) => invalidateAfterIntake({ ...intake, tendernessLocations, tendernessLocation: locationSelectionsLabel(tendernessLocations), tendernessLocationConfirmed: Boolean(tendernessLocations.length) })} />{!intake.tendernessLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, tendernessLocation: "说不清", tendernessLocations: [], tendernessLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
-              {activeProfessionalLocationTab === "sensory" ? <div><header><b>麻/电感范围</b><span>标记麻、刺、电感出现的区域</span></header><LowerLimbLocationPicker professional mode="sensory" value={intake.sensoryLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.sensoryLocation || intake.location} onChange={(sensoryLocations) => invalidateAfterIntake({ ...intake, sensoryLocations, sensoryLocation: locationSelectionsLabel(sensoryLocations), sensoryLocationConfirmed: Boolean(sensoryLocations.length) })} />{!intake.sensoryLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, sensoryLocation: "说不清", sensoryLocations: [], sensoryLocationConfirmed: true })}>范围不清楚</button> : null}</div> : null}
-            </div>
-          </div> : null}
-          {(intake.symptomType === "刺痛" || hasTenderness) ? <div className="rm-professional-subfield rm-professional-palpation-response"><div className="rm-label"><span>轻按反应</span><b>在刚才最不舒服的位置轻按一次；没有尝试也可以直接记录</b></div><PillOptions options={["清楚的刺痛", "钝痛或酸胀", "没有明显感觉", "没有尝试"]} value={({ sharp: "清楚的刺痛", dull: "钝痛或酸胀", none: "没有明显感觉", "not-tried": "没有尝试", "": "" } as const)[intake.stabbingPalpation]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingPalpation: ({ "清楚的刺痛": "sharp", "钝痛或酸胀": "dull", "没有明显感觉": "none", "没有尝试": "not-tried" } as const)[value] ?? "" })} columns={2} /></div> : null}
-        </section>
-
-        <section className="rm-professional-section">
-          <header><span>04</span><div><h2>诱发动作与负荷</h2><p>主诉动作可多选；没有固定动作时不生成虚假的动作评分。</p></div></header>
-          <div className="rm-trigger-grid">{PROVOCATION_TYPES.map((item) => { const selected = intake.provocationTypes.includes(item); const automatic = selected && autoProvocationTypes.has(item); return <button type="button" key={item} className={`${selected ? "is-selected" : ""} ${automatic ? "is-auto" : ""}`} onClick={() => { if (automatic && !window.confirm(`系统根据描述自动识别了“${item}”，确定取消吗？`)) return; updateProfessionalProvocation(item); }}><i>{selected ? "✓" : ""}</i><span>{item}{automatic ? <small>自动识别</small> : null}</span></button>; })}</div>
-          <div className="rm-label rm-action-picker-label"><span>主诉动作</span><b>可多选；动作无法归类时保留原话</b></div>
-          <div className="rm-action-picker-grid">{actionOptions.map((action) => <button type="button" key={action.id} className={selectedReportedActionIds.has(action.id) ? "is-selected" : ""} onClick={() => updateReportedActions(selectedReportedActionIds.has(action.id) ? (intake.reportedActions ?? []).filter((item) => item.id !== action.id) : [...(intake.reportedActions ?? []), action])}><strong>{action.label.split("｜")[0]}</strong><small>{action.label.split("｜")[1] ?? action.label}</small></button>)}</div>
-          <label className="rm-custom-action-field"><span>自定义主诉动作</span><input value={intake.customAction} onChange={(event) => updateReportedActions(intake.reportedActions ?? [], event.target.value)} placeholder="例如：跨步落地、抱孩子起身、骑车踩踏" /><small>保留患者原话；没有标准关键词也不影响后续记录。</small></label>
-          <button type="button" className={intake.actionSelectionConfirmed && !professionalActionSummary.length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={() => updateProfessionalProvocation("说不清 / 没有固定动作")}>说不清或没有固定动作</button>
-        </section>
-
-        {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
-
-        <section className="rm-professional-section">
-          <header><span>06</span><div><h2>本次检查条件</h2><p>先说明由谁操作、能够完成哪些专业检查，后续评估会按此开放。</p></div></header>
-          <div className="rm-options rm-professional-options" style={{ "--columns": 2 } as CSSProperties}>
-            <button type="button" className={intake.operationTarget === "self" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "self", examSetup: "self", capabilitiesConfirmed: true })}><strong>自我检查</strong><small>记录主动活动与自我感受</small></button>
-            <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: false })}><strong>协助他人检查</strong><small>可继续选择被动、抗阻和触诊能力</small></button>
-          </div>
-          {effectiveOperationTarget === "other" ? <div className="rm-professional-capabilities"><div className="rm-label"><span>可执行的检查能力</span><b>点击即生效；没有的能力可以不选</b></div><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{([ ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"], ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"] ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}</div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">关节处理需要先具备被动活动度检查能力。</small> : null}</div> : null}
-        </section>
-
-        <section className="rm-professional-section rm-professional-notes"><header><span>07</span><div><h2>专业备注</h2><p>记录你的判断或需要后续验证的假设，不直接等同于已确认的查体结果。</p></div></header><textarea value={intake.professionalNotes} onChange={(event) => invalidateAfterIntake({ ...intake, professionalNotes: event.target.value })} placeholder="例如：考虑外侧链参与；待活动度与抗阻结果验证。" /></section>
-
-        {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting"><span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion.name}</h2><p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p></section> : null}
-        {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-        {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>普通自助路径不安排神经松动或自行处理。可保存当前信息，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-        {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题，可保存当前信息后再继续。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-        {/* 原先的 disabled={!professionalComplete} 会把缺项藏起来；现在改为点击后高亮并定位缺项。 */}
-        <div className="rm-professional-footer"><span>{professionalComplete ? "信息已足够进入关键确认" : `还需补充：${intakeMissingFields.join("、") || "检查条件"}`}</span><div><button type="button" onClick={rewriteIntakeDescription}>重新整理原话</button>{professionalComplete && keyConfirmationReady ? <button type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div></div>
-      </section>;
-    }
-    return <section className="rm-page">
-      <StepHeading eyebrow="第1步 · 症状信息收集" title={intake.parsed ? professionalIntake ? "记录主诉与评估条件" : "确认你的症状信息" : "先说说哪里不舒服"} note={intake.parsed ? professionalIntake ? "可一次填写多个字段；患者原话、检查条件和专业判断分开记录。" : undefined : "写清：哪边哪里、何时/怎么出现、什么动作不舒服、现在表现和想恢复什么；不清楚的写“不清楚”。"} tutorialTarget="flow-mobile" />
-      {!intake.parsed ? <>
-        <div className="rm-hero-input" data-rehabmind-tutorial="symptom-block">
-          <label htmlFor="chief-description">哪里不舒服？发生了什么？</label>
-          <textarea id="chief-description" data-rehabmind-tutorial="symptom-input" value={intake.description} onChange={(event) => setIntake((current) => ({ ...current, description: event.target.value }))} placeholder="例如：昨晚崴了右脚，外踝肿，脚掌向外转会痛，想恢复正常走路。" />
-          <div><button type="button" data-rehabmind-tutorial="organize" disabled={!intake.description.trim()} onClick={() => beginGuidedIntake(parseIntake(intake.description, { ...DEFAULT_INTAKE, description: intake.description }))}>帮我整理</button></div>
-        </div>
-        <details className="rm-example">
-          <summary>不知道怎么写？查看示例</summary>
-          <p>{EXAMPLE_DESCRIPTION}</p>
-        </details>
-      </> : <>
-        <section className="rm-collected">
-          <header><div><span>已收集到的信息</span><h2>{chiefComplaintLabel(intake)}</h2></div><b>{missingFields.length ? "正在补充" : "症状信息已确认"}</b></header>
-          {showAllIntakeFields && missingFields.length ? <div className="rm-missing-fields"><strong>还需要：</strong>{missingFields.map((field) => <span key={field}>{field}</span>)}</div> : null}
-          <div className="rm-collected-quick">
-            <span><b>部位</b>{intake.bodyLocations.length ? intake.bodyLocations.map((item) => `${item.side}·${item.location}`).join("、") : "具体位置待确认"}</span>
-            <span><b>感觉</b>{intake.symptomType || "待确认"}</span>
-            <span><b>时间</b>{intake.onset || "待确认"}</span>
-            <span><b>动作</b>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : "待确认"}</span>
-          </div>
-          <div className="rm-collected-actions">
-            <button type="button" className="rm-rewrite-button" onClick={rewriteIntakeDescription}>重写症状描述</button>
-            <button type="button" className="rm-all-info-button" onClick={() => setShowAllIntakeFields((current) => !current)}>{showAllIntakeFields ? "回到逐项补充" : "≡ 全部信息"}</button>
-          </div>
-        </section>
-
-        <section className="rm-guided-status">
-          <span>{showAllIntakeFields ? "全部信息" : guidedQuestionReady ? "这一项已完成" : missingFields.length > 5 ? "只补充最关键的信息" : missingFields.length ? `还需 ${missingFields.length} 项` : "信息已完成"}</span>
-          <h2>{showAllIntakeFields ? "按需要修改" : nextMissingField || "你希望恢复到什么程度？"}</h2>
-          <p>{showAllIntakeFields ? "只改需要调整的内容即可。" : missingFields.length || guidedQuestionReady ? "选好后直接点下一步。" : "信息已补充完成。"}</p>
-        </section>
-        {!showAllIntakeFields ? <nav className="rm-guided-nav" aria-label="症状信息问题导航">
-          <button type="button" disabled={guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0)} onClick={returnToPreviousIntakeQuestion}>← 上一步</button>
-          {nextMissingField ? <button type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : null}
-        </nav> : null}
-
-        {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting">
-          <span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion.name}</h2>
-          <p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p>
-        </section> : null}
-        {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-
-        {showIntakeQuestion("使用方式", "使用身份") ? <div className="rm-form-block rm-role-choice">
-          <div className="rm-label"><span>这次使用哪种模式？</span></div>
-          <div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>
-            {([[ 
-              "guided", "自助康复", "跟随一步一步的提示完成"
-            ], [
-              "thinking", "康复思路模式", "按阶段记录检查、处理和复测"
-            ]] as Array<[ProductMode, string, string]>).map(([mode, label, note]) => {
-              const selected = intake.productMode === mode;
-              return <button type="button" key={mode} className={selected ? "is-selected" : ""} onClick={() => {
-                invalidateAfterIntake({
-                  ...intake,
-                  productMode: mode,
-                  operationTarget: mode === "guided" ? "self" : "",
-                  userRole: mode === "guided" ? "general" : "rehab",
-                  examSetup: mode === "guided" ? "self" : "",
-                  capabilities: emptyCapabilities(),
-                  capabilitiesConfirmed: mode !== "thinking",
-                  learningExplanation: false,
-                  spineAssessmentMode: mode === "guided" ? "guided" : "",
-                });
-              }}><strong>{label}</strong><small>{note}</small></button>;
-            })}
-          </div>
-        </div> : null}
-
-        {showExamSetupChoice && showIntakeQuestion("操作对象", "检查方式") ? <div className="rm-form-block rm-exam-setup-choice">
-          <div className="rm-label"><span>这次怎样完成检查？</span><b>这次由谁完成检查？选择给自己检查，还是给别人检查</b></div>
-          <div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>
-            <button type="button" className={intake.operationTarget === "self" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "self", examSetup: "self", capabilitiesConfirmed: true })}><strong>给自己检查</strong><small>自己跟随提示检查，只记录主动活动</small></button>
-            <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: true })}><strong>给别人检查</strong><small>我在给别人检查，能力选项点击即生效</small></button>
-          </div>
-        </div> : null}
-
-        {showCapabilitiesChoice && showIntakeQuestion("检查能力") ? <div className="rm-form-block rm-capability-choice">
-          <div className="rm-label"><span>这次可以完成哪些检查？</span><b>点击即生效；没有的能力可以不选</b></div>
-          <div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>
-            {([
-              ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"],
-              ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"],
-            ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}
-          </div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">关节处理需要先具备被动活动度检查能力。</small> : null}
-        </div> : null}
-
-        {needsSpineModeChoice && showIntakeQuestion("活动度检查方式") ? <div className="rm-form-block rm-spine-mode-choice">
-          <div className="rm-label"><span>这次怎样判断脊柱活动？</span></div>
-          <div className="rm-options" style={{ "--columns": 2 } as CSSProperties}>
-            <button type="button" className={intake.spineAssessmentMode === "guided" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, spineAssessmentMode: "guided" })}><strong>跟随提示观察</strong><small>不需要测量工具</small></button>
-            <button type="button" className={intake.spineAssessmentMode === "reference" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, spineAssessmentMode: "reference" })}><strong>按参考角度判断</strong><small>我会规范测量且有工具</small></button>
-          </div>
-        </div> : null}
-
-        {showIntakeQuestion("不舒服的位置") ? <>
-          {hasMultiplePilotRegions ? <div className="rm-pilot-hint">你提到了多个位置。本版一次只评估一个主要问题，请选择这次最想解决的位置；其他问题请另开一次评估。</div> : regionWasNotDetected ? <div className="rm-pilot-hint">没有准确识别位置，请直接在图上选择。</div> : mentionedBothSides ? <div className="rm-pilot-hint">如果两侧是同一个问题，可选择更影响你的那一侧先评估；另一侧请另开一次评估。</div> : null}
-          <LowerLimbLocationPicker
-            value={intake.bodyLocations}
-            initialRegionId={intake.regionId}
-            initialSide={intake.side}
-            initialLocation={intake.location}
-            onChange={(bodyLocations) => {
-              const primary = bodyLocations[0];
-              const regionId = primary?.regionId ?? "";
-              const forceDirection = intake.regionId === regionId ? intake.forceDirection : "";
-              invalidateAfterIntake({
-                ...intake,
-                bodyLocations,
-                locationConfirmed: Boolean(primary),
-                regionId,
-                side: sideFromLocationSelections(bodyLocations),
-                prioritySide: sideFromLocationSelections(bodyLocations) === "双侧/中间"
-                  ? intake.prioritySide ?? extractComplaintPrioritySide(currentComplaintText(intake.description))
-                  : undefined,
-                location: bodyLocations.map((item) => item.location).join("、"),
-                forceDirection,
-                actionAnalysis: analyzeChiefAction(intake.description, regionId, forceDirection, primaryReportedAction(intake)),
-              });
-            }}
-          />
-        </> : null}
-
-        {/* BIL-01 修复：优先侧题卡必须独立于位置选择器的显隐条件。
-            原先嵌在 showIntakeQuestion("不舒服的位置") 分支内，与自身条件
-            （指针需流转到本次优先侧）互斥，导致双侧用户永远看不到选择题。 */}
-        {bilateralPriorityChoice}
-
-        {showIntakeQuestion("不适感觉") ? <div className="rm-form-block rm-symptom-type-groups"><div {...fieldLabel("不适感觉")}><span>最接近哪种感觉</span><b>选择一个即可</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <details key={group.title} className="rm-symptom-group" open={group.title === "疼痛"}><summary>{group.title}</summary><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || intakeHasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></details>)}</div> : null}
-
-        {showIntakeQuestion("疼痛性质") ? null : null}
-
-        {(intake.symptomType === "刺痛" || intakeHasTenderness) && showIntakeQuestion("轻按反应") ? <div className="rm-form-block rm-stabbing-check">
-          {showAllIntakeFields || nextMissingField === "轻按反应" ? <><div {...fieldLabel("轻按反应")}><span>在刚才最不舒服的位置轻按一次，会出现什么？</span></div><PillOptions options={["清楚的刺痛", "钝痛或酸胀", "没有明显感觉", "没有尝试"]} value={({ sharp: "清楚的刺痛", dull: "钝痛或酸胀", none: "没有明显感觉", "not-tried": "没有尝试", "": "" } as const)[intake.stabbingPalpation]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingPalpation: ({ "清楚的刺痛": "sharp", "钝痛或酸胀": "dull", "没有明显感觉": "none", "没有尝试": "not-tried" } as const)[value] ?? "" })} columns={2} /></> : null}
-        </div> : null}
-
-        {showIntakeQuestion("诱发场景") ? <div className="rm-form-block rm-provocation-block">
-          <div {...fieldLabel("诱发场景")}><span>{professionalIntake ? "诱发动作与负荷" : "什么情况下最容易出现？"}</span><b>可多选；不知道可以跳过具体动作</b></div>
-          <div className="rm-trigger-grid">{PROVOCATION_TYPES.map((item) => {
-          const selected = intake.provocationTypes.includes(item);
-          const automatic = selected && autoProvocationTypes.has(item);
-          return <button type="button" key={item} className={`${selected ? "is-selected" : ""} ${automatic ? "is-auto" : ""}`} onClick={() => {
-            if (automatic && !window.confirm(`系统根据描述自动识别了“${item}”，确定取消吗？`)) return;
-            const unknownOption = "说不清 / 没有固定动作";
-            const selectingUnknown = item === unknownOption && !selected;
-            const provocationTypes = item === unknownOption
-              ? selected ? [] : [unknownOption]
-              : (selected ? intake.provocationTypes.filter((value) => value !== item) : [...intake.provocationTypes.filter((value) => value !== unknownOption), item]);
-            setConfirmedIntakeMulti((current) => ({ ...current, provocationTypes: provocationTypes.length > 0 }));
-            const nextIntake = {
-              ...intake,
-              provocationTypes,
-              reproduction: selectingUnknown ? "" : intake.reproduction,
-              reportedActions: selectingUnknown ? [] : intake.reportedActions,
-              customAction: selectingUnknown ? "" : intake.customAction,
-              actionSelectionConfirmed: selectingUnknown ? true : intake.actionSelectionConfirmed,
-              forceDirection: selectingUnknown ? "" : provocationTypes.includes("用力或对抗阻力") ? intake.forceDirection : "",
-              stabbingPalpation: intake.symptomType === "刺痛" || provocationTypes.includes("按压") || intake.symptoms.includes("按压痛") ? intake.stabbingPalpation : "",
-              actionAnalysis: selectingUnknown ? analyzeChiefAction(intake.description, intake.regionId, "", "") : intake.actionAnalysis,
-            };
-            invalidateAfterIntake({
-              ...nextIntake,
-              baselineScore: shouldCollectBaselineScore(nextIntake) ? intake.baselineScore : 0,
-              baselineScoreConfirmed: shouldCollectBaselineScore(nextIntake) ? intake.baselineScoreConfirmed : false,
-            });
-          }}><i>{selected ? "✓" : ""}</i><span>{item}{automatic ? <small>自动识别</small> : null}</span></button>;
-          })}</div>
-        </div> : null}
-
-        {showIntakeQuestion("具体动作") ? <div className="rm-form-block rm-action-picker-block">
-          <div className="rm-label rm-action-picker-label"><span>{professionalIntake ? "主诉动作" : "具体是哪个动作？"}</span><b>可以多选；没有合适的动作可自己填写</b></div>
-          <div className="rm-action-picker-grid">{actionOptions.map((action) => <button type="button" key={action.id} className={selectedReportedActionIds.has(action.id) ? "is-selected" : ""} onClick={() => {
-            const nextActions = selectedReportedActionIds.has(action.id)
-              ? (intake.reportedActions ?? []).filter((item) => item.id !== action.id)
-              : [...(intake.reportedActions ?? []), action];
-            updateReportedActions(nextActions);
-          }}><strong>{action.label.split("｜")[0]}</strong><small>{action.label.split("｜")[1] ?? action.label}</small></button>)}</div>
-          <label className="rm-custom-action-field"><span>没有合适的动作？</span><input value={intake.customAction} onChange={(event) => updateReportedActions(intake.reportedActions ?? [], event.target.value)} placeholder="例如：打球跨步、抱孩子起身、骑车踩踏" /><small>保留你的原话，后面会让你重复这个动作复测，不要求一定匹配标准词。</small></label>
-          <button type="button" className={intake.actionSelectionConfirmed && !reportedActionSummary(intake).length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={() => invalidateAfterIntake({
-            ...intake,
-            provocationTypes: ["说不清 / 没有固定动作"],
-            reproduction: "",
-            reportedActions: [],
-            customAction: "",
-            actionSelectionConfirmed: true,
-            actionAnalysis: analyzeChiefAction(intake.description, intake.regionId, "", ""),
-          })}>说不清或没有固定动作</button>
-        </div> : null}
-
-        {baselineScoreApplicable && showIntakeQuestion("不适分数") ? <ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="现在的疼痛或不适有多重？" /> : null}
-
-        {showIntakeQuestion("出现多久", "发生方式") ? <div className={`rm-two-columns ${!showAllIntakeFields ? "is-guided-single" : ""}`}>
-          {showAllIntakeFields || nextMissingField === "出现多久" ? <div className="rm-form-block"><div {...fieldLabel("出现多久")}><span>这个问题出现多久了？</span></div><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value })}><option value="">请选择时间</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
-          {showAllIntakeFields || nextMissingField === "发生方式" ? <div className="rm-form-block"><div {...fieldLabel("发生方式")}><span>它是怎么出现的？</span></div><select value={intake.mechanism} onChange={(event) => invalidateAfterIntake({ ...intake, mechanism: event.target.value })}><option value="">请选择发生方式</option>{MECHANISMS.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
-        </div> : null}
-
-        {showIntakeQuestion("目前情况") ? <div className="rm-form-block"><div {...fieldLabel("目前情况")}><span>{professionalIntake ? "主要症状和伴随表现" : "目前有哪些情况"}</span><b>可多选</b></div><div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={intake.symptoms.includes(symptom) ? "is-selected" : ""} onClick={() => { setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true })); toggleArray(symptom, intake.symptoms, (symptoms) => invalidateAfterIntake({
-          ...intake,
-          symptoms,
-          swellingLocation: symptoms.includes("肿胀或淤青") ? intake.swellingLocation : "",
-          swellingLocations: symptoms.includes("肿胀或淤青") ? intake.swellingLocations : [],
-          swellingLocationConfirmed: symptoms.includes("肿胀或淤青") ? intake.swellingLocationConfirmed : false,
-          tendernessLocation: symptoms.includes("按压痛") ? intake.tendernessLocation : "",
-          tendernessLocations: symptoms.includes("按压痛") ? intake.tendernessLocations : [],
-          tendernessLocationConfirmed: symptoms.includes("按压痛") ? intake.tendernessLocationConfirmed : false,
-          stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "",
-        })); }}><i>{intake.symptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "is-selected" : ""} onClick={() => { setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true })); invalidateAfterIntake({ ...intake, symptoms: [], swellingLocation: "", swellingLocations: [], swellingLocationConfirmed: false, tendernessLocation: "", tendernessLocations: [], tendernessLocationConfirmed: false, stabbingPalpation: intake.symptomType === "刺痛" || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "" }); }}><i>{confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "✓" : ""}</i>没有以上情况</button></div></div> : null}
-
-        {(intake.symptoms.includes("肿胀或淤青") || hasTenderness || hasSensorySymptoms) && showIntakeQuestion("肿胀位置", "按压痛位置", "麻电范围") ? <div className="rm-location-detail-atlas">
-          {intake.symptoms.includes("肿胀或淤青") && (showAllIntakeFields || nextMissingField === "肿胀位置") ? <>
-            <LowerLimbLocationPicker
-              mode="swelling"
-              value={intake.swellingLocations}
-              initialRegionId={intake.regionId}
-              initialSide={intake.side}
-              initialLocation={intake.swellingLocation || intake.location}
-              onChange={(swellingLocations) => invalidateAfterIntake({ ...intake, swellingLocations, swellingLocation: locationSelectionsLabel(swellingLocations), swellingLocationConfirmed: Boolean(swellingLocations.length) })}
-            />
-            {!intake.swellingLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, swellingLocation: "说不清", swellingLocations: [], swellingLocationConfirmed: true })}>暂时说不清位置</button> : null}
-          </> : null}
-          {hasTenderness && (showAllIntakeFields || nextMissingField === "按压痛位置") ? <>
-            <LowerLimbLocationPicker
-              mode="tenderness"
-              value={intake.tendernessLocations}
-              initialRegionId={intake.regionId}
-              initialSide={intake.side}
-              initialLocation={intake.tendernessLocation || intake.location}
-              onChange={(tendernessLocations) => invalidateAfterIntake({ ...intake, tendernessLocations, tendernessLocation: locationSelectionsLabel(tendernessLocations), tendernessLocationConfirmed: Boolean(tendernessLocations.length) })}
-            />
-            {!intake.tendernessLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, tendernessLocation: "说不清", tendernessLocations: [], tendernessLocationConfirmed: true })}>暂时说不清位置</button> : null}
-          </> : null}
-          {hasSensorySymptoms && (showAllIntakeFields || nextMissingField === "麻电范围") ? <>
-            <LowerLimbLocationPicker
-              mode="sensory"
-              value={intake.sensoryLocations}
-              initialRegionId={intake.regionId}
-              initialSide={intake.side}
-              initialLocation={intake.sensoryLocation || intake.location}
-              onChange={(sensoryLocations) => invalidateAfterIntake({ ...intake, sensoryLocations, sensoryLocation: locationSelectionsLabel(sensoryLocations), sensoryLocationConfirmed: Boolean(sensoryLocations.length) })}
-            />
-            {!intake.sensoryLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, sensoryLocation: "说不清", sensoryLocations: [], sensoryLocationConfirmed: true })}>暂时说不清范围</button> : null}
-          </> : null}
-        </div> : null}
-
-        {showAllIntakeFields ? <div className="rm-form-block rm-prior-care"><div className="rm-label"><span>之前做过哪些处理？</span><b>选填</b></div><div className="rm-check-grid">{PRIOR_CARE_OPTIONS.map((item) => <button type="button" key={item} className={(intake.priorCare ?? []).includes(item) ? "is-selected" : ""} onClick={() => {
-          const current = intake.priorCare ?? [];
-          if (item === "都没有/没处理过") {
-            invalidateAfterIntake({ ...intake, priorCare: current.includes(item) ? [] : [item] });
-          } else {
-            const withoutNone = current.filter((entry) => entry !== "都没有/没处理过");
-            toggleArray(item, withoutNone, (priorCare) => invalidateAfterIntake({ ...intake, priorCare }));
-          }
-        }}><i>{(intake.priorCare ?? []).includes(item) ? "✓" : ""}</i>{item}</button>)}</div></div> : null}
-
-        {showIntakeQuestion("恢复目标") ? <div className="rm-form-block"><div {...fieldLabel("恢复目标")}><span>你希望最后恢复到什么程度？</span></div><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></div> : null}
-
-        {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>普通自助路径不安排神经松动或自行处理。不必补完其余问题，可以直接保存退出，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-        {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题。不必补完其余问题，可以直接保存退出。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-        {!unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal ? <div className="rm-page-actions rm-intake-actions"><span>{keyConfirmationReady ? "症状信息已经够用了" : "还需补充："}{!keyConfirmationReady ? intakeMissingFields.slice(0, 6).map((label) => <button key={label} type="button" className="rm-missing-jump" onClick={() => document.getElementById(`field-${label}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>{label}</button>) : null}{!keyConfirmationReady && intakeMissingFields.length > 6 ? `等 ${intakeMissingFields.length} 项` : ""}</span>{keyConfirmationReady ? <button type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div> : null}
-      </>}
-    </section>;
-  }
-
-  function renderSafety() {
-    const boneQuestions = [
-      { id: "boneSpot", title: "最明显的压痛是否集中在脚踝两侧突出的骨头、足外侧骨头突起或足弓内侧骨头突起？", note: "普通软组织压痛、肿胀和淤青不算；分不清就选“不确定”。" },
-      { id: "walkThen", title: "刚受伤后，你当时能否自己连续走四步？", note: "可以跛行；这里回忆当时的承重能力，不要现在重新强行测试。" },
-      { id: "walkNow", title: "现在能否在安全扶持下连续走四步？", note: "不能因为明显疼痛承重时选“不能”；不需要硬走来证明可以。" },
-    ];
-    return <section className="rm-page">
-      <StepHeading eyebrow="第2步 · 开始前确认" title="先确认能否安全开始检查" />
-      <nav className="rm-safety-stages"><span className={safetyStage === 0 ? "is-current" : safetyAnswered ? "is-done" : ""}>1 安全信号</span>{needsBoneQuestions ? <span className={safetyStage === 1 ? "is-current" : safetyStage > 1 ? "is-done" : ""}>2 骨性风险</span> : null}<span className={safetyStage === 2 ? "is-current" : ""}>{needsBoneQuestions ? "3" : "2"} 影像结论</span></nav>
-      {(intake.priorCare ?? []).length ? <section className="rm-prior-care-note">
-        <span>之前已经做过</span>
-        <strong>{(intake.priorCare ?? []).join("、")}</strong>
-        {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : intake.priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要粘贴报告原文。</p> : intake.priorCare.includes("看过医生") ? <p>继续时请以医生已经说明的活动和负重限制为准。</p> : null}
-        {intake.priorCare.includes("用过冰敷") ? <p>冰敷不作为恢复必做项；目前证据不能确认它能改善急性踝扭伤的肿胀、活动度或恢复。</p> : null}
-      </section> : null}
-      {safetyStage === 0 ? <div className="rm-safety-list">{activeSafetyItems.map((item) => <article key={item.id}><div><strong>{item.text}</strong><span>{item.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[item.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => setSafety((current) => ({ ...current, [item.id]: answer }))}>{answer === "no" ? "没有" : "有"}</button>)}</div></article>)}</div> : null}
-
-      {safetyStage === 1 && needsBoneQuestions ? <section className="rm-bone-check">
-        <header><span>急性崴脚后，是否建议优先拍片？</span><p>回答下面3个问题。</p></header>
-        {boneQuestions.map((item) => <article key={item.id}><div><strong>{item.title}</strong><span>{item.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[item.id] === answer ? "is-selected" : ""} onClick={() => setBoneRisk((current) => ({ ...current, [item.id]: answer }))}>{answer === "yes" ? item.id === "boneSpot" ? "是" : "能" : answer === "no" ? item.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>)}
-        {boneQuestionsAnswered ? <div className={boneImagingSuggested ? "is-review" : "is-clear"}><strong>{boneImagingSuggested ? "建议优先结合影像确认" : "目前没有明显的拍片优先线索"}</strong><span>{boneImagingSuggested ? "这不等于骨折。没有明显错位或其他危险信号时，可以先做轻柔检查；暂不跳跃、不强压。" : "疼痛或承重能力持续变差时重新评估。"}</span></div> : null}
-      </section> : null}
-
-      {safetyStage === 2 ? <div className="rm-form-block"><div className="rm-label"><span>已有影像或医生结论</span><b>不要求粘贴报告原文</b></div><div className="rm-imaging">{IMAGING_OPTIONS.map((option) => <button type="button" key={option} className={imaging.includes(option) ? "is-selected" : ""} onClick={() => {
-        const exclusive = ["没有做影像", "未见骨折", "有骨折或骨裂异常"];
-        if (exclusive.includes(option)) setImaging((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current.filter((item) => !exclusive.includes(item)), option]);
-        else toggleArray(option, imaging, setImaging);
-      }}>{option}</button>)}</div></div> : null}
-
-      {safetyStage === 2 && hasSafetySignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>接下来</span><h2>先完成针对性医学评估</h2><p>明显错位、远端感觉或循环异常、力量持续下降以及发热伴快速加重，不适合继续普通检查。本次信息会保存。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : safetyStage === 2 && structuralImagingSignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>先确认医生意见</span><h2>影像提示结构异常</h2><p>先明确允许的负重、活动范围和训练时间。获得医生允许后，可以回到本次记录继续评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : safetyStage === 2 && safetyAnswered && boneQuestionsAnswered && imaging.length > 0 ? <section className="rm-route-note is-clear"><span>接下来</span><h2>{boneImagingSuggested && imaging.includes("没有做影像") ? "先做轻柔检查，同时安排影像确认" : "开始本次功能检查"}</h2></section> : null}
-
-      {(structuralImagingSignal || imaging.includes("医生有限制")) && <p className="rm-inline-note">后续只在医生允许的负重、活动范围和时间内进行；系统不会覆盖医生限制。</p>}
-
-      <div className="rm-page-actions split">
-        <button type="button" onClick={() => safetyStage === 0 ? goToStep(0) : setSafetyStage(safetyStage === 2 && !needsBoneQuestions ? 0 : Math.max(0, safetyStage - 1) as 0 | 1 | 2)}>{safetyStage === 0 ? "返回症状信息" : "上一步"}</button>
-        {safetyStage === 0 ? <button type="button" className="rm-primary" disabled={!safetyAnswered} onClick={() => setSafetyStage(needsBoneQuestions ? 1 : 2)}>{hasSafetySignal ? "继续填写医生结论" : needsBoneQuestions ? "继续确认骨性风险" : "继续填写影像结论"}</button> : safetyStage === 1 ? <button type="button" className="rm-primary" disabled={!boneQuestionsAnswered} onClick={() => setSafetyStage(2)}>继续填写影像结论</button> : <button type="button" className="rm-primary" disabled={!canContinueSafety} onClick={() => goToStep(2)}>开始评估检查</button>}
-      </div>
-    </section>;
-  }
-
-  function renderAssessment() {
-    if (adverseResponse && (!adverseCaptureComplete(adverseResponse) || !adverseConfirmedAssessmentIds.includes("__capture__"))) {
-      const updateEvent = (patch: Partial<AdverseResponseEvent>) => setAdverseResponse((current) => current ? { ...current, ...patch } : current);
-      const answerButtons = (field: "settledAfterStopping" | "locationChanged" | "symptomChanged" | "neuralOrWeakness", labels: [string, string]) => <div className="rm-adverse-options">{(["yes", "no"] as const).map((value) => <button type="button" key={value} className={adverseResponse[field] === value ? "is-selected" : ""} onClick={() => updateEvent({ [field]: value })}>{value === "yes" ? labels[0] : labels[1]}</button>)}</div>;
-      return <section className="rm-page rm-adverse-page">
-        <StepHeading eyebrow="异常反应确认" title={`${adverseResponse.sourceLabel}后更不舒服`} />
-        <section className="rm-adverse-source"><span>{adverseResponse.source === "training" ? "训练动作" : adverseResponse.source === "treatment" ? "针对性处理" : "稍后反应"}</span><strong>{adverseResponse.sourceLabel}</strong><p>先停止这项内容，再确认现在的变化。</p></section>
-        <ScoreSlider value={adverseResponse.afterScore} selected={adverseResponse.afterScoreConfirmed} onChange={(afterScore) => updateEvent({ afterScore, afterScoreConfirmed: true })} label="停止后，现在有多不舒服？" context={`之前 ${adverseResponse.beforeScore}/10`} />
-        <div className="rm-adverse-questions">
-          <article><strong>停止后是否逐渐回到之前的程度？</strong>{answerButtons("settledAfterStopping", ["是，逐渐回落", "没有，仍然更重"])}</article>
-          <article><strong>不舒服的位置有没有改变？</strong>{answerButtons("locationChanged", ["位置变了", "位置没变"])}</article>
-          <article><strong>感觉的性质有没有改变？</strong>{answerButtons("symptomChanged", ["感觉变了", "感觉没变"])}</article>
-          <article><strong>有没有新出现麻、电感或明显无力？</strong>{answerButtons("neuralOrWeakness", ["有", "没有"])}</article>
-        </div>
-        <div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button><button type="button" className="rm-primary" disabled={!adverseCaptureComplete(adverseResponse)} onClick={() => setAdverseConfirmedAssessmentIds(["__capture__"])}>确认并继续</button></div>
-      </section>;
-    }
-    if (adverseResponse && adverseResolution === "stop-and-refer") return <section className="rm-page rm-adverse-page">
-      <StepHeading eyebrow="异常反应" title="本次先停止" />
-      <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>停止后仍明显加重或出现新的感觉、力量变化</h2><p>本次不继续增加处理或训练，保存当前记录并安排专业评估。</p><div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
-    </section>;
-    if (adverseResponse && adverseResolution === "regress-training") return <section className="rm-page rm-adverse-page">
-      <StepHeading eyebrow="训练调整" title="先降低一个难度变量" />
-      <section className="rm-adverse-source"><span>停止当前版本</span><strong>{adverseResponse.sourceLabel}</strong><p>改小动作范围、减少个数或换成更稳定的体位，只试一小组。</p></section>
-      <div className="rm-page-actions split"><button type="button" onClick={() => setAdverseResponse((current) => current ? { ...current, regressionAttempted: true, settledAfterStopping: "no" } : current)}>退阶后仍然加重</button><button type="button" className="rm-primary" onClick={() => {
-        setExerciseFeedback((current) => ({ ...current, [adverseResponse.sourceId]: { ...(current[adverseResponse.sourceId] ?? { completed: 1, reserve: 0 }), formChanged: true, symptom: "same" } }));
-        setFollowupExerciseChoices((current) => current[adverseResponse.sourceId] ? { ...current, [adverseResponse.sourceId]: "reduce" } : current);
-        setTreatmentPlanRevision(adverseResponse.assessmentRevision);
-        restoreAdverseReturn(adverseResponse, "training");
-        setAdverseResponse(null);
-        setAdverseConfirmedAssessmentIds([]);
-        setStep(4);
-        setToast("已保留退阶版本；本次不再进阶");
-      }}>采用退阶版本</button></div>
-    </section>;
-    if (isThinkingMode && thinkingWorkbenchOpen && !assessmentSummaryOpen && !sharedTensionOpen) return renderThinkingWorkbench();
-    const visibleAssessmentIndex = Math.min(assessmentIndex, Math.max(assessmentDisplayItems.length - 1, 0));
-    const item = assessmentDisplayItems[visibleAssessmentIndex];
-    const focusedReassessmentActive = Boolean(adverseResponse && adverseResolution === "focused-reassessment");
-    const focusedAssessmentIds = adverseResponse?.relatedAssessmentIds.filter((id) => assessments.some((entry) => entry.id === id)) ?? [];
-    const focusedAssessmentPosition = focusedAssessmentIds.indexOf(item?.id ?? "");
-    if (!item) return <section className="rm-page"><StepHeading eyebrow="第3步 · 评估检查" title="先确认身体区域" /><button type="button" className="rm-primary" onClick={() => goToStep(0)}>返回补充信息</button></section>;
-    if (sharedTensionOpen && sharedTensionRequired) {
-      const tensionComparisonLabel = intake.side === "双侧/中间" ? "两侧感觉接近" : "没有明显差别";
-      const tensionContext = `${intake.location} ${intake.description} ${intake.symptomType} ${intake.provocationTypes.join(" ")}`;
-      const locations = [...new Set(limitedPilotMotionItems.flatMap((motionItem) => tensionLocationOptions(motionItem.id.replace(/^motion:/, ""), tensionContext)))];
-      const selectedLocations = sharedTensionRecord.tensionLocations ?? [];
-      const tensionExitLabels = ["没有明显差别", "两侧感觉接近", "暂不判断"];
-      const toggleSharedTensionLocation = (location: string) => {
-        updateAssessment(SHARED_TENSION_ASSESSMENT_ID, (latestRecord) => {
-          const latestLocations = latestRecord.tensionLocations ?? [];
-          const alreadySelected = latestLocations.includes(location);
-          const specialLabels = tensionExitLabels;
-          const next = specialLabels.includes(location)
-            ? alreadySelected ? [] : [location]
-            : alreadySelected
-              ? latestLocations.filter((entry) => entry !== location)
-              : [...latestLocations.filter((entry) => !specialLabels.includes(entry)), location];
-          return { tensionChecked: true, tensionLocations: next };
-        }, true);
-      };
-      return <section className="rm-page">
-        <StepHeading eyebrow={`第3步 · 评估检查 ${assessments.length + 1}/${assessments.length + 1}`} title="肌肉紧张度对比" />
-        <article className="rm-check-card rm-shared-tension-check">
-          <header><i>触</i><div><span>按图示同一肌肉区域比较两侧</span><strong>相关区域只检查一次</strong></div></header>
-          <section><b>怎么比较</b><p>{intake.side === "双侧/中间" ? "左右两侧分别轻按同一肌肉区域一次，比较哪一侧更酸或更胀。" : "先按另一侧，再用相近力度轻按不舒服的一侧，比较哪一侧更酸或更胀。"}</p></section>
-          <section><b>选择区域</b><p>选择按压反应明显不同的肌肉区域；不要根据“硬不硬”下结论，也不要按骨头、关节线、明显肿胀中心或尖锐痛点。</p></section>
-          <section className="rm-tension-exit"><b>{intake.side === "双侧/中间" ? "两侧差别不大？直接选：" : "两侧差别不大？直接选："}</b><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{tensionExitLabels.map((label) => <button type="button" key={label} className={selectedLocations.includes(label) ? "is-selected" : ""} onClick={() => toggleSharedTensionLocation(label)}><i>{selectedLocations.includes(label) ? "✓" : ""}</i>{label}</button>)}</div></section>
-          <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} onToggle={toggleSharedTensionLocation} />
-          <p className="rm-choice-hint">不要按骨头、关节线、明显肿胀中心或尖锐痛点；出现刺痛、麻或电感就停止。</p>
-        </article>
-        <div className="rm-page-actions split"><button type="button" onClick={() => setSharedTensionOpen(false)}>返回活动检查</button><button type="button" className="rm-primary" disabled={!sharedTensionComplete} onClick={() => {
-          setSharedTensionOpen(false);
-          if (focusedReassessmentActive && adverseResponse) finishFocusedReassessment(adverseResponse);
-          else {
-            setAssessmentSummaryOpen(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-        }}>{focusedReassessmentActive ? "确认复查结果" : "查看评估结果"}</button></div>
-      </section>;
-    }
-    if (assessmentSummaryOpen && assessmentReadyForTreatment) {
-      const chiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
-       const discovered = findings.filter((finding) => (!finding.internal || finding.id.startsWith("strength:")) && finding.id !== "chief" && finding.priority !== "track");
-       const tracking = findings.filter((finding) => (!finding.internal || finding.id.startsWith("strength:")) && finding.priority === "track");
-      const assessmentFindingGroups = buildFindingGroups([...discovered, ...tracking]);
-      const findingRow = (finding: Finding, short: string) => {
-        const related = Boolean(chiefDirection && samePhysicalAction(anyMotionIdFromFinding(finding), chiefDirection));
-        return <li key={finding.id} className={related ? "is-chief-related" : ""}><i>{short}</i><div><strong>{finding.title}</strong>{related ? <span>主诉相关</span> : null}</div></li>;
-      };
-      return <section className="rm-page rm-assessment-summary">
-        <StepHeading eyebrow="第3步 · 评估结果" title="先看清问题，再开始处理" />
-        <article><span>你最开始说的</span><strong>{intake.description}</strong></article>
-        {intake.side === "双侧/中间" ? <section className="rm-bilateral-order"><b>本次优先处理：{intake.prioritySide || "尚未选择"}</b><span>另一侧仍保留独立评估和复测记录。</span></section> : null}
-        {bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>按主诉规则仍先处理{intake.prioritySide}；如果你希望改顺序，请返回症状信息修改优先侧，系统不会静默替换。</p></section> : null}
-        <section className="rm-finding-board"><header><span>本次发现的问题</span><strong>{discovered.length + tracking.length}项</strong></header>{assessmentFindingGroups.length ? <div>{assessmentFindingGroups.map((group) => <section key={group.key} className={`is-${group.key}`}><header><i aria-hidden="true" /><div><strong>{group.label}</strong><span>{group.items.length}项</span></div></header><ul>{group.items.map((finding) => findingRow(finding, group.short))}</ul></section>)}</div> : <p>本次没有找到需要现场处理的明确问题。</p>}</section>
-        {tissuePathway.id !== "standard" ? <section className="rm-route-note"><span>{tissuePathway.title}</span><h2>{tissuePathway.immediateActions[0]}</h2><p>{tissuePathway.blockedActions[0]}</p></section> : null}
-        {(intake.priorCare ?? []).some((item) => ["用过口服药", "做过针灸或理疗"].includes(item)) ? <section className="rm-route-note"><span>既往处理提示</span><h2>{[
-          (intake.priorCare ?? []).includes("用过口服药") ? "吃过止痛或消炎药，疼痛分可能比实际偏轻，以做动作时的真实感受为准" : "",
-          (intake.priorCare ?? []).includes("做过针灸或理疗") ? "之前做过松解或理疗，这次可换位置、加长时间或换方法，仍无变化再考虑其他处理" : "",
-        ].filter(Boolean).join("；")}</h2></section> : null}
-        {assessmentNeedsReferral ? <section className="rm-route-note is-waiting">
-          <span>先不要继续自助处理</span>
-          <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
-          <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
-        </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
-        <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
-      </section>;
-    }
-    const record = assessmentResults[item.id] ?? {};
-    const effectiveRecord = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? "") ?? {};
-    const relatedMotionRecord = item.kind === "strength" ? assessmentResults[strengthRelatedMotionId(item.id)] : undefined;
-    const reuseRelatedMotionSymptom = Boolean(relatedMotionRecord?.discomfort === "yes" && relatedMotionRecord.discomfortLocation && relatedMotionRecord.discomfortType);
-    const passiveOnly = item.kind === "motion" && item.testMode === "passive";
-    const needsPassive = item.kind === "motion" && motionNeedsPassive(item, record, canAssessPassive);
-    const itemComplete = displayAssessmentComplete(item);
-    const functionCompletion = item.kind === "function" ? functionCompletionValue(effectiveRecord) : undefined;
-    const functionControl = item.kind === "function" ? functionControlValue(effectiveRecord) : undefined;
-    const functionDiscomfort = item.kind === "function" ? functionDiscomfortValue(effectiveRecord) : undefined;
-    const updateFunctionAssessment = (patch: Partial<AssessmentRecord>) => {
-      // 主诉重合动作只把已知疼痛作为默认值，不应在每次点击时重新写入整份
-      // 默认记录。否则用户选择“做不完”后再选原因，默认的“可以做完”会把
-      // 刚才的选择覆盖。这里必须在 React 最新记录上合并并计算派生结果，
-      // 不能使用当前页面渲染时的 record 快照。
-      updateAssessment(item.id, (latestRecord) => {
-        const nextRecord = { ...latestRecord, ...patch };
-        return { ...patch, simple: functionSimpleAnswer(nextRecord) };
-      });
-    };
-    const renderSymptomDetails = (scoreLabel: string, context?: string) => <div className="rm-motion-symptom-detail rm-assessment-symptom-capture">
-      <LowerLimbLocationPicker
-        compact
-        mode="assessment"
-        allowedAreaIds={assessmentLocationAreas(item.id)}
-        value={record.discomfortLocations ?? []}
-        initialRegionId={region?.id}
-        initialSide={(record.worseSide === "左侧" || record.worseSide === "右侧") ? record.worseSide : intake.side}
-        initialLocation={record.discomfortLocation || intake.location}
-        onChange={(discomfortLocations) => updateAssessment(item.id, {
-          discomfortLocations,
-          discomfortLocation: locationSelectionsLabel(discomfortLocations),
-        })}
-      />
-      {(record.discomfortLocations?.length ?? 0) > 0 ? <>
-        <label className="rm-assessment-feeling"><span>刚才是什么感觉？</span><select value={record.discomfortType ?? ""} onChange={(event) => updateAssessment(item.id, { discomfortType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
-        <ScoreSlider compact value={record.symptomScore ?? 0} selected={typeof record.symptomScore === "number"} onChange={(symptomScore) => updateAssessment(item.id, { symptomScore })} label={scoreLabel} context={context} />
-        {familiarSymptomRequired(record, hasClearChiefAction(intake)) ? <section className="rm-familiar-symptom-question">
-          <h3>这是平时困扰你的那种感觉吗？</h3>
-          <div className="rm-result-grid is-three">{([[
-            "yes", "是，就是这种感觉"], ["no", "不是，是新出现的"], ["unsure", "说不清"]] as Array<[FamiliarSymptomAnswer, string]>).map(([value, label]) => <button type="button" key={value} className={record.familiarSymptom === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, { familiarSymptom: value })}>{label}</button>)}</div>
-          <p>{record.familiarSymptom === "yes" ? `后面会复测“${assessmentObservationSentence(item, record)}”。` : record.familiarSymptom === "no" ? "这项只记入检查发现，不当作主诉反复处理。" : record.familiarSymptom === "unsure" ? "先记录活动范围或动作表现，不强行建立疼痛复测。" : "这一步决定刚才的动作是否进入后续复测。"}</p>
-        </section> : null}
-      </> : null}
-    </div>;
-    // 旧记录兼容语义：intake.examSetup !== "professional-other" 时仍只展示自助发力判断。
-    // 髌骨四方向是同一项 PROM 筛查。后台仍保留四个方向键，页面合并为一张卡，
-    // 只让用户完成一次检查并分别记录真正异常的方向。
-    if (item.id === PATELLA_GROUP_PRIMARY_ID) {
-      const patellaItems = PATELLA_DIRECTION_IDS
-        .map((id) => assessments.find((entry) => entry.id === id))
-        .filter((entry): entry is AssessmentItem => Boolean(entry));
-      const renderPatellaDirection = (subItem: AssessmentItem) => {
-        const subRecord = assessmentResults[subItem.id] ?? {};
-        const complete = assessmentRecordComplete(subItem, subRecord, canAssessPassive, intake.side === "双侧/中间", !hasClearChiefAction(intake), canAssessEndFeel);
-        return <article className={`rm-check-card rm-patella-direction ${complete ? "is-done" : ""}`} key={subItem.id}>
-          <header><i>{PATELLA_DIRECTION_LABELS[subItem.id]}</i><div><span>髌骨被动滑动</span><strong>{PATELLA_DIRECTION_TITLES[subItem.id]}</strong></div>{complete ? <b>已记录</b> : null}</header>
-          <section><b>检查方法</b><p>{subItem.professionalHow ?? subItem.how}</p></section>
-          <section className="rm-motion-answer-block"><h3>{intake.side === "双侧/中间" ? "左右两侧比较，活动范围如何？" : "与对侧相比，活动范围如何？"}</h3><AnswerChoiceGrid options={passiveMotionOptions("contralateral", false, intake.side === "双侧/中间")} value={subRecord.passive} onChange={(value) => updateAssessment(subItem.id, value === "skip"
-            ? { passive: value, passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined }
-            : { passive: value, ...(subRecord.passive !== value ? { passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined } : {}) })} /></section>
-          {canAssessEndFeel && subRecord.passive && subRecord.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel"><h3>记录被动活动的终末感</h3><AnswerChoiceGrid options={PASSIVE_END_FEEL_OPTIONS} value={subRecord.passiveEndFeel} onChange={(passiveEndFeel) => updateAssessment(subItem.id, { passiveEndFeel })} /></section> : null}
-          {subRecord.passive && subRecord.passive !== "skip" ? <section className="rm-motion-answer-block is-symptom"><h3>被动滑动时有不适吗？</h3><div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={subRecord.passiveDiscomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(subItem.id, value === "yes" ? { passiveDiscomfort: value } : { passiveDiscomfort: value, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>{subRecord.passiveDiscomfort === "yes" ? <div className="rm-motion-symptom-detail"><LowerLimbLocationPicker compact mode="assessment" allowedAreaIds={assessmentLocationAreas(subItem.id)} value={subRecord.passiveDiscomfortLocations ?? []} initialRegionId={region?.id} initialSide={(subRecord.worseSide === "左侧" || subRecord.worseSide === "右侧") ? subRecord.worseSide : intake.side} initialLocation={subRecord.passiveDiscomfortLocation || intake.location} onChange={(passiveDiscomfortLocations) => updateAssessment(subItem.id, { passiveDiscomfortLocations, passiveDiscomfortLocation: locationSelectionsLabel(passiveDiscomfortLocations) })} />{(subRecord.passiveDiscomfortLocations?.length ?? 0) > 0 ? <><label className="rm-assessment-feeling"><span>不适是什么感觉？</span><select value={subRecord.passiveDiscomfortType ?? ""} onChange={(event) => updateAssessment(subItem.id, { passiveDiscomfortType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label><ScoreSlider compact value={subRecord.passiveSymptomScore ?? 0} selected={typeof subRecord.passiveSymptomScore === "number"} onChange={(passiveSymptomScore) => updateAssessment(subItem.id, { passiveSymptomScore })} label="被动滑动时有多不舒服？" /></> : null}</div> : null}</section> : null}
-        </article>;
-      };
-      return <section className="rm-page">
-        <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title="髌骨四方向被动活动" current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
-        <p className="rm-comparison-anchor"><b>膝盖完全放松</b>，由专业人员分别比较髌骨向上、向下、向内、向外的活动；只记录与对侧有差异的方向。</p>
-        <section className="rm-patella-group">{patellaItems.map(renderPatellaDirection)}</section>
-        <div className="rm-page-actions split"><button type="button" onClick={() => visibleAssessmentIndex === 0 ? goToStep(1) : setAssessmentIndex(visibleAssessmentIndex - 1)}>上一个检查</button>{visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? <button type="button" className="rm-primary" disabled={!itemComplete} onClick={() => setAssessmentIndex(visibleAssessmentIndex + 1)}>下一个检查</button> : sharedTensionRequired ? <button type="button" className="rm-primary" disabled={!assessmentComplete} onClick={() => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>检查相关肌肉</button> : <button type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={() => { setAssessmentSummaryOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>查看评估结果</button>}</div>
-      </section>;
-    }
-
-    const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = intake.examSetup === "professional-other"
-      ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
-      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
-    const options: Array<[SimpleAnswer, string]> = item.kind === "strength"
-      ? ["thigh-local", "calf-local"].includes(region?.id ?? "")
-        ? localLimbStrengthOptions
-        : item.comparison === "midline"
-        ? [["normal", "完成质量正常｜动作可稳定完成"], ["weak", "控制偏弱｜耐力或保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
-        : intake.side === "双侧/中间"
-          ? [["normal", "两侧接近｜完成质量都正常"], ["weak", "一侧或两侧偏弱｜保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
-          : [["normal", "力量接近｜两侧完成质量相近"], ["weak", "患侧偏弱｜不舒服这侧更差"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
-      : item.kind === "special"
-        ? [["normal", "未见异常反应｜没有出现提示信号"], ["positive", "出现提示反应｜需要结合其他结果"], ["painful", "只有疼痛｜暂不能判断"], ["skip", "暂不检查｜不会做或暂不做"]]
-        : [];
-    const pairedCheckUsesResistance = canAssessResistance;
-    const isSelfKneeExtension = item.id === "motion:knee-extension" && !pairedCheckUsesResistance && intake.side !== "双侧/中间";
-    const acuteMotionGuidance = isAcuteTrauma(intake)
-      && (intake.symptoms.includes("肿胀或淤青") || (intake.baselineScoreConfirmed && intake.baselineScore >= 6))
-      || record.active === "unable";
-    const pairedCheckOptions: Array<[SimpleAnswer, string]> = pairedCheckUsesResistance
-      ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
-      : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
-    const motionFallback = item.kind === "motion" ? motionUnableGuidance(item, record.unableReason) : null;
-    const pairedStrengthFallback = item.pairedStrengthId ? strengthUnableGuidance(item, record.pairedStrengthUnableReason, pairedCheckUsesResistance) : null;
-    const strengthFallback = item.kind === "strength" ? strengthUnableGuidance(item, record.strengthUnableReason, canAssessResistance) : null;
-    return <section className="rm-page">
-      <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title={item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)} current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
-      {isThinkingMode && !focusedReassessmentActive ? <button type="button" className="rm-workbench-back" onClick={() => setThinkingWorkbenchOpen(true)}>返回阶段工作台</button> : null}
-      {focusedReassessmentActive && adverseResponse ? <section className="rm-focused-reassessment"><header><span>只复查相关内容</span><strong>{adverseResponse.sourceLabel}后出现加重</strong></header><div>{focusedAssessmentIds.map((id, index) => { const assessment = assessments.find((entry) => entry.id === id); const done = adverseConfirmedAssessmentIds.includes(id); return <article key={id} className={id === item.id ? "is-current" : done ? "is-done" : ""}><i>{done ? "✓" : index + 1}</i><span>{assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : id}</span></article>; })}</div><p>完成并确认这些项目后，系统会停用旧方案并重新安排后续内容。</p></section> : null}
-      <section className="rm-assessment-progress"><header><span>检查进度</span><strong>{assessmentDisplayItems.filter((entry) => displayAssessmentComplete(entry)).length + (sharedTensionComplete && sharedTensionRequired ? 1 : 0)}/{assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}</strong></header><div>{assessmentDisplayItems.map((entry, index) => { const done = displayAssessmentComplete(entry); return <button type="button" key={entry.id} disabled={index > visibleAssessmentIndex} className={done ? "is-done" : ""} onClick={() => setAssessmentIndex(index)}><i>{done ? "✓" : index + 1}</i><span>{entry.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(entry.id, entry.title)}</span>{done ? <b>已记录</b> : null}</button>; })}{sharedTensionRequired ? <button type="button" disabled className={sharedTensionComplete ? "is-done" : ""}><i>{sharedTensionComplete ? "✓" : assessmentDisplayItems.length + 1}</i><span>相关肌群触诊比较</span>{sharedTensionComplete ? <b>已记录</b> : null}</button> : null}</div></section>
-      {item.kind === "motion" ? <div className="rm-assessment-stack">
-        {!passiveOnly ? <article className="rm-check-card">
-          <header><i>1</i><div><span>关节活动度检查</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
-          {acuteMotionGuidance ? <p className="rm-passive-reminder">急性损伤先轻柔查看活动范围；页面出现保持或发力检查时，如果会明显加重，今天可以跳过。</p> : null}
-          <section><b>{isThinkingMode ? "检查方法" : "现在做"}</b><p>{isThinkingMode ? item.professionalHow ?? item.how : item.how}</p></section>
-          <section><b>{isThinkingMode ? "记录" : "做的时候留意"}</b><p>{isThinkingMode ? item.professionalObserve ?? item.observe : intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^motion:/, "")] ?? "两侧都异常时，记录哪一侧更差；如果一样差就选择两侧都受限。" : item.observe}</p></section>
-          {!item.spinal && !isPilotRegion(intake.regionId) ? intake.side === "双侧/中间" ? <p className="rm-comparison-anchor"><b>左右各做一次</b>，找出更差的一侧；如果两边都差，选择“两侧都受限”。</p> : <p className="rm-comparison-anchor"><b>先做健侧</b>，再用同样姿势做不舒服的一侧。</p> : null}
-          <section className="rm-motion-answer-block">
-            <h3>{isSelfKneeExtension ? "膝后能不能像另一边一样压向床面？" : isThinkingMode ? `${professionalAssessmentTitle(item.id, item.title)}：主动活动范围` : item.spinal ? spinalRangeQuestion(item.comparison, intake.spineAssessmentMode) : activeMotionRangeQuestion(item.id, intake.side === "双侧/中间")}</h3>
-            {isSelfKneeExtension ? <p className="rm-choice-hint">看不清时，把同一条薄毛巾先后放在两侧膝后。绷紧大腿后轻轻抽动，明显更容易抽出的一侧，下压表现较差。</p> : null}
-            <AnswerChoiceGrid options={(isSelfKneeExtension
-              ? [["same", "接近健侧｜两侧膝后压平程度相近"], ["limited", "患侧偏小｜膝后仍明显悬空"], ["unable", "无法完成｜疼痛或担心继续"], ["unsure", "暂不判断｜看不清差异"]] as Array<[MotionAnswer, string]>
-              : intake.side === "双侧/中间" && !item.spinal ? bilateralMotionOptions : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(intake.userRole !== "general") : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, intake.userRole !== "general"))} value={record.active} onChange={(value) => updateAssessment(item.id, {
-              active: value,
-              passive: undefined,
-              pairedStrength: undefined,
-              pairedStrengthLocation: undefined,
-              pairedStrengthLocations: undefined,
-              pairedStrengthType: undefined,
-              pairedStrengthScore: undefined,
-              passiveDiscomfort: undefined,
-              passiveDiscomfortLocation: undefined,
-              passiveDiscomfortLocations: undefined,
-              passiveDiscomfortType: undefined,
-              passiveMeasuredAngle: undefined,
-              passiveSymptomScore: undefined,
-              unableReason: value === "unable" ? record.unableReason : undefined,
-              tensionChecked: false,
-              tensionLocations: [],
-              familiarSymptom: undefined,
-            })} />
-            {intake.spineAssessmentMode === "reference" ? <label className="rm-optional-angle"><span>记录主动角度</span><small>选填 · 仅供对比参考</small><input inputMode="decimal" value={record.measuredAngle ?? ""} onChange={(event) => updateAssessment(item.id, { measuredAngle: event.target.value })} placeholder="例如：45°" /></label> : null}
-          </section>
-
-          {record.active === "unable" ? <section className="rm-motion-answer-block is-followup">
-            <h3>是什么让你停下来？</h3>
-            <p className="rm-choice-hint">如果是因为疼所以不敢继续，选“疼痛或不适”。</p>
-            <div className="rm-result-grid">{([
-              ["pain", "疼或不舒服"],
-              ["fear", "担心继续会加重"],
-              ["instruction", "不敢或不会做"],
-            ] as Array<[NonNullable<AssessmentRecord["unableReason"]>, string]>).map(([value, label]) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-              unableReason: value,
-              discomfort: value === "pain" ? "yes" : undefined,
-              discomfortLocation: value === "pain" ? record.discomfortLocation : undefined,
-              discomfortLocations: value === "pain" ? record.discomfortLocations : undefined,
-              discomfortType: value === "pain" ? record.discomfortType : undefined,
-              symptomScore: value === "pain" ? record.symptomScore : undefined,
-              pairedStrength: undefined,
-              pairedStrengthUnableReason: undefined,
-            })}>{label}</button>)}</div>
-            {motionFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{motionFallback.action}</p><small>{motionFallback.fallback}</small></div> : null}
-          </section> : null}
-
-          {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>活动到最大范围时，有没有牵拉、卡住或不适？</h3>
-            <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
-              ? { ...latestRecord, discomfort: value }
-              : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
-            {record.discomfort === "yes" ? renderSymptomDetails("刚才这个动作有多不舒服？") : null}
-          </section> : shouldCaptureUnableMotionSymptom(record.active, record.unableReason) ? <section className="rm-motion-answer-block is-symptom">
-            <h3>记录刚才让你停下来的不适</h3>
-            {renderSymptomDetails("刚才这个动作有多不舒服？")}
-          </section> : null}
-
-          {item.pairedStrengthId && shouldAskPairedStrength(record.active) ? <section className="rm-motion-answer-block is-strength">
-            <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "停住不动，看稳不稳"}</h3>
-            <p className="rm-choice-hint">{pairedCheckUsesResistance
-              ? "由检查者沿刚才动作的反方向逐渐施加轻阻力，保持3～5秒并比较两侧；不要突然用力。"
-              : isSelfKneeExtension
-                ? "先把膝盖绷直，再将整条腿抬离床面约10厘米，保持3秒后放下；左右各做一次，不需要别人按压。"
-                : "在能不疼的最大范围处停住，看会不会发抖或往下掉。"}</p>
-            {record.active === "unable" && !pairedCheckUsesResistance ? <p className="rm-passive-reminder">刚才没有完成主动活动，这一步可以跳过，不要为了测试强行完成。</p> : null}
-            <AnswerChoiceGrid options={isSelfKneeExtension
-              ? [["normal", "保持稳定｜抬起后膝盖仍笔直"], ["weak", "控制偏弱｜膝盖弯曲、抖动或下落"], ["painful", "发力不适｜抬腿时出现症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]] as Array<[SimpleAnswer, string]>
-              : pairedCheckOptions} value={record.pairedStrength} onChange={(value) => updateAssessment(item.id, {
-                pairedStrength: value,
-                pairedStrengthUnableReason: value === "unable" ? record.pairedStrengthUnableReason : undefined,
-                pairedStrengthLocation: undefined,
-                pairedStrengthLocations: undefined,
-                pairedStrengthType: undefined,
-                pairedStrengthScore: undefined,
-              })} />
-            {record.pairedStrength === "unable" ? <div className="rm-strength-unable">
-              <h4>主要卡在哪里？</h4>
-              <div className="rm-result-grid is-three">{([[
-                "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢或不会做"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.pairedStrengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-                  pairedStrengthUnableReason: value,
-                })}>{label}</button>)}</div>
-              {pairedStrengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{pairedStrengthFallback.action}</p><small>{pairedStrengthFallback.fallback}</small></div> : null}
-            </div> : null}
-            {strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? <section className="rm-motion-answer-block is-symptom rm-strength-symptom">
-              <h3>持续保持时，哪里不舒服？</h3>
-              <LowerLimbLocationPicker
-                compact
-                mode="assessment"
-                allowedAreaIds={assessmentLocationAreas(item.id)}
-                value={record.pairedStrengthLocations ?? []}
-                initialRegionId={region?.id}
-                initialSide={(record.worseSide === "左侧" || record.worseSide === "右侧") ? record.worseSide : intake.side}
-                initialLocation={record.pairedStrengthLocation || intake.location}
-                onChange={(pairedStrengthLocations) => updateAssessment(item.id, {
-                  pairedStrengthLocations,
-                  pairedStrengthLocation: locationSelectionsLabel(pairedStrengthLocations),
-                })}
-              />
-              {(record.pairedStrengthLocations?.length ?? 0) > 0 ? <>
-                <label className="rm-assessment-feeling"><span>持续保持时是什么感觉？</span><select value={record.pairedStrengthType ?? ""} onChange={(event) => updateAssessment(item.id, { pairedStrengthType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
-                <ScoreSlider compact value={record.pairedStrengthScore ?? 0} selected={typeof record.pairedStrengthScore === "number"} onChange={(pairedStrengthScore) => updateAssessment(item.id, { pairedStrengthScore })} label="持续保持时有多不舒服？" />
-              </> : null}
-            </section> : null}
-          </section> : null}
-
-          {!canAssessPassive && ["limited", "excessive", "unable"].includes(record.active ?? "") ? <p className="rm-passive-reminder">有专业人员协助时，可以补充被动活动检查；现在先记录主动活动，后续安排相关肌肉处理和主动控制。</p> : null}
-        </article> : null}
-        {needsPassive ? <article className="rm-check-card is-secondary">
-          <header><i>{passiveOnly ? "P" : "2"}</i><div><span>{passiveOnly ? "被动活动度（PROM）" : "专业检查 · 被动活动"}</span><strong>{passiveOnly ? professionalAssessmentTitle(item.id, item.title) : "不强压疼痛末端"}</strong></div></header>
-          <section><b>检查方法</b><p>{isThinkingMode ? professionalPassiveMotionInstruction(item, intake.side === "双侧/中间") : intake.side === "双侧/中间" ? passiveMotionInstruction(item.comparison, true) : item.passiveHow ?? passiveMotionInstruction(item.comparison)}</p></section>
-          {isThinkingMode ? <section><b>记录</b><p>{item.professionalObserve ?? "与对侧比较活动范围、终末感及症状诱发。"}</p></section> : null}
-          <section className="rm-motion-answer-block">
-            <h3>{passiveOnly ? "与对侧相比，被动活动范围怎么样？" : "被动活动范围怎么样？"}</h3>
-            <div className="rm-result-grid rm-passive-options">{passiveMotionOptions(item.comparison, Boolean(item.spinal && intake.spineAssessmentMode === "reference"), intake.side === "双侧/中间").map(([value, label]) => <button type="button" key={value} className={record.passive === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, value === "skip"
-              ? { passive: value, passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveMeasuredAngle: undefined, passiveSymptomScore: undefined }
-              : { passive: value, ...(record.passive !== value ? { passiveEndFeel: undefined } : {}) })}>{label}</button>)}</div>
-            {record.passive && record.passive !== "skip" ? <label className="rm-optional-angle"><span>记录被动角度</span><small>选填 · 仅供对比参考</small><input inputMode="decimal" value={record.passiveMeasuredAngle ?? ""} onChange={(event) => updateAssessment(item.id, { passiveMeasuredAngle: event.target.value })} placeholder="例如：50°" /></label> : null}
-          </section>
-          {canAssessEndFeel && record.passive && record.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel">
-            <h3>记录被动活动的终末感</h3>
-            <p className="rm-choice-hint">在不强压疼痛末端的前提下，记录最后的阻力感觉；无法判断可选“无法判断”。</p>
-            <AnswerChoiceGrid options={PASSIVE_END_FEEL_OPTIONS} value={record.passiveEndFeel} onChange={(passiveEndFeel) => updateAssessment(item.id, { passiveEndFeel })} />
-          </section> : null}
-          {record.passive && record.passive !== "skip" ? <section className="rm-motion-answer-block is-symptom">
-            <h3>被动活动时有没有不适？</h3>
-            <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.passiveDiscomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
-              ? { ...latestRecord, passiveDiscomfort: value }
-              : { ...latestRecord, passiveDiscomfort: value, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
-            {record.passiveDiscomfort === "yes" ? <div className="rm-motion-symptom-detail">
-              <LowerLimbLocationPicker compact mode="assessment" allowedAreaIds={assessmentLocationAreas(item.id)} value={record.passiveDiscomfortLocations ?? []} initialRegionId={region?.id} initialSide={(record.worseSide === "左侧" || record.worseSide === "右侧") ? record.worseSide : intake.side} initialLocation={record.passiveDiscomfortLocation || intake.location} onChange={(passiveDiscomfortLocations) => updateAssessment(item.id, { passiveDiscomfortLocations, passiveDiscomfortLocation: locationSelectionsLabel(passiveDiscomfortLocations) })} />
-              {(record.passiveDiscomfortLocations?.length ?? 0) > 0 ? <><label className="rm-assessment-feeling"><span>刚才是什么感觉？</span><select value={record.passiveDiscomfortType ?? ""} onChange={(event) => updateAssessment(item.id, { passiveDiscomfortType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label><ScoreSlider compact value={record.passiveSymptomScore ?? 0} selected={typeof record.passiveSymptomScore === "number"} onChange={(passiveSymptomScore) => updateAssessment(item.id, { passiveSymptomScore })} label="被动活动时有多不舒服？" /></> : null}
-            </div> : null}
-          </section> : null}
-        </article> : null}
-          {intake.side === "双侧/中间" && item.pairedStrengthId && record.pairedStrength && record.pairedStrength !== "normal" ? <section className="rm-motion-answer-block is-side-compare">
-            <h3>两侧都保持后，这项力量结果如何？</h3>
-            <p className="rm-choice-hint">这里只记录这一个检查项目的左右差异，不决定整次康复的优先侧。</p>
-            <div className="rm-result-grid is-two">{bilateralComparisonOptions.map(([value, label]) => <button type="button" key={value} className={effectiveBilateralComparison(record) === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, { bilateralComparison: value, worseSide: bilateralComparisonToSide(value) })}>{label}</button>)}</div>
-          </section> : null}
-        </div> : <article className="rm-check-card">
-        <header><i>{item.kind === "strength" ? "力" : item.kind === "special" ? "测" : "动"}</i><div><span>{item.kind === "strength" ? "肌力与控制检查" : item.kind === "special" ? "特殊检查" : "功能动作检查"}</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
-        <section><b>现在做</b><p>{item.how}</p></section>
-        <section><b>做的时候留意</b><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section>
-        {item.kind === "special" && item.next ? <p className="rm-special-next"><b>如果出现提示信号：</b>{item.next}</p> : null}
-        {item.kind !== "function" ? <><AnswerChoiceGrid options={options} value={record.simple} onChange={(value) => updateAssessment(item.id, value === "painful"
-          ? { simple: value, compensations: undefined, discomfortLocation: record.discomfortLocation || relatedMotionRecord?.discomfortLocation, discomfortLocations: record.discomfortLocations || relatedMotionRecord?.discomfortLocations, discomfortType: record.discomfortType || relatedMotionRecord?.discomfortType, familiarSymptom: record.familiarSymptom || relatedMotionRecord?.familiarSymptom, worseSide: record.worseSide }
-          : value === "present"
-            ? { simple: value, symptomStage: record.symptomStage, compensations: record.compensations, worseSide: record.worseSide }
-            : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
-          {item.kind === "strength" && record.simple === "unable" ? <section className="rm-motion-answer-block is-followup rm-strength-unable">
-            <h3>主要卡在哪里？</h3>
-            <div className="rm-result-grid is-three">{([[
-              "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢或不会做"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-                strengthUnableReason: value,
-                discomfortLocation: value === "pain" ? record.discomfortLocation || relatedMotionRecord?.discomfortLocation : undefined,
-                discomfortLocations: value === "pain" ? record.discomfortLocations || relatedMotionRecord?.discomfortLocations : undefined,
-                discomfortType: value === "pain" ? record.discomfortType || relatedMotionRecord?.discomfortType : undefined,
-              })}>{label}</button>)}</div>
-            {strengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{strengthFallback.action}</p><small>{strengthFallback.fallback}</small></div> : null}
-           </section> : null}</> : <div className="rm-function-result-stack">
-          <section className="rm-motion-answer-block">
-            <h3>这个动作能做完吗？</h3>
-            <div className="rm-result-grid is-three">{([
-              ["complete", "可以做完"],
-              ["unable", "做不完或不敢继续"],
-              ["skip", "暂时不做"],
-            ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
-              ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
-              : value === "unable"
-                 ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
-                : { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
-          </section>
-          {functionCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
-            <h3>主要是什么原因停下来？</h3>
-            <div className="rm-result-grid is-two">{([[
-              "pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"], ["instruction", "不知道动作怎么做"]] as Array<[FunctionUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
-                functionUnableReason: value,
-                functionDiscomfort: value === "pain" ? "yes" : "no",
-                discomfortLocation: value === "pain" ? effectiveRecord.discomfortLocation : undefined,
-                discomfortLocations: value === "pain" ? effectiveRecord.discomfortLocations : undefined,
-                discomfortType: value === "pain" ? effectiveRecord.discomfortType : undefined,
-                symptomScore: value === "pain" ? effectiveRecord.symptomScore : undefined,
-                familiarSymptom: value === "pain" ? effectiveRecord.familiarSymptom : undefined,
-              })}>{label}</button>)}</div>
-          </section> : null}
-          {functionCompletion === "complete" ? <section className="rm-motion-answer-block">
-            <h3>做的时候稳不稳？</h3>
-            <div className="rm-result-grid is-three">{([
-              ["stable", "动作基本稳定"],
-              ["compensated", "有明显晃动或借力"],
-              ["unsure", "看不出来"],
-             ] as Array<[FunctionControl, string]>).map(([value, label]) => <button type="button" key={value} className={functionControl === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({ functionControl: value, compensations: value === "compensated" ? record.compensations : undefined })}>{label}</button>)}</div>
-          </section> : null}
-           {functionCompletion === "complete" ? <section className="rm-motion-answer-block is-symptom">
-            <h3>做的时候会不会不舒服？</h3>
-            <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={functionDiscomfort === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "yes"
-              ? { functionDiscomfort: value }
-              : { functionDiscomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined })}>{value === "yes" ? "会" : "不会"}</button>)}</div>
-          </section> : null}
-          </div>}
-          {intake.side === "双侧/中间" && (
-            (item.kind === "function" ? Boolean(functionCompletion && functionCompletion !== "skip") : item.kind === "strength" || item.kind === "special" ? Boolean(record.simple && record.simple !== "skip") : Boolean(record.pairedStrength && record.pairedStrength !== "normal"))
-          ) ? <section className="rm-motion-answer-block is-side-compare">
-          <h3>{item.kind === "strength" ? "两侧都试过后，这项力量结果如何？" : item.kind === "function" ? "两侧都做过后，这项动作结果如何？" : item.kind === "special" ? "两侧都检查后，这项定位结果如何？" : "两侧都保持后，这项力量结果如何？"}</h3>
-          <p className="rm-choice-hint">这里只记录这一个检查项目的左右差异，不决定整次康复的优先侧。</p>
-          <div className="rm-result-grid is-two">{bilateralComparisonOptions.map(([value, label]) => <button type="button" key={value} className={effectiveBilateralComparison(record) === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, { bilateralComparison: value, worseSide: bilateralComparisonToSide(value) })}>{label}</button>)}</div>
-        </section> : null}
-        {item.kind === "strength" && strengthAnswerResult(record.simple, record.strengthUnableReason) === "painful" ? reuseRelatedMotionSymptom ? <div className="rm-motion-symptom-detail rm-strength-symptom-detail">
-          <p className="rm-reused-symptom">刚才已经标记：{relatedMotionRecord?.discomfortLocation} · {relatedMotionRecord?.discomfortType}</p>
-          <ScoreSlider compact value={record.symptomScore ?? 0} selected={typeof record.symptomScore === "number"} onChange={(symptomScore) => updateAssessment(item.id, { symptomScore })} label="这次用力时有多不舒服？" context={typeof relatedMotionRecord?.symptomScore === "number" ? `刚才活动时 ${relatedMotionRecord.symptomScore}/10` : undefined} />
-        </div> : renderSymptomDetails("发力时有多不舒服？") : null}
-         {item.kind === "function" && functionCompletion !== "skip" && (functionControl === "compensated" || functionDiscomfort === "yes") ? <section className="rm-motion-answer-block is-stage">
-          {functionControl === "compensated" ? <>
-            <h3>你看到了什么？</h3>
-            <div className="rm-result-grid">{functionCompensationOptions(item.id).map((entry) => <button type="button" key={entry} className={record.compensations?.includes(entry) ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => ({ compensations: latestRecord.compensations?.includes(entry) ? latestRecord.compensations.filter((item) => item !== entry) : [...(latestRecord.compensations ?? []), entry] }))}>{entry}</button>)}</div>
-          </> : null}
-           {functionDiscomfort === "yes" || functionCompletion === "unable" ? renderSymptomDetails("做这个动作时有多不舒服？") : null}
-        </section> : null}
-      </article>}
-      {hasSpecialPositive ? <section className="rm-route-note is-waiting">
-        <span>建议补充确认</span>
-        <h2>{specialPositiveFindings.map((entry) => entry.title).join("、")}出现了异常反应</h2>
-        <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
-      </section> : null}
-      <div className="rm-page-actions split"><button type="button" onClick={() => {
-        if (focusedReassessmentActive) {
-          if (focusedAssessmentPosition > 0) setAssessmentIndex(displayAssessmentIndexForId(focusedAssessmentIds[focusedAssessmentPosition - 1]));
-          else setAdverseConfirmedAssessmentIds((current) => current.filter((id) => id !== "__capture__"));
-          return;
-        }
-        if (visibleAssessmentIndex === 0) goToStep(1);
-        else setAssessmentIndex(visibleAssessmentIndex - 1);
-      }}>{focusedReassessmentActive ? focusedAssessmentPosition > 0 ? "上一个复查" : "返回异常反应" : visibleAssessmentIndex === 0 ? "返回关键确认" : "上一个检查"}</button>{focusedReassessmentActive ? <button type="button" className="rm-primary" disabled={!itemComplete || focusedAssessmentPosition < 0} onClick={() => confirmFocusedAssessment(item.id)}>{focusedAssessmentPosition >= focusedAssessmentIds.length - 1 ? "确认复查结果" : "确认，检查下一项"}</button> : visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? <button type="button" className="rm-primary" disabled={!itemComplete} onClick={() => setAssessmentIndex(visibleAssessmentIndex + 1)}>下一个检查</button> : sharedTensionRequired ? <button type="button" className="rm-primary" disabled={!assessmentComplete} onClick={() => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>检查相关肌肉</button> : <button type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={() => { setAssessmentSummaryOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>查看评估结果</button>}</div>
-    </section>;
-  }
-
-  function renderTreatment() {
-    const beforeScore = activeTarget ? targetScoreBeforeRetest(activeTarget) : intake.baselineScore;
-    const change = scoreChange(beforeScore, postScore);
-    const bilateralCheckpointRequired = intake.side === "双侧/中间"
-      && !midpointDecisionDone
-      && !bilateralNeedsReferral
-      && !activeTargetIsBilateral
-      && Boolean(activeTarget?.finding.side && activeTarget.finding.side !== "两侧接近" && activeTarget.finding.side !== "两侧异常" && intake.prioritySide && activeTarget.finding.side !== intake.prioritySide);
-    const openLowLoadTraining = () => {
-      setMidpointDecisionDone(true);
-      setReviewStep(null);
-      setTransitionTarget(null);
-      setStep(4);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-    const handleTreatmentCompletion = () => {
-      if (activeTargetIsBilateral && activeTargetCurrentSide && activeTargetPendingSides.length) {
-        setBilateralTreatmentSides((current) => ({
-          ...current,
-          [activeTarget!.id]: Array.from(new Set([...(current[activeTarget!.id] ?? []), activeTargetCurrentSide])),
-        }));
-        const nextSide = activeTargetPendingSides.find((side) => side !== activeTargetCurrentSide);
-        setToast(nextSide ? `${activeTargetCurrentSide}已记录，继续${nextSide}` : `${activeTargetCurrentSide}已记录，接下来复测两侧`);
-        window.setTimeout(() => setToast(""), 2200);
-        return;
-      }
-      prepareRetest();
-    };
-    // 功能动作 target：处理后对所有功能动作都问「能否完成」（松解/松动能改善「做不做得了」）。
-    const isFunctionTarget = Boolean(activeTarget?.finding.id.startsWith("function:"));
-    const activeFunctionEvidence = isFunctionTarget && activeTarget
-      ? functionEvidenceFromRecord(activeTarget.finding.id, assessmentResults[activeTarget.finding.id])
-      : undefined;
-    const treatmentRetestGate = resolveTreatmentRetestGate({
-      isFunctionTarget,
-      mode: activeFunctionEvidence?.retestMode ?? "none",
-      completion: functionRetestCompletion,
-      unableReason: functionRetestUnableReason,
-      scoreConfirmed: postScoreConfirmed,
-      targetId: activeTarget?.id,
-      chiefScoreComparable,
-    });
-    const chiefScoreRetestBlocked = treatmentRetestGate.chiefScoreRetestBlocked;
-    const functionRetestState = treatmentRetestGate;
-    const functionRetestIsCompletionOnly = functionRetestState.completionOnly;
-    const retestReady = functionRetestState.retestReady;
-    // 从「做不了」到「能完成」算改善；疼痛分没变时也记为 partial。
-    const automaticResult: TrialResult = chiefScoreRetestBlocked
-      ? "same"
-      : isFunctionTarget && functionRetestState.automaticResult
-      ? functionRetestState.automaticResult
-      : isFunctionTarget && functionRetestCompletion === "complete" && resultFromScore(beforeScore, postScore) === "same"
-        ? "partial"
-        : resultFromScore(beforeScore, postScore);
-    const isTimeBasedTarget = activeCandidate?.type === "swelling";
-    const isBatchRangeTarget = Boolean(activeCandidate?.retestIds?.length && activeRetestFindings.length);
-    const isRangeTarget = Boolean(activeTarget?.finding.id.startsWith("motion:"));
-    const activeRangeDirection = isRangeTarget && activeTarget ? motionIdFromFinding(activeTarget.finding) : undefined;
-    const activeAssessmentId = activeTarget?.finding.id.replace(/^symptom:/, "");
-    const activeAssessment = activeAssessmentId ? assessments.find((item) => item.id === activeAssessmentId) : undefined;
-    const isStrengthSymptomTarget = Boolean(activeTarget?.finding.id.startsWith("strength:"));
-    const noRetestNeededAfterLatestResult = Boolean(
-      activeTarget
-      && !isResidualReviewStep
-      && activeRetestFindings.length === 0
-      && activeTarget.id !== "target:chief"
-      && !isFunctionTarget
-      && !isStrengthSymptomTarget,
-    );
-    const retestActionTitle = activeTarget?.retestLabel
-      ?? (activeTarget?.id === "target:chief" ? chiefActionLabel(intake) : activeAssessment?.title)
-      ?? activeTarget?.finding.title.split(/：|会引起|因为|不稳定/)[0]
-      ?? "刚才出现不适的动作";
-    const activeComparison = activeAssessment?.comparison ?? "contralateral";
-    const activeComparisonTarget = motionComparisonTarget(activeComparison);
-    const persistentStabbing = intake.userRole === "general" && intake.symptomType === "刺痛" && chiefScoreComparable && lastChiefScore >= 4;
-    const isUnspecifiedChiefTarget = !hasClearChiefAction(intake) && !isResidualReviewStep
-      && (activeTarget?.id === "target:chief" || Boolean(localLimbDecision && !isBatchRangeTarget));
-    const chiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
-    const chiefDirectionIds = region ? chiefMotionDirectionIds(intake, region.id) : [];
-    const activeRangeWasSymptomatic = Boolean(activeRangeDirection && motionWasSymptomatic(activeRangeDirection, assessmentResults, chiefDirection));
-    const activeRangeAllowsPassive = activeRangeDirection ? directionAllowsPassive(activeRangeDirection) : canAssessPassive;
-    const activeRangePassiveOnly = activeAssessment?.kind === "motion" && activeAssessment.testMode === "passive";
-    const singleRangeRetestsChief = Boolean(isRangeTarget && activeTarget?.id !== "target:chief" && chiefScoreComparable
-      && (localNewSourceNeedsChiefRetest || !chiefImprovedDuringTreatment && !chiefRetestCompletedDuringTreatment)
-      && !samePhysicalAction(activeRangeDirection, chiefDirection));
-    const singleRangeDiscomfort = activeRangeDirection ? movementDiscomforts[activeRangeDirection] : undefined;
-    const singleRangeScoreConfirmed = activeRangeDirection ? Boolean(movementScoreConfirmed[activeRangeDirection]) : false;
-    const chiefMatchesRange = Boolean(chiefDirection && activeRetestFindings.some((finding) => samePhysicalAction(motionIdFromFinding(finding), chiefDirection)));
-    const retestShortTitle = (finding: Finding) => {
-      const assessment = assessments.find((item) => item.id === finding.id);
-      return assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : finding.title.split(/：|范围偏小|会引起症状/)[0];
-    };
-    const batchRangeComplete = activeRetestFindings.length > 0 && activeRetestFindings.every((finding) => {
-      const directionId = motionIdFromFinding(finding);
-      return Boolean(movementResponses[directionId]
-        && movementDiscomforts[directionId]
-        && (movementDiscomforts[directionId] === "no" || movementScoreConfirmed[directionId]));
-    });
-    const shouldRetestChiefInBatch = !isResidualReviewStep
-      && chiefScoreComparable
-      && (!chiefMatchesRange || hasChiefFunctionAction)
-      // 局部大腿/小腿的活动复测通常不是主诉动作本身（例如局部拉长
-      // 复测对应“下蹲”主诉）。首个局部处理单元必须同时记录主诉分数，
-      // 否则用户明明选了“疼痛下降”，后续仍会显示为“原来的不适未变”。
-      && (activeTarget?.id === "target:chief" || activeTarget?.id === "target:local-limb" && (singleRangeRetestsChief || localNewSourceNeedsChiefRetest))
-      && !chiefImprovedDuringTreatment;
-    const chiefScoreComplete = !shouldRetestChiefInBatch || Boolean(postDiscomfort && (postDiscomfort === "no" || postScoreConfirmed));
-    const batchComplete = batchRangeComplete && chiefScoreComplete;
-    const batchResultParts = activeRetestFindings.reduce<string[]>((parts, finding) => {
-      const directionId = motionIdFromFinding(finding);
-      const outcome = movementResponses[directionId];
-      const title = retestShortTitle(finding);
-      if (outcome === "both-match") parts.push(`${title}已接近比较目标`);
-      else if (outcome === "passive-match-active-limited") parts.push(`${title}主动范围仍偏小`);
-      else if (outcome === "better-passive-limited") parts.push(`${title}有改善，仍未达到比较目标`);
-      else if (outcome === "passive-limited") parts.push(`${title}仍偏小`);
-      else if (outcome === "worse") parts.push(`${title}比处理前更差`);
-      return parts;
-    }, []);
-    const displayCandidate = activeNewCandidates[0] ?? activeCandidate;
-    const isPatellaCombinedUnit = isPatellaTreatmentCandidate(displayCandidate);
-    const activeTreatmentSide = activeTargetIsBilateral
-      ? activeTargetCurrentSide ?? intake.side
-      : activeTarget?.finding.side && activeTarget.finding.side !== "两侧接近" && activeTarget.finding.side !== "两侧异常" ? activeTarget.finding.side : intake.side;
-    const activeDisplay = displayCandidate
-      ? treatmentDisplay(displayCandidate, region?.name || intake.location || "当前部位", intake.swellingLocation, activeTreatmentSide)
-      : null;
-    const roadmapSummary = (record: { rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>; chiefRetested?: boolean; afterScore: number; beforeScore: number }): string => {
-      const parts: string[] = [];
-      for (const [directionId, outcome] of Object.entries(record.rangeOutcomes ?? {})) {
-        const title = assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId;
-        const label = outcome === "both-match" ? "范围恢复" : outcome === "worse" ? "范围更差" : "范围改善";
-        parts.push(`${title}${label}`);
-      }
-      if (record.chiefRetested && record.afterScore < record.beforeScore) parts.push(`不适降 ${record.beforeScore - record.afterScore} 分`);
-      return parts.join("、");
-    };
-    const completedRoadmapItems = [
-      ...trialRecords
-        .filter((record) => !record.reviewOnly && !record.retestOnly)
-        .map((record) => ({ label: record.treatmentName ?? record.candidateTitle, summary: roadmapSummary(record) })),
-      ...(readyToRetest && activeCandidate ? [{ label: candidateTreatmentName(activeCandidate), summary: "" }] : []),
-    ].filter((item, index, list) => list.findIndex((entry) => entry.label === item.label) === index);
-    const carryoverOnly = activeNewCandidates.length === 0 && activeGroupPriorRecords.length > 0;
-    const carryoverRetestTitle = isBatchRangeTarget
-      ? activeRetestFindings.map(retestShortTitle).join("、")
-      : isRangeTarget
-        ? activeAssessment?.title ?? (activeTarget ? retestShortTitle(activeTarget.finding) : "当前动作")
-        : retestActionTitle;
-    const currentRoadmapItem = readyToRetest
-      ? isPatellaCombinedUnit
-        ? "复测刚才受限的髌骨方向"
-        : `复测${isBatchRangeTarget ? [...(shouldRetestChiefInBatch ? [chiefActionLabel(intake)] : []), ...activeRetestFindings.map(retestShortTitle)].join("、") : retestActionTitle}`
-      : carryoverOnly
-        ? `复测${carryoverRetestTitle}`
-        : activeDisplay ? `${activeDisplay.site}：${activeDisplay.action}` : "按提示完成当前处理";
-    const plannedRetestLabel = noRetestNeededAfterLatestResult
-      ? "无需重复复测"
-      : isBatchRangeTarget
-        ? isPatellaCombinedUnit
-          ? "刚才受限的髌骨方向"
-          : [...(shouldRetestChiefInBatch ? [chiefActionLabel(intake)] : []), ...activeRetestFindings.map(retestShortTitle)].join("、")
-        : isRangeTarget ? activeAssessment?.title ?? retestActionTitle : retestActionTitle;
-    const latestTrialRecord = trialRecords[trialRecords.length - 1];
-    const latestTreatmentRecordIndex = trialRecords.findLastIndex((record) => !record.reviewOnly && !record.retestOnly && !record.timeBased);
-    const reusableDirectionIds = activeRetestFindings.length
-      ? activeRetestFindings.map(motionIdFromFinding)
-      : activeRangeDirection ? [activeRangeDirection] : [];
-    const latestMatchingRangeRecordIndex = reusableDirectionIds.length
-      ? trialRecords.findLastIndex((record) => reusableDirectionIds.every((directionId) => Boolean(valueForPhysicalAction(record.rangeOutcomes, directionId))
-        || record.targetId.startsWith("target:motion:") && samePhysicalAction(record.targetId.replace("target:motion:", ""), directionId) && Boolean(record.rangeOutcome)))
-      : -1;
-    const canReuseLatestRetest = canReuseLatestRetestDecision({
-      carryoverOnly,
-      hasLatestTrialRecord: Boolean(latestTrialRecord),
-      latestMatchingRangeRecordIndex,
-      latestTreatmentRecordIndex,
-      latestRetestActionKey: latestTrialRecord?.retestActionKey,
-      plannedRetestActionKey: canonicalRetestAction(plannedRetestLabel),
-      reusableDirectionCount: reusableDirectionIds.length,
-    });
-    const showingRetest = readyToRetest || carryoverOnly && !canReuseLatestRetest;
-    const remainingTargetNames = trialTargets
-      .slice(trialTargetIndex + 1)
-      .map((target) => target.retestLabel ?? retestShortTitle(target.finding))
-      .filter((label, index, list) => Boolean(label) && list.indexOf(label) === index)
-      .slice(0, 2);
-    const hasPendingTreatmentAfterCurrent = trialTargets
-      .slice(trialTargetIndex + 1)
-      .some((target) => target.candidates.length > 0);
-    const upcomingRoadmapItems = [
-      readyToRetest || carryoverOnly ? "完成本次复测" : noRetestNeededAfterLatestResult ? "继续下一项处理" : isTimeBasedTarget ? "完成本项处理" : `复测${plannedRetestLabel}`,
-      ...remainingTargetNames.map((label) => label),
-      ...(!hasPendingTreatmentAfterCurrent && !remainingTargetNames.length && chiefNeedsFinalRetest ? [chiefActionLabel(intake)] : []),
-      "针对性训练",
-    ].filter((label, index, list) => list.indexOf(label) === index).slice(0, 3);
-    const prepareRetest = () => {
-      if (!activeTarget || !activeCandidate) return;
-      if (noRetestNeededAfterLatestResult) {
-        finishTrial("same", false, undefined, true, true);
-        return;
-      }
-      setRetestPlan({ targetId: activeTarget.id, candidateId: activeCandidate.id, directionIds: activeRetestFindings.map(motionIdFromFinding) });
-      setPostScore(0);
-      setPostScoreConfirmed(false);
-      setPostDiscomfort("");
-      setMovementResponse("");
-      setMovementResponses({});
-      setMovementDiscomforts({});
-      setMovementScores({});
-      setMovementScoreConfirmed({});
-      setReadyToRetest(true);
-    };
-    const treatmentCoverage = summarizeTreatmentCoverage(
-      trialRecords.map((record) => ({
-        treatmentKey: record.treatmentKey ?? record.candidateId,
-        result: record.result,
-        activityWorsened: record.activityWorsened,
-        responseRole: record.responseRole,
-        rangeImproved: Object.values(record.rangeOutcomes ?? {}).some((outcome) => ["both-match", "passive-match-active-limited", "better-passive-limited"].includes(outcome)),
-        directionIds: Object.keys(record.rangeOutcomes ?? {}).length
-          ? Object.keys(record.rangeOutcomes ?? {})
-          : record.targetId.startsWith("target:motion:") ? [record.targetId.replace("target:motion:", "")] : [],
-        reviewOnly: record.reviewOnly,
-        retestOnly: record.retestOnly,
-        timeBased: record.timeBased,
-      })),
-      trialTargets.flatMap((target) => target.candidates.map((candidate) => ({
-        treatmentKey: candidateTreatmentKey(candidate, target.finding.side ?? intake.side),
-        directionIds: candidate.retestIds ?? [],
-      }))),
-    );
-    const lastWorsenedTreatment = [...trialRecords].reverse().find((record) => (record.result === "worse" || record.activityWorsened) && !record.reviewOnly);
-    const mixedTreatmentOutcome = Boolean(lastWorsenedTreatment?.activityWorsened
-      && lastWorsenedTreatment.chiefRetested
-      && lastWorsenedTreatment.afterScore < lastWorsenedTreatment.beforeScore);
-    const worsenedRelatedAssessments = lastWorsenedTreatment
-      ? Object.keys(lastWorsenedTreatment.rangeOutcomes ?? {}).map((id) => `motion:${id}`)
-      : [];
-    // 统一复测主诉：处理队列走空后、进入训练前，做最后一次主诉复测。
-    // 之前只写在「队列非空」分支里，队列一空就漏掉了。
-    const hasFunctionChief = chiefFunctionLabels.length > 0;
-    const hasDirectionChief = chiefDirectionIds.length > 0;
-    const directionLabels = chiefDirectionIds.map((directionId) => assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId).join("、");
-    const chiefFunctionRetestIsCompletionOnly = chiefRetestEligibility === "completion-status";
-    const finalRetestComplete = (
-      (!hasFunctionChief || (functionRetestCompletion && (functionRetestCompletion === "complete" || functionRetestUnableReason) && (chiefFunctionRetestIsCompletionOnly || postScoreConfirmed)))
-      && (!hasDirectionChief || directionChiefRetestConfirmed)
-    );
-    const finalChiefRetestFragment = chiefNeedsFinalRetest && !treatmentFinalRetestConfirmed ? <>
-      <TreatmentRoadmap completed={completedRoadmapItems} current={`统一复测${chiefActionLabel(intake)}`} upcoming={["进入训练"]} />
-      <section className="rm-treatment-final-retest">
-        <span>本轮处理已完成</span>
-        <h2>最后再做一次</h2>
-        <p>只在这里统一记录本轮处理后的主诉，不在每项处理后重复询问。</p>
-        {hasFunctionChief ? <section className="rm-motion-answer-block">
-          <h3>{chiefFunctionLabels.join("、")}现在能完成了吗？</h3>
-          <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
-          <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
-          {functionRetestCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
-            <h3>主要是什么原因？</h3>
-            <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestUnableReason === value ? "is-selected" : ""} onClick={() => setFunctionRetestUnableReason(value)}>{label}</button>)}</div>
-          </section> : null}
-          {chiefFunctionRetestIsCompletionOnly ? <div className="rm-retest-mode-note"><strong>本次只复核功能完成状态</strong><span>首次动作没有实际完成，不生成普通前后分数对比；现在能完成即可记录为能力状态改善。</span></div> : <ScoreSlider value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label={`${chiefFunctionLabels.join("、")}现在的不适程度`} context={`最开始 ${intake.baselineScore}/10`} />}
-        </section> : null}
-        {hasDirectionChief ? <ScoreSlider value={directionChiefRetestScore} selected={directionChiefRetestConfirmed} onChange={(value) => { setDirectionChiefRetestScore(value); setDirectionChiefRetestConfirmed(true); }} label={`${directionLabels}现在的不适程度`} context={`最开始 ${intake.baselineScore}/10`} /> : null}
-        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!finalRetestComplete} onClick={() => { setTreatmentFinalRetestScore(hasFunctionChief ? postScore : directionChiefRetestScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
-      </section>
-    </> : null;
-    // 不再用“问题数 >= 6 且处理数 >= 3”中断流程。队列中仍有一个
-    // 尚未覆盖、且由当前检查支持的处理区域时继续；只有这些区域全部
-    // 覆盖后仍无变化，才在结束页停止继续扩大处理范围。
-    if (pendingKneeAssessmentCheck && !trialTargets.length) {
-      const relatedAssessmentId = `motion:${pendingKneeAssessmentCheck.actionId}`;
-      const canOpenRelatedAssessment = assessments.some((item) => item.id === relatedAssessmentId);
-      return <section className="rm-page">
-        <StepHeading eyebrow="第3步 · 补充检查" title={pendingKneeAssessmentCheck.title} />
-        <section className="rm-complete-panel is-caution">
-          <span>还不能结束本次评估</span>
-          <h2>{pendingKneeAssessmentCheck.instruction}</h2>
-          <p>{pendingKneeAssessmentCheck.record}</p>
-          <div className="rm-page-actions split">
-            <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
-            <button type="button" className="rm-primary" onClick={() => canOpenRelatedAssessment
-              ? openAssessmentItem(relatedAssessmentId, "请补充这项检查；完成后再安排处理。")
-              : reopenAssessment("还有一项膝关节检查需要补充；完成后再安排处理。")}>返回补充检查</button>
-          </div>
-        </section>
-      </section>;
-    }
-    if (treatmentWorsened) return <section className="rm-page">
-      <StepHeading eyebrow="第4步 · 处理与即时复测" title="本次处理已暂停" />
-      <section className="rm-complete-panel is-referral"><span>刚才的反应</span><h2>{mixedTreatmentOutcome ? "疼痛评分下降，但活动表现变差" : "症状或活动表现变差"}</h2><p>{mixedTreatmentOutcome ? "疼痛分数的下降和活动表现的变差需要分开记录。当前处理先停止，不把疼痛改善当作整体安全；接下来只确认变差的活动和相关检查。" : "先停止刚才的处理。接下来只确认症状变化和直接相关的检查，不会返回整套评估。"}</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "treatment", sourceId: lastWorsenedTreatment?.candidateId ?? "treatment", sourceLabel: lastWorsenedTreatment?.treatmentName ?? lastWorsenedTreatment?.candidateTitle ?? "刚才的处理", timing: "immediate", beforeScore: lastWorsenedTreatment?.beforeScore ?? intake.baselineScore, afterScore: lastWorsenedTreatment?.afterScore ?? lastChiefScore, relatedAssessmentIds: worsenedRelatedAssessments })}>确认加重后的变化</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section>
-    </section>;
-    if (bilateralCheckpointRequired) {
-      const checkpointOptions = bilateralCheckpointOptions({
-        bilateral: true,
-        assessmentComplete: bilateralAssessmentComplete,
-        otherSideHasPendingTreatment: true,
-        safetySignal: bilateralTrainingGateState === "blocked",
-        treatmentWorsened,
-      });
-      return <section className="rm-page rm-bilateral-checkpoint">
-        <StepHeading eyebrow="第4步 · 双侧处理顺序" title="一侧完成后，确认下一步" note="系统不会自动跳到另一侧；另一侧仍保留独立记录。" />
-        {bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>这只影响提醒和后续排序，不会静默替换你在主诉中选择的优先侧。</p></section> : null}
-        <section className="rm-complete-panel">
-          <span>已完成{intake.prioritySide || "优先侧"}当前处理</span>
-          <h2>另一侧还没有被默认判定为正常</h2>
-          <p>可以返回另一侧继续检查，也可以先做低负荷基础活动；完成双侧针对性评估后，才开放正常训练。</p>
-          <div className="rm-page-actions three">
-            {checkpointOptions.includes("return-other-side-assessment") ? <button type="button" onClick={() => editCompletedAssessment()}>返回另一侧评估</button> : null}
-            {checkpointOptions.includes("continue-other-side-treatment") ? <button type="button" className="rm-primary" onClick={() => setMidpointDecisionDone(true)}>继续另一侧处理</button> : null}
-            {checkpointOptions.includes("low-load-activity") ? <button type="button" onClick={openLowLoadTraining}>进入低负荷基础活动</button> : null}
-            {checkpointOptions.includes("save-and-continue") ? <button type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button> : null}
-          </div>
-        </section>
-      </section>;
-    }
-    if (bilateralNeedsReferral) return <section className="rm-page">
-      <StepHeading eyebrow="第4步 · 处理与即时复测" title="本次处理已暂停" />
-      <section className="rm-complete-panel is-referral"><span>双侧反馈</span><h2>处理后症状加重</h2><p>先停止刚才的处理。返回检查重新确认，或者保存记录后由专业人员评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => reopenAssessment()}>返回相关检查</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button></div></section>
-    </section>;
-    if (treatmentQueueIsRefreshing) {
-      return <section className="rm-page">
-        <StepHeading eyebrow="第4步 · 处理与即时复测" title="正在更新后续安排" />
-        <section className="rm-complete-panel is-caution">
-          <span>请稍候</span>
-          <h2>正在根据刚才的结果安排下一项</h2>
-          <p>刚才的处理和复测已经记录，不会丢失。</p>
-        </section>
-      </section>;
-    }
-    if (!trialTargets.length) {
-      const completedTreatmentAttempt = treatmentCoverage.coveredTreatmentKeys.length > 0;
-      const hasSpecificAssessmentGap = Boolean(assessmentGap);
-      // “有所改善” is not the endpoint. Keep the route open until every
-      // recorded range direction reaches the comparison target, even when the
-      // chief score also dropped in the same batch.
-      const hasUnresolvedRangeProgress = trialRecords.some((record) =>
-        Object.values(record.rangeOutcomes ?? {}).some((outcome) => outcome !== "both-match"));
-      const hasUnresolvedImmediateTreatmentProblem = unresolvedImmediateLedgerProblems.length > 0 || unresolvedLedgerProblem || hasUnresolvedRangeProgress;
-      const unresolvedImmediateLabels = unresolvedImmediateLedgerProblems
-        .map((entry) => treatmentProblems.find((problem) => problem.id === entry.id)?.title ?? entry.id)
-        .filter((label, index, list) => label && list.indexOf(label) === index)
-        .slice(0, 4);
-      const rangeChangedWithoutChiefChange = treatmentCoverage.hasRangeImprovement && !chiefImprovedDuringTreatment;
-      // 队列空且还需要最终主诉复测时，先做统一复测，再做「仍有待处理」判断。
-      if (finalChiefRetestFragment) {
-        return <section className="rm-page">
-          <StepHeading eyebrow="第4步 · 处理与即时复测" title="针对性处理" />
-          {finalChiefRetestFragment}
-        </section>;
-      }
-      if (intake.side === "双侧/中间" && !midpointDecisionDone) {
-        const checkpointOptions = bilateralCheckpointOptions({
-          bilateral: true,
-          assessmentComplete: bilateralAssessmentComplete,
-          otherSideHasPendingTreatment: false,
-          safetySignal: bilateralTrainingGateState === "blocked",
-          treatmentWorsened,
-        });
-        return <section className="rm-page rm-bilateral-checkpoint">
-          <StepHeading eyebrow="第4步 · 双侧处理顺序" title="两侧处理完成后，确认训练出口" />
-          <section className="rm-complete-panel">
-            <span>两侧记录已保留</span>
-            <h2>{bilateralAssessmentComplete ? "双侧针对性评估已完成" : "另一侧针对性评估还未完成"}</h2>
-            <p>{bilateralAssessmentComplete ? "现在可以进入正常训练；如果想先观察，也可以保存记录。" : "当前只开放低负荷基础活动，不能把未评估侧当成正常，也不能直接进入正常训练。"}</p>
-            <div className="rm-page-actions three">
-              {!bilateralAssessmentComplete && checkpointOptions.includes("return-other-side-assessment") ? <button type="button" onClick={() => editCompletedAssessment()}>返回另一侧评估</button> : null}
-              {checkpointOptions.includes("normal-training") ? <button type="button" className="rm-primary" onClick={() => { setMidpointDecisionDone(true); goToStep(4); }}>进入正常训练</button> : null}
-              {checkpointOptions.includes("low-load-activity") ? <button type="button" onClick={openLowLoadTraining}>进入低负荷基础活动</button> : null}
-              {checkpointOptions.includes("save-and-continue") ? <button type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button> : null}
-            </div>
-          </section>
-        </section>;
-      }
-      if (hasUnresolvedImmediateTreatmentProblem) {
-        return <section className="rm-page">
-          <StepHeading eyebrow="第4步 · 处理与即时复测" title="本阶段成果" />
-          <section className="rm-complete-panel is-caution">
-            <span>本轮处理已完成</span>
-            <h2>{chiefComplaintLabel(intake)}</h2>
-            {chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : hasClearChiefAction(intake) ? <p>本次不生成单一动作评分，后续按实际完成的动作或活动问题分别复查。</p> : <p>本次没有固定主诉动作，未生成动作评分变化。</p>}
-            {(() => { const note = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: lastChiefScore, hasRangeImprovement: treatmentCoverage.hasRangeImprovement, noImmediateResponse: noImmediateTreatmentResponse }); return note ? <p className="rm-chief-change-note">{note}</p> : null; })()}
-            <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
-            {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><strong>仍有待处理</strong><span>{unresolvedImmediateLabels.join("、")}</span><small>可重新确认或先进入训练巩固。</small></section> : null}
-            <div className="rm-page-actions three">
-              <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
-              <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认剩余问题"}</button>
-              <button type="button" className="rm-primary" onClick={() => goToStep(4)}>进入训练</button>
-            </div>
-          </section>
-        </section>;
-      }
-      const completedAttemptTitle = rangeChangedWithoutChiefChange
-        ? "活动表现有变化，原来的不适暂未明显改变"
-        : treatmentCoverage.hasRangeImprovement && chiefImprovedDuringTreatment
-          ? "主诉和活动表现都有改善，继续巩固"
-          : chiefImprovedDuringTreatment && lastChiefScore > 0
-            ? "主诉有所改善，继续巩固"
-        : treatmentCoverage.decision === "stop-covered-no-effect" || noImmediateTreatmentResponse
-          ? "已完成相关方向，原来的不适没有明显变化"
-          : "本次针对性处理已完成";
-      const completedAttemptDetail = rangeChangedWithoutChiefChange
-        ? "活动范围有所改善。接下来按检查出的力量和控制问题安排训练。"
-        : treatmentCoverage.hasRangeImprovement && chiefImprovedDuringTreatment
-          ? "主诉和活动范围都出现变化，但只要还没有达到比较目标，就保留为需要巩固的问题。"
-          : chiefImprovedDuringTreatment && lastChiefScore > 0
-            ? "主诉已经变轻，但还没有达到本次目标；接下来进入低刺激训练并继续观察。"
-        : treatmentCoverage.decision === "stop-covered-no-effect" || noImmediateTreatmentResponse
-          ? "相关处理已经完成。今天先保留低刺激基础活动；症状持续不变、变重或影响走路时，建议线下评估。"
-          : "当前基础检查和可执行处理已经完成，接下来进入训练与居家安排。";
-      return <section className="rm-page">
-        <StepHeading eyebrow="第4步 · 处理与即时复测" title="针对性处理" />
-        <section className={`rm-complete-panel ${assessmentEvidenceInsufficient ? "is-caution" : ""}`}>
-          <span>{assessmentEvidenceInsufficient ? "评估尚未完成" : completedTreatmentAttempt ? "本轮处理结束" : "评估已完成"}</span>
-          <h2>{assessmentEvidenceInsufficient
-            ? "目前的信息不足以安排处理"
-            : completedTreatmentAttempt
-              ? completedAttemptTitle
-              : tissuePathway.id !== "standard" ? tissuePathway.title : treatmentEmptyState.title}</h2>
-          <p>{assessmentEvidenceInsufficient
-            ? "刚才的主要检查都没有得到可判断结果。这不代表没有问题，也不能据此选择肌肉处理或训练。"
-            : completedTreatmentAttempt
-              ? completedAttemptDetail
-              : tissuePathway.id !== "standard" ? tissuePathway.immediateActions.join("；") : treatmentEmptyState.detail}</p>
-          {weakStrengthProblems.length ? <section className="rm-strength-handoff"><strong>还有力量或控制问题</strong><span>{weakStrengthProblems.map((finding) => finding.title).join("、")}</span><small>训练阶段会从低体位开始针对性练习。</small></section> : null}
-          {assessmentEvidenceInsufficient
-            ? <div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => assessmentGap ? openAssessmentItem(assessmentGap.assessmentId, "已定位到需要补充的检查；完成后会回到原流程。") : reopenAssessment()}>{assessmentGapActionLabel(assessmentGap)}</button><button type="button" onClick={() => { const missing = intakeMissingFields[0]; if (missing) { setStep(0); setReviewStep(null); jumpToIntakeQuestion(missing); } else reopenAssessment(); }}>{intakeMissingFields[0] ? `补充${intakeMissingFields[0]}` : "补充症状信息"}</button><button type="button" onClick={() => saveRecord("评估未完成")}>保存，之后继续</button></div>
-            : completedTreatmentAttempt
-              ? <div className="rm-page-actions three"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button><button type="button" onClick={() => saveRecord(noImmediateTreatmentResponse ? "处理后主诉未明显改善" : "处理完成")}>保存并结束</button></div>
-            : unresolvedLedgerProblem && hasSpecificAssessmentGap
-              ? <div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查；完成后会重新安排后续内容。")}>{assessmentGapActionLabel(assessmentGap)}</button></div>
-              : unresolvedLedgerProblem
-                ? <div className="rm-page-actions three"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("现有检查未形成明确处理方向")}>保存并结束</button></div>
-              : <div className="rm-page-actions three"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{treatmentEmptyState.action}</button></div>}
-        </section>
-      </section>;
-    }
-    return <section className="rm-page" data-rehabmind-test="treatment-page" data-planned-retest-action-key={canonicalRetestAction(plannedRetestLabel)}>
-      <StepHeading eyebrow="第4步 · 处理与即时复测" title="针对性处理" />
-      {swellingGuidance && trialRecords.length === 0 && activeCandidate?.type !== "swelling" ? <section className="rm-swelling-reminder">
-        <span>肿胀管理</span>
-        <strong>{intake.swellingLocation || intake.location || "肿胀位置"}</strong>
-        <p>{candidateAction(swellingGuidance)}</p>
-        <small>不用在每项处理后反复检查；今天晚些时候或明天再比较范围和轮廓。</small>
-      </section> : null}
-
-      {!treatmentComplete && activeTarget && activeCandidate ? <>
-        <TreatmentRoadmap completed={completedRoadmapItems} current={currentRoadmapItem} upcoming={upcomingRoadmapItems} />
-        {activeTargetIsBilateral ? <section className="rm-bilateral-order"><b>同一处理单元 · 左右分别执行</b><p>先做{activeTargetCurrentSide ?? intake.prioritySide ?? "优先侧"}，确认没有明显加重后再做另一侧。</p><div>{activeTargetSides.map((side) => <span key={side} className={activeTargetCompletedSides.includes(side) ? "is-done" : side === activeTargetCurrentSide ? "is-current" : ""}>{side}：{activeTargetCompletedSides.includes(side) ? "已完成" : side === activeTargetCurrentSide ? "当前" : "待处理"}</span>)}</div></section> : intake.side === "双侧/中间" && activeTarget.finding.side ? <p className="rm-bilateral-order"><b>本项只处理{activeTarget.finding.side}</b>，另一侧没有对应的处理指征。</p> : null}
-        {bilateralNeedsReferral ? <section className="rm-route-note is-waiting"><span>建议线下确认</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，并让专业人员重新确认。</p></section> : null}
-        {!showingRetest && (isResidualReviewStep ? null : activeNewCandidates.length ? <div className="rm-treatment-round">{activeNewCandidates.map((candidate, index) => <TreatmentActionCard key={candidate.id} candidate={candidate} display={treatmentDisplay(candidate, region?.name || intake.location || "当前部位", intake.swellingLocation, activeTreatmentSide)} priorityLabel={activeNewCandidates.length > 1 ? index === 0 ? "先做" : "配合处理" : undefined} controlMotionIds={activeControlMotionIds} />)}</div> : activeDisplay && displayCandidate ? <TreatmentActionCard candidate={displayCandidate} display={activeDisplay} controlMotionIds={activeControlMotionIds} /> : null)}
-        {!showingRetest && intake.userRole !== "general" && activeTarget.optionalCandidates?.length ? <details className="rm-optional-treatment"><summary>可选处理（{activeTarget.optionalCandidates.length}）</summary><p>核心处理后仍有问题时，再从这里补充。</p><div>{activeTarget.optionalCandidates.map((candidate) => { const selectionKey = optionalTreatmentSelectionKey(activeTarget.id, candidate.id); const added = selectedOptionalCandidateIds.includes(selectionKey); return <button type="button" key={candidate.id} disabled={added} onClick={() => setSelectedOptionalCandidateIds((current) => [...current, selectionKey])}><strong>{candidateTreatmentName(candidate)}</strong><span>{added ? "已加入" : "加入本次处理"}</span></button>; })}</div></details> : null}
-         {isTimeBasedTarget ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("partial", true)}>完成这项处理</button></div> : canReuseLatestRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" data-rehabmind-test="retest-reuse-next" data-retest-action-key={canonicalRetestAction(plannedRetestLabel)} onClick={continueWithReusedRetest}>继续下一项</button></div> : isUnspecifiedChiefTarget ? <section className="rm-retest rm-no-action-retest">
-          <header><span>本次不做动作评分</span><h2>目前没有确认会引起不适的动作</h2><p>先保存这项处理。活动受限会按该方向的比较方式单独复测，肿胀和压痛留到后续复查。</p></header>
-          <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("partial", false, undefined, true, true)}>完成并继续</button></div>
-         </section> : !showingRetest && activeTarget.id === "target:chief" && (chiefImprovedDuringTreatment || chiefRetestCompletedDuringTreatment) && !isBatchRangeTarget ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("same", false, undefined, false, true)}>完成这项处理，继续下一项</button></div> : !showingRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={handleTreatmentCompletion}>{isResidualReviewStep ? "开始复查" : noRetestNeededAfterLatestResult ? "完成并继续下一项" : activeTargetIsBilateral && activeTargetPendingSides.length ? `完成${activeTargetCurrentSide ?? "当前侧"}，继续另一侧` : activeCandidateGroup.length > 1 ? "本轮处理完成，统一复测" : isRangeTarget ? singleRangeRetestsChief ? "处理完成，复测主诉和活动范围" : "处理完成，复测活动范围" : isStrengthSymptomTarget ? "处理完成，复测发力" : hasClearChiefAction(intake) ? "处理完成，复测原来的动作" : "处理完成，复测这个动作"}</button></div> : intake.side === "双侧/中间" && activeTargetSides.length ? <section className="rm-retest rm-bilateral-retest"><header><span>双侧分别复测</span><h2>分别记录左右两侧处理后的变化</h2><small>同一处理卡只展示一次，但左右结果不能互相覆盖。</small></header><div className="rm-bilateral-side-retest-list">{activeTargetSides.map((side) => { const value = bilateralRetestResponses[side]; return <article key={side}><strong>{side}</strong><div className="rm-result-grid is-three">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([response, label]) => <button type="button" key={response} className={value === response ? "is-selected" : ""} onClick={() => setBilateralRetestResponses((current) => ({ ...current, [side]: response }))}>{label}</button>)}</div></article>; })}</div><button type="button" className="rm-primary" disabled={activeTargetSides.some((side) => !bilateralRetestResponses[side])} onClick={() => { const responses = activeTargetSides.map((side) => bilateralRetestResponses[side]); const result = responses.includes("worse") ? "worse" : responses.includes("better") ? "better" : "same"; setBilateralNeedsReferral(result === "worse"); finishTrial(result); }}>确认双侧复测</button><p>任一侧加重都停止后续同类处理；只有一侧有改善时，另一侧仍保留为未改善。</p></section> : intake.side === "双侧/中间" ? <section className="rm-retest rm-bilateral-retest"><header><span>整体反馈</span><h2>和刚才比，双侧的疼痛或轻松感有变化吗？</h2></header><div className="rm-result-grid">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([value,label]) => <button type="button" key={value} onClick={() => { setBilateralNeedsReferral(value === "worse"); finishTrial(value); }}>{label}</button>)}</div><p>当前处理没有明确侧别，先记录整体反应。</p></section> : isBatchRangeTarget ? <section className={`rm-retest rm-batch-range-retest rm-followup-retest ${isPatellaCombinedUnit ? "is-combined-patella" : ""}`}>
-           {isPatellaCombinedUnit ? <header className="rm-combined-retest-header"><span>同一处理单元 · 完成后立即复测</span><h2>刚才受限的髌骨方向</h2><small>只复测刚才标记受限的方向，并记录活动范围和不适。</small></header> : null}
-           {shouldRetestChiefInBatch ? <header><span>复测动作</span><h2>{hasChiefFunctionAction ? chiefFunctionLabels.join("、") : chiefActionLabel(intake)}</h2><strong>处理前 {beforeScore}/10</strong></header> : null}
-          {shouldRetestChiefInBatch ? <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${beforeScore}/10`} /> : null}
-          <section className="rm-followup-range-check">
-          <header className="rm-retest-checklist-header"><div><span>复测清单</span><strong>{activeRetestFindings.length}个相关动作</strong></div><small>每个动作只记录一次：先看活动范围，再记录不适程度。</small></header>
-          <div className="rm-batch-range-list">{activeRetestFindings.map((finding, index) => {
-            const directionId = motionIdFromFinding(finding);
-            const selected = movementResponses[directionId];
-            const discomfort = movementDiscomforts[directionId];
-            const previousRecord = assessmentResults[finding.id];
-            const knownDiscomfort = motionWasSymptomatic(directionId, assessmentResults, chiefDirection);
-            const previousScore = latestRangeScoreForDirection(directionId) ?? (previousRecord?.discomfort === "yes" ? previousRecord.symptomScore : samePhysicalAction(directionId, chiefDirection) ? beforeScore : undefined);
-            const comparison = assessments.find((item) => item.id === finding.id)?.comparison ?? "contralateral";
-            const canUsePassive = directionAllowsPassive(directionId);
-            const passiveOnly = assessments.find((item) => item.id === finding.id)?.testMode === "passive";
-            const rangeRecorded = Boolean(selected);
-            const symptomRecorded = knownDiscomfort ? Boolean(movementScoreConfirmed[directionId]) : Boolean(discomfort) && (discomfort !== "yes" || Boolean(movementScoreConfirmed[directionId]));
-            return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}>
-              <header><div><span className={chiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "rm-chief-badge" : ""}>{chiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{retestShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header>
-              <section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>
-              {knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考处理前分数选择现在的程度</small></div><ScoreSlider compact value={movementScores[directionId] ?? 0} selected={Boolean(movementScoreConfirmed[directionId])} onChange={(value) => {
-                setMovementDiscomforts((current) => ({ ...current, [directionId]: value === 0 ? "no" : "yes" }));
-                setMovementScores((current) => ({ ...current, [directionId]: value }));
-                setMovementScoreConfirmed((current) => ({ ...current, [directionId]: true }));
-                if (samePhysicalAction(directionId, chiefDirection)) { setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScore(value); setPostScoreConfirmed(true); }
-              }} label={passiveOnly ? "现在的被动不适程度" : "现在的不适程度"} context={typeof previousScore === "number" ? `处理前 ${previousScore}/10` : "处理前有不适"} /></section> : <section className="rm-retest-symptom-question"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动不适" : "动作不适"}</span><small>再记录现在的感受</small></div><h3>{passiveOnly ? "被动活动时有没有出现新的不适？" : "做这个动作时有没有出现新的不适？"}</h3><div>{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={discomfort === value ? "is-selected" : ""} onClick={() => {
-                setMovementDiscomforts((current) => ({ ...current, [directionId]: value }));
-                setMovementScores((current) => ({ ...current, [directionId]: 0 }));
-                setMovementScoreConfirmed((current) => ({ ...current, [directionId]: value === "no" }));
-                if (samePhysicalAction(directionId, chiefDirection)) { setPostDiscomfort(value); setPostScore(0); setPostScoreConfirmed(value === "no"); }
-              }}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
-              {discomfort === "yes" ? <ScoreSlider compact value={movementScores[directionId] ?? 0} selected={Boolean(movementScoreConfirmed[directionId])} onChange={(value) => {
-                setMovementScores((current) => ({ ...current, [directionId]: value }));
-                setMovementScoreConfirmed((current) => ({ ...current, [directionId]: true }));
-                if (samePhysicalAction(directionId, chiefDirection)) { setPostScore(value); setPostScoreConfirmed(true); }
-              }} label={passiveOnly ? "现在有多不舒服？" : "现在有多不舒服？"} context={typeof previousScore === "number" ? `处理前 ${previousScore}/10` : "处理前未记录不适分数"} /> : null}</section>}
-            </article>;
-          })}</div>
-          <section className={`rm-auto-result is-${batchComplete ? "partial" : "waiting"}`}><span>复测结果</span><strong>{batchResultParts.length ? batchResultParts.join("；") : "请记录每个方向的结果"}</strong><button type="button" className="rm-primary" disabled={!batchComplete} onClick={finishRangeBatch}>继续</button></section>
-          </section>
-        </section> : isRangeTarget ? <section className="rm-retest rm-range-retest">
-          {singleRangeRetestsChief ? <>
-            <header><span>先复测主诉</span><h2>{chiefActionLabel(intake)}</h2><strong>处理前 {beforeScore}/10</strong></header>
-            <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${beforeScore}/10`} />
-          </> : null}
-          <header><span>{singleRangeRetestsChief ? "再复测活动范围" : activeRangePassiveOnly ? "复测被动活动" : "复测动作"}</span><h2>{activeAssessment?.title ?? retestShortTitle(activeTarget.finding)}</h2></header>
-          <h3>{activeMotionRangeQuestion(activeRangeDirection ?? activeTarget.finding.id, intake.side === "双侧/中间", activeRangePassiveOnly)}</h3>
-          <AnswerChoiceGrid className="rm-range-result" options={rangeRetestOptions(activeComparison, activeRangeAllowsPassive, intake.side === "双侧/中间", activeRangePassiveOnly)} value={movementResponse || undefined} onChange={(value) => setMovementResponse(value)} />
-          {activeRangeWasSymptomatic ? singleRangeRetestsChief && activeRangeDirection
-            ? <ScoreSlider compact value={movementScores[activeRangeDirection] ?? 0} selected={singleRangeScoreConfirmed} onChange={(value) => {
-              setMovementDiscomforts((current) => ({ ...current, [activeRangeDirection]: value === 0 ? "no" : "yes" }));
-              setMovementScores((current) => ({ ...current, [activeRangeDirection]: value }));
-              setMovementScoreConfirmed((current) => ({ ...current, [activeRangeDirection]: true }));
-            }} label="这个动作现在有多不舒服？" context="与检查时的分数比较" />
-            : <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${beforeScore}/10`} />
-          : <section className="rm-retest-symptom-question"><h3>做这个动作时有没有出现新的不适？</h3><div>{(["no", "yes"] as YesNo[]).map((value) => {
-            const selected = singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort;
-            return <button type="button" key={value} className={selected === value ? "is-selected" : ""} onClick={() => {
-              if (singleRangeRetestsChief && activeRangeDirection) {
-                setMovementDiscomforts((current) => ({ ...current, [activeRangeDirection]: value }));
-                setMovementScores((current) => ({ ...current, [activeRangeDirection]: 0 }));
-                setMovementScoreConfirmed((current) => ({ ...current, [activeRangeDirection]: value === "no" }));
-              } else {
-                setPostDiscomfort(value);
-                setPostScore(0);
-                setPostScoreConfirmed(value === "no");
-              }
-            }}>{value === "yes" ? "有不适" : "没有不适"}</button>;
-          })}</div>{(singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) === "yes" ? singleRangeRetestsChief && activeRangeDirection
-            ? <ScoreSlider compact value={movementScores[activeRangeDirection] ?? 0} selected={singleRangeScoreConfirmed} onChange={(value) => { setMovementScores((current) => ({ ...current, [activeRangeDirection]: value })); setMovementScoreConfirmed((current) => ({ ...current, [activeRangeDirection]: true })); }} label="现在有多不舒服？" context="处理前没有不适" />
-            : <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在有多不舒服？" context={`处理前 ${beforeScore}/10`} />
-          : null}</section>}
-          <section className={`rm-auto-result is-${movementResponse === "both-match" ? "better" : ["passive-match-active-limited", "better-passive-limited", "passive-limited"].includes(movementResponse) ? "partial" : movementResponse || "waiting"}`}><span>复测结果</span><strong>{movementResponse === "both-match"
-            ? `${activeRangePassiveOnly ? "被动范围" : activeRangeAllowsPassive ? "主动和被动范围" : "主动范围"}已接近${activeComparisonTarget}`
-            : movementResponse === "passive-match-active-limited"
-              ? `被动范围接近${activeComparisonTarget}，主动范围仍偏小`
-              : movementResponse === "better-passive-limited"
-                ? activeRangePassiveOnly
-                  ? `被动范围有改善，仍未接近${activeComparisonTarget}`
-                  : activeRangeAllowsPassive ? `主动有改善，被动仍未接近${activeComparisonTarget}` : `主动范围有改善，仍未接近${activeComparisonTarget}`
-              : movementResponse === "passive-limited"
-                ? `${activeRangePassiveOnly || activeRangeAllowsPassive ? "被动范围" : "主动范围"}仍小于${activeComparisonTarget}`
-              : movementResponse === "worse"
-                ? "活动范围比处理前更小或更痛"
-                : `请选择处理后与${activeComparisonTarget}相比的活动范围`}</strong><button type="button" className="rm-primary" disabled={!movementResponse || (singleRangeRetestsChief && !postScoreConfirmed) || !(singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) || ((singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) === "yes" && !(singleRangeRetestsChief ? singleRangeScoreConfirmed : postScoreConfirmed))} onClick={() => {
-                  if (movementResponse === "both-match") finishTrial("better");
-                  else {
-                    const nextCandidateType = nextRangeCandidateType(movementResponse, activeRangeAllowsPassive && canMobilizeJoint);
-                    if (nextCandidateType) finishTrial("partial", false, nextCandidateType);
-                    else finishTrial("worse", false, undefined, true);
-                  }
-                }}>继续</button></section>
-        </section> : <section className="rm-retest">
-          <header><span>复测动作</span><h2>{retestActionTitle}</h2></header>
-          {isFunctionTarget ? <section className="rm-motion-answer-block">
-            <h3>现在这个动作能完成了吗？</h3>
-            <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
-            <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
-            {functionRetestCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
-              <h3>主要是什么原因？</h3>
-              <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestUnableReason === value ? "is-selected" : ""} onClick={() => setFunctionRetestUnableReason(value)}>{label}</button>)}</div>
-            </section> : null}
-          </section> : null}
-          {postScoreConfirmed ? <div className="rm-track">
-            <div><span>处理前</span><b>{beforeScore}<small>/10</small></b><i style={{ "--dot": `${beforeScore * 10}%` } as CSSProperties} /></div>
-            <div className="rm-track-change"><strong>{change.delta > 0 ? `下降 ${change.delta} 分` : change.delta < 0 ? `上升 ${Math.abs(change.delta)} 分` : "分数未变"}</strong><span>{change.percent !== null ? `${change.percent > 0 ? "+" : ""}${change.percent}%` : "不计算比例"}</span></div>
-            <div><span>处理后</span><b>{postScore}<small>/10</small></b><i style={{ "--dot": `${postScore * 10}%` } as CSSProperties} /></div>
-          </div> : null}
-          {chiefScoreRetestBlocked ? <div className="rm-retest-mode-note"><strong>本次不建立普通分数复测</strong><span>还没有形成可重复完成的主诉动作基线；本项只记录处理已经完成，不把一般不适分数伪装成动作前后对比。</span></div> : !functionRetestIsCompletionOnly ? <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label={isStrengthSymptomTarget ? "现在的发力不适程度" : "现在的不适程度"} context={`处理前 ${beforeScore}/10`} /> : <div className="rm-retest-mode-note"><strong>本次是完成状态复核</strong><span>首次动作没有实际完成，因此只判断现在能否完成，不把这次结果当作普通分数对比。</span></div>}
-          <section className={`rm-auto-result is-${retestReady ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{!retestReady ? (functionRetestIsCompletionOnly ? "请选择动作完成状态" : "请选择复测分数") : chiefScoreRetestBlocked ? "不建立普通分数对比" : functionRetestIsCompletionOnly ? automaticResult === "partial" ? "由无法完成变为可以完成" : "目前仍未完成" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" className="rm-primary" disabled={!retestReady} onClick={() => finishTrial(automaticResult)}>继续</button></section>
-        </section>}
-        <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}{finishSnapshots.length ? <button type="button" onClick={undoLastFinish}>撤销上一步</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
-      </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或直接进阶训练。回到本次评估，重新确认活动、症状位置和遗漏因素；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续负荷训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>双侧整体感受已记录</strong><small>双侧场景不生成单侧式评分对比</small></div> : <p>当前没有固定主诉动作，本次未生成动作评分变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变主诉</strong><p>先不要增加训练难度；今天只保留低刺激基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看低刺激基础活动" : "查看训练与居家方案"}</button></div></section>}
-    </section>;
-  }
-
-  function feedbackAdvice(exercise: FullExercise) {
-    const feedback = exerciseFeedback[exercise.id];
-    if (!feedback) return "先按建议完成第一组，再根据质量调整。";
-    const target = firstNumber(exercise.reps);
-    if (feedback.symptom === "worse") return "先停止这个版本，改做“做不了”里的退阶；退阶后仍加重就结束该动作。";
-    if (feedback.formChanged || feedback.completed < Math.max(4, target - 3)) return "改做“做不了”里的退阶，减少个数或增加扶持。";
-    if (feedback.completed >= target && feedback.reserve >= 5) return "当前版本偏轻松，下次只增加阻力、难度或个数中的一项。";
-    if (feedback.reserve >= 2 && feedback.reserve <= 3) return "当前版本合适，保持组数和个数。";
-    return "先保持当前版本，观察当天晚些时候和第二天反应。";
-  }
-
-  function renderTraining() {
-    const displayGoals = isThinkingMode && !workflowProfile.isStudy ? GOALS_PRO : GOALS_SELF;
-    const bilateralLowLoadOnly = bilateralTrainingGateState === "low-load";
-    const bilateralTrainingBlocked = bilateralTrainingGateState === "blocked";
-    const lowLoadTrainingOnly = noChiefActionAndNoAssessmentProblem || noImmediateTreatmentResponse || bilateralLowLoadOnly;
-    const pendingFeedbackExercises = pendingTrainingFeedback(exercises, exerciseFeedback);
-    const hasCompleteTrainingFeedback = trainingFeedbackComplete(exercises, exerciseFeedback);
-    const trainingHasWorsened = exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
-    const worsenedExercise = exercises.find((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
-    const worsenedExerciseAssessmentIds = worsenedExercise
-      ? assessments.filter((assessment) => (assessment.tags ?? []).some((tag) => worsenedExercise.tags.includes(tag))).map((assessment) => assessment.id).slice(0, 3)
-      : [];
-    const trainingNeedsChiefRetest = needsTrainingToleranceRetest({
-      comparableChief: chiefScoreComparable,
-      completionStatusChief: chiefRetestEligibility === "completion-status",
-      immediateTiming: tissuePathway.retestTiming === "same-session",
-    });
-    if (trainingReadyForFinalRetest) {
-      const finalRetestNeedsScore = chiefRetestEligibility !== "completion-status";
-      const finalChange = scoreChange(intake.baselineScore, finalRetestScore);
-      const finalResult = finalRetestConfirmed ? resultFromScore(intake.baselineScore, finalRetestScore) : "same";
-      const allFunctionRetestsComplete = chiefFunctionLabels.every((label) => {
-        const r = finalFunctionRetests[label];
-        if (!r || !r.completion) return false;
-        if (r.completion === "unable" && !r.unableReason) return false;
-        if (!chiefRetestEligibility || chiefRetestEligibility !== "completion-status") {
-          if (typeof r.score !== "number") return false;
-          if (r.completion === "complete" && !r.control) return false;
-        }
-        return true;
-      });
-      const overallComplete = (finalRetestNeedsScore ? finalRetestConfirmed : true) && allFunctionRetestsComplete;
-      return <section className="rm-page rm-overall-retest-page">
-        <StepHeading eyebrow="第5步 · 结束前复测" title="最后再看一次整体变化" />
-        {chiefFunctionLabels.length ? <section className="rm-overall-retest-functions">
-          <header><span>主诉功能动作</span><strong>逐个确认能否完成、稳定和不适</strong></header>
-          {chiefFunctionLabels.map((label) => {
-            const r = finalFunctionRetests[label] ?? { completion: "", score: undefined };
-            const set = (patch: Partial<typeof r>) => setFinalFunctionRetests((c) => ({ ...c, [label]: { ...(c[label] ?? {}), ...patch } }));
-            return <article key={label}>
-              <div className="rm-retest-field-title"><strong>{label}</strong><small>有<span className="rm-term" title="借力、姿势不标准地完成，也算完成">代偿</span>也算能完成</small></div>
-              <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, text]) => <button type="button" key={value} className={r.completion === value ? "is-selected" : ""} onClick={() => set({ completion: value })}>{text}</button>)}</div>
-              {r.completion === "unable" ? <div className="rm-result-grid is-two">{([["pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"]] as const).map(([value, text]) => <button type="button" key={value} className={r.unableReason === value ? "is-selected" : ""} onClick={() => set({ unableReason: value })}>{text}</button>)}</div> : null}
-              {r.completion === "complete" ? <div className="rm-result-grid is-two">{([["stable", "动作稳定"], ["compensated", "有晃动或借力"], ["unsure", "看不出来"]] as const).map(([value, text]) => <button type="button" key={value} className={r.control === value ? "is-selected" : ""} onClick={() => set({ control: value })}>{text}</button>)}</div> : null}
-              <ScoreSlider compact value={r.score ?? 0} selected={typeof r.score === "number"} onChange={(value) => set({ score: value })} label="现在的不适程度" />
-            </article>;
-          })}
-        </section> : null}
-        <section className="rm-overall-retest-action">
-          <span>{hasClearChiefAction(intake) ? "再做一次" : "再感受一次"}</span>
-          <h2>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : chiefComplaintLabel(intake)}</h2>
-          <p>{hasClearChiefAction(intake) ? "按最开始的方式完成一次，不额外增加速度、负重或次数。" : "按最开始记录的位置和感觉，判断现在的主要不适。"}</p>
-        </section>
-        {finalRetestNeedsScore ? <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} /> : <div className="rm-retest-mode-note"><strong>本次只复核功能完成状态</strong><span>不把首次未完成动作转换成普通疼痛分数比较。</span></div>}
-        {finalRetestNeedsScore && finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
-          <span>本次整体结果</span>
-          <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
-          <p>{finalResult === "better" ? "本次方向有帮助，按当前训练版本继续。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "本次没有明显变化，先不进阶；持续不变时建议线下评估。"}</p>
-        </section> : null}
-          <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => { setTrainingPlanSaved(false); setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>完成并查看总结</button></div>
-      </section>;
-    }
-    if (bilateralTrainingBlocked) return <section className="rm-page">
-      <StepHeading eyebrow="第5步 · 训练与居家" title="当前不能进入训练" />
-      <section className="rm-complete-panel is-referral"><span>双侧安全出口</span><h2>先停止当前安排并重新确认</h2><p>当前存在安全信号或处理后加重，不能用低负荷训练绕过复评。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => reopenAssessment()}>返回相关评估</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button></div></section>
-    </section>;
-    return <section className="rm-page">
-      <StepHeading eyebrow="第5步 · 训练与居家" title="今天需要做的训练" />
-      {tissuePathway.id !== "standard" ? <section className="rm-training-hold"><span>{tissuePathway.title}</span><strong>{tissuePathway.trainingStages[0]}</strong><p>{tissuePathway.trainingStages.join(" → ")}</p></section> : null}
-      {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低刺激基础活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
-      {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低刺激基础活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
-      {bilateralLowLoadOnly ? <section className="rm-training-hold"><span>双侧评估尚未全部完成</span><strong>当前只开放低负荷基础活动</strong><p>另一侧未完成针对性评估前，不进入正常训练、不增加阻力或动作难度。完成反馈后可返回处理记录继续另一侧。</p></section> : null}
-      <div className="rm-stage-line-wrap"><div className="rm-stage-line" aria-label="训练目标进度">{displayGoals.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div>{displayGoals.length > 3 ? <p className="rm-stage-scroll-hint">左右滑动查看后续目标</p> : null}</div>
-      {lowLoadTrainingOnly ? <div className="rm-training-load-badge" role="note"><strong>低负荷基础活动</strong><span>当前只保持舒适活动和基础控制，暂不增加速度、阻力或动作难度。</span></div> : null}
-
-
-      {(effectiveFocusLabels.length || effectiveControlLabels.length) ? <section className="rm-effective-home-focus">
-        <span>本次改善相关内容</span>
-        <div>{effectiveFocusLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留轻柔放松</small></article>)}{effectiveControlLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留练习</small></article>)}</div>
-      </section> : null}
-
-      <div className="rm-exercise-list">{exercises.map((exercise, index) => {
-        const open = openExercise === exercise.id;
-        const feedback = exerciseFeedback[exercise.id];
-        const targetReps = firstNumber(exercise.reps);
-        const exerciseVisual = exerciseActionVisual(exercise, actionImageVariant(intake));
-        return <article className="rm-exercise" key={exercise.id}>
-          <button type="button" className="rm-exercise-summary" aria-expanded={open} onClick={() => setOpenExercise(open ? "" : exercise.id)}><i>{index + 1}</i><span><small>{exercise.startPosition}</small><strong>{exercise.title}</strong></span><b>{exercise.sets} · {exercise.reps}</b><em>{open ? "收起" : "查看做法"}</em></button>
-          {open ? <div className="rm-exercise-detail">
-            {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : <div className="rm-demo-strip is-training"><div><i>1</i><span>起始</span></div><b>→</b><div><i>2</i><span>发力</span></div><b>→</b><div><i>3</i><span>回位</span></div></div>}
-            <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
-            <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
-            <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
-            <section className="rm-first-set"><header><span>第一组做完后，选一个最接近的情况</span><strong>{feedbackAdvice(exercise)}</strong></header><div className="rm-feedback-quick">{([
-              ["reduce", "做不了或动作变形"],
-              ["hold", "难度正合适"],
-              ["progress", "做完还很轻松"],
-              ["worse", "做完更不舒服"],
-            ] as const).map(([mode, label]) => {
-              const selected = mode === "worse" ? feedback?.symptom === "worse" : mode === "reduce" ? Boolean(feedback?.formChanged) : mode === "progress" ? (feedback?.reserve ?? 0) >= 5 && feedback?.symptom !== "worse" : Boolean(feedback && !feedback.formChanged && feedback.reserve >= 2 && feedback.reserve < 5 && feedback.symptom !== "worse");
-              return <button type="button" key={mode} disabled={bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => setExerciseFeedback((current) => ({ ...current, [exercise.id]: mode === "worse"
-                ? { completed: targetReps, formChanged: false, symptom: "worse", reserve: 3 }
-                : mode === "reduce" ? { completed: Math.max(1, targetReps - 3), formChanged: true, symptom: "same", reserve: 0 }
-                  : mode === "progress" ? { completed: targetReps, formChanged: false, symptom: "same", reserve: 5 }
-                    : { completed: targetReps, formChanged: false, symptom: "same", reserve: 3 } }))}>{label}</button>;
-            })}</div></section>
-            {!exerciseVisual ? <button type="button" className="rm-video-placeholder" disabled><span>动作视频</span><b>暂未上传</b></button> : null}
-          </div> : null}
-        </article>;
-      })}</div>
-
-      {homeRelaxationTargets.length ? <section className="rm-home-relaxation" aria-label="训练结束后的自主放松">
-        <header><span>训练结束后</span><strong>针对性自主放松</strong><small>只安排本次检查紧张、处理有效或训练涉及的肌肉区域</small></header>
-        <div>{homeRelaxationTargets.map((target) => <article key={target.id}>
-          <div><b>{target.title}</b><span>{target.dosage}</span></div>
-          <p>{target.instruction}</p>
-          <small>{target.limit}</small>
-        </article>)}</div>
-        <footer>如果出现刺痛、麻、电感或症状加重，立即停止。</footer>
-      </section> : null}
-
-      {trainingHasWorsened ? <section className="rm-training-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
-
-      {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section className="rm-training-feedback-gate"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
-
-      <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再决定进阶" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "本次只记录基础活动和反馈，不生成正常训练进阶结论。" : "连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。"}</p></section>
-
-      {!trainingHasWorsened ? <div className="rm-page-actions rm-training-actions"><button type="button" onClick={() => goToStep(3)}>返回处理记录</button><button type="button" className="rm-primary" disabled={!hasCompleteTrainingFeedback} onClick={() => {
-        if (!exercises.length || tissuePathway.retestTiming !== "same-session" || !trainingNeedsChiefRetest) {
-          setFinalRetestConfirmed(false);
-          setTrainingPlanSaved(false);
-          setTrainingComplete(true);
-          setTransitionTarget("summary");
-        } else {
-          setFinalRetestScore(0);
-          setFinalRetestConfirmed(false);
-          setTrainingReadyForFinalRetest(true);
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }}>{!exercises.length ? "完成当前安排，查看总结" : tissuePathway.retestTiming !== "same-session" ? "训练完成，稍后复查" : trainingNeedsChiefRetest ? "训练完成，整体复测" : "训练完成，查看总结"}</button><button type="button" className="rm-secondary-action" onClick={() => { setTrainingComplete(false); setTrainingPlanSaved(true); setTrainingReadyForFinalRetest(false); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>暂不训练，保存方案</button></div> : null}
-    </section>;
-  }
-
-  function followupDecision(reviewComplete: boolean) {
-    const values = Object.values(followupTrends);
-    if (hasNewSymptom === "yes") return { tone: "review", title: "回到相关评估", text: "先确认新症状的发生过程和安全信息，再决定是否沿用原方案。" };
-    if (!hasNewSymptom) return { tone: "pending", title: "先确认本次有没有新情况", text: "确认后再复查上次结束时仍存在的问题。" };
-    if (!reviewComplete || (chiefScoreComparable && !followupScoreConfirmed)) return { tone: "pending", title: "先完成本次复查", text: "本次答案完成后，再与上次康复结束状态比较。" };
-    const scoreComparison = compareFollowupScore({
-      currentScore: followupScore,
-      currentConfirmed: followupScoreConfirmed,
-      previousScore: previousSessionScore,
-    });
-    if (!chiefScoreComparable) {
-      if (values.includes("worse")) return { tone: "reduce", title: "降低刺激并重新评估", text: "不要继续增加同一处理力度或训练量，回查活动、局部反应和遗漏因素。" };
-      if (followupCandidates.length) return { tone: "hold", title: "复查后继续上次有效处理", text: "先快速比较相关活动范围，再继续上次有效的轻柔松解，最后进入训练。" };
-      if (values.includes("better")) return { tone: "progress", title: "继续有效方向", text: "保留出现改善的活动或训练，一次只进阶一个变量。" };
-      return { tone: "hold", title: "保持当前方案", text: "复查仍存在的问题，保持当前组数、个数和动作版本。" };
-    }
-    if (scoreComparison === "worse" || values.includes("worse")) return { tone: "reduce", title: "本次状态比上次差", text: "先完成本次评估，不沿用旧结论直接增加处理或训练。" };
-    if (followupCandidates.length) return { tone: "hold", title: "复查后继续上次有效处理", text: "先快速比较相关活动范围，再继续上次有效的轻柔松解，最后进入训练。" };
-    if (scoreComparison === "better" && values.filter((item) => item === "better").length >= 1) return { tone: "progress", title: "继续处理，并推进一个变量", text: "仍存在的活动或疼痛问题继续处理；训练一次只进阶一个变量。" };
-    return { tone: "hold", title: "保持当前方案", text: "复查仍存在的问题，保持当前组数、个数和动作版本。" };
-  }
-
-  function renderFollowup() {
-    const completedSessionScores = sessionScoreTrend(sessionHistory).map((item) => item.score);
-    const history = [intake.baselineScore, ...(completedSessionScores.length ? completedSessionScores : [sessionEndScore])];
-    const scoreTrend = sessionScoreTrend(sessionHistory);
-    const previousSession = sessionHistory.find((item) => item.sessionNumber === sessionNumber - 1) ?? sessionHistory.at(-1);
-    const previousFocus = previousSession?.nextFocus.map((focus) => {
-      const strength = region?.strengths.find((item) => focus.includes(item.id));
-      const functional = region?.functions.find((item) => focus.includes(item.id));
-      const assessment = [...(region?.directions ?? []), ...(region?.specialTests ?? [])].find((item) => focus.includes(item.id));
-      const matched = strength ?? functional ?? assessment;
-      return matched ? focus.replace(matched.id, matched.title) : focus;
-    }) ?? [];
-    const chiefWasRecorded = hasClearChiefAction(intake);
-    const hasChiefAction = chiefScoreComparable && chiefWasRecorded;
-    const chiefRetestUnavailableTitle = intake.side === "双侧/中间"
-      ? "双侧主诉采用整体感受记录"
-      : reportedActionSummary(intake).length > 1
-        ? "多个主诉动作分别复查"
-        : chiefWasRecorded
-          ? "先完成实际动作评估"
-          : "当前没有固定主诉动作";
-    const chiefRetestUnavailableText = intake.side === "双侧/中间"
-      ? "复查双侧整体感受、活动范围和动作质量，不生成单侧式前后评分。"
-      : reportedActionSummary(intake).length > 1
-        ? "主诉动作只用于筛选评估和处理线索；本次分别复查已经实际完成的动作，不合并成一个分数。"
-        : chiefWasRecorded
-          ? "主诉动作还没有形成可比较的现场基线；先复查已记录的活动范围、症状和动作质量。"
-          : "本次先复查活动度、肿胀或按压痛等已有问题，不强行生成动作评分。";
-    const followupTrainingNeedsChiefRetest = needsTrainingToleranceRetest({
-      comparableChief: hasChiefAction,
-      immediateTiming: tissuePathway.retestTiming === "same-session",
-    });
-    const localReviewIdSet = new Set(localLimbDecision?.reviewIds ?? []);
-    // 已明确恢复的项目不在下一次机械重复；上一轮没有记录到的必要基础项
-    // 仍可出现，不能把“缺少记录”误当成已经恢复。
-    const wasUnresolvedLastSession = (id: string) => previousSessionForReview?.reviewResults.find((item) => item.id === id)?.result !== "better";
-    const remainingMotionReviews = Array.from(new Map(findings
-      .filter((finding) => !finding.internal && finding.id.startsWith("motion:"))
-      .filter((finding) => !localLimbDecision || localReviewIdSet.has(motionIdFromFinding(finding)))
-      .filter((finding) => wasUnresolvedLastSession(finding.id))
-      .map((finding) => {
-        const directionId = anyMotionIdFromFinding(finding)!;
-        const assessment = assessments.find((item) => item.id === `motion:${directionId}`);
-        const title = assessment?.title ?? finding.title.split(/：|范围偏小/)[0];
-        return [directionId, [`motion:${directionId}`, title, assessment?.how ?? "按第一次相同的动作再做一次"] as [string, string, string]];
-      })).values());
-    const strengthAndFunctionReviews: Array<[string, string, string]> = (previousSessionForReview?.reviewResults ?? [])
-      .filter((item) => item.result !== "better" && (item.id.startsWith("strength:") || item.id.startsWith("function:")))
-      .flatMap((item) => {
-        const direct = assessments.find((assessment) => assessment.id === item.id);
-        const paired = assessments.find((assessment) => assessment.pairedStrengthId === item.id);
-        if (direct) return [[direct.id, direct.title, direct.how] as [string, string, string]];
-        if (paired) {
-          const rawId = item.id.replace(/^strength:/, "");
-          const source = region?.strengths.find((assessment) => assessment.id === rawId);
-          return [[item.id, paired.pairedStrengthTitle ?? item.label, source?.how ?? paired.how] as [string, string, string]];
-        }
-        return [];
-      })
-      .filter((item, index, list) => list.findIndex((entry) => entry[0] === item[0]) === index);
-    const reviewItems: Array<[string, string, string]> = [
-      ...remainingMotionReviews,
-      ...strengthAndFunctionReviews,
-      ...(intake.symptoms.includes("肿胀或淤青") && wasUnresolvedLastSession("swelling") ? [["swelling", `肿胀：${intake.swellingLocation || intake.location}`, "比较范围和轮廓"] as [string, string, string]] : []),
-      ...((intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压")) && wasUnresolvedLastSession("tenderness") ? [["tenderness", `按压痛：${intake.tendernessLocation || intake.location}`, "只在同一位置轻按一次"] as [string, string, string]] : []),
-      ...((intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化")) && wasUnresolvedLastSession("sensory") ? [["sensory", `麻或电感：${intake.sensoryLocation || intake.location}`, "比较范围是否变化"] as [string, string, string]] : []),
-    ];
-    const unresolvedFollowupMotionIds = remainingMotionReviews
-      .filter(([id]) => followupTrends[id] !== "better")
-      .map(([id]) => id.replace(/^motion:/, ""));
-    const followupTensionContext = `${intake.location} ${intake.description} ${intake.symptomType} ${intake.provocationTypes.join(" ")}`;
-    const followupTensionOptions = [...new Set(unresolvedFollowupMotionIds.flatMap((directionId) => tensionLocationOptions(directionId, followupTensionContext)))];
-    const followupTensionComparisonLabel = intake.side === "双侧/中间" ? "两侧感觉接近" : "没有明显差别";
-    const followupTensionRequired = tissuePathway.id === "standard" && !localLimbDecision && unresolvedFollowupMotionIds.length > 0;
-    const followupTensionComplete = !followupTensionRequired || followupTensionLocations.length > 0;
-    const toggleFollowupTensionLocation = (location: string) => setFollowupTensionLocations((current) => {
-      const alreadySelected = current.includes(location);
-      const specialLabels = ["没有明显差别", "两侧感觉接近", "暂不判断"];
-      if (specialLabels.includes(location)) return alreadySelected ? [] : [location];
-      if (alreadySelected) return current.filter((entry) => entry !== location);
-      return [...current.filter((entry) => !specialLabels.includes(entry)), location];
-    });
-    const reviewComplete = reviewItems.every(([id]) => Boolean(followupTrends[id])) && followupTensionComplete;
-    const decision = followupDecision(reviewComplete);
-    const currentRecords = followupTrialRecords.filter((record) => record.sessionNumber === sessionNumber);
-    const followupTreatmentWorsened = treatmentMustStop(currentRecords);
-    const lastWorsenedFollowup = [...currentRecords].reverse().find((record) => (record.result === "worse" || record.activityWorsened) && !record.reviewOnly);
-    const mixedFollowupOutcome = Boolean(lastWorsenedFollowup?.activityWorsened
-      && lastWorsenedFollowup.chiefRetested
-      && lastWorsenedFollowup.afterScore < lastWorsenedFollowup.beforeScore);
-    // 后续训练调整中的四个选项同时承担“本次第一组反馈”和“下一次调整”两层含义；
-    // 未选择时不允许把本次训练保存为已完成，避免后续记录出现无反馈的训练结果。
-    const pendingFollowupFeedbackExercises = pendingTrainingFeedback(exercises, followupExerciseChoices);
-    const followupTrainingFeedbackComplete = trainingFeedbackComplete(exercises, followupExerciseChoices);
-    const followupWorsenedExercise = exercises.find((exercise) => followupExerciseChoices[exercise.id] === "worse");
-    const followupWorsenedExerciseAssessmentIds = followupWorsenedExercise
-      ? assessments.filter((assessment) => (assessment.tags ?? []).some((tag) => followupWorsenedExercise.tags.includes(tag))).map((assessment) => assessment.id).slice(0, 3)
-      : [];
-    const followupNeedsTreatmentFinalRetest = needsTreatmentFinalChiefRetest(currentRecords, hasChiefAction);
-    const currentRangeOutcomes = currentRecords.reduce<Record<string, CompletedRangeRetestAnswer>>((all, record) => ({ ...all, ...(record.rangeOutcomes ?? {}) }), {});
-    const currentRangeScores = currentRecords.reduce<Record<string, number>>((all, record) => ({ ...all, ...(record.rangeScores ?? {}) }), {});
-    const previousFollowupRangeScores = followupTrialRecords
-      .filter((record) => record.sessionNumber < sessionNumber)
-      .reduce<Record<string, number>>((all, record) => ({ ...all, ...(record.rangeScores ?? {}) }), {});
-    const completedFollowupKeys = new Set(currentRecords.filter((record) => !record.reviewOnly && !record.retestOnly).map((record) => record.treatmentKey ?? record.candidateId));
-    const selectedCandidate = followupCandidates.find((candidate) => candidate.id === followupCandidateId
-      && !completedFollowupKeys.has(candidateTreatmentKey(candidate, intake.side)))
-      ?? followupCandidates.find((candidate) => !completedFollowupKeys.has(candidateTreatmentKey(candidate, intake.side))
-        && followupCandidateNeedsWork(candidate, currentRangeOutcomes));
-    const selectedCandidateGroup = selectedCandidate ? [selectedCandidate] : [];
-    const selectedDisplay = selectedCandidate
-      ? treatmentDisplay(selectedCandidate, region?.name || intake.location || "当前部位", intake.swellingLocation, intake.side)
-      : null;
-    const followupWorseSide = findings.find((finding) => finding.side && finding.side !== "两侧接近")?.side;
-    const followupBeforeScore = currentRecords.length ? currentRecords[currentRecords.length - 1].afterScore : followupScore;
-    const followupSessionScore = currentRecords.at(-1)?.afterScore ?? followupScore;
-    const selectedRetestIds = dedupeAssessmentIdsByAction(selectedCandidateGroup.flatMap((candidate) => followupRetestIds(candidate)));
-    const followupChiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
-    const followupChiefDirectionIds = region ? chiefMotionDirectionIds(intake, region.id) : [];
-    const selectedRetestActionIds = new Set(selectedRetestIds.map(canonicalActionIdFromAssessmentId));
-    const liveFollowupRetestFindings = selectedRetestIds.length && selectedCandidate
-      ? dedupeRetestFindingsByAction(findings
-        .filter((finding) => finding.id.startsWith("motion:") && selectedRetestActionIds.has(actionIdFromFinding(finding)))
-        // 复诊先快速复查上次相关活动范围；即使当前疼痛很低，也不能直接跳过。
-        .filter((finding) => finding.priority === "support" || motionWasSymptomatic(motionIdFromFinding(finding), assessmentResults, followupChiefDirection))
-        .filter((finding) => selectedCandidateGroup.some((candidate) => directionNeedsCandidate(candidate, motionIdFromFinding(finding), currentRangeOutcomes))))
-      : [];
-    const activeFollowupRetestPlan = followupReadyToRetest ? followupRetestPlan : null;
-    const activeFollowupDirectionIds = activeFollowupRetestPlan?.directionIds ?? [];
-    const followupRetestFindings = activeFollowupRetestPlan?.candidateId === selectedCandidate?.id
-      ? dedupeRetestFindingsByAction(findings.filter((finding) => finding.id.startsWith("motion:") && activeFollowupDirectionIds.some((id) => samePhysicalAction(id, motionIdFromFinding(finding)))))
-      : liveFollowupRetestFindings;
-    const followupControlMotionIds = [...new Set(followupRetestFindings.map(motionIdFromFinding))];
-    const followupChiefMatchesRange = Boolean(followupChiefDirection && followupRetestFindings.some((finding) => samePhysicalAction(motionIdFromFinding(finding), followupChiefDirection)));
-    const shouldRetestChiefNow = hasChiefAction && !followupChiefMatchesRange && !currentRecords.some((record) => record.chiefRetested);
-    const followupShortTitle = (finding: Finding) => {
-      const assessment = assessments.find((item) => item.id === finding.id);
-      return assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : finding.title.split(/：|范围偏小|会引起症状/)[0];
-    };
-    const followupProblemIsCurrent = (problem: TreatmentProblem) => {
-      const directionId = problem.directionId;
-      return problem.findingIds.includes("chief")
-        || Boolean(directionId && selectedCandidateGroup.some((candidate) => (candidate.retestIds ?? []).some((id) => samePhysicalAction(id, directionId)) && directionNeedsCandidate(candidate, directionId, currentRangeOutcomes)));
-    };
-    const followupProblemWasHandled = (problem: TreatmentProblem) => currentRecords.some((record) => {
-      if (problem.findingIds.includes("chief") && record.targetId === "target:chief") return true;
-      if (problem.findingIds.some((findingId) => record.targetId === `target:${findingId}`)) return true;
-      return Boolean(problem.directionId && (valueForPhysicalAction(record.rangeOutcomes, problem.directionId)
-        || record.targetId?.startsWith("target:motion:") && samePhysicalAction(record.targetId.replace("target:motion:", ""), problem.directionId)));
-    });
-    const followupProblemItems = treatmentProblems
-      .map((problem) => ({ ...problem, state: followupProblemIsCurrent(problem) ? "current" as const : followupProblemWasHandled(problem) ? "done" as const : "pending" as const }))
-      .sort((a, b) => ({ current: 0, pending: 1, done: 2 }[a.state] - { current: 0, pending: 1, done: 2 }[b.state]));
-    const followupRangeComplete = followupRetestFindings.length > 0 && followupRetestFindings.every((finding) => {
-      const directionId = motionIdFromFinding(finding);
-      return Boolean(followupMovementResponses[directionId]
-        && followupMovementDiscomforts[directionId]
-        && (followupMovementDiscomforts[directionId] === "no" || followupMovementScoreConfirmed[directionId]));
-    });
-    const followupChiefScoreComplete = !shouldRetestChiefNow || Boolean(followupPostDiscomfort && (followupPostDiscomfort === "no" || followupPostScoreConfirmed));
-    const followupRetestComplete = followupRangeComplete && followupChiefScoreComplete;
-    const followupRangeNext = followupRetestFindings.reduce<string[]>((parts, finding) => {
-      const directionId = motionIdFromFinding(finding);
-      const outcome = followupMovementResponses[directionId];
-      const title = followupShortTitle(finding);
-      const comparison = assessments.find((item) => item.id === finding.id)?.comparison ?? "contralateral";
-      const canUsePassive = directionAllowsPassive(directionId);
-      if (outcome === "both-match") parts.push(`${title}已接近${motionComparisonTarget(comparison)}`);
-      else if (outcome === "passive-match-active-limited") parts.push(`${title}主动范围仍偏小`);
-      else if (["better-passive-limited", "passive-limited"].includes(outcome)) parts.push(`${title}${canUsePassive ? "被动范围仍偏小" : "主动范围仍偏小"}`);
-      else if (outcome === "worse") parts.push(`${title}比处理前更差`);
-      return parts;
-    }, []);
-    const roadmapSummary = (record: { rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>; chiefRetested?: boolean; afterScore: number; beforeScore: number }): string => {
-      const parts: string[] = [];
-      for (const [directionId, outcome] of Object.entries(record.rangeOutcomes ?? {})) {
-        const title = assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId;
-        const label = outcome === "both-match" ? "范围恢复" : outcome === "worse" ? "范围更差" : "范围改善";
-        parts.push(`${title}${label}`);
-      }
-      if (record.chiefRetested && record.afterScore < record.beforeScore) parts.push(`不适降 ${record.beforeScore - record.afterScore} 分`);
-      return parts.join("、");
-    };
-    const followupCompletedLabels = currentRecords
-      .filter((record) => !record.reviewOnly && !record.retestOnly)
-      .map((record) => ({ label: record.treatmentName ?? record.candidateTitle, summary: roadmapSummary(record) }))
-      .filter((item, index, list) => list.findIndex((entry) => entry.label === item.label) === index);
-    const followupCurrentRoadmapItem = followupReadyToRetest
-      ? `复测${followupRetestFindings.length ? followupRetestFindings.map(followupShortTitle).join("、") : (selectedDisplay?.action ?? "当前处理")}`
-      : selectedDisplay ? `${selectedDisplay.site}：${selectedDisplay.action}` : "选择下一项处理";
-    const followupUpcomingRoadmapItems = [
-      followupReadyToRetest
-        ? "记录复测结果"
-        : `复测${followupRetestFindings.length ? followupRetestFindings.map(followupShortTitle).join("、") : (selectedDisplay?.action ?? "当前处理")}`,
-      ...followupProblemItems
-        .filter((problem) => problem.state === "pending")
-        .map((problem) => `继续处理：${problem.title}`),
-      "调整训练内容",
-    ].filter((label, index, list) => Boolean(label) && list.indexOf(label) === index).slice(0, 3);
-
-    if (followupStage === "summary") {
-      const completedSummary = sessionHistory.find((item) => item.sessionNumber === sessionNumber) ?? sessionHistory.at(-1);
-      const nextRecommendation = recommendNextSession({
-        acute: ["今天或昨天", "2～7天"].includes(intake.onset) && intake.mechanism !== "没有明确受伤",
-        hasSwelling: intake.symptoms.includes("肿胀或淤青") && completedSummary?.reviewResults.some((item) => item.id === "swelling" && item.result !== "better") !== false,
-        hasImmediateTreatment: Boolean(completedSummary?.treatments.length),
-        hasUnresolvedMobility: Boolean(completedSummary?.reviewResults.some((item) => item.id.startsWith("motion:") && item.result !== "better")),
-        hasTraining: Boolean(completedSummary?.training.length),
-        trainingStage: exerciseStage,
-        waitingForMedicalClearance: structuralImagingSignal || assessmentNeedsReferral,
-        worsened: Boolean(completedSummary?.reviewResults.some((item) => item.result === "worse") || completedSummary?.treatments.some((item) => item.result === "worse" || item.activityWorsened)),
-      });
-      const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
-      return <section className="rm-page rm-session-summary">
-        <StepHeading eyebrow={`第${sessionNumber}次康复`} title="本次康复总结" />
-        <section className="rm-session-hero"><div><span>本次主诉</span><h2>{chiefComplaintLabel(intake)}</h2><p>本次康复已经保存</p></div>{typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
-        {summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
-        <div className="rm-summary-dashboard">
-          <section className="rm-summary-module is-treatments"><header><div><span>本次处理</span><strong>{completedSummary?.treatments.length ?? 0}项</strong></div></header><div className="rm-summary-compact-list">{completedSummary?.treatments.length ? completedSummary.treatments.map((item) => <article key={item.id}><strong>{item.label}</strong><span>{item.activityWorsened ? "已停止（活动变差）" : item.result === "better" ? "有效" : item.result === "partial" ? "部分改善" : item.result === "worse" ? "已停止" : "变化不明显"}</span></article>) : <p>本次没有新增现场处理。</p>}</div></section>
-          <section className="rm-summary-module is-training"><header><div><span>居家训练</span><strong>{completedSummary?.training.length ?? 0}个</strong></div></header><div className="rm-summary-compact-list">{completedSummary?.training.map((item) => <article key={item.id}><strong>{item.label}</strong><span>{item.adjustment === "progress" ? "进阶一项" : item.adjustment === "reduce" ? "降低一档" : "保持当前"}</span></article>)}{homeRelaxationTargets.map((target) => <article key={target.id}><strong>{target.title}</strong><span>{target.dosage}</span></article>)}</div></section>
-        </div>
-        <NextSessionCard recommendation={nextRecommendation} nextSessionNumber={sessionNumber + 1} completedAt={completedSummary?.completedAt} onStart={startNextFollowupSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: `session-${sessionNumber}`, sourceLabel: `第${sessionNumber}次康复结束后的反应`, timing: "later", beforeScore: completedSummary?.endingScore ?? followupSessionScore, afterScore: completedSummary?.endingScore ?? followupSessionScore, relatedAssessmentIds: completedSummary?.reviewResults.filter((item) => item.result !== "better").map((item) => item.id) ?? [] })} />
-      </section>;
-    }
-
-    if (followupStage === "treatment" && followupTreatmentWorsened) return <section className="rm-page">
-      <StepHeading eyebrow={`第${sessionNumber}次康复 · 处理并复测`} title="本次处理已暂停" />
-      <section className="rm-complete-panel is-referral"><span>刚才的反应</span><h2>{mixedFollowupOutcome ? "疼痛评分下降，但活动表现变差" : "症状或活动表现变差"}</h2><p>{mixedFollowupOutcome ? "疼痛分数的下降和活动表现的变差需要分开记录。当前处理先停止，不把疼痛改善当作整体安全；接下来只确认变差的活动和相关检查。" : "先停止刚才的处理，只确认症状变化和直接相关的检查。"}</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "treatment", sourceId: lastWorsenedFollowup?.candidateId ?? "followup-treatment", sourceLabel: lastWorsenedFollowup?.treatmentName ?? lastWorsenedFollowup?.candidateTitle ?? "刚才的处理", timing: "immediate", beforeScore: lastWorsenedFollowup?.beforeScore ?? followupScore, afterScore: lastWorsenedFollowup?.afterScore ?? followupSessionScore, relatedAssessmentIds: Object.keys(lastWorsenedFollowup?.rangeOutcomes ?? {}).map((id) => `motion:${id}`) })}>确认加重后的变化</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section>
-    </section>;
-
-    if (followupStage === "treatment") return <section className="rm-page">
-      <StepHeading eyebrow={`第${sessionNumber}次康复 · 处理并复测`} title="针对性处理" />
-      {swellingGuidance && followupTrends.swelling !== "better" && currentRecords.length === 0 ? <section className="rm-swelling-reminder">
-        <span>肿胀管理</span>
-        <strong>{intake.swellingLocation || intake.location || "肿胀位置"}</strong>
-        <p>{candidateAction(swellingGuidance)}</p>
-        <small>今天晚些时候或明天再比较，不在每项处理后重复检查。</small>
-      </section> : null}
-      {selectedCandidate && selectedDisplay ? <>
-        <TreatmentRoadmap completed={followupCompletedLabels} current={followupCurrentRoadmapItem} upcoming={followupUpcomingRoadmapItems} />
-        {intake.side === "双侧/中间" ? <p className="rm-bilateral-order">{followupWorseSide ? `先处理${followupWorseSide}，再用同样方法处理另一侧。` : "两侧使用相同方法和强度处理。"}</p> : null}
-        {!followupReadyToRetest ? <TreatmentActionCard candidate={selectedCandidate} display={selectedDisplay} controlMotionIds={followupControlMotionIds} /> : null}
-        {!followupReadyToRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => { setFollowupRetestPlan({ targetId: "target:followup", candidateId: selectedCandidate.id, directionIds: followupRetestFindings.map(motionIdFromFinding) }); setFollowupPostScore(0); setFollowupPostScoreConfirmed(false); setFollowupPostDiscomfort(""); setFollowupMovementResponses({}); setFollowupMovementDiscomforts({}); setFollowupMovementScores({}); setFollowupMovementScoreConfirmed({}); setFollowupReadyToRetest(true); }}>处理完成，开始复测</button></div> : <section className="rm-retest rm-followup-retest">
-          {shouldRetestChiefNow ? <header><span>复测动作</span><h2>{chiefActionLabel(intake)}</h2><strong>处理前 {followupBeforeScore}/10</strong></header> : null}
-          {shouldRetestChiefNow ? <ScoreSlider compact value={followupPostScore} selected={followupPostScoreConfirmed} onChange={(value) => { setFollowupPostScore(value); setFollowupPostDiscomfort(value === 0 ? "no" : "yes"); setFollowupPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${followupBeforeScore}/10`} /> : null}
-          {followupRetestFindings.length ? <section className="rm-followup-range-check">
-            <header className="rm-retest-checklist-header"><div><span>复测清单</span><strong>{followupRetestFindings.length}个相关动作</strong></div><small>每个动作只记录一次：先看活动范围，再记录不适程度。</small></header>
-            <div className="rm-batch-range-list">{followupRetestFindings.map((finding, index) => {
-              const directionId = motionIdFromFinding(finding);
-              const selected = followupMovementResponses[directionId];
-              const discomfort = followupMovementDiscomforts[directionId];
-              const knownDiscomfort = motionWasSymptomatic(directionId, assessmentResults, followupChiefDirection);
-              const previousScore = valueForPhysicalAction(currentRangeScores, directionId)
-                ?? valueForPhysicalAction(previousFollowupRangeScores, directionId)
-                ?? latestRangeScoreForDirection(directionId)
-                ?? (assessmentResults[finding.id]?.discomfort === "yes" ? assessmentResults[finding.id]?.symptomScore : samePhysicalAction(directionId, followupChiefDirection) ? followupBeforeScore : undefined);
-              const comparison = assessments.find((item) => item.id === finding.id)?.comparison ?? "contralateral";
-              const canUsePassive = directionAllowsPassive(directionId);
-              const passiveOnly = assessments.find((item) => item.id === finding.id)?.testMode === "passive";
-              const rangeRecorded = Boolean(selected);
-              const symptomRecorded = knownDiscomfort ? Boolean(followupMovementScoreConfirmed[directionId]) : Boolean(discomfort) && (discomfort !== "yes" || Boolean(followupMovementScoreConfirmed[directionId]));
-              return <article key={finding.id} className={rangeRecorded && symptomRecorded ? "is-complete" : "is-pending"}><header><div><span className={followupChiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "rm-chief-badge" : ""}>{followupChiefDirectionIds.some((id) => samePhysicalAction(directionId, id)) ? "主诉动作" : `动作 ${index + 1}`}</span><strong>{followupShortTitle(finding)}</strong></div><em>{rangeRecorded && symptomRecorded ? "已记录" : "待记录"}</em></header><section className="rm-retest-field"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动范围" : "活动范围"}</span><small>先选一项</small></div><h3>{activeMotionRangeQuestion(finding.id, intake.side === "双侧/中间", passiveOnly)}</h3><AnswerChoiceGrid options={rangeRetestOptions(comparison, canUsePassive, intake.side === "双侧/中间", passiveOnly)} value={selected} onChange={(value) => setFollowupMovementResponses((current) => ({ ...current, [directionId]: value }))} /></section>{knownDiscomfort ? <section className="rm-retest-score-field"><div className="rm-retest-field-title"><span>不适评分</span><small>参考上次分数选择现在的程度</small></div><ScoreSlider compact value={followupMovementScores[directionId] ?? 0} selected={Boolean(followupMovementScoreConfirmed[directionId])} onChange={(value) => {
-                setFollowupMovementDiscomforts((current) => ({ ...current, [directionId]: value === 0 ? "no" : "yes" }));
-                setFollowupMovementScores((current) => ({ ...current, [directionId]: value }));
-                setFollowupMovementScoreConfirmed((current) => ({ ...current, [directionId]: true }));
-                if (samePhysicalAction(directionId, followupChiefDirection)) { setFollowupPostDiscomfort(value === 0 ? "no" : "yes"); setFollowupPostScore(value); setFollowupPostScoreConfirmed(true); }
-              }} label={passiveOnly ? "现在的被动不适程度" : "现在的不适程度"} context={typeof previousScore === "number" ? `处理前 ${previousScore}/10` : "处理前有不适"} /></section> : <section className="rm-retest-symptom-question"><div className="rm-retest-field-title"><span>{passiveOnly ? "被动活动不适" : "动作不适"}</span><small>再记录现在的感受</small></div><h3>{passiveOnly ? "被动活动时有没有出现新的不适？" : "做这个动作时有没有出现新的不适？"}</h3><div>{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={discomfort === value ? "is-selected" : ""} onClick={() => {
-                setFollowupMovementDiscomforts((current) => ({ ...current, [directionId]: value }));
-                setFollowupMovementScores((current) => ({ ...current, [directionId]: 0 }));
-                setFollowupMovementScoreConfirmed((current) => ({ ...current, [directionId]: value === "no" }));
-                if (samePhysicalAction(directionId, followupChiefDirection)) { setFollowupPostDiscomfort(value); setFollowupPostScore(0); setFollowupPostScoreConfirmed(value === "no"); }
-              }}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>{discomfort === "yes" ? <ScoreSlider compact value={followupMovementScores[directionId] ?? 0} selected={Boolean(followupMovementScoreConfirmed[directionId])} onChange={(value) => {
-                setFollowupMovementScores((current) => ({ ...current, [directionId]: value }));
-                setFollowupMovementScoreConfirmed((current) => ({ ...current, [directionId]: true }));
-                if (samePhysicalAction(directionId, followupChiefDirection)) { setFollowupPostScore(value); setFollowupPostScoreConfirmed(true); }
-              }} label="现在有多不舒服？" context={typeof previousScore === "number" ? `初次评估 ${previousScore}/10` : `本次处理前 ${followupBeforeScore}/10`} /> : null}</section>}</article>;
-            })}</div>
-            <section className={`rm-auto-result is-${followupRetestComplete ? "partial" : "waiting"}`}><span>下一步</span><strong>{followupRangeNext.length ? followupRangeNext.join("；") : "请记录每个方向"}</strong><button type="button" className="rm-primary" disabled={!followupRetestComplete} onClick={() => {
-              const rangeOutcomes = Object.fromEntries(followupRetestFindings.map((finding) => [motionIdFromFinding(finding), followupMovementResponses[motionIdFromFinding(finding)]])) as Record<string, CompletedRangeRetestAnswer>;
-              const rangeDiscomforts = Object.fromEntries(followupRetestFindings.map((finding) => { const directionId = motionIdFromFinding(finding); return [directionId, followupMovementDiscomforts[directionId]]; })) as Record<string, YesNo>;
-              const rangeScores = Object.fromEntries(followupRetestFindings.map((finding) => { const directionId = motionIdFromFinding(finding); return [directionId, followupMovementDiscomforts[directionId] === "yes" ? followupMovementScores[directionId] : 0]; })) as Record<string, number>;
-              const outcomes = Object.values(rangeOutcomes);
-              const scoreResult = followupPostScoreConfirmed ? resultFromScore(followupBeforeScore, followupPostScore) : "same";
-              const allResolved = outcomes.every((outcome) => outcome === "both-match");
-              const anyWorse = outcomes.some((outcome) => outcome === "worse");
-              const hasRangeChange = outcomes.some((outcome) => ["both-match", "passive-match-active-limited", "better-passive-limited"].includes(outcome));
-              const result: TrialResult = scoreResult === "worse" || anyWorse && scoreResult !== "better" ? "worse" : allResolved && scoreResult === "better" ? "better" : hasRangeChange || scoreResult === "better" ? "partial" : "same";
-              recordFollowupTrial(result, false, rangeOutcomes, rangeDiscomforts, rangeScores);
-            }}>继续</button></section>
-          </section> : !shouldRetestChiefNow ? <section className="rm-auto-result is-partial"><span>下一步</span><strong>{hasChiefAction ? "继续完成其余处理" : "当前没有固定动作，本次不做动作评分"}</strong><button type="button" className="rm-primary" onClick={() => recordFollowupTrial("partial")}>继续</button></section> : <section className={`rm-auto-result is-${followupPostScoreConfirmed ? resultFromScore(followupBeforeScore, followupPostScore) : "waiting"}`}><span>下一步</span><strong>{!followupPostScoreConfirmed ? "请选择现在有没有不适" : followupPostScore < followupBeforeScore ? `下降 ${followupBeforeScore - followupPostScore} 分，保留这项处理` : followupPostScore > followupBeforeScore ? `上升 ${followupPostScore - followupBeforeScore} 分，停止这项处理` : "分数没有变化，换下一项"}</strong><button type="button" className="rm-primary" disabled={!followupPostScoreConfirmed} onClick={() => recordFollowupTrial(resultFromScore(followupBeforeScore, followupPostScore))}>继续</button></section>}
-        </section>}
-        {followupReadyToRetest ? <div className="rm-treatment-back"><button type="button" className="rm-retest-return" onClick={returnFromFollowupRetestToTreatment}>返回刚才的处理</button></div> : null}
-      </> : followupNeedsTreatmentFinalRetest ? <section className="rm-treatment-final-retest">
-        <span>处理阶段复测</span>
-        <h2>{chiefActionLabel(intake)}</h2>
-        <ScoreSlider value={followupPostScore} selected={followupPostScoreConfirmed} onChange={(value) => { setFollowupPostScore(value); setFollowupPostScoreConfirmed(true); }} label="现在的不适程度" context={`本次处理前 ${followupScore}/10`} />
-        <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!followupPostScoreConfirmed} onClick={finishFollowupTreatmentRetest}>记录并进入训练</button></div>
-      </section> : <section className="rm-route-note"><h2>{currentRecords.length === 0 && followupCandidates.length === 0 ? "本次没有新的即时处理" : "需要处理的项目已完成"}</h2>{currentRecords.length === 0 && followupCandidates.length === 0 ? <p>已恢复的项目不重复处理；力量和动作控制进入训练，仍说不清或无法完成的项目保留待确认。</p> : null}<button type="button" className="rm-primary" onClick={() => setFollowupStage("training")}>查看训练调整</button></section>}
-      {selectedCandidate ? <div className="rm-page-actions"><button type="button" onClick={() => setFollowupStage("review")}>返回本次复查</button></div> : null}
-    </section>;
-
-    if (followupStage === "training" && followupTrainingReadyForRetest && followupTrainingFeedbackComplete) return <section className="rm-page">
-      <StepHeading eyebrow={`第${sessionNumber}次康复 · 最后复测`} title="训练结束，再看一次主诉动作" />
-      {hasChiefAction ? <section className="rm-followup-final-reference"><header><span>本次评分</span><strong>{retestConditionLabel(intake)}</strong></header><div>{[
-        ["本次开始", followupScore],
-        ["本次训练前", followupSessionScore],
-      ].map(([label, score]) => <article key={label}><span>{label}</span><strong>{score}<small>/10</small></strong></article>)}</div></section> : null}
-      {hasChiefAction ? <>
-        <section className="rm-final-retest-action"><span>现在再做</span><strong>{chiefActionLabel(intake)}</strong><small>按本次复查时相同的动作范围和速度完成。</small></section>
-        <ScoreSlider value={followupFinalScore} selected={followupFinalScoreConfirmed} onChange={(value) => { setFollowupFinalScore(value); setFollowupFinalScoreConfirmed(true); }} label="现在有多不舒服？" context={`训练前 ${followupSessionScore}/10`} />
-        {followupFinalScoreConfirmed ? <section className={`rm-auto-result is-${resultFromScore(followupSessionScore, followupFinalScore)}`}><span>本次结果</span><strong>{followupFinalScore < followupSessionScore ? `又下降 ${followupSessionScore - followupFinalScore} 分，保留当前训练` : followupFinalScore > followupSessionScore ? "训练后更不舒服，降低训练并停止进阶" : "分数没有变化，保持或降低当前训练"}</strong></section> : null}
-      </> : <section className="rm-route-note"><h2>本次没有固定主诉动作</h2><p>保存本次训练选择，下次继续复查已有问题。</p></section>}
-      <div className="rm-page-actions split"><button type="button" onClick={() => { setFollowupTrainingReadyForRetest(false); setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); }}>返回训练调整</button><button type="button" className="rm-primary" disabled={hasChiefAction && !followupFinalScoreConfirmed} onClick={completeFollowupSession}>保存第{sessionNumber}次康复</button></div>
-    </section>;
-
-    if (followupStage === "training") return <section className="rm-page">
-      <StepHeading eyebrow={`第${sessionNumber}次康复 · 训练调整`} title="调整今天的训练" />
-      {hasChiefAction ? <><ScoreHistory scores={history} condition={retestConditionLabel(intake)} /><section className="rm-followup-session-change"><span>本次同条件复测</span><div><b>{followupScore}</b><i>→</i><strong>{followupSessionScore}</strong><small>/10</small></div></section></> : null}
-      {tissuePathway.id === "standard" && followupTensionLocations.some((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)) ? <section className="rm-training-preparation"><header><span>训练前准备</span><strong>先做一次轻柔松解</strong></header><div>{followupTensionLocations.filter((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)).map((location) => <article key={location}><b>{location}</b><span>轻柔松解30～60秒</span></article>)}</div><footer>完成后直接开始训练，不新增复测步骤。</footer></section> : null}
-      <div className="rm-followup-training">{exercises.map((exercise) => {
-        const choice = followupExerciseChoices[exercise.id];
-        return <article key={exercise.id}><header><div><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}</span></div><b>第{exercise.stage}层</b></header><p>{choice === "reduce" ? exercise.easier : choice === "progress" ? exercise.harder : choice === "worse" ? "先停止当前版本，记录停止后的反应。" : exercise.observe}</p><div>{([[
-          "reduce", "降低一档"], ["hold", "保持当前"], ["progress", "进阶一项"], ["worse", "做完更不舒服"]] as Array<[FollowupExerciseChoice, string]>).map(([value, label]) => <button type="button" key={value} disabled={value === "progress" && ["reduce", "review"].includes(decision.tone)} className={choice === value ? "is-selected" : ""} onClick={() => setFollowupExerciseChoices((current) => ({ ...current, [exercise.id]: value }))}>{label}</button>)}</div></article>;
-      })}</div>
-      {followupWorsenedExercise ? <section className="rm-training-warning"><strong>{followupWorsenedExercise.title}后不适更重</strong><p>先停止这个版本，确认停止后的变化。</p><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: followupWorsenedExercise.id, sourceLabel: followupWorsenedExercise.title, timing: "during", beforeScore: followupSessionScore, afterScore: followupSessionScore, relatedAssessmentIds: followupWorsenedExerciseAssessmentIds })}>处理这次加重</button></section> : <>{exercises.length > 0 ? <section className="rm-training-feedback-gate"><strong>完成本次训练前，还需要记录每个动作的反馈</strong><span>未选择反馈的动作：{pendingFollowupFeedbackExercises.map((exercise) => exercise.title).join("、") || "无"}</span></section> : null}<section className="rm-next-stage"><span>下次继续</span><h2>先复查旧问题，再决定是否进阶</h2></section>
-      <div className="rm-page-actions split"><button type="button" onClick={() => setFollowupStage("treatment")}>返回继续处理</button><button type="button" className="rm-primary" disabled={!followupTrainingFeedbackComplete} onClick={() => { if (!followupTrainingNeedsChiefRetest) { completeFollowupSession(); return; } setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); setFollowupTrainingReadyForRetest(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{followupTrainingNeedsChiefRetest ? "训练完成，整体复测" : `保存第${sessionNumber}次康复`}</button></div></>}
-    </section>;
-
-    return <section className="rm-page">
-      <StepHeading eyebrow={`第${sessionNumber}次康复 · 评估检查`} title="先复查，再决定今天做什么" />
-      <section className="rm-session-reference"><span>本次沿用</span><strong>{[intake.location, intake.symptomType, chiefWasRecorded ? chiefActionLabel(intake) : "没有固定动作"].filter(Boolean).join(" · ")}</strong></section>
-      {sessionHistory.length ? <section className="rm-session-history-strip"><header><span>恢复记录</span><strong>已完成 {sessionHistory.length} 次</strong></header><div className="rm-session-score-trend">{scoreTrend.map((item) => <article key={item.sessionNumber}><span>第{item.sessionNumber}次</span><strong>{item.score}<small>/10</small></strong></article>)}</div>{previousSession ? <div className="rm-last-session-summary"><article><span>上次有效处理</span><strong>{previousSession.continuedEffectiveTreatments.join("、") || "无"}</strong></article><article><span>上次训练</span><strong>{previousSession.training.map((item) => item.label).join("、") || "无"}</strong></article><article><span>本次先关注</span><strong>{previousFocus.join("；") || "快速复查当前情况"}</strong></article></div> : null}</section> : null}
-      <section className="rm-followup-new"><div><span>有没有新症状或新的受伤事件？</span></div><div><button type="button" className={hasNewSymptom === "no" ? "is-selected" : ""} onClick={() => { if (hasNewSymptom !== "no") invalidateCurrentFollowupWork(); setHasNewSymptom("no"); }}>没有</button><button type="button" className={hasNewSymptom === "yes" ? "is-selected is-alert" : ""} onClick={() => { if (hasNewSymptom !== "yes") invalidateCurrentFollowupWork(); setHasNewSymptom("yes"); }}>有</button></div></section>
-      {hasChiefAction ? <ScoreHistory scores={history} condition={retestConditionLabel(intake)} /> : null}
-      {hasChiefAction ? <ScoreSlider value={followupScore} selected={followupScoreConfirmed} onChange={updateFollowupScore} label="现在做主诉动作，有多不舒服？" context={chiefActionLabel(intake)} /> : <section className="rm-route-note"><h2>{chiefRetestUnavailableTitle}</h2><p>{chiefRetestUnavailableText}</p></section>}
-      {reviewItems.length ? <section className="rm-followup-items"><header><span>快速复查上次问题</span></header>{reviewItems.map(([id, title, note]) => {
-        const options: Array<[FollowupReviewAnswer, string]> = id.startsWith("motion:")
-          ? [["better", "接近健侧"], ["same", "仍然偏小"], ["worse", "比上次更差"], ["unknown", "看不出来"], ["unable", "现在做不了"]]
-          : id.startsWith("strength:")
-            ? [["better", "接近健侧"], ["same", "仍然偏弱"], ["worse", "发力更差或更不适"], ["unknown", "看不出来"], ["unable", "现在做不了"]]
-            : [["better", "改善"], ["same", "差不多"], ["worse", "变差"], ["unknown", "看不出来"], ["unable", "现在无法检查"]];
-        return <article key={id}><div><strong>{title}</strong><small>{note}</small></div><div>{options.map(([value, label]) => <button type="button" key={value} className={followupTrends[id] === value ? `is-selected is-${value}` : ""} onClick={() => updateFollowupTrend(id, value)}>{label}</button>)}</div></article>;
-      })}</section>
-        : followupCandidates.length ? <section className="rm-route-note is-clear"><h2>继续上次有效处理</h2><p>本次先快速看相关活动范围，再继续有效的轻柔松解，然后进入训练。</p></section>
-          : <section className="rm-route-note"><h2>本次先完成复查</h2><p>没有明确处理依据时不新增肌肉处理；力量和动作控制继续进入训练，无法判断的项目保留待确认。</p></section>}
-        {followupTensionRequired ? <section className="rm-followup-tension"><header><span>肌肉紧张度复查</span><strong>按图示同一肌肉区域比较</strong></header><ol><li>{intake.side === "双侧/中间" ? "左右两侧分别轻按同一肌肉区域一次。" : "先比较另一侧，再用相近力度比较不舒服的一侧。"}</li><li>比较哪一侧按压时更酸或更胀，不需要判断肌肉硬不硬。</li><li>不要按骨头、关节线、明显肿胀中心或尖锐痛点；出现刺痛、麻或电感就停止。</li></ol><MuscleRegionLocationPicker locations={followupTensionOptions} selectedLocations={followupTensionLocations} comparisonLabel={followupTensionComparisonLabel} professional={intake.userRole !== "general"} bilateral={intake.side === "双侧/中间"} onToggle={toggleFollowupTensionLocation} /></section> : null}
-      <section className={`rm-followup-decision is-${decision.tone}`}><span>这次建议</span><h2>{decision.title}</h2></section>
-      <div className="rm-page-actions split"><button type="button" onClick={() => setFollowupMode(false)}>查看第一次记录</button><button type="button" className="rm-primary" disabled={!hasNewSymptom || hasNewSymptom === "no" && (!reviewComplete || (hasChiefAction && !followupScoreConfirmed))} onClick={() => {
-        if (hasNewSymptom === "yes") {
-          setFollowupMode(false);
-          setStep(0);
-          // 新症状开启一条新的完整评估路径。保留用户身份与检查方式，
-          // 但旧主诉、旧关节、旧评分和复诊派生状态都必须失效。
-          invalidateAfterIntake({
-            ...DEFAULT_INTAKE,
-            userRole: intake.userRole,
-            examSetup: intake.examSetup,
-            productMode: intake.productMode,
-            operationTarget: intake.operationTarget,
-            capabilities: intake.capabilities,
-            capabilitiesConfirmed: intake.capabilitiesConfirmed,
-            learningExplanation: intake.learningExplanation,
-            spineAssessmentMode: intake.spineAssessmentMode,
-          });
-          return;
-        }
-        if (decision.tone === "reduce") {
-          reopenAssessment("本次状态比上次差，请重新确认发生变化的动作和位置。");
-          return;
-        }
-        setFollowupPostScore(0);
-        setFollowupPostScoreConfirmed(false);
-        setFollowupPostDiscomfort("");
-        setFollowupCandidateId(followupCandidates[0]?.id ?? "");
-        setFollowupReadyToRetest(false);
-        setFollowupMovementResponses({});
-        setFollowupMovementDiscomforts({});
-        setFollowupMovementScores({});
-        setFollowupMovementScoreConfirmed({});
-        setFollowupStage(followupCandidates.length === 0 && (Boolean(localLimbDecision) || tissuePathway.id !== "standard") ? "training" : "treatment");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }}>{hasNewSymptom === "yes" ? "补充新症状" : decision.tone === "reduce" ? "重新评估变化" : "继续本次处理"}</button></div>
-    </section>;
-  }
-
-  function renderSummary() {
-    const resolvedChiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
-    const muscleProblems = findings
-      .filter((finding) => !finding.internal && finding.id.startsWith("tension:"))
-      .map((finding): TreatmentProblem => ({ id: finding.id, kind: "肌肉", title: finding.title.replace(/(?:肌张力增高|按压反应更明显|张力或按压阻力增高)$/, "").trim() || "相关肌群", status: "两侧按压反应存在差异", findingIds: [finding.id], directionId: anyMotionIdFromFinding(finding) }))
-      // 统一触诊结果会被各活动方向共同引用；总结按实际肌肉组合聚合，
-      // 不按背屈、外翻、跖屈、内翻重复显示同一组区域。
-      .filter((problem, index, list) => list.findIndex((item) => item.title === problem.title) === index);
-    const strengthProblems = findings
-      .filter((finding) => finding.id.startsWith("strength:"))
-      .map((finding): TreatmentProblem => ({
-        id: finding.id,
-        kind: "力量或控制",
-        title: professionalFindingLabel(finding),
-        status: finding.title.split("：").slice(1).join("：") || "力量或控制异常",
-        findingIds: [finding.id],
-      }));
-    // 肌肉问题统一由 muscleProblems 输出；treatmentProblems 里的同一 tension
-    // finding 已作为活动方向的关联问题出现，不能在总结里再复制一条肌肉卡。
-    const summaryProblems = [...treatmentProblems.filter((problem) => problem.kind !== "检查发现" && problem.kind !== "肌肉"), ...muscleProblems, ...strengthProblems]
-      .filter((problem, index, list) => list.findIndex((item) => item.id === problem.id) === index);
-    const summaryProblemGroups = [
-      { key: "symptom", label: "症状", items: summaryProblems.filter((problem) => ["主诉", "主诉动作", "动作不适"].includes(problem.kind)) },
-      { key: "mobility", label: "活动度", items: summaryProblems.filter((problem) => problem.kind === "活动度") },
-      { key: "tension", label: "肌肉", items: summaryProblems.filter((problem) => problem.kind === "肌肉") },
-      { key: "control", label: "肌力与控制", items: summaryProblems.filter((problem) => ["力量或控制", "活动控制"].includes(problem.kind)) },
-      { key: "tracking", label: "局部体征", items: summaryProblems.filter((problem) => ["肿胀", "按压痛"].includes(problem.kind)) },
-    ].filter((group) => group.items.length > 0);
-    const summarizedTreatments = [...trialRecords.reduce((groups, record) => {
-      if (record.reviewOnly || record.retestOnly) return groups;
-      const key = record.treatmentKey ?? record.candidateId;
-      const existing = groups.get(key);
-      if (!existing) groups.set(key, { ...record, targetTitles: [record.targetTitle].filter(Boolean) as string[] });
-      else {
-        existing.targetTitles = [...new Set([...existing.targetTitles, ...(record.targetTitle ? [record.targetTitle] : [])])];
-        existing.rangeOutcomes = { ...(existing.rangeOutcomes ?? {}), ...(record.rangeOutcomes ?? {}) };
-        if (record.result === "better" || existing.result !== "better" && record.result === "partial") existing.result = record.result;
-        if (treatmentResponsePriority(record.responseRole) > treatmentResponsePriority(existing.responseRole)) existing.responseRole = record.responseRole;
-        existing.afterScore = record.afterScore;
-      }
-      return groups;
-    }, new Map<string, TrialRecord & { targetTitles: string[] }>()).values()];
-    const nextFocus = [
-      ...(chiefScoreComparable ? sessionEndScore > 0 ? [`复测${chiefActionLabel(intake)}，比较上次 ${sessionEndScore} 分是否继续下降`] : [] : hasClearChiefAction(intake) ? [`复查${chiefActionLabel(intake)}时双侧整体感受和动作质量`] : ["确认是否出现明确诱发动作，并复查相关活动度和局部变化"]),
-      ...effectiveFocusLabels.map((label) => `继续${label}的居家轻柔放松，并复查相关活动`),
-      ...effectiveControlLabels.map((label) => `继续${label}，观察相关动作是否更轻松`),
-      ...findings.filter((finding) => !finding.internal && finding.priority === "support" && anyMotionIdFromFinding(finding) !== resolvedChiefDirection).map((finding) => `复查${finding.title}`),
-      ...findings.filter((finding) => !finding.internal && finding.priority === "track").map((finding) => `比较${finding.title}的恢复趋势`),
-      trainingPlanSaved ? "本次未执行训练，下次先确认是否实际完成保存的方案" : "查看居家训练的完成质量，以及当天晚些时候和第二天的反应",
-    ].filter((focus, index, list) => list.indexOf(focus) === index).slice(0, 3);
-    if (followupMode) return renderFollowup();
-
-    const summaryTreatmentFeedback = (record: TrialRecord) => {
-      if (record.responseRole === "key-completion") return "在前面已有部分改善的基础上，本项使剩余主诉降至0；记录为关键完成项";
-      if (record.responseRole === "independent-completion") return "本项单独使当前主诉降至0；下次有自然症状时优先复验";
-      if (record.responseRole === "partial-contribution") return "主诉部分下降，说明该区域有贡献，但仍有剩余来源需要处理";
-      if (record.responseRole === "range-contribution") return "活动表现改善，主诉未同步改变；保留为活动相关候选";
-      if (record.responseRole === "not-immediately-testable") return "本次无法单独归因，留待后续康复观察";
-      if (record.timeBased) return "留到今天晚些时候或下次比较";
-      if (record.rangeOutcomes && Object.keys(record.rangeOutcomes).length) {
-        const restored = Object.values(record.rangeOutcomes).filter((outcome) => outcome === "both-match").length;
-        return restored === Object.keys(record.rangeOutcomes).length
-          ? "相关活动已接近比较目标"
-          : restored ? "部分方向恢复，剩余方向继续跟进"
-            : record.result === "better" || record.result === "partial" ? "主诉变轻，活动仍受限，继续巩固"
-              : record.result === "worse" ? "出现加重，本次停止" : "变化不足，后续调整处理";
-      }
-      return record.result === "better" ? "主诉变轻，保留这个方向" : record.result === "partial" ? "有部分变化，继续观察" : record.result === "worse" ? "出现加重，本次停止" : "本次变化不明显";
-    };
-    const nextSessionRecommendation = recommendNextSession({
-      acute: ["今天或昨天", "2～7天"].includes(intake.onset) && intake.mechanism !== "没有明确受伤",
-      hasSwelling: intake.symptoms.includes("肿胀或淤青"),
-      hasImmediateTreatment: summarizedTreatments.length > 0,
-      hasUnresolvedMobility: summaryProblems.some((problem) => problem.kind === "活动度"),
-      hasTraining: trainingComplete && exercises.length > 0,
-      trainingStage: exerciseStage,
-      waitingForMedicalClearance: structuralImagingSignal || hasSafetySignal && !hasClearance || assessmentNeedsReferral,
-      worsened: treatmentWorsened || exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse"),
-    });
-    const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
-      return <section className="rm-page rm-session-summary">
-      <StepHeading eyebrow="第6步" title="本次康复总结" />
-      <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
-      <div className="rm-summary-dashboard">
-        <div className="rm-summary-column">
-          <section className="rm-summary-module is-findings"><header><div><span>评估结果</span><strong>{summaryProblems.length}项</strong></div></header>{summaryProblemGroups.length ? <div className="rm-summary-finding-groups">{summaryProblemGroups.map((group) => <article key={group.key}><b>{group.label}</b><ul>{group.items.map((problem) => <li key={problem.id}><strong>{problem.title}</strong>{problem.status ? <span>{problem.status}</span> : null}</li>)}</ul></article>)}</div> : <p>未记录明确异常。</p>}</section>
-          <section className="rm-summary-module is-training"><header><div><span>居家训练</span><strong>{trainingPlanSaved ? "方案已保存，未执行" : trainingComplete ? `${exercises.length}个 · 已完成` : `${exercises.length}个`}</strong></div></header>{trainingPlanSaved ? <p className="rm-summary-unexecuted">本次没有生成训练改善或进阶结论；下次开始前先确认是否实际执行。</p> : <div className="rm-summary-compact-list">{exercises.map((exercise) => <article key={exercise.id}><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}{exerciseFeedback[exercise.id] ? ` · ${exerciseFeedback[exercise.id]?.symptom === "worse" ? "加重" : exerciseFeedback[exercise.id]?.formChanged ? "需要退阶" : "已记录反馈"}` : " · 待反馈"}</span></article>)}{homeRelaxationTargets.map((target) => <article key={target.id}><strong>{target.title}</strong><span>{target.dosage}</span></article>)}</div>}</section>
-        </div>
-        <div className="rm-summary-column">
-          <section className="rm-summary-module is-treatments"><header><div><span>处理记录</span><strong>{summarizedTreatments.length}项</strong></div></header>{summarizedTreatments.length ? <><div className="rm-summary-treatment-cards">{summarizedTreatments.map((record) => <article key={record.treatmentKey ?? record.candidateId} className={`is-${record.result}`}><header><span>{record.responseRole === "key-completion" ? "关键完成" : record.responseRole === "independent-completion" ? "单项完成" : record.responseRole === "partial-contribution" ? "部分贡献" : record.responseRole === "range-contribution" ? "活动改善" : record.result === "better" ? "有效" : record.result === "partial" ? "待巩固" : record.result === "worse" ? "已停止" : "变化小"}</span><strong>{record.treatmentName ?? record.candidateTitle}</strong></header><p>{summaryTreatmentFeedback(record)}</p></article>)}</div>{resolvedTreatmentCombination(summarizedTreatments).length > 1 ? <section className="rm-effective-combination"><strong>本次组合解决</strong><span>{resolvedTreatmentCombination(summarizedTreatments).map((record) => record.treatmentName ?? record.candidateTitle).join(" ＋ ")}</span><small>记录处理顺序与组合反应，不直接认定病因。</small></section> : null}</> : <p>本次无处理记录。</p>}</section>
-          <section className="rm-summary-module is-next"><header><div><span>下次复查</span><strong>{nextFocus.length}项</strong></div></header><ol>{nextFocus.map((focus) => <li key={focus}>{focus}</li>)}</ol></section>
-        </div>
-      </div>
-      <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
-      <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(4)}>返回训练</button><button type="button" className="rm-primary" onClick={() => saveRecord("待复查")}>保存本次记录</button></div>
-    </section>;
   }
 
   const summaryFacts = [
@@ -8624,8 +4706,11 @@ export default function RehabMindCompleteDemo() {
     ? followupStage === "review" ? 2 : followupStage === "treatment" ? 3 : 4
     : step;
   const feedbackCurrentStage = reviewStep !== null ? STEPS[reviewStep] : STEPS[railStep];
-  const currentFeedbackRecord = savedRecords.find((item) => savedRecordIdentity(item) === localCaseId);
+  const currentFeedbackRecord = findLocalCaseRecord(savedRecords, localCaseId);
   const currentPilotConflictRecord = currentFeedbackRecord?.pilotConflictSnapshot ? currentFeedbackRecord : null;
+  const currentPilotConflictSections = currentPilotConflictRecord?.snapshot && currentPilotConflictRecord.pilotConflictSnapshot
+    ? summarizePilotSnapshotConflict(currentPilotConflictRecord.snapshot, currentPilotConflictRecord.pilotConflictSnapshot)
+    : [];
   const feedbackStageOptions = useMemo(() => STEPS
     .slice(0, Math.max(railStep + 1, 1))
     .map((label) => ({ key: label, label })), [railStep]);
@@ -8634,15 +4719,29 @@ export default function RehabMindCompleteDemo() {
     ...sessionHistory.map((item) => item.sessionNumber),
   ])).sort((left, right) => right - left), [sessionHistory, sessionNumber]);
 
+  function openCurrentFeedback() {
+    setFeedbackSourceContext(capturePilotFeedbackSourceContext({
+      caseIdentity: localCaseId,
+      sessionNumber,
+      stage: feedbackCurrentStage,
+      eventId: lastPilotEventIdsRef.current[localCaseId] ?? null,
+    }));
+    setFeedbackOpen(true);
+  }
+
+  function closeCurrentFeedback() {
+    setFeedbackOpen(false);
+    setFeedbackSourceContext(null);
+  }
+
   async function submitCurrentFeedback(draft: PilotFeedbackDraft) {
-    if (!region) throw new Error("当前案例尚未建立");
-    await (pilotSaveQueuesRef.current[localCaseId] ?? Promise.resolve()).catch(() => undefined);
-    const latestRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === localCaseId);
+    const source = feedbackSourceContext;
+    if (!source) throw new Error("反馈上下文已经失效");
+    await pilotSaveQueueRef.current.drain(source.caseIdentity).catch(() => undefined);
+    const latestRecord = findLocalCaseRecord(savedRecordsRef.current, source.caseIdentity);
     const access = latestRecord ? pilotAccessFromRecord(latestRecord) : null;
     if (!access) {
-      setToast("请先保存当前案例，建立案例编号后再提交问题反馈");
-      window.setTimeout(() => setToast(""), 2800);
-      throw new Error("Pilot case is not ready");
+      throw new PilotFeedbackSubmissionError("请先保存当前案例，建立案例编号后再提交问题反馈");
     }
     await submitPilotCaseFeedback({
       access,
@@ -8651,25 +4750,426 @@ export default function RehabMindCompleteDemo() {
       kind: draft.kind,
       message: draft.message,
       eventId: draft.eventId,
-      sourceSessionNumber: sessionNumber,
-      sourceStage: feedbackCurrentStage,
-      sourceEventId: lastPilotEventId,
+      sourceSessionNumber: source.sessionNumber,
+      sourceStage: source.stage,
+      sourceEventId: source.eventId,
     });
     setToast("问题反馈已提交");
     window.setTimeout(() => setToast(""), 2400);
   }
-  const renderStepContent = (targetStep: Step) => targetStep === 0 ? renderIntake() : targetStep === 1 ? renderSafety() : targetStep === 2 ? renderAssessment() : targetStep === 3 ? renderTreatment() : targetStep === 4 ? renderTraining() : renderSummary();
+  const renderStepContent = (targetStep: Step) => targetStep === 0
+    ? <SymptomStage
+      intake={intake}
+      showAllIntakeFields={showAllIntakeFields}
+      professionalLocationTab={professionalLocationTab}
+      guidedIntakeField={guidedIntakeField}
+      guidedIntakePath={guidedIntakePath}
+      guidedIntakeCursor={guidedIntakeCursor}
+      confirmedIntakeMulti={confirmedIntakeMulti}
+      workflowProfile={workflowProfile}
+      isThinkingMode={isThinkingMode}
+      effectiveOperationTarget={effectiveOperationTarget}
+      showExamSetupChoice={showExamSetupChoice}
+      showCapabilitiesChoice={showCapabilitiesChoice}
+      needsSpineModeChoice={needsSpineModeChoice}
+      describedRegionId={describedRegionId}
+      unsupportedDescriptionRegion={unsupportedDescriptionRegion}
+      selfNeuralReferral={selfNeuralReferral}
+      stabbingEarlyReferral={stabbingEarlyReferral}
+      intakeHasTenderness={intakeHasTenderness}
+      intakeHasSensorySymptoms={intakeHasSensorySymptoms}
+      baselineScoreApplicable={baselineScoreApplicable}
+      intakeMissingFields={intakeMissingFields}
+      currentIntakeField={currentIntakeField}
+      guidedQuestionReady={guidedQuestionReady}
+      keyConfirmationReady={keyConfirmationReady}
+      onIntakeChange={setIntake}
+      onShowAllIntakeFieldsChange={setShowAllIntakeFields}
+      onProfessionalLocationTabChange={setProfessionalLocationTab}
+      onConfirmedIntakeMultiChange={setConfirmedIntakeMulti}
+      onToggleIntakeCapability={toggleIntakeCapability}
+      onToggleArray={toggleArray}
+      onBeginGuidedIntake={beginGuidedIntake}
+      onRewriteIntakeDescription={rewriteIntakeDescription}
+      onAdvanceGuidedQuestion={advanceGuidedQuestion}
+      onReturnToPreviousIntakeQuestion={returnToPreviousIntakeQuestion}
+      onEnterKeyConfirmation={enterKeyConfirmation}
+      onSaveRecord={saveRecord}
+      onInvalidateAfterIntake={invalidateAfterIntake}
+    />
+    : targetStep === 1
+      ? <ConfirmationStage
+        safetyStage={safetyStage}
+        safetyAnswered={safetyAnswered}
+        needsBoneQuestions={needsBoneQuestions}
+        boneQuestionsAnswered={boneQuestionsAnswered}
+        boneImagingSuggested={boneImagingSuggested}
+        hasSafetySignal={hasSafetySignal}
+        hasClearance={hasClearance}
+        structuralImagingSignal={structuralImagingSignal}
+        canContinueSafety={canContinueSafety}
+        priorCare={intake.priorCare ?? []}
+        activeSafetyItems={activeSafetyItems}
+        safety={safety}
+        boneRisk={boneRisk}
+        imaging={imaging}
+        imagingOptions={IMAGING_OPTIONS}
+        backLabel={safetyStage === 0 ? "返回症状信息" : "上一步"}
+        continueLabel={safetyStage === 0 ? hasSafetySignal ? "继续填写医生结论" : needsBoneQuestions ? "继续确认骨性风险" : "继续填写影像结论" : safetyStage === 1 ? "继续填写影像结论" : "开始评估检查"}
+        onSafetyAnswer={(id, answer) => setSafety((current) => ({ ...current, [id]: answer }))}
+        onBoneRiskAnswer={(id, answer) => setBoneRisk((current) => ({ ...current, [id]: answer }))}
+        onImagingToggle={(option) => {
+          const exclusive = ["没有做影像", "未见骨折", "有骨折或骨裂异常"];
+          if (exclusive.includes(option)) setImaging((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current.filter((item) => !exclusive.includes(item)), option]);
+          else toggleArray(option, imaging, setImaging);
+        }}
+        onBack={() => safetyStage === 0 ? goToStep(0) : setSafetyStage(safetyStage === 2 && !needsBoneQuestions ? 0 : Math.max(0, safetyStage - 1) as 0 | 1 | 2)}
+        onContinue={() => safetyStage === 0 ? setSafetyStage(needsBoneQuestions ? 1 : 2) : safetyStage === 1 ? setSafetyStage(2) : goToStep(2)}
+        onSaveMedicalReview={() => saveRecord("待医学评估")}
+      />
+      : targetStep === 2
+        ? <AssessmentStage
+          step={step}
+          intake={intake}
+          assessmentIndex={assessmentIndex}
+          assessmentResults={assessmentResults}
+          assessmentSummaryOpen={assessmentSummaryOpen}
+          sharedTensionOpen={sharedTensionOpen}
+          thinkingWorkbenchOpen={thinkingWorkbenchOpen}
+          adverseResponse={adverseResponse}
+          adverseConfirmedAssessmentIds={adverseConfirmedAssessmentIds}
+          region={region}
+          canAssessPassive={canAssessPassive}
+          canAssessResistance={canAssessResistance}
+          canAssessEndFeel={canAssessEndFeel}
+          canRunSpecialTest={canRunSpecialTest}
+          isThinkingMode={isThinkingMode}
+          assessments={assessments}
+          assessmentDisplayItems={assessmentDisplayItems}
+          findings={findings}
+          bilateralPriorityResolution={bilateralPriorityResolution}
+          tissuePathway={tissuePathway}
+          assessmentComplete={assessmentComplete}
+          limitedPilotMotionItems={limitedPilotMotionItems}
+          sharedTensionRequired={sharedTensionRequired}
+          sharedTensionRecord={sharedTensionRecord}
+          sharedTensionComplete={sharedTensionComplete}
+          assessmentFlowComplete={assessmentFlowComplete}
+          assessmentReadyForTreatment={assessmentReadyForTreatment}
+          canContinueSafety={canContinueSafety}
+          specialPositiveFindings={specialPositiveFindings}
+          hasSpecialPositive={hasSpecialPositive}
+          assessmentNeuralReferral={assessmentNeuralReferral}
+          sharpSpecialReferral={sharpSpecialReferral}
+          assessmentNeedsReferral={assessmentNeedsReferral}
+          adverseResolution={adverseResolution}
+          trialRecords={trialRecords}
+          exercises={exercises}
+          treatmentComplete={treatmentComplete}
+          trainingComplete={trainingComplete}
+          trainingPlanSaved={trainingPlanSaved}
+          trainingStageClosed={trainingStageClosed}
+          displayAssessmentIndexForId={displayAssessmentIndexForId}
+          displayAssessmentComplete={displayAssessmentComplete}
+          onStepChange={setStep}
+          onTransitionTargetChange={setTransitionTarget}
+          onAssessmentIndexChange={setAssessmentIndex}
+          onAssessmentSummaryOpenChange={setAssessmentSummaryOpen}
+          onSharedTensionOpenChange={setSharedTensionOpen}
+          onThinkingWorkbenchOpenChange={setThinkingWorkbenchOpen}
+          onTrialTargetIndexChange={setTrialTargetIndex}
+          onCandidateIndexChange={setCandidateIndex}
+          onPostScoreChange={setPostScore}
+          onPostScoreConfirmedChange={setPostScoreConfirmed}
+          onPostDiscomfortChange={setPostDiscomfort}
+          onExerciseFeedbackChange={setExerciseFeedback}
+          onToastChange={setToast}
+          onFollowupExerciseChoicesChange={setFollowupExerciseChoices}
+          onTreatmentPlanRevisionChange={setTreatmentPlanRevision}
+          onAdverseResponseChange={setAdverseResponse}
+          onAdverseConfirmedAssessmentIdsChange={setAdverseConfirmedAssessmentIds}
+          onGoToStep={goToStep}
+          onRestoreAdverseReturn={restoreAdverseReturn}
+          onFinishFocusedReassessment={finishFocusedReassessment}
+          onConfirmFocusedAssessment={confirmFocusedAssessment}
+          onUpdateAssessment={updateAssessment}
+          onSaveRecord={saveRecord}
+        />
+        : targetStep === 3
+          ? <TreatmentRetestStage
+            view={{
+              intake,
+              assessmentResults,
+              trialTargetIndex,
+              finishSnapshots,
+              selectedOptionalCandidateIds,
+              bilateralNeedsReferral,
+              midpointDecisionDone,
+              bilateralRetestResponses,
+              trialRecords,
+              postScore,
+              postScoreConfirmed,
+              postDiscomfort,
+              readyToRetest,
+              movementResponse,
+              movementResponses,
+              movementDiscomforts,
+              movementScores,
+              movementScoreConfirmed,
+              treatmentFinalRetestConfirmed,
+              directionChiefRetestScore,
+              directionChiefRetestConfirmed,
+              functionRetestCompletion,
+              functionRetestUnableReason,
+              region,
+              canAssessPassive,
+              canMobilizeJoint,
+              assessments,
+              bilateralPriorityResolution,
+              treatmentProblems,
+              localLimbDecision,
+              tissuePathway,
+              swellingGuidance,
+              trialTargets,
+              activeTarget,
+              activeCandidate,
+              activeTargetSides,
+              activeTargetIsBilateral,
+              activeTargetCompletedSides,
+              activeTargetPendingSides,
+              activeTargetCurrentSide,
+              weakStrengthProblems,
+              assessmentEvidenceInsufficient,
+              assessmentGap,
+              treatmentWorsened,
+              activeCandidateGroup,
+              activeGroupPriorRecords,
+              activeNewCandidates,
+              localNewSourceNeedsChiefRetest,
+              latestRangeScoreForDirection,
+              treatmentEmptyState,
+              unresolvedLedgerProblem,
+              unresolvedImmediateLedgerProblems,
+              chiefRetestCompletedDuringTreatment,
+              chiefRetestEligibility,
+              chiefScoreComparable,
+              chiefImprovedDuringTreatment,
+              chiefNeedsFinalRetest,
+              lastChiefScore,
+              directionAllowsPassive,
+              isResidualReviewStep,
+              activeRetestFindings,
+              activeControlMotionIds,
+              effectiveFocusLabels,
+              effectiveControlLabels,
+              recoveredRangeLabels,
+              improvedRangeLabels,
+              trackObservationLabels,
+              noImmediateTreatmentResponse,
+              intakeMissingFields,
+              bilateralAssessmentComplete,
+              treatmentQueueIsRefreshing,
+              pendingKneeAssessmentCheck,
+              treatmentComplete,
+              bilateralTrainingGateState,
+              chiefFunctionLabels,
+              hasChiefFunctionAction,
+            }}
+            actions={{
+              onStepChange: setStep,
+              onReviewStepChange: setReviewStep,
+              onTransitionTargetChange: setTransitionTarget,
+              onSelectedOptionalCandidateIdsChange: setSelectedOptionalCandidateIds,
+              onBilateralNeedsReferralChange: setBilateralNeedsReferral,
+              onMidpointDecisionDoneChange: setMidpointDecisionDone,
+              onBilateralTreatmentSidesChange: setBilateralTreatmentSides,
+              onBilateralRetestResponsesChange: setBilateralRetestResponses,
+              onPostScoreChange: setPostScore,
+              onPostScoreConfirmedChange: setPostScoreConfirmed,
+              onPostDiscomfortChange: setPostDiscomfort,
+              onReadyToRetestChange: setReadyToRetest,
+              onRetestPlanChange: setRetestPlan,
+              onMovementResponseChange: setMovementResponse,
+              onMovementResponsesChange: setMovementResponses,
+              onMovementDiscomfortsChange: setMovementDiscomforts,
+              onMovementScoresChange: setMovementScores,
+              onMovementScoreConfirmedChange: setMovementScoreConfirmed,
+              onTreatmentFinalRetestScoreChange: setTreatmentFinalRetestScore,
+              onTreatmentFinalRetestConfirmedChange: setTreatmentFinalRetestConfirmed,
+              onDirectionChiefRetestScoreChange: setDirectionChiefRetestScore,
+              onDirectionChiefRetestConfirmedChange: setDirectionChiefRetestConfirmed,
+              onFunctionRetestCompletionChange: setFunctionRetestCompletion,
+              onFunctionRetestUnableReasonChange: setFunctionRetestUnableReason,
+              onToastChange: setToast,
+              onJumpToIntakeQuestion: jumpToIntakeQuestion,
+              onGoToStep: goToStep,
+              onReviewCompletedStep: reviewCompletedStep,
+              onEditCompletedAssessment: editCompletedAssessment,
+              onReturnFromRetestToTreatment: returnFromRetestToTreatment,
+              onReopenAssessment: reopenAssessment,
+              onBeginAdverseReassessment: beginAdverseReassessment,
+              onOpenAssessmentItem: openAssessmentItem,
+              onTargetScoreBeforeRetest: targetScoreBeforeRetest,
+              onUndoLastFinish: undoLastFinish,
+              onFinishTrial: finishTrial,
+              onFinishRangeBatch: finishRangeBatch,
+              onContinueWithReusedRetest: continueWithReusedRetest,
+              onSaveRecord: saveRecord,
+            }}
+          />
+          : targetStep === 4
+            ? <TrainingStage
+              intake={intake}
+              exerciseFeedback={exerciseFeedback}
+              openExercise={openExercise}
+              trainingReadyForFinalRetest={trainingReadyForFinalRetest}
+              finalRetestScore={finalRetestScore}
+              finalRetestConfirmed={finalRetestConfirmed}
+              finalFunctionRetests={finalFunctionRetests}
+              workflowProfile={workflowProfile}
+              isThinkingMode={isThinkingMode}
+              assessments={assessments}
+              tissuePathway={tissuePathway}
+              noChiefActionAndNoAssessmentProblem={noChiefActionAndNoAssessmentProblem}
+              chiefRetestEligibility={chiefRetestEligibility}
+              chiefScoreComparable={chiefScoreComparable}
+              lastChiefScore={lastChiefScore}
+              effectiveFocusLabels={effectiveFocusLabels}
+              effectiveControlLabels={effectiveControlLabels}
+              noImmediateTreatmentResponse={noImmediateTreatmentResponse}
+              exerciseStage={exerciseStage}
+              exercises={exercises}
+              homeRelaxationTargets={homeRelaxationTargets}
+              bilateralTrainingGateState={bilateralTrainingGateState}
+              chiefFunctionLabels={chiefFunctionLabels}
+              onTransitionTargetChange={setTransitionTarget}
+              onExerciseFeedbackChange={setExerciseFeedback}
+              onOpenExerciseChange={setOpenExercise}
+              onTrainingCompleteChange={setTrainingComplete}
+              onTrainingPlanSavedChange={setTrainingPlanSaved}
+              onTrainingReadyForFinalRetestChange={setTrainingReadyForFinalRetest}
+              onFinalRetestScoreChange={setFinalRetestScore}
+              onFinalRetestConfirmedChange={setFinalRetestConfirmed}
+              onFinalFunctionRetestsChange={setFinalFunctionRetests}
+              onGoToStep={goToStep}
+              onReopenAssessment={reopenAssessment}
+              onBeginAdverseReassessment={beginAdverseReassessment}
+              onSaveRecord={saveRecord}
+            />
+            : <SummaryStage
+              view={{
+                intake,
+                assessmentResults,
+                trialRecords,
+                exerciseFeedback,
+                trainingComplete,
+                trainingPlanSaved,
+                followupMode,
+                sessionHistory,
+                region,
+                findings,
+                treatmentProblems,
+                treatmentWorsened,
+                chiefScoreComparable,
+                sessionEndScore,
+                effectiveFocusLabels,
+                effectiveControlLabels,
+                exerciseStage,
+                exercises,
+                homeRelaxationTargets,
+                hasSafetySignal,
+                hasClearance,
+                structuralImagingSignal,
+                assessmentNeedsReferral,
+                sessionNumber,
+                followupScore,
+                followupScoreConfirmed,
+                followupStage,
+                followupPostScore,
+                followupPostScoreConfirmed,
+                followupPostDiscomfort,
+                followupCandidateId,
+                followupTrialRecords,
+                followupReadyToRetest,
+                followupRetestPlan,
+                followupMovementResponses,
+                followupMovementDiscomforts,
+                followupMovementScores,
+                followupMovementScoreConfirmed,
+                followupTensionLocations,
+                followupExerciseChoices,
+                followupTrainingReadyForRetest,
+                followupFinalScore,
+                followupFinalScoreConfirmed,
+                hasNewSymptom,
+                followupTrends,
+                assessments,
+                previousSessionForReview,
+                previousSessionScore,
+                localLimbDecision,
+                tissuePathway,
+                swellingGuidance,
+                followupCandidates,
+                latestRangeScoreForDirection,
+                directionAllowsPassive,
+                directionNeedsCandidate,
+                followupRetestIds,
+                followupCandidateNeedsWork,
+              }}
+              actions={{
+                onStepChange: setStep,
+                onFollowupModeChange: setFollowupMode,
+                onFollowupStageChange: setFollowupStage,
+                onFollowupPostScoreChange: setFollowupPostScore,
+                onFollowupPostScoreConfirmedChange: setFollowupPostScoreConfirmed,
+                onFollowupPostDiscomfortChange: setFollowupPostDiscomfort,
+                onFollowupCandidateIdChange: setFollowupCandidateId,
+                onFollowupReadyToRetestChange: setFollowupReadyToRetest,
+                onFollowupRetestPlanChange: setFollowupRetestPlan,
+                onFollowupMovementResponsesChange: setFollowupMovementResponses,
+                onFollowupMovementDiscomfortsChange: setFollowupMovementDiscomforts,
+                onFollowupMovementScoresChange: setFollowupMovementScores,
+                onFollowupMovementScoreConfirmedChange: setFollowupMovementScoreConfirmed,
+                onFollowupTensionLocationsChange: setFollowupTensionLocations,
+                onFollowupExerciseChoicesChange: setFollowupExerciseChoices,
+                onFollowupTrainingReadyForRetestChange: setFollowupTrainingReadyForRetest,
+                onFollowupFinalScoreChange: setFollowupFinalScore,
+                onFollowupFinalScoreConfirmedChange: setFollowupFinalScoreConfirmed,
+                onHasNewSymptomChange: setHasNewSymptom,
+                onGoToStep: goToStep,
+                onReturnFromFollowupRetestToTreatment: returnFromFollowupRetestToTreatment,
+                onReopenAssessment: reopenAssessment,
+                onBeginAdverseReassessment: beginAdverseReassessment,
+                onSaveRecord: saveRecord,
+                onInvalidateAfterIntake: invalidateAfterIntake,
+                onRecordFollowupTrial: recordFollowupTrial,
+                onInvalidateCurrentFollowupWork: invalidateCurrentFollowupWork,
+                onUpdateFollowupScore: updateFollowupScore,
+                onUpdateFollowupTrend: updateFollowupTrend,
+                onFinishFollowupTreatmentRetest: finishFollowupTreatmentRetest,
+                onCompleteFollowupSession: completeFollowupSession,
+                onStartNextFollowupSession: startNextFollowupSession,
+                onStartSecondSession: startSecondSession,
+              }}
+            />;
 
-  return <main className="rm-app" data-trial-record-count={trialRecords.length}>
+  return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId}>
     <header className="rm-topbar">
       <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>RehabMind</strong><small>康复思路工作台</small></span></button>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
-      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" ? <span aria-live="polite">{pilotSyncState === "local-saving" ? "本机保存中" : pilotSyncState === "local-saved" ? "已保存到本机" : pilotSyncState === "syncing" ? "同步中" : pilotSyncState === "synced" ? "已同步" : pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "invite" ? "需要邀请" : pilotSyncState === "error" ? "本机保存失败" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>使用教程</button><button type="button" className="rm-feedback-trigger" onClick={() => setFeedbackOpen(true)}>问题反馈</button><button type="button" className="rm-records-trigger" data-rehabmind-tutorial="records" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
+      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" && !["local-saved", "synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" onClick={openCurrentFeedback}>问题反馈</button><button type="button" className="rm-records-trigger" data-rehabmind-tutorial="records" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
+      <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
+    <div className="rm-context-hints">
+      <OnceHint id="case-code" active={!testContext && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
+      <OnceHint id="first-save" active={!testContext && ["local-saved", "synced"].includes(pilotSyncState)}>已保存，下次打开可以从这里继续。</OnceHint>
+    </div>
+    <MobileStageNavigation open={mobileStageOpen} railStep={railStep} currentStep={step} maxUnlocked={maxUnlocked} followupMode={followupMode} onOpen={() => setMobileStageOpen(true)} onClose={() => setMobileStageOpen(false)} onSelect={openWorkflowStage} />
     {currentPilotConflictRecord ? <PilotConflictPanel
       publicCode={currentPilotConflictRecord.pilotPublicCode}
       localRevision={currentPilotConflictRecord.pilotLastSyncedRevision ?? currentPilotConflictRecord.pilotRevision ?? 0}
       remoteRevision={currentPilotConflictRecord.pilotConflictRevision ?? 0}
+      changedSections={currentPilotConflictSections}
       onUseRemote={() => {
         const remoteSnapshot = currentPilotConflictRecord.pilotConflictSnapshot;
         const remoteRevision = currentPilotConflictRecord.pilotConflictRevision;
@@ -8686,11 +5186,12 @@ export default function RehabMindCompleteDemo() {
           pilotConflictRevision: undefined,
         };
         updateStoredPilotRecord(localCaseId, nextRecord);
-        setPilotSyncState("synced");
+        dispatchPilotSync(localCaseId, { type: "restore-succeeded", caseId: localCaseId, revision: remoteRevision });
         void restoreRecord(nextRecord);
       }}
+      onSaveAsNew={() => savePilotConflictAsNew(currentPilotConflictRecord)}
       onExportLocal={() => exportPilotLocalConflict(currentPilotConflictRecord)}
-      onLater={() => { setPilotSyncState("conflict"); setToast("已保留本机版本，稍后仍可处理冲突"); }}
+      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留本机版本，稍后仍可处理冲突"); }}
     /> : null}
 
     <div className={`rm-shell ${displayedStep === 0 ? "is-intake-step" : ""}`}>
@@ -8711,6 +5212,7 @@ export default function RehabMindCompleteDemo() {
         ? <StageTransition {...STAGE_TRANSITIONS[transitionTarget]} onBack={() => setTransitionTarget(null)} onContinue={continueStageTransition} />
         : renderStepContent(step)}</section>
 
+      {summaryOpen ? <button type="button" className="rm-case-aside-backdrop" aria-label="关闭本次记录" onClick={() => setSummaryOpen(false)} /> : null}
       <aside className={`rm-case-aside ${summaryOpen ? "is-open" : ""}`}>
         {displayedStep === 0 ? <>
           <header><div><span>已收集信息</span><strong>{intake.parsed ? `已确认 ${completedIntakeItemCount} 项` : "0项"}</strong></div><button type="button" onClick={() => setSummaryOpen(false)}>关闭</button></header>
@@ -8726,24 +5228,52 @@ export default function RehabMindCompleteDemo() {
       </aside>
     </div>
 
-    <button type="button" className={`rm-mobile-summary${sharedTensionOpen ? " is-hidden" : ""}`} onClick={() => setSummaryOpen(true)}><span>已收集信息</span><b>{intake.parsed ? `${intake.baselineScoreConfirmed ? `${intake.baselineScore}分 · ` : ""}${intake.location || "待补位置"}` : "查看"}</b></button>
+    <button type="button" className={`rm-mobile-summary${sharedTensionOpen ? " is-hidden" : ""}`} onClick={() => setSummaryOpen(true)}><span>本次记录</span><b>{intake.parsed ? `${intake.baselineScoreConfirmed ? `${intake.baselineScore}分 · ` : ""}${intake.location || "待补位置"}` : "查看"}</b></button>
 
-        {recordsOpen ? <div className="rm-modal-backdrop" role="presentation" onMouseDown={() => setRecordsOpen(false)}><section className="rm-records-modal" role="dialog" aria-modal="true" aria-label="康复记录" onMouseDown={(event) => event.stopPropagation()}><header><div><span>本机保留副本 · 可同步到试用环境</span><h2>康复记录</h2></div><button type="button" onClick={() => setRecordsOpen(false)}>关闭</button></header>{savedRecords.length ? <div>{savedRecords.map((record) => <article key={record.id} className="rm-record-case"><div><span>{record.status} · 已记录 {record.sessionHistory?.length || record.sessionCount} 次</span><strong>{record.complaint}</strong><small>{record.region} · {record.goal}</small><small className="rm-record-code">案例编号：<b>{record.pilotPublicCode ?? "同步后生成"}</b>{record.pilotPublicCode ? <button type="button" onClick={() => void copyPilotPublicCode(record)}>复制</button> : null}</small>{record.sessionHistory?.length ? <div className="rm-record-session-list">{record.sessionHistory.map((session) => <i key={session.sessionNumber}>第{session.sessionNumber}次{typeof session.endingScore === "number" ? ` · ${session.endingScore}/10` : ""}</i>)}</div> : null}</div>{record.scoreComparable !== false ? <b>{record.initialScore}<i>→</i>{record.latestScore}<small>/10</small></b> : <b>{record.initialScore}<small>/10 · 一般不适记录</small></b>}<button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => restoreRecord(record)}>{record.status === "等待影像" ? "补充影像" : "继续"}</button><button type="button" className="rm-record-delete" onClick={() => { if (window.confirm("删除后将无法通过当前案例链接继续读取，确定删除吗？")) void deleteSavedRecord(record); }}>删除</button></article>)}</div> : <section className="rm-record-empty"><strong>还没有保存记录</strong><p>完成一次评估后，可以从这里查看评分和康复次数。</p></section>}<footer><button type="button" onClick={resetDemo}>新建一份评估</button><button type="button" disabled={!savedRecords.length} onClick={() => void clearAllLocalRecords()}>清空Demo记录</button></footer></section></div> : null}
+    <MobileMoreMenu
+      open={mobileMoreOpen}
+      sessionNumber={sessionNumber}
+      record={currentFeedbackRecord}
+      onClose={() => setMobileMoreOpen(false)}
+      onCopyCaseCode={(record) => void copyPilotPublicCode(record)}
+      onOpenRecords={() => { setMobileMoreOpen(false); setRecordsOpen(true); }}
+      onOpenFeedback={() => { setMobileMoreOpen(false); openCurrentFeedback(); }}
+      onOpenHelp={() => { setMobileMoreOpen(false); setOnboardingOpen(true); }}
+      onSave={() => { setMobileMoreOpen(false); saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查"); }}
+    />
+
+    <RehabRecordsPage
+      open={recordsOpen}
+      records={savedRecords}
+      showFirstOpenHint={!testContext}
+      onBack={() => setRecordsOpen(false)}
+      onCopyCaseCode={(record) => void copyPilotPublicCode(record)}
+      onRestore={(record) => void restoreRecord(record)}
+      onDelete={(record) => { if (window.confirm("删除后将无法通过当前案例链接继续读取，确定删除吗？")) void deleteSavedRecord(record); }}
+      onCreate={createNewCaseFromRecords}
+      onClear={() => void clearAllLocalRecords()}
+    />
 
     <PilotFeedbackPanel
-      key={`${feedbackOpen ? "open" : "closed"}:${feedbackCurrentStage}:${sessionNumber}`}
+      key={`${feedbackOpen ? "open" : "closed"}:${feedbackSourceContext?.caseIdentity ?? localCaseId}:${feedbackSourceContext?.stage ?? feedbackCurrentStage}:${feedbackSourceContext?.sessionNumber ?? sessionNumber}`}
       open={feedbackOpen}
-      currentLocation={{ sessionNumber, stage: feedbackCurrentStage }}
+      currentLocation={{ sessionNumber: feedbackSourceContext?.sessionNumber ?? sessionNumber, stage: feedbackSourceContext?.stage ?? feedbackCurrentStage }}
       sessions={feedbackSessions}
       stages={feedbackStageOptions}
-      currentEventId={lastPilotEventId}
-      onClose={() => setFeedbackOpen(false)}
+      currentEventId={feedbackSourceContext?.eventId ?? null}
+      onClose={closeCurrentFeedback}
       onSubmit={submitCurrentFeedback}
     />
 
-    <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} onSkip={() => closeOnboarding()} onFinish={() => closeOnboarding()} />
+    {!testContext ? <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} canContinue={savedRecords.length > 0} onContinue={continueFromWelcome} onStart={startFromWelcome} /> : null}
 
-    <PilotConsentGate open={pilotConsentGateOpen} onAgree={handlePilotConsentAgree} onDecline={handlePilotConsentDecline} />
+    {!testContext ? <GuideCards open={guideCardsOpen} onComplete={handleGuideCardsComplete} onSkip={handleGuideCardsSkip} /> : null}
+
+    {!testContext ? <DevToolbar onReset={devResetFlow} onClearAll={devClearAllData} onJumpToStep={devJumpToStep} /> : null}
+
+    {!testContext ? <PilotSourceGate open={pilotSourceGateOpen} onContinue={handlePilotSourceContinue} /> : null}
+
+    {!testContext ? <PilotConsentGate open={pilotConsentGateOpen} declined={pilotConsentDeclined} onAgree={handlePilotConsentAgree} onDecline={handlePilotConsentDecline} onReconsider={handlePilotConsentReconsider} /> : null}
 
     {toast ? <button type="button" className="rm-toast" onClick={() => setToast("")}>{toast}</button> : null}
   </main>;

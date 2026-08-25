@@ -7,7 +7,7 @@
  * 只依赖候选的结构字段与 pilot 肌肉区域知识，可独立单测。
  */
 
-import { normalizePilotMuscleRegion } from "./pilot-motion-muscle-knowledge";
+import { normalizePilotMuscleRegion } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
 
 export type CandidateTreatmentInput = {
   id: string;

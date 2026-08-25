@@ -16,8 +16,8 @@ async function loadBundle(paths) {
 }
 
 const core = await loadBundle([
-  "../app/pilot-motion-muscle-knowledge.ts",
-  "../app/candidate-treatment-core.ts",
+  "../../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts",
+  "../../../src/domain/rehab/treatment/candidate-treatment-core.ts",
 ]);
 
 const muscle = {
