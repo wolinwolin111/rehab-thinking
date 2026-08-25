@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
 
 type YesNo = "yes" | "no";
@@ -49,12 +48,6 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
     activeSafetyItems, safety, boneRisk, imaging, imagingOptions, backLabel, continueLabel,
     onSafetyAnswer, onBoneRiskAnswer, onImagingToggle, onBack, onContinue, onSaveMedicalReview,
   } = props;
-  const [safetyQuestionIndex, setSafetyQuestionIndex] = useState(0);
-  const [boneQuestionIndex, setBoneQuestionIndex] = useState(0);
-  const currentSafetyIndex = Math.min(safetyQuestionIndex, Math.max(0, activeSafetyItems.length - 1));
-  const currentSafetyItem = activeSafetyItems[currentSafetyIndex];
-  const currentBoneIndex = Math.min(boneQuestionIndex, boneQuestions.length - 1);
-  const currentBoneQuestion = boneQuestions[currentBoneIndex];
 
   return <section className="rm-page">
     <StepHeading eyebrow="第2步 · 开始前确认" title="先确认能否安全开始检查" />
@@ -64,17 +57,14 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要粘贴报告原文。</p> : priorCare.includes("看过医生") ? <p>继续时请以医生已经说明的活动和负重限制为准。</p> : null}
       {priorCare.includes("用过冰敷") ? <p>冰敷不作为恢复必做项；目前证据不能确认它能改善急性踝扭伤的肿胀、活动度或恢复。</p> : null}
     </details> : null}
-    {safetyStage === 0 && currentSafetyItem ? <div className="rm-safety-list rm-question-pager">
-      <header><span>安全确认</span><strong>{currentSafetyIndex + 1}/{activeSafetyItems.length}</strong></header>
-      <article key={currentSafetyItem.id}><div><strong>{currentSafetyItem.text}</strong><span>{currentSafetyItem.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[currentSafetyItem.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => onSafetyAnswer(currentSafetyItem.id, answer)}>{answer === "no" ? "没有" : "有"}</button>)}</div></article>
-      {safety[currentSafetyItem.id] === "yes" ? <p className="rm-question-alert">已记录这项安全信号。完成其余确认后，页面会直接给出停止或线下评估提示。</p> : null}
-      <footer><button type="button" disabled={currentSafetyIndex === 0} onClick={() => setSafetyQuestionIndex((index) => Math.max(0, index - 1))}>上一项</button>{currentSafetyIndex < activeSafetyItems.length - 1 ? <button type="button" className="rm-primary" disabled={!safety[currentSafetyItem.id]} onClick={() => setSafetyQuestionIndex((index) => Math.min(activeSafetyItems.length - 1, index + 1))}>下一项</button> : null}</footer>
+    {safetyStage === 0 && activeSafetyItems.length ? <div className="rm-safety-list">
+      <header><span>安全确认</span><strong>{activeSafetyItems.length} 项</strong></header>
+      {activeSafetyItems.map((item) => <article key={item.id}><div><strong>{item.text}</strong><span>{item.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[item.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => onSafetyAnswer(item.id, answer)}>{answer === "no" ? "没有" : "有"}</button>)}</div>{safety[item.id] === "yes" ? <p className="rm-question-alert">已记录这项安全信号。完成其余确认后，页面会直接给出停止或线下评估提示。</p> : null}</article>)}
     </div> : null}
 
     {safetyStage === 1 && needsBoneQuestions ? <section className="rm-bone-check">
-      <header><span>急性崴脚后，是否建议优先拍片？</span><p>第 {currentBoneIndex + 1}/{boneQuestions.length} 项</p></header>
-      <article key={currentBoneQuestion.id}><div><strong>{currentBoneQuestion.title}</strong><span>{currentBoneQuestion.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[currentBoneQuestion.id] === answer ? "is-selected" : ""} onClick={() => onBoneRiskAnswer(currentBoneQuestion.id, answer)}>{answer === "yes" ? currentBoneQuestion.id === "boneSpot" ? "是" : "能" : answer === "no" ? currentBoneQuestion.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>
-      <footer className="rm-question-navigation"><button type="button" disabled={currentBoneIndex === 0} onClick={() => setBoneQuestionIndex((index) => Math.max(0, index - 1))}>上一项</button>{currentBoneIndex < boneQuestions.length - 1 ? <button type="button" className="rm-primary" disabled={!boneRisk[currentBoneQuestion.id]} onClick={() => setBoneQuestionIndex((index) => Math.min(boneQuestions.length - 1, index + 1))}>下一项</button> : null}</footer>
+      <header><span>急性崴脚后，是否建议优先拍片？</span><p>共 {boneQuestions.length} 项</p></header>
+      {boneQuestions.map((question) => <article key={question.id}><div><strong>{question.title}</strong><span>{question.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[question.id] === answer ? "is-selected" : ""} onClick={() => onBoneRiskAnswer(question.id, answer)}>{answer === "yes" ? question.id === "boneSpot" ? "是" : "能" : answer === "no" ? question.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>)}
       {boneQuestionsAnswered ? <div className={boneImagingSuggested ? "is-review" : "is-clear"}><strong>{boneImagingSuggested ? "建议优先结合影像确认" : "目前没有明显的拍片优先线索"}</strong><span>{boneImagingSuggested ? "这不等于骨折。没有明显错位或其他危险信号时，可以先做轻柔检查；暂不跳跃、不强压。" : "疼痛或承重能力持续变差时重新评估。"}</span></div> : null}
     </section> : null}
 

@@ -41,7 +41,7 @@ export function MobileStageNavigation({
   onSelect: (step: Step) => void;
 }) {
   return <>
-    <section className="rm-mobile-stagebar">
+    <section className="rm-mobile-stagebar" data-rehabmind-tutorial="flow-mobile">
       <button type="button" onClick={onOpen}>
         <span>{railStep + 1}/6&nbsp; {STEPS[railStep]}</span>
         <b>查看阶段</b>

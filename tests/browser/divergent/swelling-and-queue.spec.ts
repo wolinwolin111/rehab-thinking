@@ -35,9 +35,9 @@ async function chooseLocation(page: Page, mode: "complaint" | "swelling", field:
   if (currentField !== field) return false;
   const picker = page.locator(`.rm-lower-limb-picker.is-${mode}:visible`).first();
   if (!(await picker.count())) return false;
-  const overview = picker.locator('[aria-label="右侧膝盖正面"]');
-  if (await overview.count()) {
-    await overview.click();
+  const sideBtn = picker.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "右侧" });
+  if (await sideBtn.count()) {
+    await sideBtn.first().click();
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   const zone = picker.locator('[role="button"][aria-label="右侧 · 髌骨周围"]');

@@ -73,13 +73,13 @@ export function RehabMindOnboarding({
         <section>
           <span>悦舒运动康复</span>
           <h1 id="rm-welcome-title">你的线上康复助手</h1>
-          <p>把线下康复经验带到这里，一步步引导完成评估、处理和训练。跟着提示操作就好。</p>
+          <p className="rm-welcome-lines"><span>把线下康复经验带到这里</span><span>一步步引导完成评估、处理和训练</span><span>跟着提示操作就好</span></p>
           <div>
             <button type="button" className="rm-primary" onClick={() => { onStart?.(); }}>开始康复</button>
             {canContinue ? <button type="button" onClick={() => { onContinue?.(); }}>继续以前的康复</button> : null}
           </div>
         </section>
-        <footer>康复建议不能替代医生诊断；出现明显加重或安全提示时，请先停止并寻求线下帮助。</footer>
+        <footer>康复建议不能替代医生诊断；出现明显加重或安全提示时，请先停止并寻求线下帮助。<small className="rm-welcome-note">康复效果因人而异；多次改善不明显时，建议寻求线下康复师帮助。</small></footer>
       </div>
     </div>;
   }

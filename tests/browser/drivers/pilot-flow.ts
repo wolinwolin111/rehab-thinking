@@ -20,8 +20,10 @@ async function chooseVisibleSelects(page: Page) {
 }
 
 async function chooseKneeLocation(page: Page) {
-  const front = await expectUniqueVisible(page, "右侧膝盖正面", page.locator('[aria-label="右侧膝盖正面"]:visible'));
-  await front.click();
+  const side = await expectUniqueVisible(page, "右侧侧别按钮", page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "右侧" }));
+  await side.click();
+  const area = await expectUniqueVisible(page, "膝盖部位按钮", page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "膝盖" }));
+  await area.click();
   const medial = await expectUniqueVisible(page, "右侧膝内侧关节线", page.locator('[aria-label="右侧 · 膝内侧关节线"]:visible'));
   await medial.click();
 }

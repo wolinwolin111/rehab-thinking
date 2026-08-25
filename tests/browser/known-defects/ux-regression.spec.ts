@@ -71,7 +71,8 @@ test.describe("历史缺陷回放·状态与内容", () => {
     await page.getByRole("button", { name: /康复思路模式/ }).click();
     await page.getByRole("button", { name: /下一步/ }).click();
     await page.getByRole("button", { name: /自我检查|给自己检查/ }).click();
-    await page.locator('[aria-label="右侧膝盖正面"]').click();
+    await page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "右侧" }).first().click();
+    await page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "膝盖" }).first().click();
     await page.locator('[aria-label="右侧 · 膝内侧关节线"]').click();
 
     const selects = page.locator("select:visible");

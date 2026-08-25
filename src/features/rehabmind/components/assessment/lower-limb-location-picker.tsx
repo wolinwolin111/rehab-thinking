@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 
 export type LowerLimbSide = "左侧" | "右侧" | "双侧/中间";
 export type LowerLimbAreaId = "thigh" | "knee" | "calf" | "ankle" | "foot";
@@ -188,20 +188,6 @@ type Props = {
   onChange: (next: LowerLimbLocationSelection[]) => void;
 };
 
-const OVERVIEW_POSITIONS: Record<LowerLimbAreaId, { top: number; height: number }> = {
-  thigh: { top: 18, height: 27 },
-  knee: { top: 43, height: 10 },
-  calf: { top: 52, height: 24 },
-  ankle: { top: 76, height: 8 },
-  foot: { top: 84, height: 11 },
-};
-
-function overviewStyle(view: "front" | "back", side: "左侧" | "右侧", areaId: LowerLimbAreaId): CSSProperties {
-  const visualLeft = view === "front" ? side === "右侧" : side === "左侧";
-  const position = OVERVIEW_POSITIONS[areaId];
-  return { left: visualLeft ? "38%" : "62%", top: `${position.top}%`, height: `${position.height}%` };
-}
-
 export default function LowerLimbLocationPicker({ value, initialRegionId, initialSide, initialLocation, mode = "complaint", compact = false, professional = false, allowedAreaIds, maxSelections, onChange }: Props) {
   const inferredSide = initialSide === "左侧" || initialSide === "右侧" ? initialSide : value.find((item) => item.side === "左侧" || item.side === "右侧")?.side;
   const suggestedArea = initialLocation && /大腿|膝|髌骨|关节线|腘窝|小腿|胫骨|腓肠肌|踝|跟腱|足|脚/.test(initialLocation)
@@ -233,14 +219,7 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
         ? { eyebrow: "先选择左右和部位，再点麻、电或感觉变化的区域", title: "感觉变化到哪里？", selected: "已标记的感觉变化", empty: "先在图上标出麻、电或感觉变化的范围。" }
         : mode === "assessment"
           ? { eyebrow: "直接点图上的位置", title: "刚才哪里不舒服？", selected: "这次动作出现不适的位置", empty: "请在图上点出刚才出现不适的位置。" }
-      : { eyebrow: "一次只评估一个大部位，同一部位可以标记多个具体位置", title: "这次最想解决哪里？", selected: "本次主要问题", empty: "先在左侧人体图选择侧别和部位，再点击右侧局部图。" };
-
-  const selectOverview = (side: "左侧" | "右侧", areaId: LowerLimbAreaId) => {
-    setActiveSide(side);
-    setActiveArea(areaId);
-    const nextPanels = atlasPanelsFor(AREA_BY_ID[areaId]);
-    if (!nextPanels.some((panel) => panel.view === activePanelView)) setActivePanelView(nextPanels[0]?.view ?? "front");
-  };
+      : { eyebrow: "一次只评估一个大部位，同一部位可以标记多个具体位置", title: "这次最想解决哪里？", selected: "本次主要问题", empty: "先选择左腿或右腿和部位，再点击图上的具体位置。" };
 
   const toggleZone = (zone: AtlasZone) => {
     if (!activeSide) return;
@@ -295,34 +274,12 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
       <b>{activeSide ? `${activeSide} · ${area.label}` : "先选择左腿或右腿"}</b>
     </header>
 
-    {compact ? <nav className="rm-compact-atlas-nav" aria-label="选择左右侧和部位">
-      <div>{(["左侧", "右侧"] as const).map((side) => <button type="button" key={side} className={activeSide === side ? "is-active" : ""} onClick={() => setActiveSide(side)}>{side}</button>)}</div>
-      <div>{visibleAreas.map((item) => <button type="button" key={item.id} className={activeArea === item.id ? "is-active" : ""} onClick={() => setActiveArea(item.id)}>{item.label}</button>)}</div>
-    </nav> : null}
+    <nav className="rm-compact-atlas-nav" aria-label="选择左右侧和部位">
+      <div className="rm-atlas-nav-row"><span className="rm-atlas-nav-label">哪一侧？</span><div>{(["左侧", "右侧"] as const).map((side) => <button type="button" key={side} className={activeSide === side ? "is-active" : ""} onClick={() => setActiveSide(side)}>{side}</button>)}</div></div>
+      <div className="rm-atlas-nav-row"><span className="rm-atlas-nav-label">哪个部位？</span><div>{visibleAreas.map((item) => <button type="button" key={item.id} className={activeArea === item.id ? "is-active" : ""} onClick={() => setActiveArea(item.id)}>{item.label}</button>)}</div></div>
+    </nav>
 
     <div className="rm-atlas-workbench">
-      {!compact ? <div className="rm-atlas-hint" aria-hidden="true">
-        <span>① 左侧小图确认大部位</span>
-        <i>→</i>
-        <span>② 右侧大图点击具体位置</span>
-      </div> : null}
-      {!compact ? <aside className="rm-atlas-overview" aria-label="选择左右侧和部位">
-        {(["front", "back"] as const).map((view) => <div className="rm-overview-body" key={view}>
-          <span>{view === "front" ? "正面" : "背面"}</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={view === "front" ? "/rehabmind-lower-limb-front-v1.png" : "/rehabmind-lower-limb-back-v1.png"} alt={view === "front" ? "下肢正面定位" : "下肢背面定位"} draggable={false} />
-          {(["左侧", "右侧"] as const).flatMap((side) => visibleAreas.map((item) => <button
-            type="button"
-            key={`${view}-${side}-${item.id}`}
-            className={`${activeSide === side && activeArea === item.id ? "is-active" : ""}`}
-            style={overviewStyle(view, side, item.id)}
-            onClick={() => selectOverview(side, item.id)}
-            aria-label={`${side}${item.label}${view === "front" ? "正面" : "背面"}`}
-            title={`${side} · ${item.label}`}
-          />))}
-        </div>)}
-      </aside> : null}
-
       <section className={`rm-region-atlas ${activeSide ? "" : "is-waiting"}`}>
         <header><span>{activeSide || "未选择侧别"}</span><strong>{area.label}细分区域</strong></header>
         {professional ? <nav className="rm-atlas-view-tabs" aria-label="切换细分图视图">
@@ -355,7 +312,7 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
             </div>
           </section>)}
         </div>
-        {!activeSide ? <p>先在左侧人体图点击左腿或右腿。</p> : <p>{mode === "tenderness" ? "每处只轻按一次，再点击对应区域。" : "点击图上的区域，系统直接记录具体位置。"}</p>}
+        {!activeSide ? <p>先选择左腿或右腿，再点击具体位置。</p> : <p>{mode === "tenderness" ? "每处只轻按一次，再点击对应区域。" : "点击图上的区域，系统直接记录具体位置。"}</p>}
       </section>
     </div>
 

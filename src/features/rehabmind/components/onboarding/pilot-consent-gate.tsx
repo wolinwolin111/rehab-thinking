@@ -34,8 +34,6 @@ export function PilotConsentGate({
           <li>康复内容会使用匿名案例编号保存</li>
           <li>不需要填写姓名、手机号等身份信息</li>
           <li>你可以在应用内删除案例</li>
-          <li>评估和处理由你根据提示自行判断和执行，缺少康复师的实时把关，效果因人而异</li>
-          <li>多次康复改善不明显时建议寻求线下康复师帮助</li>
         </ul>
         <details className="rm-consent-details">
           <summary>查看完整说明</summary>

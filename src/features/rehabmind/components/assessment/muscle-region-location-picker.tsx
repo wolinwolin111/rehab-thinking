@@ -121,46 +121,57 @@ const MUSCLE_MAPS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
  * the limb outline and the low-saturation overlay shows the usable muscle
  * range. It communicates a region, not a diagnosis or a single tender point.
  */
-const MUSCLE_ZONE_PATHS: Record<PilotMuscleRegionId, string[]> = {
-  "thigh-anterior": ["M128 51 C145 40 215 40 232 53 L226 204 C216 220 198 229 180 229 C160 229 141 220 132 204 Z"],
-  "thigh-posterior": ["M130 52 C149 39 210 39 230 54 L226 205 C215 221 198 229 180 229 C160 229 143 220 132 204 Z"],
-  "thigh-lateral": ["M112 61 C124 48 137 45 148 49 L154 204 C145 220 132 226 122 215 L111 188 Z"],
-  "thigh-medial": ["M212 50 C227 47 240 55 247 70 L238 187 C232 213 221 222 207 205 L204 93 Z"],
-  "calf-anterior": ["M145 257 C158 247 202 247 216 258 L209 397 C202 423 190 437 177 437 C162 436 151 421 146 397 Z"],
-  "calf-posterior": ["M145 258 C157 246 202 246 216 260 L209 398 C201 424 191 438 178 438 C163 437 151 421 146 398 Z"],
-  "calf-lateral": ["M133 265 C143 252 154 251 161 260 L157 394 C153 418 145 426 137 416 L131 367 Z"],
-  "calf-medial": ["M201 258 C213 252 224 258 229 270 L224 391 C219 416 211 425 202 414 L198 350 Z"],
-  plantar: ["M134 77 C145 67 160 64 178 66 C195 63 214 68 226 80 L234 119 C225 135 209 145 191 149 L158 143 C142 136 130 124 126 109 Z"],
+/* 足底示意图是纯 SVG 手绘（无照片素材），高亮区为足弓范围。 */
+const PLANTAR_ZONE_PATH = "M134 77 C145 67 160 64 178 66 C195 63 214 68 226 80 L234 119 C225 135 209 145 191 149 L158 143 C142 136 130 124 126 109 Z";
+
+/*
+ * 小腿示意图使用带分区标记的照片（1536x1024），viewBox 只取左腿区域（0 0 768 1024）单腿显示，
+ * 高亮色块按照片自带分区标记定位，坐标即照片像素坐标。
+ */
+const MUSCLE_ZONE_RECTS: Partial<Record<PilotMuscleRegionId, Array<{ x: number; y: number; width: number; height: number }>>> = {
+  "calf-anterior": [
+    { x: 335, y: 115, width: 205, height: 293 },
+  ],
+  "calf-lateral": [
+    { x: 285, y: 197, width: 48, height: 348 },
+  ],
+  "calf-medial": [
+    { x: 516, y: 197, width: 48, height: 348 },
+  ],
+  "calf-posterior": [
+    { x: 368, y: 518, width: 132, height: 294 },
+  ],
 };
 
 function MuscleAnatomyMap({ regionId, view }: { regionId: PilotMuscleRegionId; view: MuscleRegionView }) {
-  const photo = view === "front"
-    ? "/rehabmind-region-calf-v1.png"
-    : "/rehabmind-region-calf-atlas-v2.png";
   if (view === "sole") return <svg viewBox="0 0 360 170" role="img" aria-label="足底肌肉范围示意图" focusable="false">
     <rect width="360" height="170" rx="18" className="rm-muscle-location-figure__map-bg" />
     <path d="M103 28 C118 15 149 13 171 20 C186 14 215 16 230 30 C246 48 247 83 237 117 C229 143 212 154 190 155 L145 151 C124 146 111 129 108 104 L101 62 Z" className="rm-muscle-location-figure__map-base" />
-    <path d={MUSCLE_ZONE_PATHS[regionId][0]} className="rm-muscle-location-figure__highlight" />
+    <path d={PLANTAR_ZONE_PATH} className="rm-muscle-location-figure__highlight" />
     <path d="M132 50 C155 65 199 67 226 50 M128 96 C153 111 204 113 237 96" className="rm-muscle-location-figure__map-line" />
     <text x="18" y="151" className="rm-muscle-location-figure__map-label">足底软组织与足弓范围</text>
   </svg>;
 
-  return <svg viewBox="0 0 360 480" role="img" aria-label="下肢肌肉范围示意图" focusable="false">
+  const rects = MUSCLE_ZONE_RECTS[regionId] ?? [];
+  return <svg viewBox="0 0 768 1024" role="img" aria-label="小腿肌肉范围示意图" focusable="false">
     <defs>
       <clipPath id={`muscle-photo-clip-${regionId}-${view}`}>
-        <rect width="360" height="480" rx="18" />
+        <rect width="768" height="1024" rx="18" />
       </clipPath>
     </defs>
-    <image href={photo} width="360" height="480" preserveAspectRatio="xMidYMid slice" clipPath={`url(#muscle-photo-clip-${regionId}-${view})`} className="rm-muscle-location-figure__photo" />
-    <path d={MUSCLE_ZONE_PATHS[regionId][0]} className="rm-muscle-location-figure__highlight rm-muscle-location-figure__highlight--photo" />
-    <text x="18" y="462" className="rm-muscle-location-figure__map-label">目标区已标出 · 照片示意</text>
+    <g clipPath={`url(#muscle-photo-clip-${regionId}-${view})`}>
+      <image href="/rehabmind-region-calf-atlas-v2.png" width="1536" height="1024" className="rm-muscle-location-figure__photo" />
+      {rects.map((rect) => <rect key={`${rect.x}-${rect.y}`} x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx="42" className="rm-muscle-location-figure__highlight rm-muscle-location-figure__highlight--photo" />)}
+    </g>
+    <text x="30" y="988" className="rm-muscle-location-figure__map-label">色块为该肌肉区域范围示意</text>
   </svg>;
 }
 
 function MuscleRegionFigure({ label }: { label: string }) {
   const regionId = resolveRegionId(label);
   const display = displayForLocation(label);
-  const spec = regionId ? MUSCLE_MAPS[regionId] : undefined;
+  // 大腿暂无专属示意照片；显示小腿照片会标错位置，先走文字卡兜底。
+  const spec = regionId && !regionId.startsWith("thigh") ? MUSCLE_MAPS[regionId] : undefined;
   if (!spec) return <figure className="rm-muscle-location-figure is-text-only" aria-label={`${display.label}定位范围说明`}>
     <div className="rm-muscle-location-figure__text-fallback"><span>定位范围</span><strong>{display.label}</strong></div>
     <figcaption>暂未提供匹配图</figcaption>

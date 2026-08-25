@@ -1,4 +1,5 @@
 export const PILOT_SOURCE_CHANNELS = [
+  "douyin",
   "douyin_fan_group",
   "douyin_comment",
   "xiaohongshu",
@@ -14,11 +15,9 @@ export type PilotSourceRecord = { channel: PilotCaseSourceChannel; detail: strin
 export const PILOT_SOURCE_STORAGE_KEY = "rehabmind-pilot-source";
 export const PILOT_SOURCE_DETAIL_MAX_LENGTH = 40;
 export const PILOT_SOURCE_OPTIONS: ReadonlyArray<{ value: PilotSourceChannel; label: string }> = [
-  { value: "douyin_fan_group", label: "抖音粉丝群" },
-  { value: "douyin_comment", label: "抖音评论区" },
+  { value: "douyin", label: "抖音" },
   { value: "xiaohongshu", label: "小红书" },
   { value: "friend", label: "朋友推荐" },
-  { value: "studio", label: "悦舒工作室" },
   { value: "other", label: "其他" },
 ];
 

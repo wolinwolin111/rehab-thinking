@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 export type FocusStep = {
   eyebrow: string;
   title: string;
@@ -39,8 +37,8 @@ export const FOCUS_STEPS: readonly FocusStep[] = [
     title: "完成一次完整的康复",
     description: "跟着提示完成评估、复测和训练。",
     targetLabel: "康复流程",
-    targetKeys: ["flow", "flow-mobile"],
-    placement: "right",
+    targetKeys: ["flow-mobile", "flow-current", "flow"],
+    placement: "bottom",
   },
   {
     eyebrow: "随时可以回来",
@@ -55,7 +53,7 @@ export const FOCUS_STEPS: readonly FocusStep[] = [
     title: "有问题随时反馈",
     description: "准备好了就开始吧。",
     targetLabel: "问题反馈",
-    targetKeys: ["top-actions"],
+    targetKeys: ["feedback", "top-actions"],
     placement: "bottom",
   },
 ] as const satisfies readonly FocusStep[];

@@ -192,6 +192,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [pilotSourceGateOpen, setPilotSourceGateOpen] = useState(false);
   const [pilotConsentGateOpen, setPilotConsentGateOpen] = useState(false);
   const [guideCardsOpen, setGuideCardsOpen] = useState(false);
+  const focusTutorialStorageKey = "rehabmind-focus-tutorial-seen";
+  const [focusTutorialOpen, setFocusTutorialOpen] = useState(false);
   const [pilotConsentDeclined, setPilotConsentDeclined] = useState(false);
   // SAVE-02：恢复到评估阶段后，等待派生队列就绪再推导落点
   const [restoredAssessmentCheck, setRestoredAssessmentCheck] = useState<{ token: number } | null>(null);
@@ -493,8 +495,28 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       // 会话内仍然生效；存储被禁用时下次访问会再次询问。
     }
     if (firstUseIntentRef.current === "continue") setRecordsOpen(true);
+    if (firstUseIntentRef.current !== "continue" && !hasSeenFocusTutorial()) {
+      setFocusTutorialOpen(true);
+    }
     setToast(firstUseIntentRef.current === "continue" ? "请选择以前的康复记录" : "匿名案例已创建，可以开始描述问题");
     window.setTimeout(() => setToast(""), 2400);
+  }
+
+  function hasSeenFocusTutorial() {
+    try {
+      return window.localStorage.getItem(focusTutorialStorageKey) === "seen";
+    } catch {
+      return true;
+    }
+  }
+
+  function markFocusTutorialSeen() {
+    setFocusTutorialOpen(false);
+    try {
+      window.localStorage.setItem(focusTutorialStorageKey, "seen");
+    } catch {
+      // 存储被禁用时仅本次会话生效。
+    }
   }
 
   function handlePilotConsentDecline() {
@@ -5157,7 +5179,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     <header className="rm-topbar">
       <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>RehabMind</strong><small>康复思路工作台</small></span></button>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
-      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" && !["local-saved", "synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
+      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState !== "idle" && !["local-saved", "synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setOnboardingOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={() => saveRecord(step === 1 && hasSafetySignal && !hasClearance ? "等待影像" : "待复查")}>保存</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">
@@ -5198,7 +5220,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       <nav className="rm-step-rail" data-rehabmind-tutorial="flow" aria-label="康复流程">{STEPS.map((label, index) => {
         const available = followupMode ? index <= railStep : index <= maxUnlocked || index <= step;
         const reviewing = reviewStep === index;
-        return <button type="button" key={label} disabled={!available} className={`${railStep === index && reviewStep === null ? "is-current" : ""} ${index < railStep ? "is-done" : ""} ${reviewing ? "is-reviewing" : ""}`} onClick={() => {
+        return <button type="button" key={label} data-rehabmind-tutorial={railStep === index && reviewStep === null ? "flow-current" : undefined} disabled={!available} className={`${railStep === index && reviewStep === null ? "is-current" : ""} ${index < railStep ? "is-done" : ""} ${reviewing ? "is-reviewing" : ""}`} onClick={() => {
           if (index < railStep) reviewCompletedStep(index as Step);
           else if (index === railStep) { setReviewStep(null); setReviewStepEditable(false); }
           else goToStep(index as Step);
@@ -5266,6 +5288,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     />
 
     {!testContext ? <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} mode="welcome" canContinue={savedRecords.length > 0} onContinue={continueFromWelcome} onStart={startFromWelcome} /> : null}
+    {!testContext ? <RehabMindOnboarding key={focusTutorialOpen ? "focus-open" : "focus-closed"} open={focusTutorialOpen} mode="focus" onSkip={markFocusTutorialSeen} onContinue={markFocusTutorialSeen} /> : null}
 
     {!testContext ? <GuideCards open={guideCardsOpen} onComplete={handleGuideCardsComplete} onSkip={handleGuideCardsSkip} /> : null}
 
