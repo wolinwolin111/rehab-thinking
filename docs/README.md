@@ -41,6 +41,7 @@
 - `plans/rehabmind-current-remediation-execution-plan.md`：A0-B6 历史结构与质量整改计划；冲突时不得覆盖当前 App 计划。
 - `quality/app-experience-local-acceptance-2026-08-25.md`：当前本地网页实现、测试结果、实际发现的问题和证据边界。
 - `quality/app-experience-vps-acceptance-2026-08-25.md`：当前 VPS canary、迁移、健康、回滚和发布缺陷证据。
+- `quality/test-infrastructure-delivery-2026-08-26.md`：测试体系建设记录——双轨巡检、投影穷举/序列探索/渲染合同/快照 fuzz 与真实快照回灌、SYS 追溯门禁，及首轮巡检发现与转交清单。
 - `handover/rehabmind-handover-2026-08-25.md`：2026-08-23 至 25 日工作、当前事实、未完成项和后续严格顺序的现行交接入口。
 - `plans/repository-structure-refactor-plan.md`：仓库目标目录、依赖方向、文件分类规则和分批迁移顺序。
 - `quality/b0-b6-structure-governance-2026-08-24.md`：本轮结构迁移、门禁证据、未完成阶段和继续顺序。
