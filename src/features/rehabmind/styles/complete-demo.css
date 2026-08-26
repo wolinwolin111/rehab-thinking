@@ -1637,9 +1637,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-atlas-picker.is-compact .rm-location-picker-head strong { font-size: 18px; }
 .rm-atlas-picker.is-compact .rm-location-picker-head > b { font-size: 12px; }
 .rm-compact-atlas-nav { padding: 14px 16px; border-bottom: 1px solid #d6e0e3; background: #f5f8fb; display: grid; grid-template-columns: 1fr; gap: 12px; }
-.rm-atlas-nav-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
-.rm-atlas-nav-row > .rm-atlas-nav-label { color: #5b6b7c; font-size: 14px; font-weight: 850; white-space: nowrap; }
-.rm-atlas-nav-row > div { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.rm-atlas-nav-row { display: flex; align-items: center; justify-content: flex-start; gap: 14px; flex-wrap: wrap; }
+.rm-atlas-nav-row > .rm-atlas-nav-label { min-width: 76px; color: #5b6b7c; font-size: 14px; font-weight: 850; white-space: nowrap; }
+.rm-atlas-nav-row > div { display: flex; gap: 8px; justify-content: flex-start; flex-wrap: wrap; }
 .rm-compact-atlas-nav > div:first-child button, .rm-atlas-nav-row:first-child button { min-height: 46px; padding: 9px 30px; font-size: 15px; }
 .rm-compact-atlas-nav button { min-height: 42px; padding: 8px 20px; border: 1px solid #c2ceda; border-radius: 999px; background: white; font-size: 14px; font-weight: 850; cursor: pointer; }
 .rm-compact-atlas-nav button.is-active { color: white; border-color: var(--rm-blue); background: var(--rm-blue); }
