@@ -62,7 +62,7 @@ import { candidateAction, candidatePilotMotionIds } from "@/src/domain/rehab/tre
 import { chiefActionLabel, chiefActionSource, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, isAcuteTrauma, reportedActionSummary } from "@/src/domain/rehab/intake/chief-action-core";
 import { candidateRelevance } from "@/src/domain/rehab/treatment/candidate-scoring-core";
 import { consolidateTrialTargetsByTreatment, treatmentCanCarryAcrossProblems } from "@/src/domain/rehab/treatment/trial-target-core";
-import { bilateralAssessmentGate, orderBilateralSides, resolveBilateralPriority, type BilateralSide } from "@/src/domain/rehab/shared/bilateral-flow-core";
+import { bilateralAssessmentGate, inferBilateralAssessmentWorseSide, orderBilateralSides, resolveBilateralPriority, type BilateralSide } from "@/src/domain/rehab/shared/bilateral-flow-core";
 import { buildTrialTargets } from "@/src/domain/rehab/treatment/build-trial-targets-core";
 import { type DecisionContext } from "@/src/domain/rehab/treatment/trial-target-types";
 import { candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-safety-core";
@@ -1428,15 +1428,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   const bilateralAssessmentWorseSide = useMemo<BilateralSide | undefined>(() => {
     if (intake.side !== "双侧/中间") return undefined;
-    const counts: Record<BilateralSide, number> = { "左侧": 0, "右侧": 0 };
-    findings.forEach((finding) => {
-      if (finding.priority === "support" && (finding.side === "左侧" || finding.side === "右侧")) counts[finding.side] += 1;
-    });
-    // 不用 finding 数量强行推断“整体更差侧”。只有当异常明确只出现在
-    // 一侧时才生成提醒；两侧都有异常时交给逐项目结果，不产生伪共识。
-    if (counts["左侧"] > 0 && counts["右侧"] === 0) return "左侧";
-    if (counts["右侧"] > 0 && counts["左侧"] === 0) return "右侧";
-    return undefined;
+    // M-07：推断规则集中在 bilateral-flow-core；track 级单侧异常同样计入。
+    return inferBilateralAssessmentWorseSide(findings);
   }, [findings, intake.side]);
   const bilateralPriorityResolution = resolveBilateralPriority({
     complaintPrioritySide: intake.prioritySide,

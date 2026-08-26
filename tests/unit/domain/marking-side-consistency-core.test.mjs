@@ -40,3 +40,16 @@ test("提示名词可替换以覆盖其他标记类型", () => {
   assert.ok(hint);
   assert.equal(hint, "按压痛位置在左侧，与主诉右侧不同，如无误点请继续");
 });
+
+test("M-05：清理入口只移除与主诉不同侧的标记", () => {
+  const marks = [{ side: "右侧", label: "A" }, { side: "左侧", label: "B" }, { side: "双侧/中间", label: "C" }, { label: "D" }];
+  const kept = core.removeMarksConflictingWithComplaintSide("左侧", marks);
+  assert.deepEqual(kept, [{ side: "左侧", label: "B" }, { side: "双侧/中间", label: "C" }, { label: "D" }]);
+});
+
+test("M-05：双侧主诉或缺省侧别不清理任何标记，输入数组不被修改", () => {
+  const marks = [{ side: "左侧" }, { side: "右侧" }];
+  assert.equal(core.removeMarksConflictingWithComplaintSide("双侧/中间", marks).length, 2);
+  assert.equal(core.removeMarksConflictingWithComplaintSide("", marks).length, 2);
+  assert.equal(marks.length, 2);
+});

@@ -96,3 +96,14 @@ export function buildTissuePathway(input: TissuePathwayInput): TissuePathwayDeci
 
   return standard;
 }
+
+export type TissueReferralAdvice = { title: string; reasons: string[] };
+
+/**
+ * T-05：把路径的就医预警清单转成出口卡片数据。
+ * 标准路径没有预警；返回副本，外部修改不影响路径决策本身。
+ */
+export function tissueReferralAdvice(pathway: TissuePathwayDecision): TissueReferralAdvice | null {
+  if (pathway.id === "standard" || pathway.referralReasons.length === 0) return null;
+  return { title: `${pathway.title}：出现以下情况请及时就医`, reasons: [...pathway.referralReasons] };
+}

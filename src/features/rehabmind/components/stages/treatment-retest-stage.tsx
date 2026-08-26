@@ -535,7 +535,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     });
     return <section className="rm-page rm-bilateral-checkpoint">
       <StepHeading eyebrow="第4步 · 双侧处理顺序" title="一侧完成后，确认下一步" note="系统不会自动跳到另一侧；另一侧仍保留独立记录。" />
-      {bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>这只影响提醒和后续排序，不会静默替换你在主诉中选择的优先侧。</p></section> : null}
+      {bilateralPriorityResolution.needsConfirmation && bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>这只影响提醒和后续排序，不会静默替换你在主诉中选择的优先侧。</p></section> : null}
       <section className="rm-complete-panel">
         <span>已完成{intake.prioritySide || "优先侧"}当前处理</span>
         <h2>另一侧还没有被默认判定为正常</h2>

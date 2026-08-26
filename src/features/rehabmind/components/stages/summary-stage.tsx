@@ -18,6 +18,7 @@ import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasC
 import { pendingTrainingFeedback, trainingFeedbackComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { LocalLimbDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { tissueReferralAdvice } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { HomeRelaxationTarget } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { AdverseSource, AdverseTiming } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
@@ -418,6 +419,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
 
   if (followupStage === "summary") {
     const completedSummary = sessionHistory.find((item) => item.sessionNumber === sessionNumber) ?? sessionHistory.at(-1);
+    const tissueReferral = tissueReferralAdvice(tissuePathway);
     const nextRecommendation = recommendNextSession({
       acute: ["今天或昨天", "2～7天"].includes(intake.onset) && intake.mechanism !== "没有明确受伤",
       hasSwelling: intake.symptoms.includes("肿胀或淤青") && completedSummary?.reviewResults.some((item) => item.id === "swelling" && item.result !== "better") !== false,
@@ -428,12 +430,13 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
       waitingForMedicalClearance: structuralImagingSignal || assessmentNeedsReferral,
       worsened: Boolean(completedSummary?.reviewResults.some((item) => item.result === "worse") || completedSummary?.treatments.some((item) => item.result === "worse" || item.activityWorsened)),
     });
-    const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
+  const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
     return <section className="rm-page rm-session-summary">
       <StepHeading eyebrow={`第${sessionNumber}次康复`} title="本次康复总结" />
       <section className="rm-session-hero"><div><span>本次主诉</span><h2>{chiefComplaintLabel(intake)}</h2><p>本次康复已经保存</p></div>{typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
       {summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
       <NextSessionCard recommendation={nextRecommendation} nextSessionNumber={sessionNumber + 1} completedAt={completedSummary?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startNextFollowupSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: `session-${sessionNumber}`, sourceLabel: `第${sessionNumber}次康复结束后的反应`, timing: "later", beforeScore: completedSummary?.endingScore ?? followupSessionScore, afterScore: completedSummary?.endingScore ?? followupSessionScore, relatedAssessmentIds: completedSummary?.reviewResults.filter((item) => item.result !== "better").map((item) => item.id) ?? [] })} />
+      {tissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{tissueReferral.title}</h2><ul>{tissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
       <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">
         <section className="rm-summary-module is-treatments"><header><div><span>本次处理</span><strong>{completedSummary?.treatments.length ?? 0}项</strong></div></header><div className="rm-summary-compact-list">{completedSummary?.treatments.length ? completedSummary.treatments.map((item) => <article key={item.id}><strong>{item.label}</strong><span>{item.activityWorsened ? "已停止（活动变差）" : item.result === "better" ? "有效" : item.result === "partial" ? "部分改善" : item.result === "worse" ? "已停止" : "变化不明显"}</span></article>) : <p>本次没有新增现场处理。</p>}</div></section>
         <section className="rm-summary-module is-training"><header><div><span>居家训练</span><strong>{completedSummary?.training.length ?? 0}个</strong></div></header><div className="rm-summary-compact-list">{completedSummary?.training.map((item) => <article key={item.id}><strong>{item.label}</strong><span>{item.adjustment === "progress" ? "进阶一项" : item.adjustment === "reduce" ? "降低一档" : "保持当前"}</span></article>)}{homeRelaxationTargets.map((target) => <article key={target.id}><strong>{target.title}</strong><span>{target.dosage}</span></article>)}</div></section>
@@ -681,10 +684,12 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     worsened: treatmentWorsened || exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse"),
   });
   const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
+  const firstSessionTissueReferral = tissueReferralAdvice(tissuePathway);
     return <section className="rm-page rm-session-summary">
     <StepHeading eyebrow="第6步" title="本次康复总结" />
     <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
+    {firstSessionTissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{firstSessionTissueReferral.title}</h2><ul>{firstSessionTissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
     <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">
       <div className="rm-summary-column">
         <section className="rm-summary-module is-findings"><header><div><span>评估结果</span><strong>{summaryProblems.length}项</strong></div></header>{summaryProblemGroups.length ? <div className="rm-summary-finding-groups">{summaryProblemGroups.map((group) => <article key={group.key}><b>{group.label}</b><ul>{group.items.map((problem) => <li key={problem.id}><strong>{problem.title}</strong>{problem.status ? <span>{problem.status}</span> : null}</li>)}</ul></article>)}</div> : <p>未记录明确异常。</p>}</section>

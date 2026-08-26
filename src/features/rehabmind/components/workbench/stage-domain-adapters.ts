@@ -19,6 +19,7 @@ export { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessme
 export type { BilateralPriorityResolution, BilateralSide, BilateralTrainingGate } from "@/src/domain/rehab/shared/bilateral-flow-core";
 export { bilateralCheckpointOptions } from "@/src/domain/rehab/shared/bilateral-flow-core";
 export type { TissuePathwayDecision } from "@/src/domain/rehab/safety/tissue-pathway-core";
+export { tissueReferralAdvice } from "@/src/domain/rehab/safety/tissue-pathway-core";
 export { summarizeTreatmentCoverage } from "@/src/domain/rehab/treatment/treatment-coverage-core";
 export { chiefChangeExplanation } from "@/src/domain/rehab/retest/chief-change-explanation-core";
 export { assessmentGapActionLabel } from "@/src/domain/rehab/assessment/assessment-gap-core";
@@ -42,5 +43,5 @@ export type { HomeRelaxationTarget } from "@/src/domain/rehab/training/home-rela
 export { resolvedTreatmentCombination, treatmentResponsePriority } from "@/src/domain/rehab/treatment/treatment-response-core";
 export { formatRecommendedDateRange, recommendNextSession } from "@/src/domain/rehab/followup/next-session-recommendation-core";
 export { compareFollowupScore } from "@/src/domain/rehab/followup/followup-review-core";
-export { markingSideMismatchHint } from "@/src/domain/rehab/shared/marking-side-consistency-core";
+export { markingSideMismatchHint, removeMarksConflictingWithComplaintSide } from "@/src/domain/rehab/shared/marking-side-consistency-core";
 export { descriptionSuggestsTraumaText, traumaMechanismMismatchHint } from "@/src/domain/rehab/intake/trauma-mechanism-consistency-core";

@@ -1404,6 +1404,10 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-symptom-type-groups > section > strong { display: block; margin-bottom: 10px; color: var(--rm-muted); font-size: 12px; letter-spacing: .04em; }
 .rm-symptom-type-groups > section + section { border-color: #d7dff2; background: #f7f9ff; }
 .rm-choice-hint,.rm-reused-symptom { margin: 8px 0 12px; padding: 9px 12px; border-left: 3px solid var(--rm-blue); color: #46535b; background: #f2f6ff; font-size: 13px; line-height: 1.55; }
+.rm-choice-hint-clear { margin-left: 10px; padding: 3px 10px; border: 1px solid var(--rm-line-strong); border-radius: 999px; background: white; color: #46535b; font-size: 12px; font-weight: 700; }
+.rm-choice-hint-clear:hover { border-color: var(--rm-blue); color: var(--rm-blue); background: var(--rm-blue-soft); }
+.rm-referral-advice ul { margin: 6px 0 4px; padding-left: 20px; }
+.rm-referral-advice li + li { margin-top: 2px; }
 .rm-feedback-quick { display: grid; grid-template-columns: repeat(2,1fr); gap: 9px; }
 .rm-feedback-quick button { min-height: 46px; padding: 9px 12px; border: 1px solid var(--rm-line-strong); border-radius: 12px; color: var(--rm-ink); background: white; font-weight: 800; text-align: left; }
 .rm-feedback-quick button:hover,.rm-feedback-quick button.is-selected { border-color: var(--rm-blue); color: var(--rm-blue); background: var(--rm-blue-soft); }

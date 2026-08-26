@@ -7,7 +7,7 @@ const source = await readFile(new URL("../../../src/domain/rehab/safety/tissue-p
 const output = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
-const { buildTissuePathway } = await import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
+const { buildTissuePathway, tissueReferralAdvice } = await import(`data:text/javascript;base64,${Buffer.from(output).toString("base64")}`);
 
 const base = { regionId: "calf-local", location: "小腿后侧", onset: "1～6周", mechanism: "逐渐出现", symptomType: "酸痛", symptoms: [], provocationTypes: ["运动过程中"], description: "" };
 
@@ -59,4 +59,25 @@ test("explicit knee tendon wording still uses the tendon-load safeguards", () =>
     description: "明确是髌腱负荷后疼痛",
   });
   assert.equal(decision.id, "tendon-load");
+});
+
+test("T-05：非标准路径产出可直接展示的就医预警清单", () => {
+  const contusion = buildTissuePathway({ ...base, regionId: "thigh-local", location: "大腿前侧", onset: "今天或昨天", mechanism: "跌倒或碰撞", symptoms: ["肿胀或淤青"] });
+  const advice = tissueReferralAdvice(contusion);
+  assert.ok(advice);
+  assert.ok(advice.title.includes("及时就医"));
+  assert.deepEqual(advice.reasons, ["肿胀快速增大", "局部明显凹陷", "麻木或循环异常", "基本功能严重下降"]);
+  const bone = buildTissuePathway({ ...base, location: "胫骨内侧一个固定点", provocationTypes: ["走路、站立或负重", "运动过程中"], description: "跑量增加后局限骨点疼，走路也疼" });
+  assert.ok(tissueReferralAdvice(bone)?.reasons.length);
+  const tendon = buildTissuePathway({ ...base, location: "跟腱中段", description: "跑步和提踵时跟腱疼" });
+  assert.ok(tissueReferralAdvice(tendon)?.reasons.length);
+});
+
+test("T-05：标准路径没有就医预警，清单是防御性副本", () => {
+  const standard = buildTissuePathway(base);
+  assert.equal(tissueReferralAdvice(standard), null);
+  const contusion = buildTissuePathway({ ...base, regionId: "thigh-local", location: "大腿前侧", onset: "今天或昨天", mechanism: "跌倒或碰撞", symptoms: ["肿胀或淤青"] });
+  const advice = tissueReferralAdvice(contusion);
+  advice?.reasons.push("外部篡改");
+  assert.equal(contusion.referralReasons.includes("外部篡改"), false);
 });

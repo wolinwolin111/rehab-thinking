@@ -56,3 +56,14 @@ test("处理队列按优先侧排序，但保留另一侧记录", () => {
   const items = [{ id: "left", side: "左侧" }, { id: "right", side: "右侧" }, { id: "both", side: "两侧接近" }];
   assert.deepEqual(core.orderBilateralSides(items, "右侧").map((item) => item.id), ["right", "left", "both"]);
 });
+
+test("M-07：更差侧推断计入 track 级单侧异常", () => {
+  assert.equal(core.inferBilateralAssessmentWorseSide([{ priority: "track", side: "右侧" }]), "右侧");
+  assert.equal(core.inferBilateralAssessmentWorseSide([{ priority: "support", side: "左侧" }, { priority: "track", side: "右侧" }]), undefined);
+});
+
+test("M-07：两侧都有异常、无异常或优先级不含 support/track 时不产生伪共识", () => {
+  assert.equal(core.inferBilateralAssessmentWorseSide([]), undefined);
+  assert.equal(core.inferBilateralAssessmentWorseSide([{ priority: "support", side: "两侧异常" }]), undefined);
+  assert.equal(core.inferBilateralAssessmentWorseSide([{ priority: "info", side: "右侧" }]), undefined);
+});

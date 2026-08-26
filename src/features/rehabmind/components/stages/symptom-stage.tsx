@@ -5,7 +5,7 @@ import { currentComplaintText, extractComplaintPrioritySide } from "@/src/featur
 import { type CapabilityKey, emptyCapabilities, type OperationTarget, type ProductMode, type WorkflowProfile } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, hasClearChiefAction, primaryReportedAction, reportedActionSummary } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { includesAny } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { markingSideMismatchHint } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { markingSideMismatchHint, removeMarksConflictingWithComplaintSide } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { traumaMechanismMismatchHint } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { FullRegion } from "@/src/knowledge/pilot/full-demo-content";
 import {
@@ -34,10 +34,17 @@ import {
   sideFromLocationSelections,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
-/** M-01 方案A：标记侧别与主诉不同侧时的非阻断温和确认提示（只提示，不拦截、不改决策）。 */
-function MarkingSideHint({ complaintSide, markedSides, noun }: { complaintSide: string; markedSides: string[]; noun?: string }) {
+/** M-01 方案A：标记侧别与主诉不同侧时的非阻断温和确认提示（只提示，不拦截、不改决策）。
+ * M-05：提供「清除不一致标记」入口，改侧后可一键移除与新主诉侧别矛盾的标记。 */
+function MarkingSideHint({ complaintSide, markedSides, noun, onClear }: { complaintSide: string; markedSides: string[]; noun?: string; onClear?: () => void }) {
   const hint = markingSideMismatchHint({ complaintSide, markedSides, noun });
-  return hint ? <p className="rm-choice-hint" role="status">{hint}</p> : null;
+  if (!hint) return null;
+  return (
+    <p className="rm-choice-hint" role="status">
+      {hint}
+      {onClear ? <button type="button" className="rm-choice-hint-clear" onClick={onClear}>清除不一致标记</button> : null}
+    </p>
+  );
 }
 
 /** M-03 方案A：描述提到受伤但起病方式选了「没有明确受伤」时的非阻断确认提示。 */
@@ -299,9 +306,9 @@ export function SymptomStage(props: SymptomStageProps) {
             {professionalLocationTabs.map((tab) => <button type="button" key={tab.id} className={activeProfessionalLocationTab === tab.id ? "is-active" : ""} onClick={() => setProfessionalLocationTab(tab.id)}><strong>{tab.label}</strong><small>{tab.count ? `已标记 ${tab.count} 处` : "尚未标记"}</small></button>)}
           </nav>
           <div className="rm-professional-location-panel">
-            {activeProfessionalLocationTab === "swelling" ? <div><header><b>肿胀或淤青位置</b><span>标记所有明显区域</span></header><LowerLimbLocationPicker professional mode="swelling" value={intake.swellingLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.swellingLocation || intake.location} onChange={(swellingLocations) => invalidateAfterIntake({ ...intake, swellingLocations, swellingLocation: locationSelectionsLabel(swellingLocations), swellingLocationConfirmed: Boolean(swellingLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.swellingLocations.map((item) => item.side)} />{!intake.swellingLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, swellingLocation: "说不清", swellingLocations: [], swellingLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
-            {activeProfessionalLocationTab === "tenderness" ? <div><header><b>按压痛位置</b><span>轻按后标记出现明显疼痛的区域</span></header><LowerLimbLocationPicker professional mode="tenderness" value={intake.tendernessLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.tendernessLocation || intake.location} onChange={(tendernessLocations) => invalidateAfterIntake({ ...intake, tendernessLocations, tendernessLocation: locationSelectionsLabel(tendernessLocations), tendernessLocationConfirmed: Boolean(tendernessLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.tendernessLocations.map((item) => item.side)} noun="按压痛位置" />{!intake.tendernessLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, tendernessLocation: "说不清", tendernessLocations: [], tendernessLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
-            {activeProfessionalLocationTab === "sensory" ? <div><header><b>麻/电感范围</b><span>标记麻、刺、电感出现的区域</span></header><LowerLimbLocationPicker professional mode="sensory" value={intake.sensoryLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.sensoryLocation || intake.location} onChange={(sensoryLocations) => invalidateAfterIntake({ ...intake, sensoryLocations, sensoryLocation: locationSelectionsLabel(sensoryLocations), sensoryLocationConfirmed: Boolean(sensoryLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.sensoryLocations.map((item) => item.side)} noun="麻电范围" />{!intake.sensoryLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, sensoryLocation: "说不清", sensoryLocations: [], sensoryLocationConfirmed: true })}>范围不清楚</button> : null}</div> : null}
+            {activeProfessionalLocationTab === "swelling" ? <div><header><b>肿胀或淤青位置</b><span>标记所有明显区域</span></header><LowerLimbLocationPicker professional mode="swelling" value={intake.swellingLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.swellingLocation || intake.location} onChange={(swellingLocations) => invalidateAfterIntake({ ...intake, swellingLocations, swellingLocation: locationSelectionsLabel(swellingLocations), swellingLocationConfirmed: Boolean(swellingLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.swellingLocations.map((item) => item.side)} onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.swellingLocations); invalidateAfterIntake({ ...intake, swellingLocations: kept, swellingLocation: locationSelectionsLabel(kept), swellingLocationConfirmed: Boolean(kept.length) }); }} />{!intake.swellingLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, swellingLocation: "说不清", swellingLocations: [], swellingLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
+            {activeProfessionalLocationTab === "tenderness" ? <div><header><b>按压痛位置</b><span>轻按后标记出现明显疼痛的区域</span></header><LowerLimbLocationPicker professional mode="tenderness" value={intake.tendernessLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.tendernessLocation || intake.location} onChange={(tendernessLocations) => invalidateAfterIntake({ ...intake, tendernessLocations, tendernessLocation: locationSelectionsLabel(tendernessLocations), tendernessLocationConfirmed: Boolean(tendernessLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.tendernessLocations.map((item) => item.side)} noun="按压痛位置" onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.tendernessLocations); invalidateAfterIntake({ ...intake, tendernessLocations: kept, tendernessLocation: locationSelectionsLabel(kept), tendernessLocationConfirmed: Boolean(kept.length) }); }} />{!intake.tendernessLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, tendernessLocation: "说不清", tendernessLocations: [], tendernessLocationConfirmed: true })}>位置不清楚</button> : null}</div> : null}
+            {activeProfessionalLocationTab === "sensory" ? <div><header><b>麻/电感范围</b><span>标记麻、刺、电感出现的区域</span></header><LowerLimbLocationPicker professional mode="sensory" value={intake.sensoryLocations} initialRegionId={intake.regionId} initialSide={intake.side} initialLocation={intake.sensoryLocation || intake.location} onChange={(sensoryLocations) => invalidateAfterIntake({ ...intake, sensoryLocations, sensoryLocation: locationSelectionsLabel(sensoryLocations), sensoryLocationConfirmed: Boolean(sensoryLocations.length) })} /><MarkingSideHint complaintSide={intake.side} markedSides={intake.sensoryLocations.map((item) => item.side)} noun="麻电范围" onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.sensoryLocations); invalidateAfterIntake({ ...intake, sensoryLocations: kept, sensoryLocation: locationSelectionsLabel(kept), sensoryLocationConfirmed: Boolean(kept.length) }); }} />{!intake.sensoryLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, sensoryLocation: "说不清", sensoryLocations: [], sensoryLocationConfirmed: true })}>范围不清楚</button> : null}</div> : null}
           </div>
         </div> : null}
         {(intake.symptomType === "刺痛" || hasTenderness) ? <div className="rm-professional-subfield rm-professional-palpation-response"><div className="rm-label"><span>轻按反应</span><b>在刚才最不舒服的位置轻按一次；没有尝试也可以直接记录</b></div><PillOptions options={["清楚的刺痛", "钝痛或酸胀", "没有明显感觉", "没有尝试"]} value={({ sharp: "清楚的刺痛", dull: "钝痛或酸胀", none: "没有明显感觉", "not-tried": "没有尝试", "": "" } as const)[intake.stabbingPalpation]} onChange={(value) => invalidateAfterIntake({ ...intake, stabbingPalpation: ({ "清楚的刺痛": "sharp", "钝痛或酸胀": "dull", "没有明显感觉": "none", "没有尝试": "not-tried" } as const)[value] ?? "" })} columns={2} /></div> : null}
@@ -554,7 +561,7 @@ export function SymptomStage(props: SymptomStageProps) {
             initialLocation={intake.swellingLocation || intake.location}
             onChange={(swellingLocations) => invalidateAfterIntake({ ...intake, swellingLocations, swellingLocation: locationSelectionsLabel(swellingLocations), swellingLocationConfirmed: Boolean(swellingLocations.length) })}
           />
-          <MarkingSideHint complaintSide={intake.side} markedSides={intake.swellingLocations.map((item) => item.side)} />
+          <MarkingSideHint complaintSide={intake.side} markedSides={intake.swellingLocations.map((item) => item.side)} onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.swellingLocations); invalidateAfterIntake({ ...intake, swellingLocations: kept, swellingLocation: locationSelectionsLabel(kept), swellingLocationConfirmed: Boolean(kept.length) }); }} />
           {!intake.swellingLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, swellingLocation: "说不清", swellingLocations: [], swellingLocationConfirmed: true })}>暂时说不清位置</button> : null}
         </> : null}
         {hasTenderness && (showAllIntakeFields || nextMissingField === "按压痛位置") ? <>
@@ -566,7 +573,7 @@ export function SymptomStage(props: SymptomStageProps) {
             initialLocation={intake.tendernessLocation || intake.location}
             onChange={(tendernessLocations) => invalidateAfterIntake({ ...intake, tendernessLocations, tendernessLocation: locationSelectionsLabel(tendernessLocations), tendernessLocationConfirmed: Boolean(tendernessLocations.length) })}
           />
-          <MarkingSideHint complaintSide={intake.side} markedSides={intake.tendernessLocations.map((item) => item.side)} noun="按压痛位置" />
+          <MarkingSideHint complaintSide={intake.side} markedSides={intake.tendernessLocations.map((item) => item.side)} noun="按压痛位置" onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.tendernessLocations); invalidateAfterIntake({ ...intake, tendernessLocations: kept, tendernessLocation: locationSelectionsLabel(kept), tendernessLocationConfirmed: Boolean(kept.length) }); }} />
           {!intake.tendernessLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, tendernessLocation: "说不清", tendernessLocations: [], tendernessLocationConfirmed: true })}>暂时说不清位置</button> : null}
         </> : null}
         {hasSensorySymptoms && (showAllIntakeFields || nextMissingField === "麻电范围") ? <>
@@ -578,7 +585,7 @@ export function SymptomStage(props: SymptomStageProps) {
             initialLocation={intake.sensoryLocation || intake.location}
             onChange={(sensoryLocations) => invalidateAfterIntake({ ...intake, sensoryLocations, sensoryLocation: locationSelectionsLabel(sensoryLocations), sensoryLocationConfirmed: Boolean(sensoryLocations.length) })}
           />
-          <MarkingSideHint complaintSide={intake.side} markedSides={intake.sensoryLocations.map((item) => item.side)} noun="麻电范围" />
+          <MarkingSideHint complaintSide={intake.side} markedSides={intake.sensoryLocations.map((item) => item.side)} noun="麻电范围" onClear={() => { const kept = removeMarksConflictingWithComplaintSide(intake.side, intake.sensoryLocations); invalidateAfterIntake({ ...intake, sensoryLocations: kept, sensoryLocation: locationSelectionsLabel(kept), sensoryLocationConfirmed: Boolean(kept.length) }); }} />
           {!intake.sensoryLocations.length ? <button type="button" className="rm-location-unknown" onClick={() => invalidateAfterIntake({ ...intake, sensoryLocation: "说不清", sensoryLocations: [], sensoryLocationConfirmed: true })}>暂时说不清范围</button> : null}
         </> : null}
       </div> : null}

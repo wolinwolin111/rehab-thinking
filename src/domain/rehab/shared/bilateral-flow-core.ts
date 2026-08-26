@@ -133,3 +133,20 @@ export function orderBilateralSides<T>(
     })
     .map(({ item }) => item);
 }
+
+export type BilateralFindingSideHint = { priority?: string; side?: string };
+
+/**
+ * M-07：从评估发现推断「整体更差侧」。不用数量强行制造伪共识——只有当
+ * support / track 级异常明确只出现在一侧时才产出；track 级（主诉动作）的
+ * 单侧信号同样计入，避免被忽略。结果只用于提醒与排序展示。
+ */
+export function inferBilateralAssessmentWorseSide(items: BilateralFindingSideHint[]): BilateralSide | undefined {
+  const counts: Record<BilateralSide, number> = { "左侧": 0, "右侧": 0 };
+  items.forEach((item) => {
+    if ((item.priority === "support" || item.priority === "track") && (item.side === "左侧" || item.side === "右侧")) counts[item.side] += 1;
+  });
+  if (counts["左侧"] > 0 && counts["右侧"] === 0) return "左侧";
+  if (counts["右侧"] > 0 && counts["左侧"] === 0) return "右侧";
+  return undefined;
+}

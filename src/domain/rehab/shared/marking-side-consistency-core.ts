@@ -30,3 +30,13 @@ export function markingSideMismatchHint(input: MarkingSideMismatchInput): string
   if (!differing.length) return null;
   return `${noun}在${differing.join("、")}，与主诉${complaintSide}不同，如无误点请继续`;
 }
+
+/**
+ * M-05：改侧后的清理入口——只移除与主诉明确不同侧的标记；
+ * 同侧、双侧/中间与未标注侧别的标记保留。输入数组不被修改。
+ */
+export function removeMarksConflictingWithComplaintSide<T extends { side?: string }>(complaintSide: string, selections: T[]): T[] {
+  const side = typeof complaintSide === "string" ? complaintSide.trim() : "";
+  if (!side || !DEFINITE_SIDES.includes(side)) return [...selections];
+  return selections.filter((item) => !item || !DEFINITE_SIDES.includes(item.side ?? "") || item.side === side);
+}
