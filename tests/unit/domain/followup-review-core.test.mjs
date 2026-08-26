@@ -15,7 +15,7 @@ test("a resolved range retest replaces an earlier same-session limited review", 
     { "motion:knee-extension": "same" },
     [{ rangeOutcomes: { "knee-extension": "both-match" } }],
   );
-  assert.deepEqual(result, [{ id: "motion:knee-extension", label: "膝关节伸直", result: "better" }]);
+  assert.deepEqual(result, [{ id: "motion:knee-extension", label: "膝关节伸直", result: "better", overwrittenFrom: "same" }]);
 });
 
 test("partly improved range remains unresolved for the next session", () => {
@@ -83,5 +83,41 @@ test("a post-treatment alias replaces the original assessment action", () => {
     [{ rangeOutcomes: { "knee-flexion": "both-match" } }],
     canonicalize,
   );
-  assert.deepEqual(result, [{ id: "motion:thigh-front-length", label: "大腿前侧拉长", result: "better" }]);
+  assert.deepEqual(result, [{ id: "motion:thigh-front-length", label: "大腿前侧拉长", result: "better", overwrittenFrom: "same" }]);
+});
+
+test("T-06：趋势覆写保留最初记录可追溯", () => {
+  const result = core.mergeSessionReviewResults(
+    [{ id: "motion:knee-extension", label: "伸直", result: "same" }],
+    { "motion:knee-extension": "better" },
+    [],
+  );
+  assert.equal(result[0].result, "better");
+  assert.equal(result[0].overwrittenFrom, "same");
+});
+
+test("T-06：同值覆写不产生溯源字段，链式覆写保留最早原值", () => {
+  const sameValue = core.mergeSessionReviewResults([{ id: "a", label: "A", result: "same" }], { a: "same" }, []);
+  assert.equal(sameValue[0].overwrittenFrom, undefined);
+  const chained = core.mergeSessionReviewResults(
+    core.mergeSessionReviewResults([{ id: "a", label: "A", result: "same" }], { a: "worse" }, []),
+    { a: "better" },
+    [],
+  );
+  assert.equal(chained[0].result, "better");
+  assert.equal(chained[0].overwrittenFrom, "same");
+});
+
+test("T-06：趋势与确认分数反向矛盾被检测，未确认分数不报警", () => {
+  assert.equal(core.trendScoreContradiction({ trends: ["better"], comparison: "worse" }), "trend-better-score-worse");
+  assert.equal(core.trendScoreContradiction({ trends: ["worse", "same"], comparison: "better" }), "trend-worse-score-better");
+  assert.equal(core.trendScoreContradiction({ trends: ["better"], comparison: "pending" }), null);
+  assert.equal(core.trendScoreContradiction({ trends: ["same"], comparison: "same" }), null);
+});
+
+test("T-03：复查红旗重检信号只由明确回答触发", () => {
+  assert.equal(core.followupRedFlagSignal({}).needsReferral, false);
+  assert.equal(core.followupRedFlagSignal({ numbnessOrRadiation: "no", progressiveWeakness: "no" }).needsReferral, false);
+  assert.equal(core.followupRedFlagSignal({ numbnessOrRadiation: "yes", progressiveWeakness: "no" }).needsReferral, true);
+  assert.equal(core.followupRedFlagSignal({ numbnessOrRadiation: "no", progressiveWeakness: "yes" }).needsReferral, true);
 });

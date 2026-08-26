@@ -42,6 +42,6 @@ export { planQuickFeedbackRecord } from "@/src/domain/rehab/training/training-fe
 export type { HomeRelaxationTarget } from "@/src/domain/rehab/training/home-relaxation-core";
 export { resolvedTreatmentCombination, treatmentResponsePriority } from "@/src/domain/rehab/treatment/treatment-response-core";
 export { formatRecommendedDateRange, recommendNextSession } from "@/src/domain/rehab/followup/next-session-recommendation-core";
-export { compareFollowupScore } from "@/src/domain/rehab/followup/followup-review-core";
+export { compareFollowupScore, followupRedFlagSignal, trendScoreContradiction } from "@/src/domain/rehab/followup/followup-review-core";
 export { markingSideMismatchHint, removeMarksConflictingWithComplaintSide } from "@/src/domain/rehab/shared/marking-side-consistency-core";
 export { descriptionSuggestsTraumaText, traumaMechanismMismatchHint } from "@/src/domain/rehab/intake/trauma-mechanism-consistency-core";

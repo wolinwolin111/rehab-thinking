@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import { AnswerChoiceGrid, ScoreHistory, ScoreSlider, StepHeading, TreatmentRoadmap } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import { NextSessionCard } from "@/src/features/rehabmind/components/stages/shared/next-session-card";
 import MuscleRegionLocationPicker from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
@@ -11,7 +12,7 @@ import { professionalAssessmentTitle } from "@/src/knowledge/pilot/pilot-motion-
 import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, motionWasSymptomatic, samePhysicalAction, valueForPhysicalAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest, needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { formatRecommendedDateRange, recommendNextSession } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { compareFollowupScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { compareFollowupScore, followupRedFlagSignal, trendScoreContradiction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateTreatmentKey } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, reportedActionSummary } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -193,8 +194,18 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     onStartSecondSession: startSecondSession,
   } = actions;
 
+  // T-03：复查红旗最小重检（麻电/放射、进行性加重），按次重置，不阻断流程。
+  const [redFlagAnswers, setRedFlagAnswers] = useState<{ session: number; numbnessOrRadiation: string; progressiveWeakness: string }>({ session: sessionNumber, numbnessOrRadiation: "", progressiveWeakness: "" });
+  const effectiveRedFlags = redFlagAnswers.session === sessionNumber ? redFlagAnswers : { session: sessionNumber, numbnessOrRadiation: "", progressiveWeakness: "" };
+  const redFlagReview = followupRedFlagSignal(effectiveRedFlags);
+  const updateRedFlag = (key: "numbnessOrRadiation" | "progressiveWeakness", value: string) => setRedFlagAnswers({ ...effectiveRedFlags, session: sessionNumber, [key]: value });
+  // T-06：逐项趋势与确认分数反向矛盾时提醒复核。
+  const trendContradiction = trendScoreContradiction({
+    trends: Object.values(followupTrends),
+    comparison: compareFollowupScore({ currentScore: followupScore, currentConfirmed: followupScoreConfirmed, previousScore: previousSessionScore }),
+  });
+
   function followupDecision(reviewComplete: boolean) {
-    
   const values = Object.values(followupTrends);
   if (hasNewSymptom === "yes") return { tone: "review", title: "回到相关评估", text: "先确认新症状的发生过程和安全信息，再决定是否沿用原方案。" };
   if (!hasNewSymptom) return { tone: "pending", title: "先确认本次有没有新情况", text: "确认后再复查上次结束时仍存在的问题。" };
@@ -552,8 +563,12 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     <section className="rm-session-reference"><span>本次沿用</span><strong>{[intake.location, intake.symptomType, chiefWasRecorded ? chiefActionLabel(intake) : "没有固定动作"].filter(Boolean).join(" · ")}</strong></section>
     {sessionHistory.length ? <section className="rm-session-history-strip"><header><span>恢复记录</span><strong>已完成 {sessionHistory.length} 次</strong></header><div className="rm-session-score-trend">{scoreTrend.map((item) => <article key={item.sessionNumber}><span>第{item.sessionNumber}次</span><strong>{item.score}<small>/10</small></strong></article>)}</div>{previousSession ? <div className="rm-last-session-summary"><article><span>上次有效处理</span><strong>{previousSession.continuedEffectiveTreatments.join("、") || "无"}</strong></article><article><span>上次训练</span><strong>{previousSession.training.map((item) => item.label).join("、") || "无"}</strong></article><article><span>本次先关注</span><strong>{previousFocus.join("；") || "快速复查当前情况"}</strong></article></div> : null}</section> : null}
     <section className="rm-followup-new"><div><span>有没有新症状或新的受伤事件？</span></div><div><button type="button" className={hasNewSymptom === "no" ? "is-selected" : ""} onClick={() => { if (hasNewSymptom !== "no") invalidateCurrentFollowupWork(); setHasNewSymptom("no"); }}>没有</button><button type="button" className={hasNewSymptom === "yes" ? "is-selected is-alert" : ""} onClick={() => { if (hasNewSymptom !== "yes") invalidateCurrentFollowupWork(); setHasNewSymptom("yes"); }}>有</button></div></section>
+    <section className="rm-followup-new"><div><span>安全重检 · 本次有没有新出现的麻、电感或放射痛？</span></div><div><button type="button" className={effectiveRedFlags.numbnessOrRadiation === "no" ? "is-selected" : ""} onClick={() => updateRedFlag("numbnessOrRadiation", "no")}>没有</button><button type="button" className={effectiveRedFlags.numbnessOrRadiation === "yes" ? "is-selected is-alert" : ""} onClick={() => updateRedFlag("numbnessOrRadiation", "yes")}>有</button></div></section>
+    <section className="rm-followup-new"><div><span>安全重检 · 症状是否在加重（无力或麻木范围扩大）？</span></div><div><button type="button" className={effectiveRedFlags.progressiveWeakness === "no" ? "is-selected" : ""} onClick={() => updateRedFlag("progressiveWeakness", "no")}>没有</button><button type="button" className={effectiveRedFlags.progressiveWeakness === "yes" ? "is-selected is-alert" : ""} onClick={() => updateRedFlag("progressiveWeakness", "yes")}>有</button></div></section>
+    {redFlagReview.needsReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>复查发现神经相关或进行性加重信号</h2><p>普通自助路径不安排神经松动或自行处理。可保存当前信息，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
     {hasChiefAction ? <ScoreHistory scores={history} condition={retestConditionLabel(intake)} /> : null}
     {hasChiefAction ? <ScoreSlider value={followupScore} selected={followupScoreConfirmed} onChange={updateFollowupScore} label="现在做主诉动作，有多不舒服？" context={chiefActionLabel(intake)} /> : <section className="rm-route-note"><h2>{chiefRetestUnavailableTitle}</h2><p>{chiefRetestUnavailableText}</p></section>}
+    {trendContradiction ? <section className="rm-route-note is-waiting rm-trend-contradiction"><span>请再确认</span><h2>{trendContradiction === "trend-better-score-worse" ? "趋势说更好，但分数更高" : "趋势说更差，但分数更低"}</h2><p>分数和逐项趋势指向相反。请复核今天的评分与各项选择；两条记录都会分别保留，不会互相覆盖。</p></section> : null}
     {reviewItems.length ? <section className="rm-followup-items"><header><span>快速复查上次问题</span></header>{reviewItems.map(([id, title, note]) => {
       const options: Array<[FollowupReviewAnswer, string]> = id.startsWith("motion:")
         ? [["better", "接近健侧"], ["same", "仍然偏小"], ["worse", "比上次更差"], ["unknown", "看不出来"], ["unable", "现在做不了"]]

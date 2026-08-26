@@ -4,6 +4,8 @@ export type ReviewResult = {
   id: string;
   label: string;
   result: FollowupTrend;
+  /** T-06：被本次结果覆写前的最初记录，保证历史可追溯。 */
+  overwrittenFrom?: FollowupTrend;
 };
 
 export type RangeOutcomeRecord = {
@@ -61,12 +63,21 @@ export function mergeSessionReviewResults(
   records: RangeOutcomeRecord[],
   canonicalize: (id: string) => string = (id) => id.replace(/^(motion|strength|function):/, ""),
 ) {
+  // T-06：覆写时保留最初的记录（overwrittenFrom），链式覆写只保留最早原值。
+  const withProvenance = (previous: ReviewResult | undefined, result: FollowupTrend): ReviewResult["overwrittenFrom"] => {
+    if (!previous || previous.result === result) return previous?.overwrittenFrom;
+    const original = previous.overwrittenFrom ?? previous.result;
+    return original === result ? previous.overwrittenFrom : original;
+  };
   const merged = new Map(base.map((item) => [item.id, { ...item }]));
   Object.entries(explicitTrends).forEach(([id, result]) => {
     const matchingId = [...merged.keys()].find((existingId) => canonicalize(existingId) === canonicalize(id));
     const targetId = matchingId ?? id;
     const previous = merged.get(targetId);
-    merged.set(targetId, { id: targetId, label: previous?.label ?? id.replace(/^(motion|strength|function):/, ""), result });
+    const next: ReviewResult = { id: targetId, label: previous?.label ?? id.replace(/^(motion|strength|function):/, ""), result };
+    const overwrittenFrom = withProvenance(previous, result);
+    if (overwrittenFrom) next.overwrittenFrom = overwrittenFrom;
+    merged.set(targetId, next);
   });
   records.forEach((record) => Object.entries(record.rangeOutcomes ?? {}).forEach(([directionId, outcome]) => {
     const result = trendFromRangeOutcome(outcome);
@@ -75,9 +86,39 @@ export function mergeSessionReviewResults(
     const matchingId = [...merged.keys()].find((existingId) => canonicalize(existingId) === canonicalize(id));
     const targetId = matchingId ?? id;
     const previous = merged.get(targetId);
-    merged.set(targetId, { id: targetId, label: previous?.label ?? directionId, result });
+    const next: ReviewResult = { id: targetId, label: previous?.label ?? directionId, result };
+    const overwrittenFrom = withProvenance(previous, result);
+    if (overwrittenFrom) next.overwrittenFrom = overwrittenFrom;
+    merged.set(targetId, next);
   }));
   return [...merged.values()];
+}
+
+/**
+ * T-06：逐项趋势与确认后的分数指向相反时提醒确认。
+ * 分数未确认（pending）不算矛盾；同向或持平不报警。
+ */
+export function trendScoreContradiction(input: {
+  trends: Array<FollowupTrend>;
+  comparison: FollowupComparison;
+}): "trend-better-score-worse" | "trend-worse-score-better" | null {
+  if (input.comparison === "pending") return null;
+  if (input.comparison === "worse" && input.trends.includes("better")) return "trend-better-score-worse";
+  if (input.comparison === "better" && input.trends.includes("worse")) return "trend-worse-score-better";
+  return null;
+}
+
+/**
+ * T-03：复查入口的安全最小重检。只有用户明确回答「有」才触发线下确认建议；
+ * 未回答或缺省不产生信号，也不阻断流程。
+ */
+export function followupRedFlagSignal(answers: {
+  numbnessOrRadiation?: string;
+  progressiveWeakness?: string;
+}): { needsReferral: boolean } {
+  return {
+    needsReferral: answers.numbnessOrRadiation === "yes" || answers.progressiveWeakness === "yes",
+  };
 }
 
 export function unresolvedReviewIds(previous?: { reviewResults: ReviewResult[] }) {
