@@ -5186,7 +5186,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     </header>
     <div className="rm-context-hints">
       <OnceHint id="case-code" active={!testContext && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
-      <OnceHint id="first-save" active={!testContext && ["local-saved", "synced"].includes(pilotSyncState)}>已保存，下次打开可以从这里继续。</OnceHint>
     </div>
     <MobileStageNavigation open={mobileStageOpen} railStep={railStep} currentStep={step} maxUnlocked={maxUnlocked} followupMode={followupMode} onOpen={() => setMobileStageOpen(true)} onClose={() => setMobileStageOpen(false)} onSelect={openWorkflowStage} />
     {currentPilotConflictRecord ? <PilotConflictPanel

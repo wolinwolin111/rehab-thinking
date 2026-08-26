@@ -7,12 +7,12 @@ const { mobileSaveStatus, mobileStageAvailable } = await loadTypeScriptModule(
   "./src/features/rehabmind/components/navigation/mobile-navigation-core.ts",
 );
 
-test("mobile save status never reports an untouched case as saved", () => {
-  assert.equal(mobileSaveStatus("idle"), "未保存");
-  assert.equal(mobileSaveStatus("local-saving"), "··");
-  assert.equal(mobileSaveStatus("syncing"), "··");
-  assert.equal(mobileSaveStatus("local-saved"), "✓");
-  assert.equal(mobileSaveStatus("synced"), "✓");
+test("normal save flow stays fully silent; only abnormal states show copy (2026-08-26 product decision)", () => {
+  assert.equal(mobileSaveStatus("idle"), "");
+  assert.equal(mobileSaveStatus("local-saving"), "");
+  assert.equal(mobileSaveStatus("syncing"), "");
+  assert.equal(mobileSaveStatus("local-saved"), "");
+  assert.equal(mobileSaveStatus("synced"), "");
   assert.equal(mobileSaveStatus("offline"), "仅保存在本机");
   assert.equal(mobileSaveStatus("conflict"), "保存待处理");
   assert.equal(mobileSaveStatus("error"), "保存失败");

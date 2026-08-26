@@ -15,20 +15,20 @@
 
 ### RQ-2 顶栏同步状态标签整合
 
-**有意变更 —— 新验收文案表如下（桌面与移动端为有意不同的口径，无需对齐）：**
+**有意变更 —— 新验收文案表如下（2026-08-26 晚间经产品决策再次修订：移动端正常态同样全面静默，见 RQ-S4）：**
 
 | 状态 | 桌面顶栏 | 移动端 mobileSaveStatus |
 | --- | --- | --- |
-| idle | 无标签 | 未保存 |
-| local-saving / syncing | 无标签 | ·· |
-| local-saved / synced | 无标签（保存浮动卡片以 ✓ 表示） | ✓ |
+| idle | 无标签 | 无标签 |
+| local-saving / syncing | 无标签 | 无标签 |
+| local-saved / synced | 无标签 | 无标签 |
 | offline | 网络断开，正在本机保存 | 仅保存在本机 |
 | conflict | 待处理冲突 | 保存待处理 |
 | error | 本机保存失败 | 保存失败 |
 
-依据：降噪设计为「正常流转静默，仅异常态显示文字」（workbench 顶栏渲染条件排除 `local-saved/synced/local-saving/syncing/idle`）；移动端常驻轻量符号属 App 式顶部状态设计（08-25 已修复"未操作误显示已保存"）。代码出处：`mobile-navigation-core.ts:3-10`、`rehabmind-workbench.tsx:5182` 渲染条件。
+依据：降噪设计为「正常流转静默，仅异常态显示文字」，双端口径一致（此前"移动端保留 未保存/··/✓"的口径已被产品否决——✓ 出现太频繁）。代码出处：`mobile-navigation-core.ts:3-10`、`rehabmind-workbench.tsx:5182` 渲染条件。
 
-→ 测试会话动作：更新 SAVE-01 合同的 `topbarLabels` 数组（save-promise-copy.test.mjs:34）；复核 `mobile-navigation-core.test.mjs:6-18` 与上表一致（预期无需改动）。
+→ 测试会话动作：更新 SAVE-01 合同的 `topbarLabels` 数组（save-promise-copy.test.mjs:34）；移动端口径以本表为准（`mobile-navigation-core.test.mjs` 已由开发会话同步更新）。
 
 ### RQ-3 atlas-v2 图片引用解禁
 
@@ -95,3 +95,20 @@ C-1/C-2：排期到本批次 Phase 0，立即执行（C-1 含 orchestrator.test 
 | information-density-contract.test.mjs | RQ-S3 |
 
 以上全部为预期更新事项，无一是本批开发改动引入的回归。
+
+---
+
+## RQ-S4：保存状态全面静默 + 首存横幅移除（2026-08-26 晚间产品决策）
+
+**有意变更** —— 用户反馈"✓ 出现太频繁""桌面点下一步也跳保存提示"后拍板：正常流转全面静默，双端口径一致。
+
+开发会话已实现（随下批提交）：
+1. `mobile-navigation-core.ts` mobileSaveStatus：5 个正常态（idle/local-saving/local-saved/syncing/synced）返回空串，仅异常态保留文案；`mobile-navigation-core.test.mjs` 已同步更新（开发会话维护的单元测试）。
+2. `mobile-app-navigation.tsx` MobileTopActions：状态为空时只渲染「第N次」，无悬挂分隔符。
+3. `rehabmind-workbench.tsx`：**删除 first-save OnceHint**（「已保存，下次打开可以从这里继续。」横幅永久移除）；case-code 提示保留。
+
+→ 测试会话动作（两处合同）：
+- `stage-render-contract.test.mjs:148-159` 移动顶栏 8 态断言：正常 5 态改为「只渲染 第N次、无状态文字」，异常 3 态保留文案断言；`:6` 的 oracle 注释同步修订。
+- `contextual-tip-contract.test.mjs:20` 删除「已保存，下次打开可以从这里继续。」断言（`:19` 案例编号断言保留）。
+
+**预期影响**：本批提交后 `stage-render-contract` 与 `contextual-tip-contract` 两个文件转红，属本条定性范畴，非回归。

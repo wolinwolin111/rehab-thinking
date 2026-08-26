@@ -1,9 +1,8 @@
 import type { PilotSyncDisplayState, Step } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
 export function mobileSaveStatus(state: PilotSyncDisplayState) {
-  if (state === "idle") return "未保存";
-  if (state === "local-saving" || state === "syncing") return "··";
-  if (state === "local-saved" || state === "synced") return "✓";
+  // 2026-08-26 产品决策：正常流转全面静默（与桌面口径一致），仅异常态显示文字。
+  if (state === "idle" || state === "local-saving" || state === "local-saved" || state === "syncing" || state === "synced") return "";
   if (state === "offline") return "仅保存在本机";
   if (state === "conflict") return "保存待处理";
   return "保存失败";

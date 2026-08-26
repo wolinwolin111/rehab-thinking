@@ -15,8 +15,9 @@ export function MobileTopActions({
   moreOpen: boolean;
   onToggleMore: () => void;
 }) {
+  const saveStatus = mobileSaveStatus(syncState);
   return <div className="rm-mobile-top-actions">
-    <span aria-live="polite">第{sessionNumber}次 · {mobileSaveStatus(syncState)}</span>
+    <span aria-live="polite">第{sessionNumber}次{saveStatus ? ` · ${saveStatus}` : ""}</span>
     <button type="button" aria-label="更多" aria-expanded={moreOpen} onClick={onToggleMore}>⋮</button>
   </div>;
 }
