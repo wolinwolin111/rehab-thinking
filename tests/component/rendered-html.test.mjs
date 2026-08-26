@@ -833,7 +833,7 @@ test("covers the 2026-08 assessment repair matrix without fallback decisions", a
 
   // Single-side and bilateral wording/results remain separate.
   assert.match(demo, /接近健侧/);
-  assert.match(demo, /明显小于健侧/);
+  assert.match(demo, /仍然偏弱/);
   assert.match(demo, /bilateralComparison\?: BilateralComparison/);
   assert.match(demo, /两侧都试过后，这项力量结果如何/);
   assert.match(demo, /两侧都检查后，这项定位结果如何/);
@@ -898,7 +898,7 @@ test("keeps one concise four-document source of truth", async () => {
 
   assert.match(index, /四份文档的优先级/);
   assert.match(index, /桌面和 320 至 430px 手机网页都是当前维护范围/);
-  assert.match(index, /APK 外壳在网页确认后单独维护/);
+  assert.match(index, /Android APK 属于本轮交付，网页确认后构建独立外壳并持续维护/);
   assert.match(product, /^# RehabMind 产品规范/m);
   assert.match(product, /当前实现：本地规则引擎，不接入 AI/);
   assert.match(product, /首发范围：大腿至足部的症状入口，膝与踝足功能模块/);

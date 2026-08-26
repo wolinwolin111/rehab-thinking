@@ -185,7 +185,7 @@ type Props = {
   professional?: boolean;
   allowedAreaIds?: LowerLimbAreaId[];
   maxSelections?: number;
-  onChange: (next: LowerLimbLocationSelection[]) => void;
+  onChange: (next: LowerLimbLocationSelection[], meta?: { preservedSelections?: LowerLimbLocationSelection[]; removedPreservedId?: string }) => void;
 };
 
 export default function LowerLimbLocationPicker({ value, initialRegionId, initialSide, initialLocation, mode = "complaint", compact = false, professional = false, allowedAreaIds, maxSelections, onChange }: Props) {
@@ -207,6 +207,11 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
   const [activeArea, setActiveArea] = useState<LowerLimbAreaId>(initialArea);
   const [selectionNotice, setSelectionNotice] = useState("");
   const selectedIds = useMemo(() => new Set(value.map((item) => item.id)), [value]);
+  const [retainedSelections, setRetainedSelections] = useState<LowerLimbLocationSelection[]>([]);
+  const displayedSelections = useMemo(() => {
+    const currentIds = new Set(value.map((item) => item.id));
+    return [...retainedSelections.filter((item) => !currentIds.has(item.id)), ...value];
+  }, [retainedSelections, value]);
   const area = AREA_BY_ID[activeArea];
   const atlasPanels = atlasPanelsFor(area);
   const [activePanelView, setActivePanelView] = useState<AtlasView>(atlasPanels[0]?.view ?? "front");
@@ -241,11 +246,23 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
     // 位置数量不是流程数量的上限。后续决策会按处理单元去重，不能在输入层
     // 把双侧或多个精确位置截掉。保留可选 prop 只是兼容旧调用方，默认不设硬上限。
     const selectionLimit = maxSelections ?? Number.POSITIVE_INFINITY;
+    const retained = retainedSelections.find((item) => item.id === id);
+    if (mode === "complaint" && retained) {
+      setRetainedSelections((current) => [
+        ...current.filter((item) => item.id !== id),
+        ...value.filter((item) => !current.some((entry) => entry.id === item.id)),
+      ]);
+      setSelectionNotice("已切回这个大部位；刚才的问题位置已保留，仍可明确清理。");
+      onChange([nextItem], { preservedSelections: value, removedPreservedId: id });
+      return;
+    }
     const mixesMainAreas = value.some((item) => item.regionId !== nextItem.regionId);
     if (mode === "complaint") {
       if (mixesMainAreas) {
-        setSelectionNotice("一次只评估一个主要大部位；已切换到新的大部位，之前的位置已清除。");
-        onChange([nextItem]);
+        const preservedSelections = value.filter((item) => item.regionId !== nextItem.regionId);
+        setRetainedSelections((current) => [...current, ...preservedSelections.filter((item) => !current.some((entry) => entry.id === item.id))]);
+        setSelectionNotice("已保留原大部位标记；当前问题只记录新部位。不同大部位请另建问题，如需清理请点击对应位置的“删除”。");
+        onChange([nextItem], { preservedSelections });
         return;
       }
       if (value.length >= selectionLimit) {
@@ -316,13 +333,24 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
       </section>
     </div>
 
-    {value.length ? <section className="rm-location-selection-list">
-      <header><span>{copy.selected}</span><strong>{value.length}个位置</strong></header>
-      <div>{value.map((item, index) => <article key={item.id}>
-        <i>{index === 0 ? "主要" : index + 1}</i>
+    {displayedSelections.length ? <section className="rm-location-selection-list">
+      <header><span>{copy.selected}</span><strong>{displayedSelections.length}个位置</strong></header>
+      <div>{displayedSelections.map((item, index) => {
+        const retained = retainedSelections.some((entry) => entry.id === item.id);
+        return <article key={item.id} className={retained ? "is-retained" : undefined}>
+        <i>{retained ? "已保留" : index === 0 ? "主要" : index + 1}</i>
         <span><strong>{item.side} · {item.location}</strong><small>{item.areaLabel}</small></span>
-        <button type="button" onClick={() => onChange(value.filter((entry) => entry.id !== item.id))} aria-label={`删除${item.side}${item.location}`}>删除</button>
-      </article>)}</div>
+        <button type="button" onClick={() => {
+          if (retained) {
+            setRetainedSelections((current) => current.filter((entry) => entry.id !== item.id));
+            setSelectionNotice("已清理保留位置；当前问题的标记没有改变。");
+            onChange(value, { removedPreservedId: item.id });
+          } else {
+            onChange(value.filter((entry) => entry.id !== item.id));
+          }
+        }} aria-label={`删除${item.side}${item.location}`}>删除</button>
+      </article>;
+      })}</div>
     </section> : <p className="rm-location-empty">{copy.empty}</p>}
     {selectionNotice ? <p className="rm-location-limit" role="status">{selectionNotice}</p> : null}
 

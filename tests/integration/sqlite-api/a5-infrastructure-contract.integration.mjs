@@ -9,7 +9,7 @@ import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 async function applyMigrations(databasePath) {
   const sqlite = new Database(databasePath);
   try {
-    for (const name of ["0000_worried_lyja.sql", "0001_ambiguous_killraven.sql", "0002_stale_silhouette.sql", "0003_operational_invites.sql", "0004_feedback_operations.sql", "0005_trial_operations.sql", "0006_admin_audit.sql", "0007_source_and_consent.sql", "0008_test_case_isolation.sql"]) {
+    for (const name of ["0000_worried_lyja.sql", "0001_ambiguous_killraven.sql", "0002_stale_silhouette.sql", "0003_operational_invites.sql", "0004_feedback_operations.sql", "0005_trial_operations.sql", "0006_admin_audit.sql", "0007_source_and_consent.sql", "0008_test_case_isolation.sql", "0009_clinical_event_identity.sql"]) {
       const sql = await readFile(path.resolve("drizzle", name), "utf8");
       sqlite.exec(sql.replaceAll("--> statement-breakpoint", ""));
     }

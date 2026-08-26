@@ -144,12 +144,20 @@ test("createCase stores an anonymous case, snapshot, initial event, and only ret
   assert.equal(record.accessToken, undefined);
   const storedFirstPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
   assert.equal(storedFirstPayload.step, 0);
-  assert.equal(storedFirstPayload.schemaVersion, 1);
+  assert.equal(storedFirstPayload.schemaVersion, 2);
   assert.equal([...repository.events.values()][0].type, "case_created");
   // REL-01：入库载荷补烙显式 schema 版本（缺失视为 v1）。
   const storedPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
-  assert.equal(storedPayload.schemaVersion, 1);
-  assert.deepEqual(storedPayload, makeSnapshot());
+  assert.equal(storedPayload.schemaVersion, 2);
+  assert.deepEqual(storedPayload, {
+    ...makeSnapshot(),
+    schemaVersion: 2,
+    legacySchemaVersion: 1,
+    consent: TEST_CONSENT,
+    problemThreadId: `thread-${access.caseId}`,
+    sessionId: `session-${access.caseId}-1`,
+    sessionStatus: "draft",
+  });
 });
 
 test("replaying one client creation id returns the same case instead of creating a duplicate", async () => {

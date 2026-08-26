@@ -42,7 +42,7 @@ test("a draft restores even after consent has already created its case record", 
 });
 
 test("mobile shell uses vertical, shrinkable layouts and safe-area spacing", () => {
-  const mobile = styles.slice(styles.lastIndexOf("@media (max-width: 720px)"));
+  const mobile = styles.slice(styles.indexOf("@media (max-width: 720px)"));
   const effectiveThemeMobile = theme.slice(theme.lastIndexOf("@media (max-width: 720px)"));
   assert.match(mobile, /grid-template-columns: minmax\(0, 1fr\) auto/);
   assert.match(mobile, /grid-template-columns: 32px minmax\(0, 1fr\) auto/);

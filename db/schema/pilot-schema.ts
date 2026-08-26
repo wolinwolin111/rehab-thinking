@@ -67,6 +67,9 @@ export const caseEvents = sqliteTable("case_events", {
   payload: text("payload").notNull(),
   source: text("source").notNull(),
   occurredAt: text("occurred_at").notNull(),
+  eventSchemaVersion: integer("event_schema_version"),
+  problemThreadId: text("problem_thread_id"),
+  sessionId: text("session_id"),
   appVersion: text("app_version").notNull(),
   knowledgeVersion: text("knowledge_version").notNull(),
   decisionVersion: text("decision_version").notNull(),
@@ -74,6 +77,7 @@ export const caseEvents = sqliteTable("case_events", {
   caseSequenceUnique: uniqueIndex("case_events_case_sequence_unique").on(table.caseId, table.sequence),
   caseIndex: index("case_events_case_idx").on(table.caseId),
   typeIndex: index("case_events_type_idx").on(table.type),
+  sessionIndex: index("case_events_session_idx").on(table.caseId, table.sessionId),
 }));
 
 export const caseFeedback = sqliteTable("case_feedback", {

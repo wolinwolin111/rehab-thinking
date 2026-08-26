@@ -14,6 +14,7 @@ export type SpecialTestIntakeInput = {
   mechanism: string;
   provocationTypes: string[];
   forceDirection: string;
+  sensoryLocations?: Array<{ side?: string; areaId?: string; location?: string; regionId?: string }>;
 };
 
 function includesAny(text: string, words: string[]) {
@@ -23,10 +24,13 @@ function includesAny(text: string, words: string[]) {
 /** 触发词是否命中已确认的主诉来源（位置、感觉、机制、诱发方式）。 */
 export function specialIsRelevant(trigger: string | undefined, intake: SpecialTestIntakeInput) {
   if (!trigger) return false;
-  const explicitSymptomSource = `${intake.description} ${intake.location} ${intake.sensoryLocation}`;
+  const structuredSensoryLocation = (intake.sensoryLocations ?? [])
+    .map((item) => [item.location, item.areaId, item.regionId, item.side].filter(Boolean).join(" "))
+    .join(" ");
+  const explicitSymptomSource = `${intake.description} ${intake.location} ${intake.sensoryLocation} ${structuredSensoryLocation}`;
   // 足底/足跟触发词只有在用户明确提到足底相关位置时才成立，不能被系统派生词带出。
   if (includesAny(trigger, ["足底", "足跟"]) && !includesAny(explicitSymptomSource, ["足底", "脚底", "足跟", "脚跟", "足弓", "晨起第一步"])) return false;
-  const source = `${intake.description} ${intake.location} ${intake.symptomType} ${intake.mechanism} ${intake.provocationTypes.join(" ")} ${intake.forceDirection} ${intake.sensoryLocation}`;
+  const source = `${intake.description} ${intake.location} ${intake.symptomType} ${intake.mechanism} ${intake.provocationTypes.join(" ")} ${intake.forceDirection} ${intake.sensoryLocation} ${structuredSensoryLocation}`;
   if (["麻", "电", "放射"].some((word) => trigger.includes(word) && source.includes(word))) return true;
   if (["急性", "外伤", "扭", "跌", "撞", "崴", "拉伤"].some((word) => trigger.includes(word)) && !["没有明确受伤", "逐渐出现"].includes(intake.mechanism)) return true;
   if (["不稳", "打软", "无力"].some((word) => trigger.includes(word) && source.includes(word))) return true;

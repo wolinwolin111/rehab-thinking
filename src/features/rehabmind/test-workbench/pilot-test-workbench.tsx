@@ -5,6 +5,7 @@ import RehabMindCompleteDemo from "@/src/features/rehabmind/components/workbench
 import type {
   PilotDraftEnvelope,
   SavedDemoRecord,
+  SavedDemoSnapshot,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 import { createLocalCaseId } from "@/src/infrastructure/pilot/persistence/local-case-identity";
 import {
@@ -28,6 +29,17 @@ import "@/src/features/rehabmind/styles/test-workbench.css";
 const RUN_STORAGE_KEY = "rehabmind-test-run-v1";
 
 type AccessState = "checking" | "allowed" | "denied" | "error";
+
+const REPRODUCTION_FREE_TEXT_KEYS = new Set(["professionalNotes", "text", "note", "detail", "customAction"]);
+
+function redactReproductionValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactReproductionValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    REPRODUCTION_FREE_TEXT_KEYS.has(key) && typeof item === "string" && item.trim() ? "[复现包已脱敏]" : redactReproductionValue(item),
+  ]));
+}
 
 function newRunId() {
   const suffix = globalThis.crypto?.randomUUID?.().replaceAll("-", "").slice(0, 12)
@@ -55,7 +67,7 @@ function appUrl(path: string) {
 async function seedScenario(scenario: PilotTestScenario, snapshotOverride?: PilotDraftEnvelope["snapshot"]) {
   const localCaseId = createLocalCaseId();
   const draft: PilotDraftEnvelope = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     localCaseId,
     savedAt: new Date().toISOString(),
     snapshot: snapshotOverride ?? createPilotScenarioSnapshot(scenario),
@@ -165,6 +177,45 @@ export default function PilotTestWorkbench() {
     setMessage(`已复制测试案例编号 ${code}`);
   }
 
+  async function exportReproductionPackage() {
+    const record = await refreshLatestRecord();
+    if (!record?.snapshot) {
+      setMessage("当前还没有可导出的测试快照，请先在流程中保存一次。");
+      return;
+    }
+    const reproductionSnapshot = redactReproductionValue(record.snapshot) as SavedDemoSnapshot;
+    const payload = {
+      packageSchemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      testRun: active?.context ?? null,
+      scenario: active?.scenario ? {
+        id: active.scenario.id,
+        title: active.scenario.title,
+        mode: active.scenario.mode,
+        target: active.scenario.target,
+      } : null,
+      releaseVersions: PILOT_RELEASE_VERSIONS,
+      record: {
+        localCaseId: record.localCaseId,
+        pilotCaseId: record.pilotCaseId,
+        pilotPublicCode: record.pilotPublicCode,
+        status: record.status,
+        sessionCount: record.sessionCount,
+        savedAt: record.savedAt,
+      },
+      snapshot: reproductionSnapshot,
+      note: "内部测试复现包：不包含用户正式数据，不作为测试结论本身。",
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${active?.context.testRunId ?? "rehabmind-test"}-${active?.scenario.id ?? "snapshot"}-reproduction.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setMessage("复现包已导出，可连同测试编号交给开发定位。");
+  }
+
   function openAdminRecord() {
     const query = latestRecord?.pilotPublicCode ? `?publicCode=${encodeURIComponent(latestRecord.pilotPublicCode)}` : "";
     window.open(appUrl(`/admin${query}`), "_blank", "noopener,noreferrer");
@@ -239,6 +290,7 @@ export default function PilotTestWorkbench() {
         <button type="button" disabled={busy} onClick={() => void cloneScenario()}>复制为新案例</button>
         <button type="button" onClick={() => void clearDraft()}>清除草稿</button>
         <button type="button" onClick={() => void copyCaseCode()}>复制案例编号</button>
+        <button type="button" onClick={() => void exportReproductionPackage()}>导出复现包</button>
         <button type="button" onClick={openAdminRecord}>后台记录</button>
         <button type="button" className="is-danger" disabled={busy} onClick={() => void deleteRun()}>删除本批次</button>
         <button type="button" onClick={() => setActive(null)}>切换场景</button>

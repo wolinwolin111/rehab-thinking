@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { FOCUS_STEPS } from "./onboarding-steps";
+import { useDialogAccessibility } from "@/src/features/rehabmind/components/shared/use-dialog-accessibility";
 
 type Rect = { top: number; left: number; right: number; bottom: number; width: number; height: number };
 type OverlayStyle = CSSProperties & Record<"--rm-focus-top" | "--rm-focus-left" | "--rm-focus-width" | "--rm-focus-height", string>;
@@ -34,16 +35,7 @@ export function RehabMindOnboarding({
     if (onSkip) onSkip();
     else if (onContinue) onContinue();
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") dismiss();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const dialogRef = useDialogAccessibility<HTMLDivElement>({ open, onClose: dismiss });
 
   useLayoutEffect(() => {
     if (!open || !isFocusMode || !step) return;
@@ -67,7 +59,7 @@ export function RehabMindOnboarding({
 
   // ---- 欢迎页模式（无聚焦） ----
   if (!isFocusMode) {
-    return <div className="rm-product-welcome" role="dialog" aria-modal="true" aria-labelledby="rm-welcome-title">
+    return <div ref={dialogRef} className="rm-product-welcome" role="dialog" aria-modal="true" aria-labelledby="rm-welcome-title" tabIndex={-1}>
       <div className="rm-product-welcome-inner">
         <header><b>RM</b><span>悦舒运动康复</span></header>
         <section>
@@ -94,7 +86,7 @@ export function RehabMindOnboarding({
     "--rm-focus-height": `${targetRect.height + 14}px`,
   } : undefined;
 
-  return <div className={`rm-focus-onboarding${targetRect ? " is-anchored" : " is-unanchored"}`} role="dialog" aria-modal="true" aria-labelledby="rm-focus-title">
+  return <div ref={dialogRef} className={`rm-focus-onboarding${targetRect ? " is-anchored" : " is-unanchored"}`} role="dialog" aria-modal="true" aria-labelledby="rm-focus-title" tabIndex={-1}>
     {targetRect ? <div className="rm-focus-spotlight" style={spotlightStyle} aria-hidden="true" /> : <div className="rm-focus-dim" aria-hidden="true" />}
     <section className={`rm-focus-tooltip is-${tooltip.side}${targetRect ? "" : " is-unanchored"}`} style={{ left: tooltip.left, top: tooltip.top, width: tooltip.width }}>
       <header className="rm-focus-header">

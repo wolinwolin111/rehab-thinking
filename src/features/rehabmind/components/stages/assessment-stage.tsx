@@ -14,6 +14,7 @@ import { chiefActionLabel, chiefMotionDirectionId, hasClearChiefAction, isAcuteT
 import { buildFindingGroups } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -350,7 +351,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     const assessmentFindingGroups = buildFindingGroups([...discovered, ...tracking]);
     const findingRow = (finding: Finding, short: string) => {
       const related = Boolean(chiefDirection && samePhysicalAction(anyMotionIdFromFinding(finding), chiefDirection));
-      return <li key={finding.id} className={related ? "is-chief-related" : ""}><i>{short}</i><div><strong>{finding.title}</strong>{related ? <span>主诉相关</span> : null}</div></li>;
+      return <li key={finding.id} className={related ? "is-chief-related" : ""}><i>{short}</i><div><strong>{finding.title}</strong>{related ? <span>主诉相关</span> : null}{isThinkingMode && intake.learningExplanation && finding.note ? <small className="rm-finding-explanation">{finding.note}</small> : null}</div></li>;
     };
     return <section className="rm-page rm-assessment-summary">
       <StepHeading eyebrow="第3步 · 评估结果" title="先看清问题，再开始处理" />
@@ -417,7 +418,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       </section> : null}
     </> : null}
   </div>;
-  // 旧记录兼容语义：intake.examSetup !== "professional-other" 时仍只展示自助发力判断。
+  // 新流程只根据能力快照决定抗阻还是自助保持；examSetup 仅由旧快照迁移读取。
   // 髌骨四方向是同一项 PROM 筛查。后台仍保留四个方向键，页面合并为一张卡，
   // 只让用户完成一次检查并分别记录真正异常的方向。
   if (item.id === PATELLA_GROUP_PRIMARY_ID) {
@@ -445,7 +446,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     </section>;
   }
 
-  const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = intake.examSetup === "professional-other"
+  const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = canAssessResistance
     ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
   const options: Array<[SimpleAnswer, string]> = item.kind === "strength"
@@ -487,7 +488,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           {isSelfKneeExtension ? <p className="rm-choice-hint">看不清时，把同一条薄毛巾先后放在两侧膝后。绷紧大腿后轻轻抽动，明显更容易抽出的一侧，下压表现较差。</p> : null}
           <AnswerChoiceGrid options={(isSelfKneeExtension
             ? [["same", "接近健侧｜两侧膝后压平程度相近"], ["limited", "患侧偏小｜膝后仍明显悬空"], ["unable", "无法完成｜疼痛或担心继续"], ["unsure", "暂不判断｜看不清差异"]] as Array<[MotionAnswer, string]>
-            : intake.side === "双侧/中间" && !item.spinal ? bilateralMotionOptions : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(intake.userRole !== "general") : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, intake.userRole !== "general"))} value={record.active} onChange={(value) => updateAssessment(item.id, {
+            : intake.side === "双侧/中间" && !item.spinal ? bilateralMotionOptions : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(canAssessResistance) : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, canAssessResistance))} value={record.active} onChange={(value) => updateAssessment(item.id, {
             active: value,
             passive: undefined,
             pairedStrength: undefined,
@@ -500,6 +501,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
             passiveDiscomfortLocations: undefined,
             passiveDiscomfortType: undefined,
             passiveMeasuredAngle: undefined,
+            passiveMeasuredAngleDeg: undefined,
+            passiveRangeMeasurement: undefined,
             passiveSymptomScore: undefined,
             unableReason: value === "unable" ? record.unableReason : undefined,
             tensionChecked: false,
@@ -597,9 +600,9 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <section className="rm-motion-answer-block">
           <h3>{passiveOnly ? "与对侧相比，被动活动范围怎么样？" : "被动活动范围怎么样？"}</h3>
           <div className="rm-result-grid rm-passive-options">{passiveMotionOptions(item.comparison, Boolean(item.spinal && intake.spineAssessmentMode === "reference"), intake.side === "双侧/中间").map(([value, label]) => <button type="button" key={value} className={record.passive === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, value === "skip"
-            ? { passive: value, passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveMeasuredAngle: undefined, passiveSymptomScore: undefined }
+            ? { passive: value, passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveMeasuredAngle: undefined, passiveMeasuredAngleDeg: undefined, passiveRangeMeasurement: undefined, passiveSymptomScore: undefined }
             : { passive: value, ...(record.passive !== value ? { passiveEndFeel: undefined } : {}) })}>{label}</button>)}</div>
-          {record.passive && record.passive !== "skip" ? <label className="rm-optional-angle"><span>记录被动角度</span><small>选填 · 仅供对比参考</small><input inputMode="decimal" value={record.passiveMeasuredAngle ?? ""} onChange={(event) => updateAssessment(item.id, { passiveMeasuredAngle: event.target.value })} placeholder="例如：50°" /></label> : null}
+          {record.passive && record.passive !== "skip" ? <label className="rm-optional-angle"><span>记录被动角度</span><small>选填 · 仅供同动作、同侧、同方式后续参考</small><input inputMode="decimal" value={record.passiveMeasuredAngle ?? ""} onChange={(event) => { const raw = event.target.value; const valueDeg = parseRangeAngle(raw); updateAssessment(item.id, { passiveMeasuredAngle: raw, passiveMeasuredAngleDeg: valueDeg, passiveRangeMeasurement: valueDeg === undefined ? undefined : { measurementId: `${item.id}:passive:${Date.now()}`, actionId: item.id.replace(/^motion:/, ""), side: intake.side, valueDeg, mode: "passive", method: "estimated", recordedAt: new Date().toISOString() } }); }} placeholder="例如：50°" /></label> : null}
         </section>
         {canAssessEndFeel && record.passive && record.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel">
           <h3>记录被动活动的终末感</h3>
@@ -625,7 +628,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       </div> : <article className="rm-check-card">
       <header><i>{item.kind === "strength" ? "力" : item.kind === "special" ? "测" : "动"}</i><div><span>{item.kind === "strength" ? "肌力与控制检查" : item.kind === "special" ? "特殊检查" : "功能动作检查"}</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
       <section><b>现在做</b><p>{item.how}</p></section>
-      {intake.userRole !== "general" ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
+      {isThinkingMode ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
       {item.kind === "special" && item.next ? <p className="rm-special-next"><b>如果出现提示信号：</b>{item.next}</p> : null}
       {item.kind !== "function" ? <><AnswerChoiceGrid options={options} value={record.simple} onChange={(value) => updateAssessment(item.id, value === "painful"
         ? { simple: value, compensations: undefined, discomfortLocation: record.discomfortLocation || relatedMotionRecord?.discomfortLocation, discomfortLocations: record.discomfortLocations || relatedMotionRecord?.discomfortLocations, discomfortType: record.discomfortType || relatedMotionRecord?.discomfortType, familiarSymptom: record.familiarSymptom || relatedMotionRecord?.familiarSymptom, worseSide: record.worseSide }

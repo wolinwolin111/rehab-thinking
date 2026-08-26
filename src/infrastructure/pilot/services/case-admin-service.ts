@@ -44,7 +44,7 @@ type PilotCaseAdminServiceOptions = {
 };
 
 const FEEDBACK_STATUSES: PilotCaseFeedbackStatus[] = ["open", "in_review", "resolved", "dismissed"];
-const FREE_TEXT_KEYS = new Set(["description", "professionalNotes", "customAction", "message", "note", "detail"]);
+const FREE_TEXT_KEYS = new Set(["description", "professionalNotes", "customAction", "message", "note", "detail", "text"]);
 
 function redactPilotExportValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactPilotExportValue);

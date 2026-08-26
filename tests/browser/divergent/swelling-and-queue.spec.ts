@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { openFreshProduct, skipOnboarding, assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible } from "../support/page-helpers";
+import { openFreshProduct, skipOnboarding, assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, symptomOrganizeButton } from "../support/page-helpers";
 import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 async function clickUnselected(locator: Locator, description: string) {
@@ -54,7 +54,7 @@ async function prepareSwellingOnly(page: Page) {
   await skipOnboarding(page);
   const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
   await input.fill("右膝运动后出现明显肿胀，目前没有固定疼痛动作");
-  await expectUniqueVisible(page, "帮我整理", page.getByRole("button", { name: "帮我整理", exact: true })).then((button) => button.click());
+  await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page)).then((button) => button.click());
   await expectUniqueVisible(page, "自助康复模式", page.getByRole("button", { name: /自助康复/ })).then((button) => button.click());
   await expectUniqueVisible(page, "进入症状信息", page.getByRole("button", { name: /下一步/ })).then((button) => button.click());
 
@@ -174,7 +174,7 @@ test.describe("发散决策组合：肿胀与队列", () => {
     await click("下一个检查", "进入力量检查");
     await click(/控制偏弱.*耐力或保持不足|患侧偏弱.*不舒服这侧更差/, "异常的力量控制");
     await click("检查相关肌肉", "进入相关肌群触诊");
-    await click(/没有明显差别.*没有需要特别标记的区域/, "正常的肌群触诊");
+    await click("没有明显差别", "正常的肌群触诊");
     await click("查看评估结果", "查看混合评估结果");
 
     const main = page.locator("main:visible");

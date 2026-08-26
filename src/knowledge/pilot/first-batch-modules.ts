@@ -1,3 +1,8 @@
+/**
+ * @deprecated Legacy content compatibility only. Production decisions use
+ * full-demo-content and the domain decision cores; do not add new rules here.
+ */
+
 export type ModuleId = "knee" | "ankle-foot" | "lumbar-hip";
 
 export type TreatmentCandidate = {

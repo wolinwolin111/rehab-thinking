@@ -6,6 +6,8 @@ import {
   expectUniqueVisible,
   openFreshProduct,
   skipOnboarding,
+  stubPilotCaseApi,
+  symptomOrganizeButton,
 } from "../support/page-helpers";
 
 test.describe("历史缺陷回放·首页和教程", () => {
@@ -13,26 +15,37 @@ test.describe("历史缺陷回放·首页和教程", () => {
     const runtimeErrors = collectRuntimeErrors(page);
     await page.goto("./", { waitUntil: "domcontentloaded" });
 
+    const welcome = page.locator('.rm-product-welcome[role="dialog"]:visible');
+    await expect(welcome).toBeVisible();
+    await welcome.getByRole("button", { name: "开始康复", exact: true }).click();
+    const source = page.locator('.rm-source-gate:visible');
+    await expect(source).toBeVisible();
+    await source.getByRole("radio", { name: "小红书", exact: true }).check();
+    await source.getByRole("button", { name: "继续", exact: true }).click();
+    const consent = page.locator('.rm-consent-gate:visible');
+    await expect(consent).toBeVisible();
+    await stubPilotCaseApi(page);
+    await consent.getByRole("checkbox", { name: "我已了解并同意以上内容", exact: true }).check();
+    await consent.getByRole("button", { name: "同意并创建案例", exact: true }).click();
+    await expect(consent).toHaveCount(0);
+
     const dialog = page.locator('.rm-focus-onboarding[role="dialog"]');
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText("1 / 5");
-    await expect(dialog).toContainText("工作台入口");
+    await expect(dialog).toContainText("1 / 4");
+    await expect(dialog).toContainText("症状输入框");
     await expect(page.locator(".rm-focus-spotlight")).toBeVisible();
 
-    for (const [step, target] of [[2, "症状输入框"], [3, "帮我整理"], [4, "康复流程"], [5, "康复记录"]] as const) {
+    for (const [step, target] of [[2, "帮我整理"], [3, "康复流程"], [4, "问题反馈"]] as const) {
       await dialog.getByRole("button", { name: "下一步", exact: true }).click();
-      await expect(dialog).toContainText(`${step} / 5`);
+      await expect(dialog).toContainText(`${step} / 4`);
       await expect(dialog).toContainText(target);
     }
 
-    await expect(dialog).toContainText("不替代医生诊断");
-    await expect(dialog).toContainText("不使用 AI 代替用户或专业人员做康复决策");
+    await expect(dialog).toContainText("有问题随时反馈");
     await dialog.getByRole("button", { name: "开始使用", exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await expect(page.locator("#rm-consent-title")).toBeVisible();
-    await page.getByRole("button", { name: "暂不同意（仅保存在本机）", exact: true }).click();
 
-    const tutorialButton = await expectUniqueVisible(page, "首页教程入口", page.getByRole("button", { name: "使用教程", exact: true }));
+    const tutorialButton = await expectUniqueVisible(page, "首页教程入口", page.getByRole("button", { name: "关于 RehabMind", exact: true }));
     await tutorialButton.click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "跳过教程", exact: true }).click();
@@ -47,9 +60,9 @@ test.describe("历史缺陷回放·首页和教程", () => {
 
     const textarea = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
     await textarea.fill("右膝下楼时内侧刺痛，有三个月了");
-    await expect(page.getByRole("button", { name: "帮我整理", exact: true })).toBeEnabled();
+    await expect(symptomOrganizeButton(page)).toBeEnabled();
 
-    const organize = await expectUniqueVisible(page, "帮我整理", page.getByRole("button", { name: "帮我整理", exact: true }));
+    const organize = await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page));
     const organizeBox = await organize.boundingBox();
     expect(organizeBox?.height ?? 0, "帮我整理按钮高度不足").toBeGreaterThanOrEqual(44);
     expect(organizeBox?.width ?? 0, "帮我整理按钮宽度不足").toBeGreaterThanOrEqual(96);
@@ -66,7 +79,7 @@ test.describe("历史缺陷回放·状态与内容", () => {
     await openFreshProduct(page);
     await skipOnboarding(page);
     await page.locator("textarea:visible").fill("右膝下蹲时内侧不适，有三个月了");
-    await page.getByRole("button", { name: "帮我整理", exact: true }).click();
+    await symptomOrganizeButton(page).click();
 
     await page.getByRole("button", { name: /康复思路模式/ }).click();
     await page.getByRole("button", { name: /下一步/ }).click();

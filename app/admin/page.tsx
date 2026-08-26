@@ -30,11 +30,20 @@ type CaseSummary = {
 type CaseDetail = {
   caseRecord: CaseSummary["caseRecord"];
   snapshot: { revision: number; payload: Record<string, unknown> };
-  events: Array<{ id: string; sequence: number; type: string; source: string; occurredAt: string; payload: Record<string, unknown> }>;
+  events: Array<{ id: string; sequence: number; type: string; source: string; occurredAt: string; problemThreadId?: string | null; sessionId?: string | null; payload: Record<string, unknown> }>;
   feedback: Array<{ id: string; sessionNumber: number | null; stage: string; kind: string; message: string | null; sourceStage: string | null; status: string; createdAt: string }>;
   adminNotes: Array<{ id: string; note: string; createdAt: string }>;
   adminAudit: Array<{ id: string; action: string; targetId: string | null; occurredAt: string }>;
 };
+
+function eventClinicalCount(event: CaseDetail["events"][number]) {
+  const clinical = event.payload.clinical;
+  if (!clinical || typeof clinical !== "object" || Array.isArray(clinical)) return "";
+  const record = clinical as Record<string, unknown>;
+  const count = ["assessmentResults", "trialRecords", "bodyMarks", "scoreRecords", "specialTestRecords", "professionalNoteRecords", "decisionTraces"]
+    .reduce((total, key) => total + (Array.isArray(record[key]) ? record[key].length : key === "assessmentResults" && record[key] && typeof record[key] === "object" ? Object.keys(record[key] as object).length : 0), 0);
+  return count ? ` · 临床记录 ${count}` : "";
+}
 
 type TrialMetrics = {
   casesCreated: number;
@@ -270,13 +279,13 @@ export default function PilotAdminPage() {
       <section className="admin-detail" aria-label="案例详情">
         {!detail ? <div className="admin-empty-detail"><strong>选择一个案例</strong><span>查看康复记录、时间线、反馈和版本。</span></div> : <>
           <header className="admin-detail-header"><div><span>{detail.caseRecord.isTestCase ? "测试案例编号" : "案例编号"}</span><h1>{detail.caseRecord.publicCode}</h1></div><div><button type="button" onClick={() => void exportCase()}>脱敏导出</button><button type="button" className="is-danger" disabled={detail.caseRecord.status === "deleted"} onClick={() => void deleteCase()}>删除案例</button></div></header>
-          <dl className="admin-facts"><div><dt>当前阶段</dt><dd>{detail.caseRecord.currentStage ?? "未记录"}</dd></div><div><dt>康复记录</dt><dd>{detail.caseRecord.sessionCount} 次</dd></div><div><dt>快照修订</dt><dd>{detail.snapshot.revision}</dd></div><div><dt>来源渠道</dt><dd>{SOURCE_LABELS[detail.caseRecord.sourceChannel ?? "unknown"] ?? detail.caseRecord.sourceChannel}{detail.caseRecord.sourceDetail ? `（${detail.caseRecord.sourceDetail}）` : ""}</dd></div>{detail.caseRecord.isTestCase ? <><div><dt>测试场景</dt><dd>{detail.caseRecord.scenarioId ?? "未记录"}</dd></div><div><dt>运行批次</dt><dd>{detail.caseRecord.testRunId ?? "未记录"}</dd></div></> : null}<div><dt>应用版本</dt><dd>{detail.caseRecord.appVersion}</dd></div><div><dt>知识 / 决策</dt><dd>{detail.caseRecord.knowledgeVersion} / {detail.caseRecord.decisionVersion}</dd></div></dl>
+          <dl className="admin-facts"><div><dt>当前阶段</dt><dd>{detail.caseRecord.currentStage ?? "未记录"}</dd></div><div><dt>康复记录</dt><dd>{detail.caseRecord.sessionCount} 次</dd></div><div><dt>快照修订</dt><dd>{detail.snapshot.revision}</dd></div><div><dt>问题线程</dt><dd>{typeof detail.snapshot.payload.problemThreadId === "string" ? detail.snapshot.payload.problemThreadId : "旧版 / 未记录"}</dd></div><div><dt>当前会话</dt><dd>{typeof detail.snapshot.payload.sessionId === "string" ? detail.snapshot.payload.sessionId : "旧版 / 未记录"}</dd></div><div><dt>来源渠道</dt><dd>{SOURCE_LABELS[detail.caseRecord.sourceChannel ?? "unknown"] ?? detail.caseRecord.sourceChannel}{detail.caseRecord.sourceDetail ? `（${detail.caseRecord.sourceDetail}）` : ""}</dd></div>{detail.caseRecord.isTestCase ? <><div><dt>测试场景</dt><dd>{detail.caseRecord.scenarioId ?? "未记录"}</dd></div><div><dt>运行批次</dt><dd>{detail.caseRecord.testRunId ?? "未记录"}</dd></div></> : null}<div><dt>应用版本</dt><dd>{detail.caseRecord.appVersion}</dd></div><div><dt>知识 / 决策</dt><dd>{detail.caseRecord.knowledgeVersion} / {detail.caseRecord.decisionVersion}</dd></div></dl>
 
           <section className="admin-detail-section"><header><h2>问题反馈</h2><span>{detail.feedback.length}</span></header>{detail.feedback.map((item) => <div className="admin-feedback-row" key={item.id}><div><strong>{item.kind}</strong><p>{item.message || "未填写补充说明"}</p><span>目标：第 {item.sessionNumber ?? "?"} 次 · {item.stage}</span><small>提交位置：{item.sourceStage ?? "未定位"} · {new Date(item.createdAt).toLocaleString("zh-CN")}</small></div><select aria-label={`反馈 ${item.id} 状态`} value={item.status} onChange={(event) => void updateFeedback(item.id, event.target.value)}>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>)}{!detail.feedback.length ? <p className="admin-empty">暂无反馈</p> : null}</section>
 
           <section className="admin-detail-section"><header><h2>内部备注</h2><span>{detail.adminNotes.length}</span></header><div className="admin-note-entry"><textarea value={note} maxLength={2000} onChange={(event) => setNote(event.target.value)} placeholder="记录复现结论或后续处理" /><button type="button" disabled={!note.trim()} onClick={() => void addNote()}>添加备注</button></div>{detail.adminNotes.map((item) => <div className="admin-note" key={item.id}><p>{item.note}</p><small>{new Date(item.createdAt).toLocaleString("zh-CN")}</small></div>)}</section>
 
-          <section className="admin-detail-section"><header><h2>事件时间线</h2><span>{detail.events.length}</span></header><ol className="admin-timeline">{detail.events.map((event) => <li key={event.id}><b>{event.sequence}</b><div><strong>{event.type}</strong><span>{event.source} · {new Date(event.occurredAt).toLocaleString("zh-CN")}</span></div></li>)}</ol></section>
+          <section className="admin-detail-section"><header><h2>事件时间线</h2><span>{detail.events.length}</span></header><ol className="admin-timeline">{detail.events.map((event) => <li key={event.id}><b>{event.sequence}</b><div><strong>{event.type}</strong><span>{event.source} · {new Date(event.occurredAt).toLocaleString("zh-CN")}{event.problemThreadId ? ` · 线程 ${event.problemThreadId}` : ""}{event.sessionId ? ` · 会话 ${event.sessionId}` : ""}{eventClinicalCount(event)}</span></div></li>)}</ol></section>
 
           <section className="admin-detail-section"><header><h2>完整记录</h2><span>修订 {detail.snapshot.revision}</span></header><details className="admin-snapshot"><summary>查看已确认的案例快照</summary><pre>{JSON.stringify(detail.snapshot.payload, null, 2)}</pre></details></section>
 

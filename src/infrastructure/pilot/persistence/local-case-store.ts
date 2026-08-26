@@ -7,7 +7,19 @@ const DRAFT_STORE_KEY = "current";
 export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records";
 export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-migrated-v1";
 export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v1";
+/** Cross-tab notification contains only an identity and a fingerprint, never the draft body. */
+export const LOCAL_DRAFT_SIGNAL_KEY = "rehabmind-active-draft-signal-v1";
 export type LocalCaseStorageScope = "user" | "test";
+
+export type LocalDraftStorageSignal = {
+  version: 1;
+  tabId: string;
+  scope: LocalCaseStorageScope;
+  action: "saved" | "cleared";
+  localCaseId?: string;
+  fingerprint?: string;
+  emittedAt: string;
+};
 
 export type LocalCaseStorageBackend = "indexeddb" | "localStorage";
 
@@ -29,6 +41,23 @@ export type LocalDraftLoadResult<T> = {
   backend: LocalCaseStorageBackend;
   diagnostic?: LocalCaseStorageDiagnostic;
 };
+
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? String(value);
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+  return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize((value as Record<string, unknown>)[key])}`).join(",")}}`;
+}
+
+/** 与同步核心保持同一确定性指纹算法；本文件故意自包含，保证受限浏览器兜底模块可独立加载。 */
+function contentFingerprint(value: unknown) {
+  const text = stableSerialize(value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
 
 function canUseIndexedDb() {
   return typeof window !== "undefined" && typeof indexedDB !== "undefined";
@@ -57,6 +86,55 @@ function diagnostic(code: LocalCaseStorageDiagnostic["code"], storageKey: string
 
 function scopedKey(key: string, scope: LocalCaseStorageScope) {
   return scope === "user" ? key : `${key}-${scope}`;
+}
+
+let cachedTabId: string | null = null;
+
+/** One identifier per browser tab; sessionStorage keeps reloads in the same tab identifiable. */
+export function createLocalTabId() {
+  if (cachedTabId) return cachedTabId;
+  try {
+    const existing = window.sessionStorage.getItem("rehabmind-tab-id");
+    if (existing) {
+      cachedTabId = existing;
+      return existing;
+    }
+  } catch {
+    // sessionStorage can be disabled; the in-memory fallback still separates live tabs.
+  }
+  const randomId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  cachedTabId = `tab-${randomId}`;
+  try {
+    window.sessionStorage.setItem("rehabmind-tab-id", cachedTabId);
+  } catch {
+    // The tab id remains valid for this page lifetime.
+  }
+  return cachedTabId;
+}
+
+export function localDraftContentFingerprint(draft: unknown) {
+  if (draft && typeof draft === "object" && "snapshot" in draft) {
+    return contentFingerprint((draft as { snapshot?: unknown }).snapshot);
+  }
+  return contentFingerprint(draft);
+}
+
+function emitLocalDraftSignal(draft: unknown, scope: LocalCaseStorageScope, action: LocalDraftStorageSignal["action"]) {
+  try {
+    const source = draft && typeof draft === "object" ? draft as Record<string, unknown> : {};
+    const signal: LocalDraftStorageSignal = {
+      version: 1,
+      tabId: createLocalTabId(),
+      scope,
+      action,
+      localCaseId: typeof source.localCaseId === "string" ? source.localCaseId : undefined,
+      fingerprint: action === "saved" ? localDraftContentFingerprint(draft) : undefined,
+      emittedAt: new Date().toISOString(),
+    };
+    window.localStorage.setItem(LOCAL_DRAFT_SIGNAL_KEY, JSON.stringify(signal));
+  } catch {
+    // A failed notification must not turn a successful local save into a false failure.
+  }
 }
 
 function readLegacyRecords<T>(scope: LocalCaseStorageScope): { records: T[]; diagnostic?: LocalCaseStorageDiagnostic } {
@@ -253,6 +331,7 @@ export async function saveLocalDraft<T>(draft: T, scope: LocalCaseStorageScope =
       database = await openDatabase(scope);
       await writeDraft(database, draft);
       window.localStorage.removeItem(draftKey);
+      emitLocalDraftSignal(draft, scope, "saved");
       return "indexeddb";
     } catch {
       // The fallback below keeps the active draft available when IndexedDB is blocked.
@@ -261,6 +340,7 @@ export async function saveLocalDraft<T>(draft: T, scope: LocalCaseStorageScope =
     }
   }
   window.localStorage.setItem(draftKey, JSON.stringify(draft));
+  emitLocalDraftSignal(draft, scope, "saved");
   return "localStorage";
 }
 
@@ -277,4 +357,5 @@ export async function clearLocalDraft(scope: LocalCaseStorageScope = "user"): Pr
     }
   }
   window.localStorage.removeItem(scopedKey(LOCAL_DRAFT_KEY, scope));
+  emitLocalDraftSignal(null, scope, "cleared");
 }

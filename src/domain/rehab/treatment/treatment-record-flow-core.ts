@@ -23,6 +23,7 @@ export type RangeTreatmentRecordCandidateInput = {
   candidateTitle: string;
   treatmentName: string;
   action: string;
+  sourceCaseIds?: string[];
 };
 
 export type RangeTreatmentRecordBuildInput = {
@@ -88,6 +89,7 @@ export function buildRangeTreatmentRecords(input: RangeTreatmentRecordBuildInput
     candidateTitle: candidate.candidateTitle,
     treatmentName: candidate.treatmentName,
     action: candidate.action,
+    sourceCaseIds: candidate.sourceCaseIds,
     targetId: input.targetId,
     targetTitle: input.targetTitle,
     measurement: "range",

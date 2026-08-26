@@ -1,7 +1,7 @@
 import { PILOT_CASE_EVENT_TYPES, parsePilotPayload, type PilotCaseEventRecord } from "@/src/infrastructure/pilot/api/case-contracts";
 
 export type PilotTimelineIssue = {
-  code: "sequence_gap" | "duplicate_sequence" | "invalid_type" | "invalid_source" | "invalid_payload" | "time_regression";
+  code: "sequence_gap" | "duplicate_sequence" | "invalid_type" | "invalid_source" | "invalid_payload" | "identity_missing" | "identity_mismatch" | "time_regression";
   eventId?: string;
   sequence?: number;
   detail: string;
@@ -40,7 +40,26 @@ export function reconstructPilotCaseTimeline(events: readonly PilotCaseEventReco
       issues.push({ code: "invalid_source", eventId: event.id, sequence: event.sequence, detail: `${event.type} must use ${expectedSource} source` });
     }
     try {
-      parsePilotPayload(event.payload, "case event");
+      const payload = parsePilotPayload(event.payload, "case event");
+      const envelope = payload.envelope && typeof payload.envelope === "object" && !Array.isArray(payload.envelope)
+        ? payload.envelope as Record<string, unknown>
+        : payload;
+      const identityKeys = ["caseId", "problemThreadId", "sessionId"] as const;
+      if (event.eventSchemaVersion === 2 && event.type !== "case_deleted") {
+        for (const key of identityKeys) {
+          const columnValue = key === "caseId" ? event.caseId : event[key];
+          if (typeof columnValue !== "string" || !columnValue.trim() || typeof envelope[key] !== "string" || !(envelope[key] as string).trim()) {
+            issues.push({ code: "identity_missing", eventId: event.id, sequence: event.sequence, detail: `v2 event identity ${key} is missing` });
+          }
+        }
+      }
+      for (const key of identityKeys) {
+        const columnValue = key === "caseId" ? event.caseId : event[key];
+        const payloadValue = envelope[key];
+        if (typeof columnValue === "string" && columnValue && typeof payloadValue === "string" && payloadValue && columnValue !== payloadValue) {
+          issues.push({ code: "identity_mismatch", eventId: event.id, sequence: event.sequence, detail: `event identity ${key} does not match payload` });
+        }
+      }
     } catch {
       issues.push({ code: "invalid_payload", eventId: event.id, sequence: event.sequence, detail: "event payload is not a JSON object" });
     }

@@ -57,7 +57,7 @@ test("legacy snapshots are migrated without mutating the input", () => {
   const result = schema.migratePilotSnapshot(legacy);
   assert.equal(result.ok, true);
   assert.equal("schemaVersion" in legacy, false);
-  assert.equal(result.snapshot.schemaVersion, 1);
+  assert.equal(result.snapshot.schemaVersion, 2);
 });
 
 test("missing required fields are rejected before page restoration", () => {

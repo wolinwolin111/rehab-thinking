@@ -68,7 +68,7 @@ async function answerCurrentAssessment(page: Page, combination: Combination) {
   if (await clickFirstUnselected(page, button("没有不适"), "活动不适")) return true;
   if (await clickFirstUnselected(page, button(/保持稳定|力量接近|完成质量正常/), "力量或控制")) return true;
   if (await clickFirstUnselected(page, button(/未见异常反应/), "专项检查")) return true;
-  if (await clickFirstUnselected(page, button(/没有明显差别.*需要特别标记/), "肌肉比较")) return true;
+  if (await clickFirstUnselected(page, button(/^没有明显差别$/), "肌肉比较")) return true;
 }
 
 async function reachAssessmentSummary(page: Page, combination: Combination) {

@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { expectUniqueVisible, openFreshProduct, skipOnboarding } from "../support/page-helpers";
+import { expectUniqueVisible, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
 
 async function clickUnique(page: Page, name: string | RegExp, description: string) {
   const button = await expectUniqueVisible(page, description, page.getByRole("button", { name, exact: typeof name === "string" }));
@@ -44,12 +44,12 @@ async function completeSafetyToAssessment(page: Page) {
   await clickUnique(page, "开始评估检查", "确认开始评估检查");
 }
 
-export async function prepareGuidedChiefProgression(page: Page) {
+export async function prepareGuidedChiefProgression(page: Page, options: { stopAtBaselineScore?: boolean } = {}) {
   await openFreshProduct(page);
   await skipOnboarding(page);
   const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
   await input.fill("右膝下蹲时疼，有两个月了");
-  await clickUnique(page, "帮我整理", "帮我整理");
+  await (await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page))).click();
   await clickUnique(page, /自助康复/, "自助康复模式");
   await clickUnique(page, /下一步/, "进入症状信息");
   await chooseKneeLocation(page);
@@ -60,6 +60,7 @@ export async function prepareGuidedChiefProgression(page: Page) {
   await clickUnique(page, /下一步/, "确认目前情况");
   const slider = await expectUniqueVisible(page, "主诉基线分数滑条", page.locator('input[type="range"]:visible'));
   await slider.fill("5");
+  if (options.stopAtBaselineScore) return;
   await clickUnique(page, /下一步/, "确认主诉分数");
   await clickUnique(page, /恢复日常活动/, "恢复日常活动");
   await completeSafetyToAssessment(page);
@@ -70,7 +71,7 @@ export async function prepareProfessionalMultiAction(page: Page) {
   await skipOnboarding(page);
   const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
   await input.fill("右膝内侧疼，有三个月了");
-  await clickUnique(page, "帮我整理", "帮我整理");
+  await (await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page))).click();
   await clickUnique(page, /康复思路模式/, "康复思路模式");
   await clickUnique(page, /下一步/, "进入专业工作台");
   await clickUnique(page, /自我检查|给自己检查/, "给自己检查");

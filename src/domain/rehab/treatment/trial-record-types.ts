@@ -53,6 +53,13 @@ export type TrialRecord = {
   functionRetestMode?: FunctionRetestMode;
   /** 区分部分贡献、关键完成和组合解决，不能只按下降分数排名。 */
   responseRole?: TreatmentResponseRole;
+  /** 处理发生时的知识来源快照；旧记录缺失时保持 undefined。 */
+  sourceCaseIds?: string[];
+  /** 处理对应的只读决策追踪；不参与当前排序。 */
+  decisionTraceId?: string;
+  /** 可回指同一上下文的前后评分；找不到严格可比记录时保持为空。 */
+  beforeScoreRecordId?: string;
+  afterScoreRecordId?: string;
 };
 
 /** buildTrialRecords 的候选输入：主组件预先算好每个候选的展示字段。 */
@@ -62,6 +69,7 @@ export type TrialRecordCandidateInput = {
   treatmentName: string;
   treatmentKey: string;
   action: string;
+  sourceCaseIds?: string[];
 };
 
 /** buildTrialRecords 的完整输入。 */

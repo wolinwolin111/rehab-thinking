@@ -10,6 +10,7 @@ export type CapabilityKey =
   | "jointMobilization";
 
 export type CapabilitySet = Record<CapabilityKey, boolean>;
+export type PalpationMode = "none" | "self-light" | "professional-basic";
 
 export type WorkflowProfileInput = {
   productMode?: ProductMode | "";
@@ -30,6 +31,8 @@ export type WorkflowProfile = {
   canAssessResistance: boolean;
   canAssessEndFeel: boolean;
   canPalpate: boolean;
+  /** 兼容旧 canPalpate；新流程按风险区分自我轻按和专业触诊。 */
+  palpationMode: PalpationMode;
   canRunSpecialTest: boolean;
   canMobilizeJoint: boolean;
 };
@@ -104,7 +107,12 @@ export function normalizeWorkflowProfile(input: WorkflowProfileInput = {}): Work
   const canAssessPassive = !isGuided && operationTarget === "other" && capabilities.passiveRange;
   const canAssessResistance = !isGuided && operationTarget === "other" && capabilities.resistedStrength;
   const canAssessEndFeel = !isGuided && operationTarget === "other" && capabilities.endFeel;
-  const canPalpate = !isGuided && !isStudy && capabilities.palpation;
+  const palpationMode: PalpationMode = isStudy
+    ? "none"
+    : isGuided || operationTarget === "self"
+      ? "self-light"
+      : capabilities.palpation ? "professional-basic" : "none";
+  const canPalpate = palpationMode !== "none";
   const canRunSpecialTest = !isGuided && operationTarget === "other" && capabilities.specialTest;
   const canMobilizeJoint = !isGuided
     && operationTarget === "other"
@@ -125,9 +133,26 @@ export function normalizeWorkflowProfile(input: WorkflowProfileInput = {}): Work
     canAssessResistance,
     canAssessEndFeel,
     canPalpate,
+    palpationMode,
     canRunSpecialTest,
     canMobilizeJoint,
   };
+}
+
+/**
+ * 给一次检查能力配置生成可追踪的快照编号。
+ *
+ * 能力发生变化时，旧检查结果仍然是历史事实，不能被新能力配置覆盖；
+ * 因此记录只引用当时的 snapshot id，而不是在读取时重新推断。
+ */
+export function buildCapabilitySnapshotId(
+  sessionId: string,
+  assessmentRevision: number,
+  operationTarget: OperationTarget,
+  capabilities: Partial<CapabilitySet> = {},
+) {
+  const enabled = CAPABILITY_KEYS.filter((key) => capabilities[key] === true).join(",") || "none";
+  return `capability:${sessionId}:${operationTarget}:${assessmentRevision}:${enabled}`;
 }
 
 export function workflowProfileFromLegacy(userRole: "" | "general" | "coach" | "rehab", examSetup: "" | "self" | "professional-other"): WorkflowProfile {
@@ -150,7 +175,8 @@ export function workflowProfileFromLegacy(userRole: "" | "general" | "coach" | "
 
 export function profileLabel(profile: WorkflowProfile): string {
   if (profile.isGuided) return "自助康复";
-  if (profile.isStudy) return "案例学习";
+  // study 只为读取旧快照保留，生产入口已关闭，不能再被当成可用模式展示。
+  if (profile.isStudy) return "旧版案例学习（已关闭）";
   return profile.operationTarget === "other" ? "康复思路·给别人" : "康复思路·给自己";
 }
 

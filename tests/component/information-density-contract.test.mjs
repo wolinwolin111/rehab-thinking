@@ -36,7 +36,7 @@ test("ordinary workflow progressively reveals secondary detail", async () => {
 
 test("mobile training progress is vertical rather than horizontally scrollable", async () => {
   const styles = await read("../../src/features/rehabmind/styles/complete-demo.css");
-  const mobileDisclosure = styles.slice(styles.lastIndexOf("@media (max-width: 720px)"));
+  const mobileDisclosure = styles.slice(styles.indexOf("@media (max-width: 720px)"));
   assert.match(mobileDisclosure, /\.rm-training-path \.rm-stage-line \{[^}]*grid-template-columns: 1fr/s);
   assert.doesNotMatch(styles, /rm-stage-scroll-hint/);
   assert.doesNotMatch(styles, /\.rm-stage-line \{[^}]*overflow-x: auto/s);

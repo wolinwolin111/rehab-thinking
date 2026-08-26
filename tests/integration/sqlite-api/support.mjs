@@ -5,7 +5,7 @@ import path from "node:path";
 import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 import { applySqliteMigrations } from "../../../scripts/data/sqlite-migration-core.mjs";
 
-const MIGRATIONS = ["0000_worried_lyja.sql", "0001_ambiguous_killraven.sql", "0002_stale_silhouette.sql", "0003_operational_invites.sql", "0004_feedback_operations.sql", "0005_trial_operations.sql", "0006_admin_audit.sql", "0007_source_and_consent.sql", "0008_test_case_isolation.sql"];
+const MIGRATIONS = ["0000_worried_lyja.sql", "0001_ambiguous_killraven.sql", "0002_stale_silhouette.sql", "0003_operational_invites.sql", "0004_feedback_operations.sql", "0005_trial_operations.sql", "0006_admin_audit.sql", "0007_source_and_consent.sql", "0008_test_case_isolation.sql", "0009_clinical_event_identity.sql"];
 const TEST_SOURCE = { channel: "douyin_fan_group", detail: null };
 const TEST_CONSENT = { version: "pilot-consent-v1", confirmedAt: "2026-08-24T00:00:00.000Z" };
 

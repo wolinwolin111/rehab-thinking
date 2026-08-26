@@ -32,6 +32,7 @@ export async function POST(
     const requestId = requiredString(body.requestId ?? body.eventId, "requestId");
     const sessionNumber = optionalNonNegativeInteger(body.sessionCount, "sessionCount");
     const sessionId = requiredString(body.sessionId ?? `session-${sessionNumber ?? 0}`, "sessionId");
+    const problemThreadId = optionalString(body.problemThreadId, "problemThreadId");
     const service = await createPilotCaseService();
     const result = await service.saveProgress({
       caseId,
@@ -39,6 +40,7 @@ export async function POST(
       expectedRevision: expectedRevision as number,
       requestId,
       sessionId,
+      problemThreadId,
       snapshot: body.snapshot,
       eventType: requiredString(body.eventType, "eventType") as PilotCaseEventType,
       eventPayload: body.eventPayload,

@@ -32,6 +32,7 @@ export function buildTrialRecords(input: TrialRecordBuildInput): TrialRecord[] {
     candidateTitle: candidate.candidateTitle,
     treatmentName: candidate.treatmentName,
     action: candidate.action,
+    sourceCaseIds: candidate.sourceCaseIds,
     targetId,
     targetTitle,
     measurement: deferredRetest ? "deferred" : timeBased ? "time" : hasSingleRangeEvidence ? "range" : "score",

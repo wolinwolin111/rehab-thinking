@@ -13,6 +13,15 @@ export const PILOT_CASE_EVENT_TYPES = [
   "training_plan_saved",
   "training_feedback_saved",
   "session_saved",
+  "problem_thread_started",
+  "session_draft_saved",
+  "session_completed",
+  "observation_added",
+  "assessment_recorded",
+  "treatment_completed",
+  "score_recorded",
+  "record_superseded",
+  "capability_profile_changed",
   "feedback_submitted",
   "case_deleted",
 ] as const;
@@ -20,6 +29,7 @@ export const PILOT_CASE_EVENT_TYPES = [
 export type PilotCaseEventType = (typeof PILOT_CASE_EVENT_TYPES)[number];
 export type PilotCaseStatus = "active" | "deleted";
 export type PilotCaseEventSource = "user" | "system" | "admin";
+export const PILOT_EVENT_SCHEMA_VERSION = 2;
 export type PilotCaseFeedbackSource = "in_app" | "fan_group" | "admin";
 export type PilotCaseFeedbackStatus = "open" | "in_review" | "resolved" | "dismissed";
 export const PILOT_TRIAL_EVENT_TYPES = [
@@ -82,6 +92,20 @@ export type PilotCaseEventRecord = PilotReleaseVersions & {
   payload: string;
   source: PilotCaseEventSource;
   occurredAt: string;
+  /** v2 事件的显式身份列；旧事件允许为空，读取端仍可按 payload 回放。 */
+  eventSchemaVersion?: number | null;
+  problemThreadId?: string | null;
+  sessionId?: string | null;
+};
+
+export type PilotClinicalEventEnvelope = {
+  eventSchemaVersion: typeof PILOT_EVENT_SCHEMA_VERSION;
+  caseId: string;
+  problemThreadId: string;
+  sessionId: string;
+  occurredAt: string;
+  source: PilotCaseEventSource;
+  payload: Record<string, unknown>;
 };
 
 export type PilotCaseFeedbackRecord = PilotReleaseVersions & {
@@ -240,7 +264,7 @@ export class PilotCaseConflictError extends PilotCaseError {
 export const MAX_PILOT_PAYLOAD_BYTES = 1_000_000;
 
 /** REL-01：快照数据结构版本的唯一事实来源；不兼容载荷在服务层被拒绝。 */
-export const PILOT_SNAPSHOT_SCHEMA_VERSION = 1;
+export const PILOT_SNAPSHOT_SCHEMA_VERSION = 2;
 
 function objectDepth(value: unknown, depth = 0): number {
   if (!value || typeof value !== "object") return depth;

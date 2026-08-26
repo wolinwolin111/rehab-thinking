@@ -1,12 +1,14 @@
 # RehabMind 内部逻辑覆盖矩阵
 
-更新时间：2026-08-22
+更新时间：2026-08-27
 
 ## 使用口径
 
 本矩阵只登记不打开真实浏览器即可验证的内部处理逻辑。测试必须调用正式生产模块或由正式生产模块使用的编排函数；源码中出现某段代码、测试专用模型运行结束、页面曾经到达某个标题，都不能单独算作覆盖。
 
 预期结果来自正式产品设计和决策文档。设计没有明确的地方标记为“待确认”，不由测试人员自行推导。
+
+2026-08-27 RMD 整改核验绑定当前 dirty worktree：定向复测、队列、台账/双侧和 workflow 规则通过；unit/integration 的事件重放幂等失败；`test:fast` 被类型错误阻断。以下 RMD 行只记录已有正式测试证据，不把页面计划或源码结构检查升级为逻辑覆盖。
 
 状态含义：
 
@@ -39,6 +41,12 @@
 | 训练进入门禁与阶段状态组合 | `bilateral-flow-core.ts`、`training-feedback-core.ts`、`training-stage-gate-core.ts`、主组件 | 对应 core 测试、`training-stage-gate-core.test.mjs` | 部分覆盖 |
 | 返回修改后下游状态失效 | `downstream-invalidation-core.ts`、主组件编排、版本核心 | `downstream-invalidation-core.test.mjs`、`MUT-INV-01/02/03` 定向变异 | 部分覆盖：复诊复查答案的作废判定、本次康复记录过滤和状态组映射已提取并变异验证；主诉变更触发的全量重置仍为页面编排（组清单已在核心定义，待阶段 C 由 `useDecisionEngine` 消费） |
 | 后续康复历史和新症状隔离 | `followup-review-core.ts`、会话历史和主组件 | 对应历史测试 | 部分覆盖 |
+| RMD-HIST-01/02/03：草稿、稳定 session/thread 身份和跨会话保留 | `session-identity-core.ts`、`session-history.ts`、SQLite snapshot/event | `session-identity-core.test.mjs`、`session-history-contract.test.mjs`、SQLite/API 集成；事件重放关联失败 | 部分覆盖：生命周期和旧记录身份已测，完整事件重建和跨案例归档仍待 fixture 与正式闭环 |
+| RMD-HIST-04：事件时间线按身份重建 | `case-service.ts`、`case-contracts.ts`、`case_events` | `pilot-case-service.test.mjs`、SQLite/API 集成 | 部分覆盖：事件 v2 字段和迁移可读；相同 `eventId` 重放当前返回 409，未达到幂等合同 |
+| RMD-MARK-01：BodyMark 视角/侧别/来源/失效状态 | `body-mark-core.ts`、人体图接线 | `body-mark-core.test.mjs` 已验证视角、侧别、来源和 zone-only；缺失页面清理/失效证据 | 部分覆盖：需要固定 view/side/mark 清理与历史失效 fixture；页面字符串不能替代 |
+| RMD-SCORE-01：ScoreRecord 区分未选、确认 0、不可用和无法完成 | 当前评分/复测记录链 | 当前无独立 ScoreRecord 合同测试 | 待提取：需要先由开发交付稳定记录类型和可复用 fixture |
+| RMD-MODE-01/02/03：案例学习关闭、能力变化、旧字段迁移 | `workflow-profile-core.ts`、snapshot boundary | `workflow-profile-core.test.mjs`、snapshot/schema 测试 | 部分覆盖：能力组合和 study 不落生产已通过；生产入口与遗留字段的真实页面/API 闭环待 RMD 批次 |
+| RMD-SPECIAL-01/FIELD-01~08：特殊字段与动作归档 | 当前 intake/knowledge/treatment 接线 | 现有规则/组件合同，缺 RMD fixture | 待提取：不得用字段存在或组件渲染代替保存、恢复和归档行为 |
 | 保存恢复后的流程状态等价 | `pilot-snapshot-schema.ts`、`pilot-persistence-controller.ts` | 快照和持久化测试 | 部分覆盖 |
 | 页面接线与静态内容合同 | `rendered-html.test.mjs`、局部路径合同 | 页面/源码字符串合同；不计内部逻辑覆盖 | 界面接线合同（不计逻辑覆盖） |
 | 生产核心随机组合 | `random-state-sequence.test.mjs` | 50,000 次直接调用正式复测、队列、台账、训练门禁和评估证据核心 | 部分覆盖 |

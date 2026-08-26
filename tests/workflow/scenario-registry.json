@@ -1,160 +1,291 @@
 [
   {
     "scenarioId": "UX-01-onboarding",
-    "ruleIds": ["UX-01"],
+    "ruleIds": [
+      "UX-01"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/known-defects/ux-regression.spec.ts",
     "titlePattern": "UX-01 聚焦教程逐步完成、可跳过并能重新打开",
-    "tags": ["target", "visual-adjacent"]
+    "tags": [
+      "target",
+      "visual-adjacent"
+    ],
+    "status": "failed"
   },
   {
     "scenarioId": "UX-01-primary-entry",
-    "ruleIds": ["UX-01", "CONTENT-01"],
+    "ruleIds": [
+      "UX-01",
+      "CONTENT-01"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/known-defects/ux-regression.spec.ts",
     "titlePattern": "UX-01 页面关键入口具有可操作尺寸",
-    "tags": ["target", "visual"]
+    "tags": [
+      "target",
+      "visual"
+    ],
+    "status": "failed"
   },
   {
     "scenarioId": "UX-01-score-slider",
-    "ruleIds": ["UX-01", "TEST-08"],
+    "ruleIds": [
+      "UX-01",
+      "TEST-08"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/known-defects/ux-regression.spec.ts",
     "titlePattern": "页面的关键评分滑条从未选择状态开始",
-    "tags": ["target", "visual"]
+    "tags": [
+      "target",
+      "visual"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "INT-05-chief-progression",
-    "ruleIds": ["INT-05"],
+    "ruleIds": [
+      "INT-05"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "INT-05 主诉动作先独立检查",
-    "tags": ["p0"]
+    "tags": [
+      "p0"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "INT-07-multi-action-queue",
-    "ruleIds": ["INT-07"],
+    "ruleIds": [
+      "INT-07"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "INT-07 多个功能动作分别进入独立评估队列",
-    "tags": ["p0"]
+    "tags": [
+      "p0"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "SAFE-04-neural-safety",
-    "ruleIds": ["SAFE-04"],
+    "ruleIds": [
+      "SAFE-04"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "SAFE-04 麻电和感觉变化进入专业确认出口",
-    "tags": ["p0"]
+    "tags": [
+      "p0"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "MIX-03-safety-priority",
-    "ruleIds": ["MIX-03"],
+    "ruleIds": [
+      "MIX-03"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "MIX-03 疼痛、肿胀和麻电同时出现时安全确认优先",
-    "tags": ["p0"]
+    "tags": [
+      "p0"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "PERM-04-capability-revoke",
-    "ruleIds": ["PERM-04"],
+    "ruleIds": [
+      "PERM-04"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "PERM-04 取消被动活动能力后关节处理旧入口失效",
-    "tags": ["p0"]
+    "tags": [
+      "p0"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "SAVE-01-local-draft-refresh",
-    "ruleIds": ["SAVE-01", "DATA-01"],
+    "ruleIds": [
+      "SAVE-01",
+      "DATA-01"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/persistence.spec.ts",
     "titlePattern": "SAVE-01 输入后自动保存本机草稿",
-    "tags": ["p0", "persistence"]
+    "tags": [
+      "p0",
+      "persistence"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "RET-02-different-action-isolation",
-    "ruleIds": ["RET-02"],
+    "ruleIds": [
+      "RET-02"
+    ],
     "priority": "P0",
     "evidenceType": "e2e",
     "script": "tests/browser/p0/decision-gates.spec.ts",
     "titlePattern": "RET-02 不同活动动作分别完成处理后复测",
-    "tags": ["p0", "decision", "retest"]
+    "tags": [
+      "p0",
+      "decision",
+      "retest"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "MIX-06-functional-pain-with-normal-range",
-    "ruleIds": ["MIX-06"],
+    "ruleIds": [
+      "MIX-06"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/divergent/decision-combinations.spec.ts",
     "titlePattern": "MIX-06 活动接近健侧但功能动作仍疼痛",
-    "tags": ["divergent", "decision"]
+    "tags": [
+      "divergent",
+      "decision"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "MIX-07-limited-range-without-pain",
-    "ruleIds": ["MIX-07"],
+    "ruleIds": [
+      "MIX-07"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/divergent/decision-combinations.spec.ts",
     "titlePattern": "MIX-07 活动受限但没有疼痛",
-    "tags": ["divergent", "decision"]
+    "tags": [
+      "divergent",
+      "decision"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "MIX-02-swelling-without-fixed-pain-action",
-    "ruleIds": ["MIX-02"],
+    "ruleIds": [
+      "MIX-02"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/divergent/swelling-and-queue.spec.ts",
     "titlePattern": "MIX-02 只有肿胀没有固定疼痛动作",
-    "tags": ["divergent", "decision", "observation"]
+    "tags": [
+      "divergent",
+      "decision",
+      "observation"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "MIX-11-mixed-normal-unknown-abnormal",
-    "ruleIds": ["MIX-11"],
+    "ruleIds": [
+      "MIX-11"
+    ],
     "priority": "P1",
     "evidenceType": "e2e",
     "script": "tests/browser/divergent/swelling-and-queue.spec.ts",
     "titlePattern": "MIX-11 正常、未知和异常结果混合",
-    "tags": ["divergent", "decision", "mixed-results"]
+    "tags": [
+      "divergent",
+      "decision",
+      "mixed-results"
+    ],
+    "status": "verified"
   },
   {
     "scenarioId": "VISUAL-home-layout",
-    "ruleIds": ["UX-01", "CONTENT-01"],
+    "ruleIds": [
+      "UX-01",
+      "CONTENT-01"
+    ],
     "priority": "P1",
     "evidenceType": "visual",
     "script": "tests/browser/visual/critical-layout.spec.ts",
     "titlePattern": "首页聚焦式教程与症状入口",
-    "tags": ["visual", "layout"]
+    "tags": [
+      "visual",
+      "layout"
+    ],
+    "status": "failed"
   },
   {
     "scenarioId": "VISUAL-assessment-queue-layout",
-    "ruleIds": ["INT-07", "UX-03"],
+    "ruleIds": [
+      "INT-07",
+      "UX-03"
+    ],
     "priority": "P1",
     "evidenceType": "visual",
     "script": "tests/browser/visual/critical-layout.spec.ts",
     "titlePattern": "评估队列保留多个独立功能动作",
-    "tags": ["visual", "layout", "decision"]
+    "tags": [
+      "visual",
+      "layout",
+      "decision"
+    ],
+    "status": "failed"
   },
   {
     "scenarioId": "VISUAL-home-mobile-layout",
-    "ruleIds": ["UX-03"],
+    "ruleIds": [
+      "UX-03"
+    ],
     "priority": "P1",
     "evidenceType": "visual",
     "script": "tests/browser/visual/critical-layout.spec.ts",
     "titlePattern": "移动端首页不产生横向溢出",
-    "tags": ["visual", "mobile"]
+    "tags": [
+      "visual",
+      "mobile"
+    ],
+    "status": "failed"
+  },
+  {
+    "scenarioId": "INSPECT-entry-gate-after-create",
+    "ruleIds": [
+      "DEF-CONSENT-01",
+      "UX-01"
+    ],
+    "priority": "P1",
+    "layer": "L6",
+    "evidenceType": "inspect",
+    "script": "scripts/quality/inspect-local.mjs",
+    "titlePattern": "建案后入口门浮层在全部视口关闭",
+    "tags": [
+      "inspect",
+      "overlay",
+      "viewport",
+      "failure"
+    ],
+    "status": "failed",
+    "releaseRequired": false
   },
   {
     "scenarioId": "A7-L0-L4-current-fast-gate",
-    "ruleIds": ["TEST-14", "TEST-16", "TEST-17", "TEST-19"],
+    "ruleIds": [
+      "TEST-14",
+      "TEST-16",
+      "TEST-17",
+      "TEST-19"
+    ],
     "priority": "P0",
     "layer": "L0-L4",
     "evidenceType": "command",
@@ -164,7 +295,10 @@
   },
   {
     "scenarioId": "A7-L2-L3-production-workflow",
-    "ruleIds": ["TEST-16", "OPS-03"],
+    "ruleIds": [
+      "TEST-16",
+      "OPS-03"
+    ],
     "priority": "P0",
     "layer": "L2-L3",
     "evidenceType": "command",
@@ -174,7 +308,9 @@
   },
   {
     "scenarioId": "A7-L2-L3-mutation-validity",
-    "ruleIds": ["TEST-19"],
+    "ruleIds": [
+      "TEST-19"
+    ],
     "priority": "P0",
     "layer": "L2-L3",
     "evidenceType": "mutation",
@@ -184,7 +320,9 @@
   },
   {
     "scenarioId": "A7-L4-page-adapter",
-    "ruleIds": ["TEST-17"],
+    "ruleIds": [
+      "TEST-17"
+    ],
     "priority": "P0",
     "layer": "L4",
     "evidenceType": "command",
@@ -194,7 +332,13 @@
   },
   {
     "scenarioId": "A7-L5-sqlite-api",
-    "ruleIds": ["DB-01", "SCHEMA-01", "SYNC-01", "ONBOARD-01", "FEED-01"],
+    "ruleIds": [
+      "DB-01",
+      "SCHEMA-01",
+      "SYNC-01",
+      "ONBOARD-01",
+      "FEED-01"
+    ],
     "priority": "P0",
     "layer": "L5",
     "evidenceType": "integration",
@@ -204,7 +348,9 @@
   },
   {
     "scenarioId": "A7-L5-longitudinal",
-    "ruleIds": ["TEST-18"],
+    "ruleIds": [
+      "TEST-18"
+    ],
     "priority": "P0",
     "layer": "L5",
     "evidenceType": "integration",
@@ -214,7 +360,12 @@
   },
   {
     "scenarioId": "A7-L5-security-redaction",
-    "ruleIds": ["SEC-01", "SEC-03", "PRIV-03", "OPS-03"],
+    "ruleIds": [
+      "SEC-01",
+      "SEC-03",
+      "PRIV-03",
+      "OPS-03"
+    ],
     "priority": "P0",
     "layer": "L5",
     "evidenceType": "security",
@@ -224,7 +375,10 @@
   },
   {
     "scenarioId": "A7-L5-sqlite-health",
-    "ruleIds": ["DB-01", "REL-04"],
+    "ruleIds": [
+      "DB-01",
+      "REL-04"
+    ],
     "priority": "P0",
     "layer": "L5",
     "evidenceType": "health",
@@ -234,7 +388,9 @@
   },
   {
     "scenarioId": "A7-release-migration-compatibility",
-    "ruleIds": ["REL-04"],
+    "ruleIds": [
+      "REL-04"
+    ],
     "priority": "P0",
     "layer": "release",
     "evidenceType": "migration",
@@ -244,7 +400,9 @@
   },
   {
     "scenarioId": "A7-release-production-dependencies",
-    "ruleIds": ["SEC-04"],
+    "ruleIds": [
+      "SEC-04"
+    ],
     "priority": "P0",
     "layer": "release",
     "evidenceType": "security",
@@ -254,7 +412,9 @@
   },
   {
     "scenarioId": "A7-release-code-resource-budget",
-    "ruleIds": ["PERF-01"],
+    "ruleIds": [
+      "PERF-01"
+    ],
     "priority": "P0",
     "layer": "release",
     "evidenceType": "performance",
@@ -264,7 +424,9 @@
   },
   {
     "scenarioId": "A7-release-lint",
-    "ruleIds": ["TEST-01"],
+    "ruleIds": [
+      "TEST-01"
+    ],
     "priority": "P0",
     "layer": "release",
     "evidenceType": "command",
@@ -274,7 +436,14 @@
   },
   {
     "scenarioId": "APP-L6-current-browser-wiring",
-    "ruleIds": ["ONBOARD-01", "DATA-RESTORE-01", "FEED-01", "MOBILE-01", "ADMIN-01", "TEST-15"],
+    "ruleIds": [
+      "ONBOARD-01",
+      "DATA-RESTORE-01",
+      "FEED-01",
+      "MOBILE-01",
+      "ADMIN-01",
+      "TEST-15"
+    ],
     "priority": "P0",
     "layer": "L6",
     "evidenceType": "e2e",
@@ -284,7 +453,10 @@
   },
   {
     "scenarioId": "APP-L6-manual-task",
-    "ruleIds": ["UX-01", "UX-DENSITY-01"],
+    "ruleIds": [
+      "UX-01",
+      "UX-DENSITY-01"
+    ],
     "priority": "P0",
     "layer": "L6",
     "evidenceType": "manual",
@@ -294,7 +466,13 @@
   },
   {
     "scenarioId": "A7-L7-vps-security-health",
-    "ruleIds": ["SEC-02", "SEC-03", "OPS-01", "PERF-01", "DEPLOY-02"],
+    "ruleIds": [
+      "SEC-02",
+      "SEC-03",
+      "OPS-01",
+      "PERF-01",
+      "DEPLOY-02"
+    ],
     "priority": "P0",
     "layer": "L7",
     "evidenceType": "deployment",
@@ -304,12 +482,432 @@
   },
   {
     "scenarioId": "A7-L7-backup-canary-rollback",
-    "ruleIds": ["REL-04"],
+    "ruleIds": [
+      "REL-04"
+    ],
     "priority": "P0",
     "layer": "L7",
     "evidenceType": "deployment",
     "gateId": "vps-recovery",
     "releaseRequired": true,
     "script": "scripts/deploy/vps-verify-recovery.sh"
+  },
+  {
+    "scenarioId": "SNAPSHOT-STALE-01",
+    "ruleIds": [
+      "T-09"
+    ],
+    "priority": "P1",
+    "layer": "L2-L6",
+    "evidenceType": "workflow-plus-browser",
+    "script": "tests/workflow/snapshot-freshness-policy.test.mjs; tests/integration/sqlite-api/real-snapshot-recovery.integration.mjs; tests/browser/overall/snapshot-freshness.spec.ts",
+    "titlePattern": "T-09 快照按实际经过时间提醒，急性七天重新确认，慢性只提醒",
+    "tags": [
+      "snapshot",
+      "time-sensitive",
+      "partial"
+    ],
+    "status": "partial",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-01-first-use-consent-case",
+    "ruleIds": [
+      "ONBOARD-01",
+      "CONSENT-01",
+      "DATA-01"
+    ],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/first-use-and-knee.spec.ts",
+    "titlePattern": "首次进入、来源、同意和匿名建案形成完整入口闭环",
+    "tags": [
+      "overall",
+      "first-use",
+      "verified"
+    ],
+    "status": "verified",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-02-unilateral-knee-normal",
+    "ruleIds": [
+      "INT-05",
+      "RET-02",
+      "TRN-01",
+      "DATA-01"
+    ],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/first-use-and-knee.spec.ts",
+    "titlePattern": "单侧膝从症状到评估、处理复测、训练反馈和总结",
+    "tags": [
+      "overall",
+      "knee",
+      "verified"
+    ],
+    "status": "verified",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-03-acute-ankle-safety-stop",
+    "ruleIds": [
+      "SAFE-02",
+      "SAFE-03",
+      "DATA-01"
+    ],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/safety-bilateral-and-unable.spec.ts",
+    "titlePattern": "急性踝扭伤安全停止并保留保存出口",
+    "tags": [
+      "overall",
+      "safety",
+      "high-risk",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-04-bilateral-priority-and-assessment",
+    "ruleIds": [
+      "BIL-01",
+      "M-05",
+      "M-07",
+      "RET-02"
+    ],
+    "priority": "P0",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/safety-bilateral-and-unable.spec.ts",
+    "titlePattern": "双侧选择优先侧、分别评估和分别复测",
+    "tags": [
+      "overall",
+      "bilateral",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-05-no-clear-chief-action",
+    "ruleIds": [
+      "M-06",
+      "ASS-05"
+    ],
+    "priority": "P1",
+    "layer": "L3-L6",
+    "evidenceType": "workflow-plus-browser",
+    "script": "tests/browser/overall/safety-bilateral-and-unable.spec.ts",
+    "titlePattern": "没有明确主诉动作时不生成伪造动作分数",
+    "tags": [
+      "overall",
+      "no-chief-action",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-06-unable-action-reasons",
+    "ruleIds": [
+      "T-01",
+      "ASS-01",
+      "ASS-02",
+      "ASS-03"
+    ],
+    "priority": "P0",
+    "layer": "L3-L6",
+    "evidenceType": "workflow-plus-browser",
+    "script": "tests/browser/overall/safety-bilateral-and-unable.spec.ts",
+    "titlePattern": "动作无法完成的不同原因分别保留并阻止误判正常",
+    "tags": [
+      "overall",
+      "unable",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-07-treatment-better",
+    "ruleIds": [
+      "QUEUE-01",
+      "RET-01"
+    ],
+    "priority": "P1",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "处理后改善记录与下一合法阶段分离",
+    "tags": [
+      "overall",
+      "retest",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-08-treatment-no-change",
+    "ruleIds": [
+      "QUEUE-02"
+    ],
+    "priority": "P1",
+    "layer": "L6",
+    "evidenceType": "browser-overall",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "处理后无变化保留观察出口且不显示成功",
+    "tags": [
+      "overall",
+      "retest",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-09-treatment-worsening",
+    "ruleIds": [
+      "RET-06",
+      "T-02"
+    ],
+    "priority": "P0",
+    "layer": "L3-L6",
+    "evidenceType": "workflow-plus-browser",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "处理后加重停止并进入聚焦复查",
+    "tags": [
+      "overall",
+      "worsening",
+      "high-risk",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-10-training-worsening",
+    "ruleIds": [
+      "T-10",
+      "T-11",
+      "TRN-02"
+    ],
+    "priority": "P0",
+    "layer": "L3-L6",
+    "evidenceType": "workflow-plus-browser",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "训练反馈门槛和训练后加重停止",
+    "tags": [
+      "overall",
+      "training",
+      "worsening",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-11-refresh-restore",
+    "ruleIds": [
+      "TIME-01",
+      "SAVE-01",
+      "DATA-01"
+    ],
+    "priority": "P0",
+    "layer": "L5-L6",
+    "evidenceType": "integration-plus-browser",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "刷新后恢复未完成阶段、原答案和本机草稿",
+    "tags": [
+      "overall",
+      "persistence",
+      "verified"
+    ],
+    "status": "verified",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-12-second-rehab-new-history",
+    "ruleIds": [
+      "T-07",
+      "T-08",
+      "TIME-02",
+      "TIME-03"
+    ],
+    "priority": "P1",
+    "layer": "L5-L6",
+    "evidenceType": "integration-plus-browser",
+    "script": "tests/browser/overall/retest-training-followup.spec.ts",
+    "titlePattern": "第二次康复和新问题保留历史并开启新路径",
+    "tags": [
+      "overall",
+      "longitudinal",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-13-feedback-context",
+    "ruleIds": [
+      "FEED-01",
+      "DATA-05"
+    ],
+    "priority": "P1",
+    "layer": "L5-L6",
+    "evidenceType": "integration-plus-browser",
+    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
+    "titlePattern": "反馈绑定当前模块、目标记录和提交位置",
+    "tags": [
+      "overall",
+      "feedback",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-14-admin-redaction",
+    "ruleIds": [
+      "SEC-01",
+      "SEC-03",
+      "DATA-09",
+      "OPS-03"
+    ],
+    "priority": "P0",
+    "layer": "L5-L7",
+    "evidenceType": "security-plus-browser",
+    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
+    "titlePattern": "管理员脱敏、错误凭据拒绝和匿名案例查询",
+    "tags": [
+      "overall",
+      "security",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "E2E-15-test-data-cleanup",
+    "ruleIds": [
+      "OPS-03",
+      "DATA-06"
+    ],
+    "priority": "P1",
+    "layer": "L5-L7",
+    "evidenceType": "integration-plus-security",
+    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
+    "titlePattern": "测试数据按本轮 runId 清理且不误删其他案例",
+    "tags": [
+      "overall",
+      "cleanup",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "TEST-03-real-ui-seeded-exploration",
+    "ruleIds": [
+      "TEST-03"
+    ],
+    "priority": "P1",
+    "layer": "L6",
+    "evidenceType": "seeded-browser-exploration",
+    "script": "tests/browser/exploration/real-workbench-seeded-exploration.spec.ts",
+    "titlePattern": "固定 seed 驱动真实可见控件探索并保存失败证据",
+    "tags": [
+      "exploration",
+      "seed",
+      "verified"
+    ],
+    "status": "verified",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "TEST-10-mobile-preview",
+    "ruleIds": [
+      "TEST-10",
+      "UX-03",
+      "UX-04"
+    ],
+    "priority": "P1",
+    "layer": "L6-preview",
+    "evidenceType": "mobile-preview",
+    "script": "tests/browser/mobile-preview/mobile-preview.spec.ts",
+    "titlePattern": "Pixel 5 和 iPhone 13 移动预览覆盖关键闭环与弹层焦点",
+    "tags": [
+      "mobile",
+      "preview-only",
+      "partial"
+    ],
+    "status": "partial",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "TEST-10-firefox-high-risk",
+    "ruleIds": [
+      "TEST-10",
+      "SAFE-02",
+      "SAFE-04",
+      "RET-06",
+      "TRN-02"
+    ],
+    "priority": "P1",
+    "layer": "L6",
+    "evidenceType": "firefox-risk-preview",
+    "script": "tests/browser/firefox/high-risk.spec.ts",
+    "titlePattern": "Firefox 只执行安全停止和加重等高风险流程",
+    "tags": [
+      "firefox",
+      "high-risk",
+      "preview-only",
+      "partial"
+    ],
+    "status": "partial",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "DATA-REPLAY-01-event-id-replay",
+    "ruleIds": [
+      "DATA-REPLAY-01",
+      "RMD-HIST-04"
+    ],
+    "priority": "P0",
+    "layer": "L5",
+    "evidenceType": "integration",
+    "script": "tests/unit/infrastructure/pilot-case-service.test.mjs; tests/integration/sqlite-api/pilot-vertical-flow.integration.mjs",
+    "titlePattern": "repeating the same event is idempotent",
+    "tags": [
+      "rmd",
+      "history",
+      "replay",
+      "failed"
+    ],
+    "status": "failed",
+    "releaseRequired": false
+  },
+  {
+    "scenarioId": "BUILD-TYPE-01-fast-gate",
+    "ruleIds": [
+      "BUILD-TYPE-01"
+    ],
+    "priority": "P0",
+    "layer": "L0",
+    "evidenceType": "command",
+    "script": "npm run test:fast",
+    "titlePattern": "test:fast",
+    "tags": [
+      "rmd",
+      "build",
+      "blocked"
+    ],
+    "status": "blocked",
+    "releaseRequired": true
   }
 ]

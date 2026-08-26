@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDialogAccessibility } from "@/src/features/rehabmind/components/shared/use-dialog-accessibility";
 import {
   buildPilotFeedbackLocations,
   feedbackSubmissionErrorMessage,
@@ -50,6 +51,7 @@ export function PilotFeedbackPanel({
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const dialogRef = useDialogAccessibility({ open, onClose });
 
   if (!open) return null;
 
@@ -78,7 +80,7 @@ export function PilotFeedbackPanel({
   }
 
   return <div className="rm-modal-backdrop" role="presentation" onMouseDown={onClose}>
-    <section className="rm-feedback-modal" role="dialog" aria-modal="true" aria-label="问题反馈" onMouseDown={(event) => event.stopPropagation()}>
+    <section ref={dialogRef} className="rm-feedback-modal" role="dialog" aria-modal="true" aria-label="问题反馈" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
       <header>
         <div><span>帮助我们定位流程问题</span><h2>问题反馈</h2></div>
         <button type="button" onClick={onClose}>关闭</button>

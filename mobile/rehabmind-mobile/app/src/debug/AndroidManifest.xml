@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug 仅允许连接本机开发服务器的 HTTP 地址；Release 继续由主 Manifest 禁止明文流量。 -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

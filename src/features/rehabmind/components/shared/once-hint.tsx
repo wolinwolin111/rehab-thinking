@@ -31,7 +31,7 @@ export function OnceHint({ id, active = true, children, className = "" }: {
   const alreadySeen = useSyncExternalStore(subscribe, getSnapshot, () => false);
 
   if (!active || alreadySeen || dismissedId === id) return null;
-  return <aside className={`rm-once-hint ${className}`.trim()} role="status">
+  return <aside className={`rm-once-hint ${className}`.trim()} role="note">
     <span>{children}</span>
     <button type="button" aria-label="关闭提示" onClick={() => {
       setDismissedId(id);

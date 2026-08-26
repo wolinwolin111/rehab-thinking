@@ -7,8 +7,15 @@ export type SessionTrend = "better" | "same" | "worse" | "unknown" | "unable";
 export type SavedTreatmentResponseRole = "partial-contribution" | "key-completion" | "independent-completion" | "range-contribution" | "no-change" | "worsened" | "not-immediately-testable";
 
 export type RehabSessionSummary = {
+  /** 新版以 sessionId 合并；缺失时仅为旧记录兼容回退。 */
+  sessionId?: string;
+  problemThreadId?: string;
+  status?: SessionLifecycleStatus;
   sessionNumber: number;
+  startedAt?: string;
+  lastDraftSavedAt?: string;
   completedAt?: string;
+  completionReason?: string;
   /** T-07：记录当次主诉部位，供跨次比对提示使用。 */
   location?: string;
   startedScore?: number;
@@ -24,7 +31,11 @@ export type RehabSessionSummary = {
 };
 
 export function upsertSessionSummary(history: RehabSessionSummary[], summary: RehabSessionSummary) {
-  return [...history.filter((item) => item.sessionNumber !== summary.sessionNumber), summary]
+  const summaryKey = summary.sessionId ? `session:${summary.sessionId}` : `legacy:${summary.sessionNumber}`;
+  return [...history.filter((item) => {
+    const itemKey = item.sessionId ? `session:${item.sessionId}` : `legacy:${item.sessionNumber}`;
+    return itemKey !== summaryKey;
+  }), summary]
     .sort((a, b) => a.sessionNumber - b.sessionNumber);
 }
 
@@ -52,3 +63,4 @@ export function buildNextFocus(input: {
     ...(input.trainingLabels.length ? ["检查训练完成情况和次日反应"] : []),
   ].filter((item, index, list) => list.indexOf(item) === index).slice(0, 4);
 }
+import type { SessionLifecycleStatus } from "@/src/domain/rehab/history/session-identity-core";

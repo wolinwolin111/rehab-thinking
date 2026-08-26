@@ -2,6 +2,7 @@
 
 import type { PilotSyncDisplayState, SavedDemoRecord, Step } from "@/src/features/rehabmind/components/workbench/workbench-support";
 import { STEPS } from "@/src/features/rehabmind/components/workbench/workbench-support";
+import { useDialogAccessibility } from "@/src/features/rehabmind/components/shared/use-dialog-accessibility";
 import { mobileSaveStatus, mobileStageAvailable } from "./mobile-navigation-core";
 
 export function MobileTopActions({
@@ -41,6 +42,7 @@ export function MobileStageNavigation({
   onClose: () => void;
   onSelect: (step: Step) => void;
 }) {
+  const drawerRef = useDialogAccessibility({ open, onClose });
   return <>
     <section className="rm-mobile-stagebar" data-rehabmind-tutorial="flow-mobile">
       <button type="button" onClick={onOpen}>
@@ -50,7 +52,7 @@ export function MobileStageNavigation({
       <i aria-hidden="true"><em style={{ width: `${((railStep + 1) / STEPS.length) * 100}%` }} /></i>
     </section>
     {open ? <div className="rm-mobile-drawer-backdrop" onMouseDown={onClose}>
-      <section className="rm-mobile-stage-drawer" role="dialog" aria-modal="true" aria-label="本次康复阶段" onMouseDown={(event) => event.stopPropagation()}>
+      <section ref={drawerRef} className="rm-mobile-stage-drawer" role="dialog" aria-modal="true" aria-label="本次康复阶段" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
         <header><h2>本次康复</h2><button type="button" onClick={onClose}>关闭</button></header>
         <nav>{STEPS.map((label, index) => {
           const available = mobileStageAvailable({ targetStep: index as Step, railStep, currentStep, maxUnlocked, followupMode });
@@ -92,9 +94,10 @@ export function MobileMoreMenu({
   onOpenHelp: () => void;
   onSave: () => void;
 }) {
+  const drawerRef = useDialogAccessibility({ open, onClose });
   if (!open) return null;
   return <div className="rm-mobile-drawer-backdrop" onMouseDown={onClose}>
-    <section className="rm-mobile-more-drawer" role="dialog" aria-modal="true" aria-label="更多操作" onMouseDown={(event) => event.stopPropagation()}>
+    <section ref={drawerRef} className="rm-mobile-more-drawer" role="dialog" aria-modal="true" aria-label="更多操作" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
       <header><div><span>第{sessionNumber}次康复</span><h2>更多</h2></div><button type="button" onClick={onClose}>关闭</button></header>
       {record?.pilotPublicCode ? <section className="rm-mobile-case-code">
         <span>案例编号</span><b>{record.pilotPublicCode}</b><button type="button" onClick={() => onCopyCaseCode(record)}>复制</button>

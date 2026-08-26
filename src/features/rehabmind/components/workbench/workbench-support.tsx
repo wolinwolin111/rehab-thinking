@@ -41,11 +41,19 @@ import { type PilotCaseAccess } from "@/src/infrastructure/pilot/api/case-client
 
 
 import { migratePilotSnapshot } from "@/src/infrastructure/pilot/persistence/snapshot-schema";
+import { deriveMedicalGuidance, type MedicalGuidance } from "@/src/domain/rehab/intake/medical-guidance-core";
+import { type BodyMark } from "@/src/domain/rehab/records/body-mark-core";
+import { type ScoreRecord } from "@/src/domain/rehab/records/score-record-core";
+import { type SpecialTestRecord } from "@/src/domain/rehab/records/special-test-record-core";
+import { type ProfessionalNoteRecord } from "@/src/domain/rehab/records/professional-note-record-core";
+import { type DecisionTrace } from "@/src/domain/rehab/records/decision-trace-core";
+import { type RangeMeasurement } from "@/src/domain/rehab/assessment/range-measurement-core";
 
 
 
 
 import { type RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
+import { type SessionLifecycleStatus } from "@/src/domain/rehab/history/session-identity-core";
 
 
 import { controlPlansForMotions, normalizePilotMuscleRegion, pilotMuscleRegion, pilotMotionKnowledge, primaryRetestMotionIdsForRegion, professionalAssessmentTitle, regionRelationForMotion } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
@@ -149,6 +157,8 @@ export type IntakeState = {
   prioritySide?: BilateralSide;
   location: string;
   bodyLocations: LowerLimbLocationSelection[];
+  /** 用户切换主要大部位时保留的旧位置；不参与当前问题队列，只用于历史和审计。 */
+  bodyLocationHistory: LowerLimbLocationSelection[];
   locationConfirmed: boolean;
   onset: string;
   mechanism: string;
@@ -182,6 +192,8 @@ export type IntakeState = {
   stabbingSpread: "" | "single" | "multiple" | "rest" | "unsure";
   stabbingPalpation: "" | "sharp" | "dull" | "none" | "not-tried";
   priorCare: string[];
+  /** 从既往就医和医生/影像结论投影出的可审计状态；旧快照可缺省。 */
+  medicalGuidance?: MedicalGuidance;
 };
 
 export type IntakeMultiConfirmation = {
@@ -211,6 +223,8 @@ export type AssessmentItem = {
   pairedStrengthTags?: string[];
   /** 专项检查的用途分类，只用于专业工作台的分组展示。 */
   specialCategory?: "localization" | "response" | "safety" | "professional-special";
+  /** 专项检查触发规则的原始快照；用于记录而不是重新推理旧结果。 */
+  trigger?: string;
 };
 
 /** 髌骨四个方向属于同一项被动筛查；后台仍保留方向级结果，页面只展示一张卡。 */
@@ -268,6 +282,10 @@ export type AssessmentRecord = {
   passiveDiscomfortLocations?: LowerLimbLocationSelection[];
   passiveDiscomfortType?: string;
   passiveMeasuredAngle?: string;
+  /** 由 passiveMeasuredAngle 安全解析出的结构化角度；旧快照可缺省。 */
+  passiveMeasuredAngleDeg?: number;
+  /** 正式测量记录；legacyRaw 仍由 passiveMeasuredAngle 保留。 */
+  passiveRangeMeasurement?: RangeMeasurement;
   passiveEndFeel?: PassiveEndFeel;
   passiveSymptomScore?: number;
   /** 功能动作异常时记录"哪个阶段最明显"（起始/中途/末端/全过程/说不清）。 */
@@ -379,6 +397,26 @@ export type FollowupTreatmentRecord = {
 
 export type SavedDemoSnapshot = {
   schemaVersion?: number;
+  localCaseId?: string;
+  bodyMarks?: BodyMark[];
+  /** 评分的可追溯投影；旧的裸数字字段继续保留用于兼容读取。 */
+  scoreRecords?: ScoreRecord[];
+  /** 专项检查的触发、能力快照和停止出口；旧快照可缺省。 */
+  specialTestRecords?: SpecialTestRecord[];
+  /** 专业备注的追加/更正历史；备注不参与决策。 */
+  professionalNoteRecords?: ProfessionalNoteRecord[];
+  /** 处理完成时的证据、规则和知识版本追踪。 */
+  decisionTraces?: DecisionTrace[];
+  /** 案例、问题链、会话的技术身份；不参与临床判断，只用于正确恢复和追踪。 */
+  problemThreadId?: string;
+  sessionId?: string;
+  /** 本次评估/检查使用的能力配置快照；能力变更不能覆盖既有检查事实。 */
+  capabilitySnapshotId?: string;
+  sessionStatus?: SessionLifecycleStatus;
+  sessionStartedAt?: string;
+  draftSavedAt?: string;
+  completedAt?: string;
+  completionReason?: string;
   step: Step;
   intake: IntakeState;
   confirmedIntakeMulti?: IntakeMultiConfirmation;
@@ -438,6 +476,7 @@ export type SavedDemoSnapshot = {
   hasNewSymptom: FollowupNewSymptomAnswer | boolean;
   followupTrends: Record<string, FollowupReviewAnswer>;
   sessionHistory?: RehabSessionSummary[];
+  archivedSessionHistory?: RehabSessionSummary[];
   assessmentRevision?: number;
   treatmentPlanRevision?: number;
   adverseResponse?: AdverseResponseEvent | null;
@@ -456,8 +495,12 @@ export type SavedDemoRecord = {
   latestScore: number;
   scoreComparable?: boolean;
   sessionCount: number;
+  problemThreadId?: string;
+  sessionId?: string;
+  sessionStatus?: SessionLifecycleStatus;
   caseKey?: string;
   sessionHistory?: RehabSessionSummary[];
+  archivedSessionHistory?: RehabSessionSummary[];
   status: "康复中" | "等待影像" | "待医学评估" | "待复查" | "处理后加重，待重新评估" | "训练后加重，待重新评估" | "评估未完成" | "现有检查未形成明确处理方向" | "处理后主诉未明显改善" | "处理完成";
   snapshot?: SavedDemoSnapshot;
   pilotCaseId?: string;
@@ -473,6 +516,10 @@ export type SavedDemoRecord = {
   lastSyncedContentFingerprint?: string;
   pilotConflictSnapshot?: SavedDemoSnapshot;
   pilotConflictRevision?: number;
+  /** 本机或服务器最近一次成功保存此快照的时间，用于恢复时判断是否陈旧。 */
+  pilotSnapshotUpdatedAt?: string;
+  /** 冲突副本在服务器上的最近一次成功保存时间。 */
+  pilotConflictSnapshotUpdatedAt?: string;
   pilotVersions?: PilotCaseAccess["versions"];
   /** Test-only local metadata. User records never receive these fields. */
   testRunId?: string;
@@ -490,7 +537,11 @@ export type PilotDraftEnvelope = {
 
 export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | null {
   const result = migratePilotSnapshot(value);
-  return result.ok ? result.snapshot as SavedDemoSnapshot : null;
+  if (!result.ok) return null;
+  const snapshot = result.snapshot as SavedDemoSnapshot;
+  // 案例学习模式本阶段关闭：旧记录不再进入生产工作流，也不允许被恢复后继续写入。
+  if (snapshot.intake?.operationTarget === "study") return null;
+  return snapshot;
 }
 
 export const SHARED_TENSION_ASSESSMENT_ID = "shared:pilot-muscle-tension";
@@ -501,8 +552,18 @@ export type PilotDemoRegionId = (typeof PILOT_REGION_IDS)[number];
 export const isPilotRegion = (regionId: string): regionId is PilotDemoRegionId => PILOT_REGION_IDS.includes(regionId as PilotDemoRegionId);
 export function pilotInputFromIntake(intake: IntakeState, confirmed: IntakeMultiConfirmation): PilotIntakeInput {
   const selectedLocations = intake.bodyLocations;
+  const profile = intake.productMode
+    ? normalizeWorkflowProfile({ productMode: intake.productMode, operationTarget: intake.operationTarget, capabilities: intake.capabilities, learningExplanation: intake.learningExplanation })
+    : workflowProfileFromLegacy(intake.userRole, intake.examSetup);
   return {
-    userRole: intake.userRole,
+    // 决策引擎只接收“自助/专业他测”的有效能力结果；userRole 仅保留为
+    // 旧快照兼容字段，不再让页面选择的历史角色直接决定权限。
+    userRole: profile.operationTarget === "other" ? "rehab" : "general",
+    workflowProfile: {
+      operationTarget: profile.operationTarget,
+      isStudy: profile.isStudy,
+      canRecord: profile.canRecord,
+    },
     regionIds: Array.from(new Set((selectedLocations.length
       ? selectedLocations.map((item) => item.regionId)
       : isPilotRegion(intake.regionId) ? [intake.regionId] : []).filter(isPilotRegion))),
@@ -522,6 +583,7 @@ export function pilotInputFromIntake(intake: IntakeState, confirmed: IntakeMulti
     swellingLocation: intake.swellingLocation,
     tendernessLocation: intake.tendernessLocation,
     sensoryLocation: intake.sensoryLocation,
+    sensoryLocations: intake.sensoryLocations.map((item) => ({ side: item.side, areaId: item.areaId, location: item.location, regionId: item.regionId })),
     goal: intake.goal,
   };
 }
@@ -722,6 +784,7 @@ export const DEFAULT_INTAKE: IntakeState = {
   prioritySide: undefined,
   location: "",
   bodyLocations: [],
+  bodyLocationHistory: [],
   locationConfirmed: false,
   onset: "",
   mechanism: "",
@@ -751,6 +814,7 @@ export const DEFAULT_INTAKE: IntakeState = {
   stabbingSpread: "",
   stabbingPalpation: "",
   priorCare: [],
+  medicalGuidance: deriveMedicalGuidance(),
 };
 
 export const EXAMPLE_DESCRIPTION = "右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。";
@@ -789,6 +853,7 @@ export function migrateIntakeState(raw: Partial<IntakeState> | undefined): Intak
     examSetup: raw?.examSetup || (operationTarget === "other" ? "professional-other" : "self"),
     prioritySide: raw?.prioritySide === "左侧" || raw?.prioritySide === "右侧" ? raw.prioritySide : undefined,
     bodyLocations: raw?.bodyLocations ?? [],
+    bodyLocationHistory: raw?.bodyLocationHistory ?? [],
     swellingLocations: raw?.swellingLocations ?? [],
     tendernessLocations: raw?.tendernessLocations ?? [],
     sensoryLocations: raw?.sensoryLocations ?? [],
@@ -799,6 +864,7 @@ export function migrateIntakeState(raw: Partial<IntakeState> | undefined): Intak
     actionSelectionConfirmed: raw?.actionSelectionConfirmed ?? Boolean(raw?.reproduction),
     professionalNotes: raw?.professionalNotes ?? "",
     priorCare: raw?.priorCare ?? [],
+    medicalGuidance: raw?.medicalGuidance ?? deriveMedicalGuidance(raw?.priorCare ?? []),
   };
 }
 
@@ -1659,11 +1725,11 @@ export function isSpinalRegion(regionId: string) {
 }
 
 export function operationTargetLabel(target: OperationTarget | "") {
-  return target === "other" ? "给别人检查" : target === "study" ? "只学习案例" : target === "self" ? "给自己检查" : "待确认";
+  return target === "other" ? "给别人检查" : target === "study" ? "旧版案例学习（已关闭）" : target === "self" ? "给自己检查" : "待确认";
 }
 
 export function profileLabelForIntake(intake: Pick<IntakeState, "productMode" | "operationTarget">, profile: ReturnType<typeof normalizeWorkflowProfile>) {
-  if (profile.isStudy) return "案例学习";
+  if (profile.isStudy) return "旧版案例学习（已关闭）";
   if (intake.productMode === "guided") return "自助康复";
   return "康复思路模式";
 }

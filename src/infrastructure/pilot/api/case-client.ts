@@ -32,6 +32,7 @@ export type SavePilotCaseProgressInput = {
   access: PilotCaseAccess;
   requestId: string;
   sessionId: string;
+  problemThreadId?: string;
   snapshot: unknown;
   eventId: string;
   eventType: string;
@@ -141,6 +142,7 @@ export async function savePilotCaseProgress(input: SavePilotCaseProgressInput): 
       requestId: input.requestId,
       caseId: input.access.caseId,
       sessionId: input.sessionId,
+      problemThreadId: input.problemThreadId,
       baseRevision: input.access.revision,
       expectedRevision: input.access.revision,
       snapshot: input.snapshot,

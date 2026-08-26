@@ -73,6 +73,7 @@ export type SymptomStageProps = {
   stabbingEarlyReferral: boolean;
   intakeHasTenderness: boolean;
   intakeHasSensorySymptoms: boolean;
+  bilateralSameProblemGuidance: string;
   baselineScoreApplicable: boolean;
   intakeMissingFields: string[];
   currentIntakeField: string;
@@ -114,6 +115,7 @@ export function SymptomStage(props: SymptomStageProps) {
     stabbingEarlyReferral,
     intakeHasTenderness,
     intakeHasSensorySymptoms,
+    bilateralSameProblemGuidance,
     baselineScoreApplicable,
     intakeMissingFields,
     currentIntakeField,
@@ -159,7 +161,7 @@ export function SymptomStage(props: SymptomStageProps) {
       <div className="rm-label"><span>这次先处理哪一侧？</span><b>必须选择；只决定处理顺序，不代表另一侧正常</b></div>
       <PillOptions options={["左侧", "右侧"]} value={intake.prioritySide ?? ""} onChange={(value) => invalidateAfterIntake({ ...intake, prioritySide: value === "左侧" || value === "右侧" ? value : undefined })} columns={2} />
       <p className="rm-choice-hint">另一侧仍会保留记录；完成一侧后可以返回另一侧继续评估或处理。</p>
-      <p className="rm-pilot-hint">双侧完整流程正在试用完善中；如后续步骤受阻，可返回这里改为单侧，分别评估左、右两侧。</p>
+      <p className="rm-pilot-hint">同一问题可同时保留左右标记，并选择本次优先侧；不同大部位请另建问题。</p>
     </div> : null;
   const actionOptions = reportedActionOptions(intake.regionId);
   const selectedReportedActionIds = new Set((intake.reportedActions ?? []).map((action) => action.id));
@@ -186,15 +188,15 @@ export function SymptomStage(props: SymptomStageProps) {
       ? professionalLocationTab
       : professionalLocationTabs[0]?.id;
     const professionalComplete = keyConfirmationReady && !unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal;
-    const selectProfessionalMode = (mode: ProductMode | "study") => {
+    const selectProfessionalMode = (mode: ProductMode) => {
       invalidateAfterIntake({
         ...intake,
-        productMode: mode === "study" ? "thinking" : mode,
-        operationTarget: mode === "guided" ? "self" : mode === "study" ? "study" : intake.operationTarget,
+        productMode: mode,
+        operationTarget: mode === "guided" ? "self" : intake.operationTarget,
         userRole: mode === "guided" ? "general" : "rehab",
-        examSetup: mode === "guided" ? "self" : mode === "study" ? "self" : intake.examSetup,
+        examSetup: mode === "guided" ? "self" : intake.examSetup,
         capabilitiesConfirmed: mode !== "thinking" || intake.operationTarget !== "other" ? true : intake.capabilitiesConfirmed,
-        learningExplanation: mode === "study",
+        learningExplanation: mode === "guided" ? false : intake.learningExplanation,
         spineAssessmentMode: mode === "guided" ? "guided" : intake.spineAssessmentMode,
       });
     };
@@ -254,7 +256,7 @@ export function SymptomStage(props: SymptomStageProps) {
 
       <section className="rm-professional-section">
         <header><span>01</span><div><h2>主诉部位</h2><p>先确定本次只解决的一个主要问题；同一大部位可以标记多个具体位置。</p></div></header>
-        {hasMultiplePilotRegions ? <div className="rm-pilot-hint">描述涉及多个大部位。本次只保留一个主要问题，其他部位请另开评估。</div> : null}
+        {hasMultiplePilotRegions ? <div className="rm-pilot-hint">描述涉及多个大部位。本次只保留一个主要问题，其他部位请另开问题。</div> : null}
         {mentionedBothSides ? <div className="rm-pilot-hint">双侧都不舒服时，先选择本次优先处理的一侧。</div> : null}
         <LowerLimbLocationPicker
           professional
@@ -262,13 +264,17 @@ export function SymptomStage(props: SymptomStageProps) {
           initialRegionId={intake.regionId}
           initialSide={intake.side}
           initialLocation={intake.location}
-          onChange={(bodyLocations) => {
+          onChange={(bodyLocations, meta) => {
             const primary = bodyLocations[0];
             const regionId = primary?.regionId ?? "";
             const forceDirection = intake.regionId === regionId ? intake.forceDirection : "";
+            const preservedIds = new Set(meta?.preservedSelections?.map((item) => item.id) ?? []);
+            const historyWithoutRemoved = intake.bodyLocationHistory.filter((item) => item.id !== meta?.removedPreservedId);
+            const bodyLocationHistory = [...historyWithoutRemoved, ...(meta?.preservedSelections ?? []).filter((item) => !historyWithoutRemoved.some((entry) => entry.id === item.id))];
             invalidateAfterIntake({
               ...intake,
               bodyLocations,
+              bodyLocationHistory: bodyLocationHistory.filter((item) => !preservedIds.has(item.id) || item.regionId !== regionId),
               locationConfirmed: Boolean(primary),
               regionId,
               side: sideFromLocationSelections(bodyLocations),
@@ -332,6 +338,7 @@ export function SymptomStage(props: SymptomStageProps) {
           <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: false })}><strong>协助他人检查</strong><small>可继续选择被动、抗阻和触诊能力</small></button>
         </div>
         {effectiveOperationTarget === "other" ? <div className="rm-professional-capabilities"><div className="rm-label"><span>可执行的检查能力</span><b>点击即生效；没有的能力可以不选</b></div><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{([ ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"], ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"] ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}</div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">关节处理需要先具备被动活动度检查能力。</small> : null}</div> : null}
+        {isThinkingMode ? <div className="rm-professional-subfield"><div className="rm-label"><span>学习解释</span><b>只影响说明文字，不改变检查、候选、排序或安全门控</b></div><button type="button" className={intake.learningExplanation ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, learningExplanation: !intake.learningExplanation })}>{intake.learningExplanation ? "已开启：显示为什么进入下一步" : "关闭：只显示当前操作"}</button></div> : null}
       </section>
 
       <section className="rm-professional-section rm-professional-notes"><header><span>07</span><div><h2>专业备注</h2><p>记录你的判断或需要后续验证的假设，不直接等同于已确认的查体结果。</p></div></header><textarea value={intake.professionalNotes} onChange={(event) => invalidateAfterIntake({ ...intake, professionalNotes: event.target.value })} placeholder="例如：考虑外侧链参与；待活动度与抗阻结果验证。" /></section>
@@ -439,19 +446,23 @@ export function SymptomStage(props: SymptomStageProps) {
       </div> : null}
 
       {showIntakeQuestion("不舒服的位置") ? <>
-        {hasMultiplePilotRegions ? <div className="rm-pilot-hint">你提到了多个位置。本版一次只评估一个主要问题，请选择这次最想解决的位置；其他问题请另开一次评估。</div> : regionWasNotDetected ? <div className="rm-pilot-hint">没有准确识别位置，请直接在图上选择。</div> : mentionedBothSides ? <div className="rm-pilot-hint">如果两侧是同一个问题，可选择更影响你的那一侧先评估；另一侧请另开一次评估。</div> : null}
+        {hasMultiplePilotRegions ? <div className="rm-pilot-hint">你提到了多个位置。本版一次只评估一个主要问题，请选择这次最想解决的位置；其他问题请另开问题。</div> : regionWasNotDetected ? <div className="rm-pilot-hint">没有准确识别位置，请直接在图上选择。</div> : mentionedBothSides ? <div className="rm-pilot-hint">{bilateralSameProblemGuidance}</div> : null}
         <LowerLimbLocationPicker
           value={intake.bodyLocations}
           initialRegionId={intake.regionId}
           initialSide={intake.side}
           initialLocation={intake.location}
-          onChange={(bodyLocations) => {
+          onChange={(bodyLocations, meta) => {
+            const preservedIds = new Set(meta?.preservedSelections?.map((item) => item.id) ?? []);
+            const historyWithoutRemoved = intake.bodyLocationHistory.filter((item) => item.id !== meta?.removedPreservedId);
+            const bodyLocationHistory = [...historyWithoutRemoved, ...(meta?.preservedSelections ?? []).filter((item) => !historyWithoutRemoved.some((entry) => entry.id === item.id))];
             const primary = bodyLocations[0];
             const regionId = primary?.regionId ?? "";
             const forceDirection = intake.regionId === regionId ? intake.forceDirection : "";
             invalidateAfterIntake({
               ...intake,
               bodyLocations,
+              bodyLocationHistory: bodyLocationHistory.filter((item) => !preservedIds.has(item.id) || item.regionId !== regionId),
               locationConfirmed: Boolean(primary),
               regionId,
               side: sideFromLocationSelections(bodyLocations),

@@ -16,6 +16,12 @@ export type CandidateSafetyInput = {
   tags: string[];
 };
 
+export type CandidateAccessProfile = {
+  operationTarget: "self" | "other" | "study";
+  isStudy?: boolean;
+  canRecord?: boolean;
+};
+
 function safetyIncludesAny(text: string, words: string[]) {
   return words.some((word) => text.includes(word));
 }
@@ -24,7 +30,13 @@ export function candidateUsesPressure(candidate: CandidateSafetyInput) {
   return safetyIncludesAny(`${candidate.title} ${candidate.do} ${candidate.observe} ${candidate.tags.join(" ")}`, ["按压", "压揉", "压迫", "加压", "重压", "深压"]);
 }
 
-export function candidateIsAvailable(candidate: CandidateSafetyInput, role: string) {
+export function candidateIsAvailable(candidate: CandidateSafetyInput, roleOrProfile: string | CandidateAccessProfile) {
+  if (typeof roleOrProfile !== "string") {
+    if (roleOrProfile.isStudy || roleOrProfile.canRecord === false) return false;
+    if (roleOrProfile.operationTarget === "other") return true;
+    return candidate.access === "self" && candidate.type !== "joint" && candidate.type !== "neural";
+  }
+  const role = roleOrProfile;
   if (role === "rehab") return true;
   if (role === "coach") return candidate.access === "self" || candidate.access === "coach";
   return candidate.access === "self" && candidate.type !== "joint" && candidate.type !== "neural";

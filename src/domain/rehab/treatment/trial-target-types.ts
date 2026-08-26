@@ -13,6 +13,7 @@ import { type PilotRelation } from "@/src/knowledge/pilot/pilot-knowledge";
 import { type PilotTreatmentUnit } from "@/src/domain/rehab/shared/pilot-decision-engine";
 import { type KneeDecisionOutput } from "@/src/domain/rehab/shared/knee-decision-core";
 import { type LocalLimbDecision } from "@/src/domain/rehab/shared/local-limb-decision-core";
+import { type WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 
 export type FullCandidateInput = CandidateTreatmentInput & {
   access: string;
@@ -126,6 +127,8 @@ export type DecisionContext = {
   matchedCandidateGroups: Array<{ candidates: FullCandidateInput[] }>;
   canAssessPassive: boolean;
   canMobilizeJoint: boolean;
+  /** 新版权限来源；缺失时只为 v1 core 调用保留 userRole 兼容。 */
+  workflowProfile?: Pick<WorkflowProfile, "operationTarget" | "isStudy" | "canRecord">;
   swellingGuidance: FullCandidateInput | undefined;
   assessments: AssessmentItemInput[];
   sharedTensionId: string;

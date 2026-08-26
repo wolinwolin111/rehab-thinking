@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RehabMind</string>
+    <string name="download_started">已开始下载</string>
+</resources>

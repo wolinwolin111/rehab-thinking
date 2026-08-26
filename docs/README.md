@@ -37,11 +37,14 @@
 - `quality/real-browser-coverage-matrix.md`：设计规则、真实场景、当前证据和覆盖缺口矩阵，不定义新的产品规则。
 - `quality/rehabmind-test-plan.md`：当前测试分层、组合场景、执行节奏和发布门槛总计划。
 - `quality/rehabmind-quality-remediation-register.md`：设计、实现、测试与部署问题的整改编号、优先级、验收标准和状态。
-- `plans/rehabmind-app-experience-optimization-plan.md`：当前施工主计划；网页第 1 至第 10 步和 VPS 发布已完成，VPS 人工任务验收与 Android APK 待执行。
+- `plans/rehabmind-app-experience-optimization-plan.md`：当前施工主计划；网页第 1 至第 10 步和 VPS 发布已完成，VPS 人工任务验收由测试会话负责，Android Debug WebView 外壳和 unsigned Release candidate 构建入口已落库，正式签名 APK 待网页与真机验收后构建。
 - `plans/rehabmind-current-remediation-execution-plan.md`：A0-B6 历史结构与质量整改计划；冲突时不得覆盖当前 App 计划。
+- `plans/rehabmind-development-data-remediation-plan-2026-08-27.md`：2026-08-27 开发走读发现的设计—实现—数据整改执行方案，覆盖会话历史、BodyMark、ScoreRecord、模式权限、字段消费、内部场景工作台和 Android APK。
 - `quality/app-experience-local-acceptance-2026-08-25.md`：当前本地网页实现、测试结果、实际发现的问题和证据边界。
 - `quality/app-experience-vps-acceptance-2026-08-25.md`：当前 VPS canary、迁移、健康、回滚和发布缺陷证据。
 - `quality/test-infrastructure-delivery-2026-08-26.md`：测试体系建设记录——双轨巡检、投影穷举/序列探索/渲染合同/快照 fuzz 与真实快照回灌、SYS 追溯门禁，及首轮巡检发现与转交清单。
+- `handover/development-to-test-remediation-handoff-2026-08-27.md`：本轮 RMD 整改对测试内容、执行节奏、手机/APK 证据和内部测试工作台使用方法的开发侧交接说明。
+- `../mobile/rehabmind-mobile/README.md`：Android WebView 外壳、Debug/Release 地址配置和构建说明。
 - `handover/rehabmind-handover-2026-08-25.md`：2026-08-23 至 25 日工作、当前事实、未完成项和后续严格顺序的现行交接入口。
 - `plans/repository-structure-refactor-plan.md`：仓库目标目录、依赖方向、文件分类规则和分批迁移顺序。
 - `quality/b0-b6-structure-governance-2026-08-24.md`：本轮结构迁移、门禁证据、未完成阶段和继续顺序。
@@ -61,7 +64,7 @@
 ## 当前范围
 
 - 当前本地已验证范围：桌面与 5 个手机宽度、单一主要问题、大腿至足部入口、膝与踝足功能、来源/同意/匿名案例、受保护测试工作台、首次与后续康复。
-- 下一批施工：VPS 网页用户任务验收；通过后才建立 Android WebView APK。
+- 当前施工：VPS 网页用户任务验收由测试会话负责；手机网页与 Android Debug WebView 外壳已进入测试准备，目标设备矩阵验收通过后再构建正式 Release APK。
 - 暂不开放：多主诉联合处理、骨盆及上肢、语言模型、视觉 AI、正式视频和服务端账户。
 
 ## 维护规则
@@ -70,4 +73,4 @@
 2. 审核结论直接替换原规则；旧内容需要追溯时移入 `archive/`。
 3. 代码、正式文档和验收用例必须同步修改。
 4. 病例经验只生成候选和排序，不能直接变成固定处方或诊断。
-5. 桌面和 320 至 430px 手机网页都是当前维护范围；APK 外壳在网页确认后单独维护。
+5. 桌面和 320 至 430px 手机网页都是当前维护范围；Android APK 属于本轮交付，网页确认后构建独立外壳并持续维护。

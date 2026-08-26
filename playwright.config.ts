@@ -28,7 +28,6 @@ export default defineConfig({
   ],
   use: {
     baseURL,
-    channel: browserChannel,
     headless: true,
     locale: "zh-CN",
     viewport: { width: 1440, height: 1000 },
@@ -52,6 +51,21 @@ export default defineConfig({
       name: "edge-release",
       testMatch: /release\/.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], channel: browserChannel },
+    },
+    {
+      name: "pixel-5-preview",
+      grep: /@mobile-preview/,
+      use: { ...devices["Pixel 5"], browserName: "chromium", channel: undefined },
+    },
+    {
+      name: "iphone-13-preview",
+      grep: /@mobile-preview/,
+      use: { ...devices["iPhone 13"], browserName: "webkit", channel: undefined },
+    },
+    {
+      name: "firefox-risk",
+      grep: /@firefox-risk/,
+      use: { ...devices["Desktop Firefox"], browserName: "firefox", channel: undefined },
     },
   ],
   ...(isRemoteTarget

@@ -1,9 +1,19 @@
 import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTreatmentCandidate } from "@/src/knowledge/pilot/pilot-knowledge";
+import type { WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 
 export type PilotRole = "general" | "coach" | "rehab";
 
+export type StructuredLocationInput = {
+  side?: string;
+  areaId?: string;
+  location?: string;
+  regionId?: string;
+};
+
 export type PilotIntakeInput = {
   userRole?: PilotRole | "";
+  /** 新流程唯一权限来源；userRole 仅用于读取旧快照和兼容外部调用。 */
+  workflowProfile?: Pick<WorkflowProfile, "operationTarget" | "isStudy" | "canRecord">;
   regionIds: PilotRegionId[];
   locations: string[];
   onset?: string;
@@ -19,6 +29,7 @@ export type PilotIntakeInput = {
   swellingLocation?: string;
   tendernessLocation?: string;
   sensoryLocation?: string;
+  sensoryLocations?: StructuredLocationInput[];
   goal?: number;
 };
 
@@ -64,8 +75,11 @@ export const PILOT_ASSESSMENT_BUDGET: Record<PilotRole, number> = {
 };
 
 function relationSources(input: PilotIntakeInput) {
+  const structuredSensoryLocation = (input.sensoryLocations ?? [])
+    .map((item) => [item.location, item.areaId, item.regionId, item.side].filter(Boolean).join(" "))
+    .join(" ");
   return {
-    location: [...input.locations, input.swellingLocation, input.tendernessLocation, input.sensoryLocation].filter(Boolean).join(" "),
+    location: [...input.locations, input.swellingLocation, input.tendernessLocation, input.sensoryLocation, structuredSensoryLocation].filter(Boolean).join(" "),
     symptom: [input.symptomType, ...input.symptoms].filter(Boolean).join(" "),
     task: [input.mechanism, ...input.provocationTypes, input.currentTask].filter(Boolean).join(" "),
   };
@@ -115,7 +129,7 @@ export function buildPilotIntakeQuestionQueue(input: PilotIntakeInput): PilotQue
   const questions: PilotQuestion[] = [];
   const push = (question: PilotQuestion, missing: boolean) => { if (missing) questions.push(question); };
 
-  push({ id: "role", title: "这次由谁完成检查？", reason: "决定动作说明和可用检查", skippable: false, priority: 100 }, !input.userRole);
+  push({ id: "role", title: "这次由谁完成检查？", reason: "决定动作说明和可用检查", skippable: false, priority: 100 }, !input.workflowProfile && !input.userRole);
   push({ id: "locations", title: "哪里最不舒服？", reason: "确定首个问题和相邻功能模块", skippable: false, priority: 98 }, input.locations.length === 0);
   push({ id: "onset", title: "这种情况出现多久了？", reason: "区分急性反应和后续恢复", skippable: true, priority: 88 }, !input.onset);
   push({ id: "mechanism", title: "它是怎么出现的？", reason: "只在会改变安全或评估顺序时使用", skippable: true, priority: 86 }, !input.mechanism);
@@ -124,7 +138,7 @@ export function buildPilotIntakeQuestionQueue(input: PilotIntakeInput): PilotQue
   push({ id: "provocation", title: "什么情况下最容易出现？", reason: "建立可重复的检查或允许没有固定动作", skippable: true, priority: 76 }, !input.provocationConfirmed && !input.noFixedTask);
   push({ id: "swelling-location", title: "具体哪里肿？", reason: "后续按同一位置跟踪变化", skippable: true, priority: 74 }, input.symptoms.includes("肿胀或淤青") && !input.swellingLocation);
   push({ id: "tenderness-location", title: "具体哪里按压不舒服？", reason: "记录位置，不要求当场消失", skippable: true, priority: 72 }, input.symptoms.includes("按压痛") && !input.tendernessLocation);
-  push({ id: "sensory-location", title: "麻或电感到哪里？", reason: "决定是否需要专业确认", skippable: true, priority: 96 }, input.symptoms.includes("麻、电或感觉变化") && !input.sensoryLocation);
+  push({ id: "sensory-location", title: "麻或电感到哪里？", reason: "决定是否需要专业确认", skippable: true, priority: 96 }, input.symptoms.includes("麻、电或感觉变化") && !input.sensoryLocation && !(input.sensoryLocations?.length));
   push({ id: "score", title: "现在有多不舒服？", reason: "只有存在可重复症状时用于前后比较", skippable: true, priority: 64 }, Boolean(input.currentTask && !input.noFixedTask && !input.baselineScoreConfirmed));
   push({ id: "goal", title: "这次最希望恢复到什么程度？", reason: "决定训练阶段，不要求说出某个具体动作", skippable: false, priority: 60 }, !input.goal);
 
@@ -189,7 +203,9 @@ function locationPriority(id: string, input: PilotIntakeInput) {
 }
 
 export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: string[]) {
-  const role = input.userRole || "general";
+  const role: PilotRole = input.workflowProfile
+    ? input.workflowProfile.operationTarget === "other" && input.workflowProfile.canRecord ? "rehab" : "general"
+    : input.userRole || "general";
   const relationEntries = matchPilotRelations(input);
   const locationSource = input.locations.join(" ");
   const localToeOnly = /足趾|大拇趾|小拇趾|足趾根部/.test(locationSource)

@@ -15,6 +15,7 @@ export type { AdverseResolution, AdverseResponseEvent, AdverseSource, AdverseTim
 export { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
 export { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
 export { motionNeedsPassive } from "@/src/domain/rehab/assessment/motion-assessment-core";
+export { parseRangeAngle } from "@/src/domain/rehab/assessment/range-measurement-core";
 export { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessment-record-complete-core";
 export type { BilateralPriorityResolution, BilateralSide, BilateralTrainingGate } from "@/src/domain/rehab/shared/bilateral-flow-core";
 export { bilateralCheckpointOptions } from "@/src/domain/rehab/shared/bilateral-flow-core";

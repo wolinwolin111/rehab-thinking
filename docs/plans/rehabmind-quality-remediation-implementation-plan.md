@@ -137,18 +137,18 @@ Node、npm、Wrangler 版本
 
 ### TEST-03：把随机状态测试改为真实页面探索
 
-**目标**：保留现有纯状态随机测试，但不再把它当作用户流程覆盖；新增真实页面有种子探索器。
+**目标**：保留现有纯规则随机测试，但不再把它当作用户流程覆盖；新增由固定 seed 驱动真实 RehabMind 工作台的页面探索器。探索器只操作真实可见控件，不复制一套简化业务模型。
 
 **主要位置**：`tests/workflow/random-state-sequence.test.mjs`；新建 `tests/browser/exploration/`。
 
 **实施步骤**：
 
-1. 将现有测试更名或报告为 `model-state-fuzz`，明确它只验证简化模型。
-2. 页面探索器只读取当前可见且可操作的语义控件，形成合法动作集合。
+1. 将现有测试更名或报告为 `model-state-fuzz`，明确它只验证 domain/workflow 规则和状态不变量，不计入页面覆盖。
+2. 页面探索器只读取当前可见且可操作的语义控件，形成合法动作集合；动作执行必须通过真实 locator、键盘、触摸/鼠标和页面可见的保存/刷新入口。
 3. 使用可复现 PRNG，输入 `seed`、最大步骤数、操作权重和场景起点。
 4. 对返回、修改、无法完成、未知、无变化、加重、双击、刷新、断网和两窗口操作提高权重。
-5. 每一步执行通用不变量：阶段唯一、必填不跳过、无过期卡片、处理有依据、处理后有复测或停止原因、版本不回退、记录次数不重复、页面有明确出口。
-6. 失败保存 seed、每步 DOM 摘要和操作轨迹；提供 `npm run test:explore -- --seed=<n>` 单次重放。
+5. 每一步执行通用不变量：阶段唯一、必填不跳过、无过期卡片、处理有依据、处理后有复测或停止原因、版本不回退、记录次数不重复、页面有明确出口；业务判定读取页面可见结果和正式保存快照，不调用内部简化状态替代页面行为。
+6. 失败必须保存 seed、逐步操作轨迹、当前页面截图、Playwright trace、控制台/网络错误和保存快照；提供 `npm run test:explore -- --seed=<n>` 单次重放。
 7. 每个稳定失败种子转成固定场景，不能永久只靠随机命中。
 
 **验收**：临时植入“删除处理后复测”和“修改后不清旧计划”两种错误，探索器应在限定种子集内报错；失败可一键重放。
@@ -259,11 +259,11 @@ Node、npm、Wrangler 版本
 
 **实施步骤**：
 
-1. 主门禁使用 Edge/Chromium；Firefox 至少完成一个普通用户完整闭环和一个表单/弹层冒烟。
-2. 移动端使用 Chromium 完成教程、主诉、动作选择、评估、保存恢复和反馈关键路径。
-3. 浏览器项目共享场景合同，不复制业务脚本。
-4. 浏览器差异必须记录为产品缺陷或明确范围限制，不能只重试隐藏。
-5. 覆盖矩阵逐浏览器记录最近版本和证据日期。
+1. 桌面 Edge/Chromium 保留正式基线；Firefox 只运行高风险流程，至少包括安全停止、加重、保存/恢复和弹层焦点，不把 Firefox 的有限运行写成完整兼容性声明。
+2. 本轮移动端是“移动预览”而非正式发布硬门槛：Pixel 5/Chromium 和 iPhone 13/WebKit 分开运行，保留输入、人体图、滑条、保存刷新恢复、安全停止、双侧、加重、训练反馈、总结、弹层焦点和横向溢出检查。
+3. 浏览器项目共享场景合同，不复制临床组合；组合逻辑由 domain/workflow 测试负责。
+4. 浏览器差异必须记录为产品缺陷或明确范围限制，不能只重试隐藏；预览结果单独报告，不覆盖桌面基线结论。
+5. 覆盖矩阵逐浏览器记录最近版本、视口/设备、证据类型、构建版本、截图/trace/快照路径和最后验证时间。
 
 **验收**：Firefox 不再只停留在第一页；移动视口无关键控件遮挡或不可达。
 
@@ -273,9 +273,9 @@ Node、npm、Wrangler 版本
 
 **实施步骤**：
 
-1. 建立机器可读 `tests/workflow/scenario-registry.json`，字段包含 scenarioId、规则 ID、优先级、evidenceType、脚本、浏览器和负责模块。
-2. 测试报告输出每个 scenarioId 的结果、commit、环境、开始/结束时间和证据路径。
-3. 编写校验脚本：重复 ID、缺脚本、P0 无 E2E、无反向断言、矩阵状态高于证据时失败。
+1. 建立机器可读 `tests/workflow/scenario-registry.json`，字段包含 scenarioId、规则 ID、优先级、evidenceType（`rule|workflow|e2e|preview|manual`）、脚本、浏览器、负责模块和是否 release gate。
+2. 测试报告输出每个 scenarioId 的结果、commit/buildId、环境、开始/结束时间、浏览器/视口和证据路径；失败必须能关联截图、trace、操作轨迹和快照。
+3. 编写校验脚本：重复 ID、缺脚本、P0 无 E2E、页面场景无反向断言、移动预览冒充桌面门禁、矩阵状态高于证据和缺少当前构建时失败。
 4. 文档只引用生成摘要；历史数字保留在历史执行记录，不作为当前通过状态。
 
 **验收**：删除一个 P0 脚本或改错 scenarioId，矩阵校验必须失败。
@@ -320,7 +320,7 @@ Node、npm、Wrangler 版本
 
 **主要位置**：`src/features/rehabmind/components/workbench/rehabmind-workbench.tsx` 的恢复与同步队列、`src/infrastructure/pilot/api/case-client.ts`、快照表。
 
-**目标数据模型**：本地保存信封至少包含 `serverRevision`、`lastSyncedHash`、`localContentHash`、`dirty`、`pendingEventId`、`lastLocalSavedAt`。
+**目标数据模型**：本地保存信封至少包含 `serverRevision`、`lastSyncedHash`、`localContentHash`、`dirty`、`pendingEventId`、`lastLocalSavedAt`、`tabId` 和 `status`。状态与用户文案必须区分 `local_only/dirty/syncing/synced/failed/conflict/deleting/deleted`。
 
 **实施步骤**：
 
@@ -329,7 +329,7 @@ Node、npm、Wrangler 版本
 3. 每次本地写入先更新 `localContentHash` 和 `dirty=true`；服务器确认后更新 `serverRevision/lastSyncedHash` 并清除 dirty。
 4. 恢复规则固定为：本地干净且远端更新则用远端；本地 dirty 且远端未前进则保留本地并续传；本地 dirty 且远端已前进则进入冲突；内容 hash 相同可自动合并元数据。
 5. 删除简单的 `remote.revision >= localRevision` 覆盖判断。
-6. 冲突前不得修改本地快照；将远端副本单独保存在冲突上下文。
+6. 冲突前不得修改本地快照；将远端副本单独保存在冲突上下文。多标签页通过 BroadcastChannel/storage event 或等价机制广播 revision/hash，并在提交前再次校验远端 revision，禁止最后写入者静默获胜。
 
 **测试**：等 revision 同内容、等 revision 本地更新、远端高 revision 本地干净、远端高 revision 本地 dirty、网络失败后恢复、两窗口保存。
 
@@ -411,7 +411,7 @@ Node、npm、Wrangler 版本
 5. 冲突期间禁用普通保存，避免重复 409 循环。
 6. 冲突完成后更新 hash、revision、dirty 和 UI 状态。
 
-**测试**：两个窗口分别修改、重复冲突、远端在对话框期间再次变化、取消后本地仍在、两种选择的事件记录。
+**测试**：两个窗口/标签页分别修改、重复冲突、远端在对话框期间再次变化、取消后本地仍在、两种选择的事件记录、冲突解决前关闭页面和恢复冲突备份。
 
 **验收**：用户每个选择的后果明确；没有静默覆盖和死循环。
 
@@ -424,12 +424,12 @@ Node、npm、Wrangler 版本
 1. 抽取 `usePilotPersistenceController`，页面只提交结构化状态和业务事件。
 2. 本地状态变化后 500 至 1000ms 防抖保存草稿；关键导航前立即 flush。
 3. 服务器在完成字段、切换阶段、处理/复测提交、训练反馈和手动保存时同步；连续变化可 2 至 3 秒防抖合并快照，但事件不能被错误吞并。
-4. 保存状态机统一为 `local-saving/local-saved/syncing/synced/offline/conflict/error`。
+4. 保存状态机统一为 `local-saving/local-saved/syncing/synced/offline/conflict/error`，并映射到设计层的 `local_only/dirty/syncing/synced/failed/conflict`；请求超时只能停留在未知/待重试，不得标成 `synced`。
 5. 文案准确区分“已保存到本机”“已同步服务器”“等待连接”“发生冲突”。
-6. 页面刷新先恢复最后成功本地草稿，再按 DATA-01 规则与服务器协调。
+6. 页面刷新先恢复最后成功本地草稿，再按 DATA-01 规则与服务器协调；服务器保存成功但本机副本失败时明确显示两者状态，不得反向伪装成离线或已完全保存。
 7. `beforeunload` 只做尽力提示，不把它当作唯一保存机制。
 
-**测试**：输入后刷新、阶段切换中刷新、断网填写、恢复网络、服务器超时、冲突、浏览器禁止存储。
+**测试**：输入后刷新、阶段切换中刷新、断网填写、恢复网络、服务器超时/响应丢失、冲突、两标签页、浏览器禁止 IndexedDB 与 localStorage、重复重试和失败后导出。
 
 **验收**：页面关于保存的每句承诺均可由实际场景证明；不再只在用户点击最终保存时留存。
 

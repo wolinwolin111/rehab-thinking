@@ -1,12 +1,14 @@
 import {
   assertPilotEventType,
   assertPilotReleaseVersions,
+  PILOT_EVENT_SCHEMA_VERSION,
   PilotCaseConflictError,
   PilotCaseNotFoundError,
   PilotCaseUnauthorizedError,
   PilotCaseValidationError,
   serializePilotPayload,
   type PilotCaseEventType,
+  type PilotClinicalEventEnvelope,
   type PilotCaseRecord,
   type PilotCaseRepository,
   type PilotReleaseVersions,
@@ -63,6 +65,7 @@ export type SavePilotCaseProgressInput = {
   expectedRevision: number;
   requestId?: string;
   sessionId?: string;
+  problemThreadId?: string;
   snapshot: unknown;
   eventType: PilotCaseEventType;
   eventPayload: unknown;
@@ -117,6 +120,15 @@ function assertAccessToken(token: string) {
 function assertRevision(revision: number) {
   if (!Number.isInteger(revision) || revision < 0) {
     throw new PilotCaseValidationError("expectedRevision must be a non-negative integer");
+  }
+}
+
+function assertOpenProductMode(snapshot: unknown) {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return;
+  const intake = (snapshot as Record<string, unknown>).intake;
+  if (!intake || typeof intake !== "object" || Array.isArray(intake)) return;
+  if ((intake as Record<string, unknown>).operationTarget === "study") {
+    throw new PilotCaseValidationError("案例学习模式已关闭，不能创建或更新真实康复案例");
   }
 }
 
@@ -215,15 +227,34 @@ export class PilotCaseService {
     if (existing) return this.replayExistingCase(existing, accessToken);
     const caseId = this.createId();
     const publicCode = testContext ? `TEST-${this.createPublicCode()}` : this.createPublicCode();
-    const initialSnapshot = input.initialSnapshot && typeof input.initialSnapshot === "object"
+    const rawInitialSnapshot = input.initialSnapshot && typeof input.initialSnapshot === "object"
       ? input.initialSnapshot as Record<string, unknown>
       : {};
+    const problemThreadId = typeof rawInitialSnapshot.problemThreadId === "string" && rawInitialSnapshot.problemThreadId.trim()
+      ? rawInitialSnapshot.problemThreadId
+      : `thread-${caseId}`;
+    const sessionId = typeof rawInitialSnapshot.sessionId === "string" && rawInitialSnapshot.sessionId.trim()
+      ? rawInitialSnapshot.sessionId
+      : `session-${caseId}-1`;
+    const initialSnapshot = {
+      ...rawInitialSnapshot,
+      problemThreadId,
+      sessionId,
+      sessionStatus: rawInitialSnapshot.sessionStatus ?? "draft",
+    };
+    assertOpenProductMode(initialSnapshot);
     const snapshotPayload = serializePilotPayload(
       assertAndStampPilotSnapshotSchemaVersion(attachPilotConsent(initialSnapshot, consent), "initialSnapshot", { requireConsent: true }),
       "initialSnapshot",
     );
     const eventPayload = JSON.stringify({
-      source: "case_creation",
+      eventSchemaVersion: PILOT_EVENT_SCHEMA_VERSION,
+      caseId,
+      problemThreadId,
+      sessionId,
+      occurredAt: now,
+      source: "system",
+      event: "case_creation",
       sourceChannel: source.channel,
       sourceDetail: source.detail,
       firstUseFlowId,
@@ -269,6 +300,9 @@ export class PilotCaseService {
           payload: eventPayload,
           source: "system",
           occurredAt: now,
+          eventSchemaVersion: PILOT_EVENT_SCHEMA_VERSION,
+          problemThreadId,
+          sessionId,
           ...versions,
         },
       });
@@ -297,7 +331,23 @@ export class PilotCaseService {
     const versions = this.dependencies.versions;
     const now = this.now();
     const eventId = input.eventId ?? this.createId();
-    const validatedSnapshot = assertAndStampPilotSnapshotSchemaVersion(input.snapshot, "snapshot", { requireConsent: true });
+    // 事件编号是幂等键。同一请求重放时必须复用首次事件的发生时间，
+    // 否则 envelope 仅因当前时间变化就会被仓储误判为“同 ID 不同内容”。
+    // 其他字段仍按本次请求重新构造；若请求内容被篡改，仓储会继续拒绝冲突。
+    const existingEvent = await this.dependencies.repository.getEventById(eventId);
+    const eventOccurredAt = existingEvent?.occurredAt ?? now;
+    const rawSnapshot = input.snapshot && typeof input.snapshot === "object" && !Array.isArray(input.snapshot)
+      ? input.snapshot as Record<string, unknown>
+      : {};
+    const requestedProblemThreadId = input.problemThreadId
+      ?? (typeof rawSnapshot.problemThreadId === "string" ? rawSnapshot.problemThreadId : "");
+    const problemThreadId = requestedProblemThreadId.trim() || `thread-${caseRecord.id}`;
+    const requestedSessionId = input.sessionId
+      ?? (typeof rawSnapshot.sessionId === "string" ? rawSnapshot.sessionId : "");
+    const sessionId = requestedSessionId.trim() || `session-${caseRecord.id}-${Math.max(1, input.sessionCount ?? 1)}`;
+    const normalizedSnapshot = { ...rawSnapshot, problemThreadId, sessionId };
+    assertOpenProductMode(normalizedSnapshot);
+    const validatedSnapshot = assertAndStampPilotSnapshotSchemaVersion(normalizedSnapshot, "snapshot", { requireConsent: true });
     const snapshotPayload = serializePilotPayload(validatedSnapshot, "snapshot");
     const rawEventPayload = input.eventPayload && typeof input.eventPayload === "object" && !Array.isArray(input.eventPayload)
       ? input.eventPayload as Record<string, unknown>
@@ -324,16 +374,38 @@ export class PilotCaseService {
         sessionId: input.sessionId ?? `session-${input.sessionCount ?? 0}`,
       }));
     }
-    const eventPayload = serializePilotPayload(
-      input.requestId && input.sessionId && rawEventPayload && typeof rawEventPayload === "object"
-        ? {
+    const eventEnvelope: PilotClinicalEventEnvelope | null = rawEventPayload && typeof rawEventPayload === "object"
+      ? {
+          eventSchemaVersion: PILOT_EVENT_SCHEMA_VERSION,
+          caseId: caseRecord.id,
+          problemThreadId,
+          sessionId,
+          occurredAt: eventOccurredAt,
+          source: "user",
+          payload: {
             ...rawEventPayload,
             technical: {
-              requestId: input.requestId,
+              requestId: input.requestId ?? eventId,
               caseId: input.caseId,
-              sessionId: input.sessionId,
+              sessionId,
+              problemThreadId,
               baseRevision: input.expectedRevision,
               invariantCodes,
+            },
+          },
+        }
+      : null;
+    const eventPayload = serializePilotPayload(
+      eventEnvelope
+        ? {
+            ...eventEnvelope.payload,
+            envelope: {
+              eventSchemaVersion: eventEnvelope.eventSchemaVersion,
+              caseId: eventEnvelope.caseId,
+              problemThreadId: eventEnvelope.problemThreadId,
+              sessionId: eventEnvelope.sessionId,
+              occurredAt: eventEnvelope.occurredAt,
+              source: eventEnvelope.source,
             },
           }
         : rawEventPayload,
@@ -355,7 +427,10 @@ export class PilotCaseService {
           type: input.eventType,
           payload: eventPayload,
           source: "user",
-          occurredAt: now,
+          occurredAt: eventOccurredAt,
+          eventSchemaVersion: PILOT_EVENT_SCHEMA_VERSION,
+          problemThreadId,
+          sessionId,
           ...versions,
         },
         patch: {

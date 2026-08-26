@@ -56,7 +56,9 @@ import {
 import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
-  const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments } = ctx;
+  const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
+  const candidateAccess = workflowProfile ?? intake.userRole;
+  const canRunProfessionalUnit = workflowProfile ? workflowProfile.operationTarget === "other" : intake.userRole === "rehab";
   const SHARED_TENSION_ASSESSMENT_ID = ctx.sharedTensionId;
   const assessmentTitle = ctx.assessmentTitle;
   const sharedTensionLocationsForMotion = ctx.sharedTensionLocationsForMotion;
@@ -130,9 +132,9 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           ? { ...candidate, retestIds: Array.from(new Set([...(candidate.retestIds ?? []), ...motionIds])) }
           : candidate;
       })
-      .filter((candidate) => candidateIsAvailable(candidate, intake.userRole))
+      .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => !pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)
-        && unit.requiresProfessional && intake.userRole !== "rehab"))
+        && unit.requiresProfessional && !canRunProfessionalUnit))
       .filter((candidate) => !pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)
         && unit.requiresPriorMuscleTrial && !relatedMuscleTrialCompleted(unit)))
       .filter((candidate) => tissuePathway.id !== "bone-stress-suspected" || candidate.type !== "muscle")
@@ -307,7 +309,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     const sourceBackedCandidates = allCandidates.filter((candidate) => pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)));
     const orderedChiefCandidates = [...directTensionCandidates, ...sourceBackedCandidates, ...matchedCandidateGroups.flatMap((group) => group.candidates), ...allCandidates.filter((candidate) => candidate.tags.some((tag) => supportTags.has(tag)))]
       .filter((candidate) => region.id !== "knee" || kneeCandidateAllowedInTreatmentQueue(candidate.id, kneeDecision))
-      .filter((candidate) => candidateIsAvailable(candidate, intake.userRole))
+      .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => canMobilizeJoint || (candidate.type !== "joint" && candidate.type !== "neural"))
       .filter((candidate) => candidateAllowedInSharpPath(candidate, conservativeSharpPath))
       // 现场处理只保留能立刻复测的松解、关节或专业神经处理；肿胀单独跟踪，控制训练放到训练阶段。

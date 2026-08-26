@@ -5,11 +5,11 @@ import type { SavedDemoRecord } from "@/src/features/rehabmind/components/workbe
 
 function SessionRows({ record }: { record: SavedDemoRecord }) {
   if (!record.sessionHistory?.length) {
-    return <div className="rm-record-session-row"><span>第{record.sessionCount || 1}次康复</span><b>进行中</b></div>;
+    return <div className="rm-record-session-row"><span>第{record.sessionCount || 1}次康复</span><b>{record.sessionStatus === "draft" ? "草稿" : "进行中"}</b></div>;
   }
-  return <div className="rm-record-session-rows">{[...record.sessionHistory].reverse().map((session) => <div className="rm-record-session-row" key={session.sessionNumber}>
+  return <div className="rm-record-session-rows">{[...record.sessionHistory].reverse().map((session) => <div className="rm-record-session-row" key={session.sessionId ?? session.sessionNumber}>
     <span>第{session.sessionNumber}次康复</span>
-    <b>{typeof session.startedScore === "number" && typeof session.endingScore === "number"
+    <b>{session.status === "draft" ? "草稿" : typeof session.startedScore === "number" && typeof session.endingScore === "number"
       ? `${session.startedScore} → ${session.endingScore}`
       : typeof session.endingScore === "number" ? `${session.endingScore}/10` : "已记录"}</b>
   </div>)}</div>;
@@ -50,13 +50,13 @@ export function RehabRecordsPage({
           {record.pilotPublicCode ? <button type="button" onClick={() => onCopyCaseCode(record)}>复制</button> : null}
         </header>
         <section className="rm-record-case-summary">
-          <span>{record.status} · 已记录 {record.sessionHistory?.length || record.sessionCount} 次</span>
+          <span>{record.sessionStatus === "draft" ? "草稿" : record.status} · 已记录 {record.sessionHistory?.length || record.sessionCount} 次</span>
           <strong>{record.complaint}</strong>
           <small>{record.region} · 恢复目标：{record.goal}</small>
         </section>
         <SessionRows record={record} />
         <footer>
-          <button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.status === "等待影像" ? "补充影像" : "继续康复"}</button>
+          <button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.sessionStatus === "draft" ? "继续草稿" : record.status === "等待影像" ? "补充影像" : "继续康复"}</button>
           <button type="button" className="rm-record-delete" onClick={() => onDelete(record)}>删除案例</button>
         </footer>
       </article>)}</div> : <section className="rm-record-empty"><strong>还没有康复记录</strong><p>创建案例后，可以从这里继续康复并查看每次恢复情况。</p></section>}

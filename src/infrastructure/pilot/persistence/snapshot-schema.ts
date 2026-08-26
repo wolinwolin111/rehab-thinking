@@ -82,6 +82,11 @@ function validateIntake(value: unknown): string | null {
   if (value.goal !== undefined && (!Number.isFinite(value.goal) || (value.goal as number) < 0)) return "snapshot intake.goal is invalid";
   if (value.baselineScore !== undefined && !isScore(value.baselineScore)) return "snapshot intake.baselineScore is invalid";
   if (value.capabilities !== undefined && !isObject(value.capabilities)) return "snapshot intake.capabilities is invalid";
+  if (value.medicalGuidance !== undefined && !isObject(value.medicalGuidance)) return "snapshot intake.medicalGuidance is invalid";
+  if (isObject(value.medicalGuidance)) {
+    if (typeof value.medicalGuidance.reviewedByClinician !== "boolean") return "snapshot intake.medicalGuidance.reviewedByClinician is invalid";
+    if (!["none-reported", "restricted", "cleared", "unknown"].includes(String(value.medicalGuidance.restrictionState))) return "snapshot intake.medicalGuidance.restrictionState is invalid";
+  }
   if (value.actionAnalysis !== undefined && value.actionAnalysis !== null && !isObject(value.actionAnalysis)) return "snapshot intake.actionAnalysis is invalid";
   return null;
 }
@@ -97,8 +102,113 @@ function validateAssessmentResults(value: unknown): string | null {
     for (const key of ["symptomScore", "passiveSymptomScore", "pairedStrengthScore"] as const) {
       if (raw[key] !== undefined && !isScore(raw[key])) return `snapshot assessmentResults.${id}.${key} is invalid`;
     }
+    if (raw.passiveMeasuredAngle !== undefined && typeof raw.passiveMeasuredAngle !== "string") return `snapshot assessmentResults.${id}.passiveMeasuredAngle is invalid`;
+    if (raw.passiveMeasuredAngleDeg !== undefined && (typeof raw.passiveMeasuredAngleDeg !== "number" || !Number.isFinite(raw.passiveMeasuredAngleDeg) || raw.passiveMeasuredAngleDeg < 0 || raw.passiveMeasuredAngleDeg > 360)) return `snapshot assessmentResults.${id}.passiveMeasuredAngleDeg is invalid`;
+    if (raw.passiveRangeMeasurement !== undefined) {
+      if (!isObject(raw.passiveRangeMeasurement)) return `snapshot assessmentResults.${id}.passiveRangeMeasurement is invalid`;
+      for (const key of ["measurementId", "actionId", "side", "mode", "method", "recordedAt"] as const) {
+        if (typeof raw.passiveRangeMeasurement[key] !== "string" || !raw.passiveRangeMeasurement[key]) return `snapshot assessmentResults.${id}.passiveRangeMeasurement.${key} is invalid`;
+      }
+      if (!["active", "passive"].includes(String(raw.passiveRangeMeasurement.mode))) return `snapshot assessmentResults.${id}.passiveRangeMeasurement.mode is invalid`;
+      if (!["estimated", "goniometer", "other"].includes(String(raw.passiveRangeMeasurement.method))) return `snapshot assessmentResults.${id}.passiveRangeMeasurement.method is invalid`;
+      if (typeof raw.passiveRangeMeasurement.valueDeg !== "number" || !Number.isFinite(raw.passiveRangeMeasurement.valueDeg) || raw.passiveRangeMeasurement.valueDeg < 0 || raw.passiveRangeMeasurement.valueDeg > 360) return `snapshot assessmentResults.${id}.passiveRangeMeasurement.valueDeg is invalid`;
+    }
     for (const key of ["compensations", "tensionLocations", "discomfortLocations", "passiveDiscomfortLocations", "pairedStrengthLocations"] as const) {
       if (raw[key] !== undefined && !Array.isArray(raw[key])) return `snapshot assessmentResults.${id}.${key} is invalid`;
+    }
+  }
+  return null;
+}
+
+function validateBodyMarks(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "snapshot bodyMarks is invalid";
+  for (const [index, raw] of value.entries()) {
+    if (!isObject(raw)) return `snapshot bodyMarks[${index}] is invalid`;
+    for (const key of ["markId", "caseId", "problemThreadId", "sessionId", "symptomKind", "side", "regionId", "areaId", "surface", "humanLabel", "source", "status", "createdAt", "coordinateCompleteness"] as const) {
+      if (typeof raw[key] !== "string" || !raw[key]) return `snapshot bodyMarks[${index}].${key} is invalid`;
+    }
+    if (!["complaint", "swelling", "bruise", "tenderness", "sensory"].includes(String(raw.symptomKind))) return `snapshot bodyMarks[${index}].symptomKind is invalid`;
+    if (!["left", "right", "midline", "bilateral"].includes(String(raw.side))) return `snapshot bodyMarks[${index}].side is invalid`;
+    if (!["suggested", "confirmed", "invalidated"].includes(String(raw.status))) return `snapshot bodyMarks[${index}].status is invalid`;
+    if (!["point", "zone-only"].includes(String(raw.coordinateCompleteness))) return `snapshot bodyMarks[${index}].coordinateCompleteness is invalid`;
+    for (const key of ["xNormalized", "yNormalized"] as const) {
+      if (raw[key] !== undefined && (typeof raw[key] !== "number" || !Number.isFinite(raw[key]) || raw[key] < 0 || raw[key] > 1)) return `snapshot bodyMarks[${index}].${key} is invalid`;
+    }
+  }
+  return null;
+}
+
+function validateScoreRecords(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "snapshot scoreRecords is invalid";
+  const states = ["unselected", "confirmed", "superseded", "not-applicable"];
+  const stages = ["intake", "assessment", "treatment-retest", "training-retest", "followup"];
+  const sides = ["left", "right", "bilateral", "midline"];
+  for (const [index, raw] of value.entries()) {
+    if (!isObject(raw)) return `snapshot scoreRecords[${index}] is invalid`;
+    for (const key of ["scoreRecordId", "caseId", "problemThreadId", "sessionId", "stage", "context", "scaleVersion", "source", "recordedAt"] as const) {
+      if (typeof raw[key] !== "string" || !raw[key]) return `snapshot scoreRecords[${index}].${key} is invalid`;
+    }
+    if (!isNonNegativeInteger(raw.assessmentRevision)) return `snapshot scoreRecords[${index}].assessmentRevision is invalid`;
+    if (!states.includes(String(raw.scoreState))) return `snapshot scoreRecords[${index}].scoreState is invalid`;
+    if (!stages.includes(String(raw.stage))) return `snapshot scoreRecords[${index}].stage is invalid`;
+    if (raw.side !== undefined && !sides.includes(String(raw.side))) return `snapshot scoreRecords[${index}].side is invalid`;
+    if (raw.value !== undefined && !isScore(raw.value)) return `snapshot scoreRecords[${index}].value is invalid`;
+    if (raw.scoreState === "confirmed" && !isScore(raw.value)) return `snapshot scoreRecords[${index}].value is required for confirmed score`;
+    if (raw.scoreState === "unselected" && raw.value !== undefined) return `snapshot scoreRecords[${index}].value must be absent for unselected score`;
+    if (raw.supersedesScoreRecordId !== undefined && (typeof raw.supersedesScoreRecordId !== "string" || !raw.supersedesScoreRecordId)) return `snapshot scoreRecords[${index}].supersedesScoreRecordId is invalid`;
+    if (raw.scaleVersion !== "nrs-0-10-v1") return `snapshot scoreRecords[${index}].scaleVersion is invalid`;
+    if (!["user", "professional", "legacy-migrated"].includes(String(raw.source))) return `snapshot scoreRecords[${index}].source is invalid`;
+  }
+  return null;
+}
+
+function validateSpecialTestRecords(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "snapshot specialTestRecords is invalid";
+  const results = ["negative", "positive", "painful-indeterminate", "not-tested", "stopped"];
+  const familiar = ["yes", "no", "unsure", "not-applicable"];
+  const stopReasons = ["pain", "fear", "cannot-perform", "safety-signal", "equipment", "other"];
+  for (const [index, raw] of value.entries()) {
+    if (!isObject(raw)) return `snapshot specialTestRecords[${index}] is invalid`;
+    for (const key of ["specialTestRecordId", "assessmentId", "capabilitySnapshotId", "operationTarget", "result", "familiarSymptom", "recordedAt"] as const) {
+      if (typeof raw[key] !== "string" || !raw[key]) return `snapshot specialTestRecords[${index}].${key} is invalid`;
+    }
+    if (!isObject(raw.triggerSnapshot) || typeof raw.triggerSnapshot.ruleId !== "string" || !isStringArray(raw.triggerSnapshot.matchedEvidenceIds)) return `snapshot specialTestRecords[${index}].triggerSnapshot is invalid`;
+    if (!["self", "other", "study"].includes(String(raw.operationTarget))) return `snapshot specialTestRecords[${index}].operationTarget is invalid`;
+    if (!results.includes(String(raw.result))) return `snapshot specialTestRecords[${index}].result is invalid`;
+    if (!familiar.includes(String(raw.familiarSymptom))) return `snapshot specialTestRecords[${index}].familiarSymptom is invalid`;
+    if (raw.stopReason !== undefined && !stopReasons.includes(String(raw.stopReason))) return `snapshot specialTestRecords[${index}].stopReason is invalid`;
+    if (raw.note !== undefined && typeof raw.note !== "string") return `snapshot specialTestRecords[${index}].note is invalid`;
+  }
+  return null;
+}
+
+function validateProfessionalNoteRecords(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "snapshot professionalNoteRecords is invalid";
+  for (const [index, raw] of value.entries()) {
+    if (!isObject(raw)) return `snapshot professionalNoteRecords[${index}] is invalid`;
+    for (const key of ["noteId", "caseId", "problemThreadId", "sessionId", "authorType", "text", "createdAt", "updatedAt"] as const) {
+      if (typeof raw[key] !== "string" || !raw[key]) return `snapshot professionalNoteRecords[${index}].${key} is invalid`;
+    }
+    if (!["professional", "owner"].includes(String(raw.authorType))) return `snapshot professionalNoteRecords[${index}].authorType is invalid`;
+    if (raw.supersedesNoteId !== undefined && (typeof raw.supersedesNoteId !== "string" || !raw.supersedesNoteId)) return `snapshot professionalNoteRecords[${index}].supersedesNoteId is invalid`;
+  }
+  return null;
+}
+
+function validateDecisionTraces(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "snapshot decisionTraces is invalid";
+  for (const [index, raw] of value.entries()) {
+    if (!isObject(raw)) return `snapshot decisionTraces[${index}] is invalid`;
+    for (const key of ["traceId", "caseId", "problemThreadId", "sessionId", "knowledgeVersion", "decisionVersion", "recordedAt"] as const) {
+      if (typeof raw[key] !== "string" || !raw[key]) return `snapshot decisionTraces[${index}].${key} is invalid`;
+    }
+    for (const key of ["findingIds", "relationIds", "ruleIds", "sourceCaseIds"] as const) {
+      if (!isStringArray(raw[key])) return `snapshot decisionTraces[${index}].${key} is invalid`;
     }
   }
   return null;
@@ -120,6 +230,9 @@ function validateTrialRecords(value: unknown, label: "trialRecords" | "followupT
     for (const key of ["beforeScore", "afterScore"] as const) {
       if (!isScore(raw[key])) return `snapshot ${label}[${index}].${key} is invalid`;
     }
+    for (const key of ["decisionTraceId", "beforeScoreRecordId", "afterScoreRecordId"] as const) {
+      if (raw[key] !== undefined && (typeof raw[key] !== "string" || !raw[key])) return `snapshot ${label}[${index}].${key} is invalid`;
+    }
     if (label === "trialRecords" && !["smoother", "same", "worse"].includes(String(raw.movement))) {
       return `snapshot ${label}[${index}].movement is invalid`;
     }
@@ -133,18 +246,31 @@ function validateSnapshotCollections(value: SnapshotObject): string | null {
   const trialError = validateTrialRecords(value.trialRecords, "trialRecords")
     ?? validateTrialRecords(value.followupTrialRecords, "followupTrialRecords");
   if (trialError) return trialError;
+  const scoreError = validateScoreRecords(value.scoreRecords);
+  if (scoreError) return scoreError;
+  const specialTestError = validateSpecialTestRecords(value.specialTestRecords);
+  if (specialTestError) return specialTestError;
+  const noteError = validateProfessionalNoteRecords(value.professionalNoteRecords);
+  if (noteError) return noteError;
+  const traceError = validateDecisionTraces(value.decisionTraces);
+  if (traceError) return traceError;
   if (!hasOnlyValues(value.safety, ["yes", "no"])) return "snapshot safety is invalid";
   for (const key of ["exerciseFeedback", "followupExerciseChoices", "followupTrends"] as const) {
     if (!isObject(value[key])) return `snapshot ${key} is invalid`;
   }
-  if (value.sessionHistory !== undefined && !Array.isArray(value.sessionHistory)) return "snapshot sessionHistory is invalid";
-  if (Array.isArray(value.sessionHistory) && value.sessionHistory.some((item) => !isObject(item) || !Number.isInteger(item.sessionNumber) || (item.sessionNumber as number) < 1)) {
-    return "snapshot sessionHistory item is invalid";
+  for (const key of ["sessionHistory", "archivedSessionHistory"] as const) {
+    if (value[key] !== undefined && !Array.isArray(value[key])) return `snapshot ${key} is invalid`;
+    if (Array.isArray(value[key]) && value[key].some((item) => !isObject(item) || !Number.isInteger(item.sessionNumber) || (item.sessionNumber as number) < 1)) {
+      return `snapshot ${key} item is invalid`;
+    }
   }
   return null;
 }
 
 function validateOptionalWorkflowFields(value: SnapshotObject): string | null {
+  const identityStringKey = invalidOptionalFields(value, ["localCaseId", "problemThreadId", "sessionId", "capabilitySnapshotId", "sessionStartedAt", "draftSavedAt", "completedAt"], (item) => typeof item === "string" && Boolean(item.trim()));
+  if (identityStringKey) return `snapshot ${identityStringKey} is invalid`;
+  if (value.sessionStatus !== undefined && !["draft", "completed", "abandoned"].includes(String(value.sessionStatus))) return "snapshot sessionStatus is invalid";
   const booleanKey = invalidOptionalFields(value, [
     "bilateralNeedsReferral", "midpointDecisionDone", "postScoreConfirmed", "readyToRetest",
     "trainingPlanSaved", "treatmentFinalRetestConfirmed", "trainingReadyForFinalRetest",
@@ -220,10 +346,12 @@ export function migratePilotSnapshot(value: unknown): SnapshotMigrationResult {
   if (!isObject(value)) return { ok: false, reason: "snapshot must be an object" };
   if (jsonDepth(value) > 24) return { ok: false, reason: "snapshot is too deeply nested or cyclic" };
   const schemaVersion = value.schemaVersion === undefined ? 1 : value.schemaVersion;
-  if (schemaVersion !== 1) return { ok: false, reason: "unsupported snapshot schema version" };
+  if (schemaVersion !== 1 && schemaVersion !== PILOT_SNAPSHOT_SCHEMA_VERSION) return { ok: false, reason: "unsupported snapshot schema version" };
   if (!isNonNegativeInteger(value.step) || (value.step as number) > 5) return { ok: false, reason: "invalid snapshot step" };
   const intakeError = validateIntake(value.intake);
   if (intakeError) return { ok: false, reason: intakeError };
+  const bodyMarkError = validateBodyMarks(value.bodyMarks);
+  if (bodyMarkError) return { ok: false, reason: bodyMarkError };
   if (!isObject(value.safety)) return { ok: false, reason: "snapshot safety is missing" };
   for (const key of REQUIRED_OBJECTS) {
     if (!isObject(value[key])) return { ok: false, reason: `snapshot ${key} is missing` };
@@ -253,7 +381,14 @@ export function migratePilotSnapshot(value: unknown): SnapshotMigrationResult {
   if (collectionError) return { ok: false, reason: collectionError };
   const optionalError = validateOptionalWorkflowFields(value);
   if (optionalError) return { ok: false, reason: optionalError };
-  return { ok: true, snapshot: { ...value, schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION } };
+  return {
+    ok: true,
+    snapshot: {
+      ...value,
+      schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION,
+      ...(schemaVersion === 1 ? { legacySchemaVersion: 1 } : {}),
+    },
+  };
 }
 
 /**

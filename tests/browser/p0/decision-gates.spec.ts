@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding } from "../support/page-helpers";
+import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
 import { prepareGuidedChiefProgression, prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 test.describe("P0 固定决策门禁", () => {
@@ -17,7 +17,9 @@ test.describe("P0 固定决策门禁", () => {
     await page.getByRole("button", { name: "动作基本稳定", exact: true }).click();
     await page.getByRole("button", { name: "不会", exact: true }).click();
 
-    const progression = page.locator(".rm-assessment-progress button:visible");
+    const progressionPanel = page.locator(".rm-assessment-progress:visible");
+    await progressionPanel.locator("summary").click();
+    const progression = progressionPanel.locator("button:visible");
     await expect(progression.filter({ hasText: /单腿|单脚/ })).toHaveCount(1);
     const nextFunction = progression.filter({ hasText: /单腿|单脚/ });
     await expect(nextFunction).toBeDisabled();
@@ -45,7 +47,7 @@ test.describe("P0 固定决策门禁", () => {
     await skipOnboarding(page);
     const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
     await input.fill("右脚外踝以下麻电，脚趾感觉变差，走路越来越没力");
-    await expectUniqueVisible(page, "帮我整理", page.getByRole("button", { name: "帮我整理", exact: true })).then((button) => button.click());
+    await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page)).then((button) => button.click());
     await expectUniqueVisible(page, "自助康复模式", page.getByRole("button", { name: /自助康复/ })).then((button) => button.click());
     await expectUniqueVisible(page, "进入症状信息", page.getByRole("button", { name: /下一步/ })).then((button) => button.click());
 
@@ -63,7 +65,7 @@ test.describe("P0 固定决策门禁", () => {
     await skipOnboarding(page);
     const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
     await input.fill("昨晚崴了右脚，外踝疼、肿，还出现麻电，走路越来越没力");
-    await expectUniqueVisible(page, "帮我整理", page.getByRole("button", { name: "帮我整理", exact: true })).then((button) => button.click());
+    await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page)).then((button) => button.click());
     await expectUniqueVisible(page, "自助康复模式", page.getByRole("button", { name: /自助康复/ })).then((button) => button.click());
     await expectUniqueVisible(page, "进入症状信息", page.getByRole("button", { name: /下一步/ })).then((button) => button.click());
 
@@ -81,7 +83,7 @@ test.describe("P0 固定决策门禁", () => {
     await skipOnboarding(page);
     const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
     await input.fill("右膝下楼时疼，有三个月了");
-    await expectUniqueVisible(page, "帮我整理", page.getByRole("button", { name: "帮我整理", exact: true })).then((button) => button.click());
+    await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page)).then((button) => button.click());
     await expectUniqueVisible(page, "康复思路模式", page.getByRole("button", { name: /康复思路模式/ })).then((button) => button.click());
     await expectUniqueVisible(page, "进入专业工作台", page.getByRole("button", { name: /下一步/ })).then((button) => button.click());
     await expectUniqueVisible(page, "协助他人检查", page.getByRole("button", { name: /协助他人检查/ })).then((button) => button.click());
@@ -125,7 +127,7 @@ test.describe("P0 固定决策门禁", () => {
     await click("下一个检查", "进入大腿内侧力量检查");
     await click(/力量接近.*两侧完成质量相近/, "大腿内侧力量接近");
     await click("检查相关肌肉", "进入肌肉紧张度对比");
-    await click(/没有明显差别.*没有需要特别标记的区域/, "肌肉紧张度无明显差别");
+    await click("没有明显差别", "肌肉紧张度无明显差别");
     await click("查看评估结果", "查看评估结果");
     await expect(page.locator("h1:visible")).toContainText("先看清问题，再开始处理");
     await expect(page.locator("main:visible")).toContainText("膝关节主动伸直");
