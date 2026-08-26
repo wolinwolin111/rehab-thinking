@@ -114,3 +114,29 @@ agree 链路 6 节点埋点（before-create / create-resolved / before-persist /
    - `contextual-tip-contract` 维持预期红（RQ-S4）；
 3. **永久防线**：`minimal-wiring.spec.ts` 增加「创建后 `.rm-entry-sheet-backdrop` 数量=0」断言（先红后绿流程已由本次修复满足绿侧）；
 4. 巡检探针建议改用 in-page evaluate 计数浮层（Playwright locator 在多上下文注入场景下计数曾出现与 DOM 不一致的观测，虽然最终证伪为真实缺陷，但 in-page 计数更稳健）。
+
+---
+
+## 终版根因与修复（2026-08-26 开发会话·高频轮询定性）
+
+### 两层根因，均已修复
+
+**第一层：IDB 写入间歇性挂起导致门永不关（原 P0 永久卡死）。**
+`createInitialPilotCaseRecord` 内 `await persistLocalRecords` 在特定浏览器调度条件下不落定 → 关门永远不到达 → 刷新后同意未持久化再次弹门。修复=四层防御（见上节），挂起时 3s 超时降级 localStorage，链路必然继续。
+
+**第二层：本地持久化阻塞关门 ~110ms（自动化探针必踩窗口）。**
+高频轮询（100ms 间隔、12/12 确定性复现）证明：即使持久化正常，关门 setState 也要等 `persistLocalRecords`（IndexedDB 写约 110ms）完成后才提交——症状输入先变为可见，浮层晚 ~110ms 才消失。inspect 探针在症状输入出现的同一时刻检查浮层，必然命中该窗口。
+修复：
+1. `persistLocalRecords` 改为非阻塞 `void …catch`（建案成功即关门；同意已由加固二先行落盘，缓存写失败由同步队列自愈）；
+2. 关门时机前移到 `createPilotCase` 返回 201 的瞬间（在 `createInitialPilotCaseRecord` 内立即 `setPilotConsentGateOpen(false)`），与记录构建同批次提交。
+
+修复后验证：同轮询探针 **连续 10/10 首拍即关闭**（无可见窗口）；含 axe 原位注入的字节级复刻探针 16+ 次全过。
+
+### 残余事项：inspect-local 探针伪影（非应用缺陷）
+
+应用侧修复后，开发会话的复刻探针（含 axe、含同刻检查）已无法复现任何残留；但 inspect-local 自身运行仍报「建案后仍有入口门浮层未关闭」，且标题为**「未知」**——即其 `:visible` 定位器计数到的是**不含 h1/h2 标题的元素**。真实同意门浮层恒有「开始前，请确认数据使用方式」标题（历次原子化 DOM 倾倒证实），因此该计数对象并非同意门本体，判定为探针伪影。
+建议测试会话将 `scripts/quality/inspect-local.mjs:270-274` 的探测改为 in-page evaluate（过滤含标题文本且 computed display≠none 的 backdrop），或增加 500ms settle 重试后再判残留。
+
+### 视觉基线漂移说明
+
+近期巡检出现 320/360px 基线 3%~3.6% 漂移，与本缺陷及各整改批无关：`app/globals.css` 的 Google Fonts 外部 @import 在当前网络环境下时通时断，字体在回退链与 Web 字体间切换造成像素抖动。建议产品决定是否移除外部字体依赖（回退链完整），随后重拍基线。

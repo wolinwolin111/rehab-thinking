@@ -429,7 +429,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       source,
       consent,
     });
-    console.debug("[consent-flow] create-resolved", access.caseId);
+    // DEF-CONSENT-01：服务端 201 即建案成功——此刻立刻关门，不等本地记录
+    // 构建与缓存写入，消除自动化探测下的瞬态残留窗口（真实用户同样更顺滑）。
+    setPilotConsentGateOpen(false);
+    setPilotConsentDeclined(false);
     const initialRecord: SavedDemoRecord = {
       id: `case-${sessionNumber}-${Math.max(0, ...savedRecordsRef.current.map((item) => Number(item.id.match(/-(\d+)$/)?.[1] ?? 0))) + 1}`,
       localCaseId,
@@ -457,9 +460,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const next = [initialRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
     savedRecordsRef.current = next;
     setSavedRecords(next);
-    console.debug("[consent-flow] before-persist");
-    await persistLocalRecords(next);
-    console.debug("[consent-flow] after-persist");
+    // DEF-CONSENT-01：建案成功即视为可关门；本地缓存写入转为后台执行，
+    // 失败不阻断流程——同意事实已先行落盘（加固二），同步队列稍后自愈。
+    void persistLocalRecords(next).catch(() => {
+      // 本地缓存写失败时保留内存记录，等待下次保存或恢复路径补齐。
+    });
     dispatchPilotSync(localCaseId, { type: "restore-succeeded", caseId: localCaseId, revision: access.revision });
     return initialRecord;
   }
