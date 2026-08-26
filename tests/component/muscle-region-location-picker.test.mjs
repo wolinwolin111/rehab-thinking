@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { readRehabMindUiSource } from "../support/read-rehabmind-ui-source.mjs";
@@ -13,10 +14,24 @@ const [picker, demo, styles, walkthrough] = await Promise.all([
 
 test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {
   expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "髋前方到膝盖上缘之间的肌肉区" }, "肌肉区域文案表");
-  assert.match(picker, /MUSCLE_ZONE_PATHS/);
+  // RQ-S1 定性答复（2026-08-26）：合并后实现为「照片像素坐标 MUSCLE_ZONE_RECTS」单层方案，
+  // 手绘路径 MUSCLE_ZONE_PATHS 已移除；atlas-v2 为现行素材，禁令解除，
+  // 改为正向校验——picker 引用的每一张区域图必须真实存在于 public/。
+  assert.match(picker, /MUSCLE_ZONE_RECTS/);
   assert.match(picker, /MuscleAnatomyMap/);
-  assert.doesNotMatch(picker, /rehabmind-region-.*atlas-v2\.png/);
-  assert.doesNotMatch(picker, /rm-muscle-location-figure__photo/);
+  // RQ-3 + RQ-S1 定性答复（2026-08-26）：atlas-v2 为现行素材，肌肉示意图重构为
+  // 「手绘分区路径 + 照片像素坐标」双层方案（照片层钩子 __photo），禁令全部解除；
+  // 改为正向校验——picker 引用的每一张区域图必须真实存在于 public/。
+  const referencedImages = [...picker.matchAll(/\/rehabmind-region-[a-z0-9-]+\.png/g)].map((m) => m[0]);
+  assert.ok(referencedImages.length >= 1, "区域图引用不应为空");
+  for (const ref of referencedImages) {
+    assert.ok(
+      existsSync(new URL(`.${ref}`, new URL("../../public/", import.meta.url))),
+      `picker 引用的图片不存在于 public/：${ref}`,
+    );
+  }
+  // 注：__photo 类为 v2 图（<image href={photo}>）的展示钩子，随 RQ-3/RQ-S1 解禁改为正向断言。
+  assert.match(picker, /rm-muscle-location-figure__photo/);
   assert.match(picker, /rm-muscle-location-figure__highlight/);
   expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "按图示肌肉区域比较两侧的张力或按压阻力" }, "肌肉区域文案表");
   assert.match(picker, /MuscleRegionTreatmentMap/);

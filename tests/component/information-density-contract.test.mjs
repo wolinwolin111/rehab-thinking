@@ -16,10 +16,9 @@ test("ordinary workflow progressively reveals secondary detail", async () => {
 
   assert.match(symptom, /<details className="rm-collected">/);
   assert.match(symptom, /查看已收集信息/);
-  assert.match(confirmation, /currentSafetyItem/);
-  assert.match(confirmation, /currentBoneQuestion/);
-  assert.doesNotMatch(confirmation, /activeSafetyItems\.map/);
-  assert.doesNotMatch(confirmation, /boneQuestions\.map/);
+  // RQ-S3 定性答复（2026-08-26）：安全确认/骨性风险由「一次一项」改为全量同屏渲染（产品验收后的人体工学决定）。
+  assert.match(confirmation, /activeSafetyItems\.map/);
+  assert.match(confirmation, /boneQuestions\.map/);
   assert.match(assessment, /<details className="rm-assessment-progress">/);
   assert.match(assessment, /<details className="rm-check-help"><summary>怎么做和观察重点<\/summary>/);
   assert.match(treatmentRoadmap, /<header><span>现在做<\/span><strong>\{current\}<\/strong><\/header>/);

@@ -14,7 +14,12 @@ test("first-use pages use the approved patient-facing copy", async () => {
   ]);
 
   expectSourceContains(welcome, { file: "rehabmind-onboarding.tsx", snippet: "你的线上康复助手" }, "首发文案表");
-  expectSourceContains(welcome, { file: "rehabmind-onboarding.tsx", snippet: "把悦舒运动康复的线下经验带到你身边，陪你完成每一次康复" }, "首发文案表");
+  // RQ-1 定性答复（2026-08-26）：价值承诺句迁移至欢迎页三行 grid 首行，旧长句废弃。
+  assert.match(
+    welcome,
+    /rm-welcome-lines"><span>把线下康复经验带到这里<\/span>/,
+    "价值承诺句必须是欢迎页三行 grid 的第一行",
+  );
   assert.match(welcome, />开始康复/);
   assert.match(welcome, />继续以前的康复/);
   expectSourceContains(source, { file: "pilot-source-gate.tsx", snippet: "你从哪里了解到我们？" }, "首发文案表");

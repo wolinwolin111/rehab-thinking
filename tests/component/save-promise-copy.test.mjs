@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { expectSourceContains } from "../support/source-contract-assert.mjs";
+import { expectSourceContains, expectSourceNotContains } from "../support/source-contract-assert.mjs";
 
 const onboarding = await readFile(new URL("../../src/features/rehabmind/components/onboarding/rehabmind-onboarding.tsx", import.meta.url), "utf8");
 const controller = await readFile(new URL("../../src/infrastructure/pilot/persistence/persistence-controller.ts", import.meta.url), "utf8");
@@ -11,7 +11,12 @@ const mainComponent = await readFile(new URL("../../src/features/rehabmind/compo
 
 test("the first value page stays focused on patient value rather than storage internals", () => {
   expectSourceContains(onboarding, { file: "rehabmind-onboarding.tsx", snippet: "你的线上康复助手" }, "SAVE-01 首屏价值承诺");
-  expectSourceContains(onboarding, { file: "rehabmind-onboarding.tsx", snippet: "把悦舒运动康复的线下经验带到你身边，陪你完成每一次康复" }, "SAVE-01 首屏价值承诺");
+  // RQ-1 定性答复（2026-08-26）：价值承诺句 = 欢迎页三行 grid 首行，旧长句废弃。
+  assert.match(
+    onboarding,
+    /rm-welcome-lines"><span>把线下康复经验带到这里<\/span>/,
+    "价值承诺句必须是欢迎页三行 grid 的第一行",
+  );
   for (const internalCopy of ["自动保存在本机浏览器", "同步到服务器", "规则引擎", "五步教程"]) {
     if (onboarding.includes(internalCopy)) {
       assert.fail(`[源码合同] rehabmind-onboarding.tsx 出现内部存储口吻文案（SAVE-01）：${JSON.stringify(internalCopy)}`);
@@ -30,9 +35,14 @@ test("local draft autosave is debounced and surfaces honest sync states", () => 
 });
 
 test("topbar renders every sync state including failure and local-only", () => {
-  // 每个状态都有用户可见文案；error/offline 不能缺失（SAVE-01 验收核心）。
-  const topbarLabels = ["本机保存中", "已保存到本机", "同步中", "已同步", "待处理冲突", "本机保存失败", "仅本机保存"];
-  for (const label of topbarLabels) {
-    expectSourceContains(mainComponent, { file: "rehabmind-workbench.tsx", snippet: label }, "SAVE-01 顶栏八态文案表");
+  // RQ-2 定性答复（2026-08-26）：桌面顶栏降噪——正常流转态静默，仅异常态显示文字。
+  // 新验收文案表：offline=网络断开正在本机保存 / conflict=待处理冲突 / error=本机保存失败 / 其余异常兜底=仅本机保存。
+  const abnormalLabels = ["待处理冲突", "本机保存失败", "网络断开，正在本机保存", "仅本机保存"];
+  for (const label of abnormalLabels) {
+    expectSourceContains(mainComponent, { file: "rehabmind-workbench.tsx", snippet: label }, "SAVE-01 降噪后异常态文案表");
+  }
+  // 正常态静默：以下旧常驻标签不得回归顶栏（已保存到本机 例外：存在于保存浮动卡片，不在顶栏断言范围）。
+  for (const silentLabel of ["本机保存中", "同步中", "已同步"]) {
+    expectSourceNotContains(mainComponent, { file: "rehabmind-workbench.tsx", snippet: silentLabel }, "SAVE-01 降噪设计");
   }
 });

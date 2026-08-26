@@ -27,13 +27,14 @@ function render(element) {
   return renderToStaticMarkup(element).replace(/<!--[\s\S]*?-->/g, "");
 }
 
-test("同意门：关闭态不渲染；正常态含五条说明且未勾选时同意禁用", () => {
+test("同意门：关闭态不渲染；正常态含三条免责说明且未勾选时同意禁用", () => {
   const closed = render(h(PilotConsentGate, { open: false, declined: false, onAgree: () => {}, onDecline: () => {}, onReconsider: () => {} }));
   assert.equal(closed, "");
   const html = render(h(PilotConsentGate, { open: true, declined: false, onAgree: () => {}, onDecline: () => {}, onReconsider: () => {} }));
   assert.ok(html.includes("开始前，请确认数据使用方式"), "缺少主标题");
   assert.ok(html.includes("我已了解并同意以上内容"), "缺少同意勾选文案");
-  assert.equal((html.match(/<li/g) || []).length, 5, "五条数据说明点必须完整");
+  // RQ-S2 定性答复（2026-08-26）：同意页数据说明由五条精简为三条（效果提醒只出现一次，免责保留）。
+  assert.equal((html.match(/<li/g) || []).length, 3, "三条免责说明点必须完整");
   assert.ok(html.includes('data-rehabmind-tutorial="consent-checkbox"'), "缺少勾选锚点");
   const agreeTag = html.match(/<button[^>]*consent-agree[^>]*>/);
   assert.ok(agreeTag, "缺少同意按钮");

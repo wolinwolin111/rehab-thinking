@@ -29,7 +29,8 @@ try {
     window.localStorage.clear();
     window.sessionStorage.clear();
   });
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(800);
 
   async function dismissGuideCards() {
     const skip = page.getByRole("button", { name: "跳过引导", exact: true });
@@ -43,12 +44,8 @@ try {
   // cf47910 起，点击开始康复后会先出现三张引导卡浮层；跳过后才进入来源门。
   await dismissGuideCards();
   await step("选择来源渠道", async () => {
-    const byLabel = page.getByLabel("抖音粉丝群", { exact: true });
-    if (await byLabel.isVisible().catch(() => false)) {
-      await byLabel.check();
-    } else {
-      await page.getByRole("radio", { name: /抖音/ }).check();
-    }
+    // 渠道角色化定位：免疫渠道合并/文案调整（2026-08-26 渠道已合并为「抖音」等）。
+    await page.getByRole("radio").first().check();
   });
   await step("来源门继续", () => page.getByRole("dialog", { name: "你从哪里了解到我们？" }).getByRole("button", { name: "继续", exact: true }).click());
   await step("勾选同意", () => page.getByLabel("我已了解并同意以上内容", { exact: true }).check());
