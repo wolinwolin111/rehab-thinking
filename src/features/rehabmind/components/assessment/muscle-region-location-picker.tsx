@@ -125,8 +125,9 @@ const MUSCLE_MAPS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
 const PLANTAR_ZONE_PATH = "M134 77 C145 67 160 64 178 66 C195 63 214 68 226 80 L234 119 C225 135 209 145 191 149 L158 143 C142 136 130 124 126 109 Z";
 
 /*
- * 小腿示意图使用带分区标记的照片（1536x1024），viewBox 只取左腿区域（0 0 768 1024）单腿显示，
- * 高亮色块按照片自带分区标记定位，坐标即照片像素坐标。
+ * 小腿示意图使用带分区标记的照片（1536x1024），照片左半为正面腿、右半为背面腿。
+ * viewBox 固定取 768x1024 单腿显示：view="back" 时把图片左移 768px 显示右半背面腿，
+ * 高亮色块按照片自带分区标记定位，坐标即全照片像素坐标（背面区块 x≥768）。
  */
 const MUSCLE_ZONE_RECTS: Partial<Record<PilotMuscleRegionId, Array<{ x: number; y: number; width: number; height: number }>>> = {
   "calf-anterior": [
@@ -138,8 +139,9 @@ const MUSCLE_ZONE_RECTS: Partial<Record<PilotMuscleRegionId, Array<{ x: number; 
   "calf-medial": [
     { x: 516, y: 197, width: 48, height: 348 },
   ],
+  // 后侧肌肉（小腿肚）在背面腿上：中央大区块（背面半图内坐标，即全图坐标 -768）。
   "calf-posterior": [
-    { x: 368, y: 518, width: 132, height: 294 },
+    { x: 287, y: 188, width: 166, height: 368 },
   ],
 };
 
@@ -153,14 +155,15 @@ function MuscleAnatomyMap({ regionId, view }: { regionId: PilotMuscleRegionId; v
   </svg>;
 
   const rects = MUSCLE_ZONE_RECTS[regionId] ?? [];
-  return <svg viewBox="0 0 768 1024" role="img" aria-label="小腿肌肉范围示意图" focusable="false">
+  const showBack = view === "back";
+  return <svg viewBox="0 0 768 1024" role="img" aria-label={`小腿${showBack ? "背面" : "正面"}肌肉范围示意图`} focusable="false">
     <defs>
       <clipPath id={`muscle-photo-clip-${regionId}-${view}`}>
         <rect width="768" height="1024" rx="18" />
       </clipPath>
     </defs>
     <g clipPath={`url(#muscle-photo-clip-${regionId}-${view})`}>
-      <image href="/rehabmind-region-calf-atlas-v2.png" width="1536" height="1024" className="rm-muscle-location-figure__photo" />
+      <image href="/rehabmind-region-calf-atlas-v2.png" x={showBack ? -768 : 0} y="0" width="1536" height="1024" className="rm-muscle-location-figure__photo" preserveAspectRatio="none" />
       {rects.map((rect) => <rect key={`${rect.x}-${rect.y}`} x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx="42" className="rm-muscle-location-figure__highlight rm-muscle-location-figure__highlight--photo" />)}
     </g>
     <text x="30" y="988" className="rm-muscle-location-figure__map-label">色块为该肌肉区域范围示意</text>
