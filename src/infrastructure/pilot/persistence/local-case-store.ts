@@ -34,6 +34,23 @@ function canUseIndexedDb() {
   return typeof window !== "undefined" && typeof indexedDB !== "undefined";
 }
 
+/**
+ * DEF-CONSENT-01 分支修复：IndexedDB 操作可能永久挂起（open 的 blocked 态、
+ * 事务不落定等浏览器调度问题，多上下文/长会话下可复现）。给 IDB 操作加
+ * 3s 超时——超时按失败处理，走各调用点既有的 localStorage 兜底，
+ * 不再让上层 await 永久卡死（曾导致同意门建案后不关闭）。
+ */
+const IDB_OPERATION_TIMEOUT_MS = 3000;
+
+function withIdbTimeout<T>(promise: Promise<T>): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("IndexedDB operation timed out")), IDB_OPERATION_TIMEOUT_MS);
+    }),
+  ]);
+}
+
 function diagnostic(code: LocalCaseStorageDiagnostic["code"], storageKey: string, raw: string): LocalCaseStorageDiagnostic {
   return { code, storageKey, byteLength: new TextEncoder().encode(raw).byteLength };
 }
@@ -56,9 +73,11 @@ function readLegacyRecords<T>(scope: LocalCaseStorageScope): { records: T[]; dia
 }
 
 function openDatabase(scope: LocalCaseStorageScope): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(scope === "user" ? DATABASE_NAME : `${DATABASE_NAME}-${scope}`, DATABASE_VERSION);
     request.onerror = () => reject(request.error ?? new Error("IndexedDB is unavailable"));
+    // blocked 态（旧版本连接未释放）若不处理会让 open 的 Promise 永不落定。
+    request.onblocked = () => reject(new Error("IndexedDB open is blocked by another connection"));
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME);
       if (!request.result.objectStoreNames.contains(DRAFT_STORE_NAME)) request.result.createObjectStore(DRAFT_STORE_NAME);
@@ -67,61 +86,65 @@ function openDatabase(scope: LocalCaseStorageScope): Promise<IDBDatabase> {
       request.result.onversionchange = () => request.result.close();
       resolve(request.result);
     };
-  });
+  }));
 }
 
 function readDraft<T>(database: IDBDatabase): Promise<T | null> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(DRAFT_STORE_NAME, "readonly");
     const request = transaction.objectStore(DRAFT_STORE_NAME).get(DRAFT_STORE_KEY);
     request.onerror = () => reject(request.error ?? new Error("Could not read local draft"));
     request.onsuccess = () => resolve((request.result ?? null) as T | null);
-  });
+  }));
 }
 
 function writeDraft<T>(database: IDBDatabase, draft: T): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(DRAFT_STORE_NAME, "readwrite");
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("Could not save local draft"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not save local draft (aborted)"));
     transaction.objectStore(DRAFT_STORE_NAME).put(draft, DRAFT_STORE_KEY);
-  });
+  }));
 }
 
 function deleteDraft(database: IDBDatabase): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(DRAFT_STORE_NAME, "readwrite");
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("Could not clear local draft"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not clear local draft (aborted)"));
     transaction.objectStore(DRAFT_STORE_NAME).delete(DRAFT_STORE_KEY);
-  });
+  }));
 }
 
 function readAll<T>(database: IDBDatabase): Promise<T[] | null> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readonly");
     const request = transaction.objectStore(STORE_NAME).get(STORE_KEY);
     request.onerror = () => reject(request.error ?? new Error("Could not read local cases"));
     request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result as T[] : null);
-  });
+  }));
 }
 
 function writeAll<T>(database: IDBDatabase, records: T[]): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readwrite");
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("Could not save local cases"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not save local cases (aborted)"));
     transaction.objectStore(STORE_NAME).put(records, STORE_KEY);
-  });
+  }));
 }
 
 function deleteAll(database: IDBDatabase): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return withIdbTimeout(new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readwrite");
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("Could not clear local cases"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Could not clear local cases (aborted)"));
     transaction.objectStore(STORE_NAME).delete(STORE_KEY);
-  });
+  }));
 }
 
 export async function loadLocalCaseRecords<T>(scope: LocalCaseStorageScope = "user"): Promise<LocalCaseLoadResult<T>> {

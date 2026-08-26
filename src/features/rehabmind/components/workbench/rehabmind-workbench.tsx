@@ -189,7 +189,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const pilotConsentRef = useRef<PilotConsentRecord | null>(testContext ? buildPilotConsentRecord(new Date().toISOString()) : null);
   const pilotSourceRef = useRef<PilotSourceRecord | null>(testContext ? { channel: "internal_test", detail: null } : null);
   const [pilotSourceGateOpen, setPilotSourceGateOpen] = useState(false);
-  const [pilotConsentGateOpen, setPilotConsentGateOpen] = useState(false);
+  const [pilotConsentGateOpen, setPilotConsentGateOpenState] = useState(false);
+  // DEF-CONSENT-01 临时诊断：追踪同意门开关调用来源（定案后移除）。
+  const setPilotConsentGateOpen = (open: boolean) => {
+    console.debug("[gate] set", open, new Error().stack?.split("\n").slice(2, 4).map((line) => line.trim()).join(" <- ") ?? "");
+    setPilotConsentGateOpenState(open);
+  };
   const focusTutorialStorageKey = "rehabmind-focus-tutorial-seen";
   const [focusTutorialOpen, setFocusTutorialOpen] = useState(false);
   const [pilotConsentDeclined, setPilotConsentDeclined] = useState(false);
@@ -420,6 +425,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       source,
       consent,
     });
+    console.debug("[consent-flow] create-resolved", access.caseId);
     const initialRecord: SavedDemoRecord = {
       id: `case-${sessionNumber}-${Math.max(0, ...savedRecordsRef.current.map((item) => Number(item.id.match(/-(\d+)$/)?.[1] ?? 0))) + 1}`,
       localCaseId,
@@ -447,7 +453,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const next = [initialRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
     savedRecordsRef.current = next;
     setSavedRecords(next);
+    console.debug("[consent-flow] before-persist");
     await persistLocalRecords(next);
+    console.debug("[consent-flow] after-persist");
     dispatchPilotSync(localCaseId, { type: "restore-succeeded", caseId: localCaseId, revision: access.revision });
     return initialRecord;
   }
@@ -456,24 +464,35 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const record = buildPilotConsentRecord(new Date().toISOString());
     pilotConsentRef.current = record;
 
-    try {
-      if (firstUseIntentRef.current === "new" || !savedRecordsRef.current.length) {
-        await createInitialPilotCaseRecord(record);
-      }
-    } catch (error) {
-      pilotConsentRef.current = null;
-      throw error;
-    }
-
-    setPilotConsentGateOpen(false);
-    setPilotConsentDeclined(false);
-    void recordPilotFirstUseEvent("consent_confirmed");
+    // DEF-CONSENT-01 加固二（保守版）：同意事实先落盘——建案挂起或失败时，
+    // 刷新不再重复弹同意门；关门时机保持不变（建案成功才关）。
     try {
       writePilotConsent(window.localStorage, record);
       window.localStorage.removeItem("rehabmind-pilot-consent-declined");
     } catch {
       // 会话内仍然生效；存储被禁用时下次访问会再次询问。
     }
+
+  let timeoutId: number | undefined;
+  try {
+    if (firstUseIntentRef.current === "new" || !savedRecordsRef.current.length) {
+      // DEF-CONSENT-01 加固一：建案链路 15s 超时兜底，消灭“永远正在创建”。
+      await Promise.race([
+        createInitialPilotCaseRecord(record),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new PilotCaseClientError(0, "timeout", "案例创建超时，请检查网络后重试")), 15000);
+        }),
+      ]);
+    }
+  } catch (error) {
+    throw error;
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+
+    setPilotConsentGateOpen(false);
+    setPilotConsentDeclined(false);
+    void recordPilotFirstUseEvent("consent_confirmed");
     if (firstUseIntentRef.current === "continue") setRecordsOpen(true);
     if (firstUseIntentRef.current !== "continue" && !hasSeenFocusTutorial()) {
       setFocusTutorialOpen(true);

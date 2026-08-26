@@ -1,3 +1,5 @@
+import { getPilotFirstUseFlowId } from "@/src/infrastructure/pilot/api/trial-operations-client";
+
 export type PilotCaseAccess = {
   caseId: string;
   publicCode: string;
@@ -109,7 +111,9 @@ export async function createPilotCase(input: {
   consent: import("@/src/infrastructure/pilot/consent/consent-core").PilotConsentRecord;
   testContext?: PilotTestContext;
 }): Promise<PilotCaseAccess> {
-  const { getPilotFirstUseFlowId } = await import("@/src/infrastructure/pilot/api/trial-operations-client");
+  // DEF-CONSENT-01：这里的运行时动态 import 在 dev 长会话下曾随页面异步状态
+  // 整体停滞（挂点漂移：有时挂在模块加载、有时挂在后续 IndexedDB 写入），
+  // 改为静态导入，消除首用建案路径上的动态模块请求。
   const result = await requestJson<{ case: PilotCaseAccess }>(input.testContext ? "/api/pilot/test/cases" : "/api/pilot/cases", {
     method: "POST",
     body: JSON.stringify({

@@ -74,3 +74,43 @@
 ⚠️ 暂缓期约束：本缺陷为 P0 首次使用主路径阻断，修复落地前不得向任何真实用户分发产品入口。
 
 **补充复现证据（2026-08-26 D 批回归时）**：证据道巡检（inspect-local --visual --axe，主仓库 :3000 @ D 批工作树）新增的建案后浮层探针在 **390px 与 1440px 双视口均报「建案后仍有入口门浮层未关闭：开始前，请确认数据使用方式」**——证实缺陷在主仓库 HEAD 代码上 100% 复现，与 worktree/环境无关；同轮其余检查（布局/控制台/axe/视觉基线 0.00%）全部通过。
+
+---
+
+## 修复落地与诊断结论（2026-08-26 开发会话）
+
+### 埋点定位结果
+
+agree 链路 6 节点埋点（before-create / create-resolved / before-persist / after-persist / after-create / gate-closed）+ 门状态 setter 调用栈追踪显示：
+
+1. **挂起点漂移**：不同失败轮次分别挂在 persist（IndexedDB 写）、动态 `import()`（case-client 尾段模块加载）、甚至 fetch 发出之前——非单一定位点；
+2. **间歇性**：同一探针短时连跑呈现成簇失败（8 连败）与成簇通过（7+ 连过）交替，单轮失败率约 30-50%，非「100% 复现」——原报告的确定性复现实为成簇现象；
+3. **排除项**：
+   - Playwright `:visible` 查询幻影理论**证伪**：原子化 in-page DOM 倾倒证明失败时刻 backdrop 真实存在于 DOM（inPageTotal=1 与 locator 计数一致）；
+   - dev 服务器 HMR 陈旧状态理论**证伪**：全新启动服务器仍复现；
+   - axe 注入单独不触发（无 axe 探针 3/3 过、带 axe 亦有过）；生产构建 + 旧代码不复现（08-25 验收环境）。
+4. 根因定性：**dev 环境下浏览器 IndexedDB/模块加载调度的间歇性挂起**，无法归名为单一静态代码缺陷；真实用户（08-25 生产构建人工验收全流程通过）从未观测到本缺陷。
+
+### 已落地的四层防御（全部保留）
+
+| 层 | 内容 | 效果 |
+| --- | --- | --- |
+| 分支 A | local-case-store 全部 IDB 助手包 `withIdbTimeout` 3s + `openDatabase` 补 `onblocked` reject + 各助手补 `onabort` | persist 挂起 3s 内降级 localStorage，链路继续 |
+| 静态导入 | case-client.ts 动态 `import()` 改静态 | 消灭建案尾段模块加载挂起点 |
+| 加固一 | 建案整体 Promise.race 15s 超时 → PilotCaseClientError(0,"timeout") | 「永远正在创建」变为可重试错误 |
+| 加固二（保守版） | `writePilotConsent` + 清拒绝标记前置到建案 await 之前；关门时机不变（成功才关）；catch 不再重置同意 ref | 建案挂起/失败后刷新不再二次卡门 |
+
+### 验证结果
+
+- 复刻探针（逐字节复刻 inspect-local 流程）：修复前同探针 8/8 连败 → 修复后连续 16+ 次全过（POST 201 → persist 完成 → gate-closed → 浮层数 0 → 同意已持久化）；
+- tsc / eslint 干净；`test:fast` 仅剩预期红（见下）；
+- 视觉基线 / walkthrough 不受影响（globals.css 字体实验已还原，与本缺陷无关）。
+
+### 待测试会话跟进
+
+1. **回归确认**：重启 :3001 服务器（避免长会话 HMR 状态）后跑证据道（--visual --axe），按上文 4 条验收标准确认关闭；
+2. **合同更新**（随 RQ-S4/S5 批）：
+   - `tests/component/first-use-entry-contract.test.mjs` 的 `/await createInitialPilotCaseRecord\(record\)/` 断言需更新为 Promise.race 包装后的源码形状（加固一合法变更，当前红）;
+   - `contextual-tip-contract` 维持预期红（RQ-S4）；
+3. **永久防线**：`minimal-wiring.spec.ts` 增加「创建后 `.rm-entry-sheet-backdrop` 数量=0」断言（先红后绿流程已由本次修复满足绿侧）；
+4. 巡检探针建议改用 in-page evaluate 计数浮层（Playwright locator 在多上下文注入场景下计数曾出现与 DOM 不一致的观测，虽然最终证伪为真实缺陷，但 in-page 计数更稳健）。
