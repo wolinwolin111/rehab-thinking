@@ -17,7 +17,10 @@ test("context tips are dismissible, remembered, and do not replace safety messag
   assert.match(hint, /localStorage\.setItem/);
   assert.match(hint, /aria-label="关闭提示"/);
   assert.match(workbench, /反馈问题时，可以把案例编号告诉我们。/);
-  assert.match(workbench, /已保存，下次打开可以从这里继续。/);
+  assert.ok(
+    !workbench.includes("已保存，下次打开可以从这里继续。"),
+    "RQ-S4：首存横幅已移除，保存常态零渲染（离线/冲突/错误文案仍保留）",
+  );
   assert.match(records, /这里可以查看以前的恢复情况。/);
   assert.match(treatment, /再试一次刚才的动作，看看现在有没有变化。/);
   assert.match(workbench, /修改后，受影响的后续内容需要重新确认。是否继续修改？/);

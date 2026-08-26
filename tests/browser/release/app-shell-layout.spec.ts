@@ -22,11 +22,16 @@ test("App shell keeps first use, navigation and records usable at supported phon
   await expect(page.getByRole("heading", { name: "你的线上康复助手" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "开始康复", exact: true }).click();
-  await page.getByLabel("抖音粉丝群", { exact: true }).check();
+  await page.getByLabel("抖音", { exact: true }).check();
   await page.getByRole("dialog", { name: "你从哪里了解到我们？" }).getByRole("button", { name: "继续", exact: true }).click();
   await page.getByLabel("我已了解并同意以上内容", { exact: true }).check();
   await page.getByRole("button", { name: "同意并创建案例", exact: true }).click();
   await expect(page.locator('[data-rehabmind-tutorial="symptom-input"]')).toBeEditable();
+
+  const focusSkip = page.locator(".rm-focus-skip");
+  await expect(focusSkip).toBeVisible();
+  await focusSkip.click();
+  await expect(page.locator(".rm-focus-onboarding")).toBeHidden();
 
   for (const viewport of PHONE_VIEWPORTS) {
     await page.setViewportSize(viewport);

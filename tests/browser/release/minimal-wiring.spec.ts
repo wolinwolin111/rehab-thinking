@@ -13,7 +13,7 @@ async function clearFirstUse(page: Page) {
 async function createAnonymousCase(page: Page) {
   await clearFirstUse(page);
   await page.getByRole("button", { name: "开始康复", exact: true }).click();
-  await page.getByLabel("抖音粉丝群", { exact: true }).check();
+  await page.getByLabel("抖音", { exact: true }).check();
   await page.getByRole("dialog", { name: "你从哪里了解到我们？" }).getByRole("button", { name: "继续", exact: true }).click();
   await page.getByLabel("我已了解并同意以上内容", { exact: true }).check();
   await page.getByRole("button", { name: "同意并创建案例", exact: true }).click();
@@ -29,6 +29,16 @@ test("L6 current first-use order blocks use after consent refusal @release", asy
   await page.getByRole("button", { name: "暂不使用", exact: true }).click();
   await expect(page.getByRole("heading", { name: "暂未开始使用" })).toBeVisible();
   await expect(page.getByRole("button", { name: "重新查看说明", exact: true })).toBeVisible();
+});
+
+test("L6 consent gate closes immediately after creation and stays closed after reload @release", async ({ page }) => {
+  await createAnonymousCase(page);
+  await expect(page.locator(".rm-entry-sheet-backdrop")).toHaveCount(0);
+  await expect(page.getByText("开始前，请确认数据使用方式")).toHaveCount(0);
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator('[data-rehabmind-tutorial="symptom-input"]')).toBeEditable();
+  await expect(page.locator(".rm-entry-sheet-backdrop")).toHaveCount(0);
+  await expect(page.getByText("开始前，请确认数据使用方式")).toHaveCount(0);
 });
 
 test("L6 anonymous case autosaves, restores and submits case-bound feedback @release", async ({ page }) => {

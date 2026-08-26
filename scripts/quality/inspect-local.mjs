@@ -174,7 +174,15 @@ async function runBrowserChecks({ axe }) {
         const shotDir = path.join(outDirStatic(), "shots");
         await fs.mkdir(shotDir, { recursive: true });
         const shotPath = path.join(shotDir, `home-${width}.png`);
-        await page.screenshot({ path: shotPath, fullPage: width !== 1440 });
+        // 截图前必须完全稳定：dev 服务器 JIT 编译时快时慢，字体/水合晚到会让短等待帧随机漂移 3~7%。
+        // networkidle + document.fonts.ready + 双 rAF 确认渲染落定；animations:"disabled" 归一化入场动画终态。
+        await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        });
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: shotPath, fullPage: width !== 1440, animations: "disabled" });
         const baselinePath = path.join(baselineDir, `home-${width}.png`);
         const baselineExists = await fs.stat(baselinePath).then(() => true, () => false);
         if (!baselineExists) {
@@ -192,6 +200,7 @@ async function runBrowserChecks({ axe }) {
         // axe 扫描挂在建案流程的「同意门弹层可见」点位，保持扫描目标不变。
         if ([390, 1440].includes(width)) {
           await createCaseForProbe(page, axe ? () => scanAxe(page) : null);
+          await dismissFocusTutorial(page);
           if (width < 500) {
             await page.getByRole("button", { name: "更多", exact: true }).click({ timeout: 60000 });
           }
@@ -225,6 +234,18 @@ async function probeClickable(page, width, name) {
   } catch (error) {
     record("遮挡", `${width}px「${name}」存在`, false, String(error.message || error).split("\n")[0].slice(0, 160));
   }
+}
+
+// 焦点教程等待式关闭：教程延迟挂载时也能兜住；未弹出（已看过/被禁用）则静默跳过
+async function dismissFocusTutorial(page) {
+  const skip = page.locator(".rm-focus-skip");
+  try {
+    await skip.waitFor({ state: "visible", timeout: 4000 });
+  } catch {
+    return;
+  }
+  await skip.click();
+  await page.locator(".rm-focus-onboarding").waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
 }
 
 async function createCaseForProbe(page, onSourceDialog) {
@@ -266,6 +287,9 @@ async function createCaseForProbe(page, onSourceDialog) {
     throw new Error(`同意门未关闭；gateVisible=${gateVisible} 按钮disabled=${disabled} 错误提示=${JSON.stringify((errorText || "").trim())}`);
   });
   await named("症状输入出现", () => page.locator('[data-rehabmind-tutorial="symptom-input"]').waitFor({ state: "visible", timeout: 30000 }));
+  // B 批次后焦点教程在建案成功后弹出（设计内，可跳过）：等待式关闭，避免即时 isVisible 扑空后教程延迟挂载拦截后续探针
+  await named("关闭焦点教程", () => dismissFocusTutorial(page));
+  await page.waitForTimeout(1200);
   // 残留浮层探测：若仍有入口门遮罩，捕获其标题便于定性
   const lingering = page.locator(".rm-entry-sheet-backdrop:visible");
   if (await lingering.count()) {

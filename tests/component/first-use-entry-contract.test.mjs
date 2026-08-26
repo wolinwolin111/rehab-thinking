@@ -61,10 +61,17 @@ test("first-use wiring creates the anonymous case before consent closes", async 
 
   assert.match(sourceHandler, /pilotSourceRef\.current = source/);
   assert.match(sourceHandler, /setPilotConsentGateOpen\(true\)/);
-  assert.match(consentHandler, /await createInitialPilotCaseRecord\(record\)/);
+  assert.match(consentHandler, /createInitialPilotCaseRecord\(record\)/);
+  assert.match(consentHandler, /Promise\.race\(/);
+  assert.match(consentHandler, /15000/);
+  assert.match(consentHandler, /writePilotConsent\(window\.localStorage, record\)/);
   assert.match(consentHandler, /setPilotConsentGateOpen\(false\)/);
   assert.ok(
-    consentHandler.indexOf("await createInitialPilotCaseRecord(record)") < consentHandler.indexOf("setPilotConsentGateOpen(false)"),
+    consentHandler.indexOf("writePilotConsent(window.localStorage, record)") < consentHandler.indexOf("createInitialPilotCaseRecord(record)"),
+    "DEF-CONSENT-01 加固二：同意事实必须先落盘，建案失败刷新时不再重复弹门",
+  );
+  assert.ok(
+    consentHandler.indexOf("createInitialPilotCaseRecord(record)") < consentHandler.indexOf("setPilotConsentGateOpen(false)"),
     "consent must stay visible until the server confirms case creation",
   );
   assert.match(workbench, /await createPilotCase\(\{/);

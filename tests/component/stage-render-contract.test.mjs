@@ -6,6 +6,8 @@
 // - 移动顶栏八种同步状态各有可见文案（idle=未保存、进行中=··、完成=✓、仅本机/冲突/失败为完整词）
 // - 阶段抽屉：6 个阶段按钮，超过 maxUnlocked 的阶段禁用；随访模式只允许回看
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { after, test } from "node:test";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -13,7 +15,6 @@ import { closeTsxLoader, loadTsxModule } from "../support/load-tsx-module.mjs";
 
 const { PilotConsentGate } = await loadTsxModule("/src/features/rehabmind/components/onboarding/pilot-consent-gate.tsx");
 const { PilotSourceGate } = await loadTsxModule("/src/features/rehabmind/components/onboarding/pilot-source-gate.tsx");
-const { GuideCards } = await loadTsxModule("/src/features/rehabmind/components/onboarding/guide-cards.tsx");
 const navigation = await loadTsxModule("/src/features/rehabmind/components/navigation/mobile-app-navigation.tsx");
 const support = await loadTsxModule("/src/features/rehabmind/components/workbench/workbench-support.tsx");
 const sourceChannel = await loadTsxModule("/src/infrastructure/pilot/onboarding/source-channel.ts");
@@ -67,12 +68,16 @@ test("来源门：关闭态不渲染；打开态列出全部渠道且未选择�
   assert.match(html, /<button[^>]*disabled/s, "未选择渠道时继续按钮必须禁用");
 });
 
-test("引导卡：初始第一张、无上一页、有跳过入口；关闭态不渲染", () => {
-  assert.equal(render(h(GuideCards, { open: false, onComplete: () => {}, onSkip: () => {} })), "");
-  const html = render(h(GuideCards, { open: true, onComplete: () => {}, onSkip: () => {} }));
-  assert.match(html, /第\s*1\s*步，\s*共\s*3\s*步/, "进度文案应为第 1/3 步");
-  assert.ok(html.includes("跳过引导"), "跳过入口缺失");
-  assert.ok(!html.includes('rm-guide-cards-back"'), "第一张卡不应有上一页按钮");
+test("引导卡层已按 B 批次决策移除：组件文件不存在，工作台无残留引用", async () => {
+  const guidePath = new URL("../../src/features/rehabmind/components/onboarding/guide-cards.tsx", import.meta.url);
+  assert.equal(existsSync(guidePath), false, "guide-cards.tsx 应随 B 批次删除");
+  const workbench = await readFile(
+    new URL("../../src/features/rehabmind/components/workbench/rehabmind-workbench.tsx", import.meta.url),
+    "utf8",
+  );
+  for (const snippet of ["guide-cards", "GuideCards", "跳过引导"]) {
+    assert.ok(!workbench.includes(snippet), `工作台不得残留引导卡引用：${snippet}`);
+  }
 });
 
 test("阶段抽屉：6 档齐全、未解锁禁用、当前与可回看标注正确", () => {
@@ -145,24 +150,37 @@ test("更多菜单：关闭态不渲染；打开时展示案例编号与复制�
   assert.ok(!withoutCode.includes("RM-TEST"), "无编号时不得渲染编号占位");
 });
 
-const SYNC_STATES = [
-  ["idle", "未保存"],
-  ["local-saving", "··"],
-  ["syncing", "··"],
-  ["local-saved", "✓"],
-  ["synced", "✓"],
+// RQ-S4 定性答复（2026-08-26）：保存常态全静默——idle/进行中/完成态不渲染任何同步文案，
+// 仅离线/冲突/失败三个异常态保留完整词；康复次数与更多入口在任何状态下都必须在。
+const SILENT_SYNC_STATES = ["idle", "local-saving", "syncing", "local-saved", "synced"];
+const ABNORMAL_SYNC_STATES = [
   ["offline", "仅保存在本机"],
   ["conflict", "保存待处理"],
   ["error", "保存失败"],
 ];
-for (const [state, label] of SYNC_STATES) {
-  test(`移动顶栏同步状态 ${state} 渲染可见文案「${label}」`, () => {
-    const html = render(h(navigation.MobileTopActions, {
-      sessionNumber: 2,
-      syncState: state,
-      moreOpen: false,
-      onToggleMore: () => {},
-    }));
+const SAVE_STATUS_WORDS = ["未保存", "仅保存在本机", "保存待处理", "保存失败"];
+function renderTopActions(state) {
+  return render(h(navigation.MobileTopActions, {
+    sessionNumber: 2,
+    syncState: state,
+    moreOpen: false,
+    onToggleMore: () => {},
+  }));
+}
+for (const state of SILENT_SYNC_STATES) {
+  test(`移动顶栏静默状态 ${state} 不渲染任何同步文案`, () => {
+    const html = renderTopActions(state);
+    for (const word of SAVE_STATUS_WORDS) {
+      assert.ok(!html.includes(word), `静默状态 ${state} 不得出现「${word}」`);
+    }
+    assert.ok(!html.includes("✓"), `静默状态 ${state} 不得出现完成标记`);
+    assert.ok(html.includes("第2"), "康复次数缺失");
+    assert.ok(html.includes('aria-label="更多"'), "更多按钮缺失");
+  });
+}
+for (const [state, label] of ABNORMAL_SYNC_STATES) {
+  test(`移动顶栏异常状态 ${state} 渲染可见文案「${label}」`, () => {
+    const html = renderTopActions(state);
     assert.ok(html.includes(label), `状态 ${state} 的文案「${label}」未出现在渲染产物`);
     assert.ok(html.includes("第2"), "康复次数缺失");
     assert.ok(html.includes('aria-label="更多"'), "更多按钮缺失");
