@@ -121,3 +121,22 @@ test("T-03：复查红旗重检信号只由明确回答触发", () => {
   assert.equal(core.followupRedFlagSignal({ numbnessOrRadiation: "yes", progressiveWeakness: "no" }).needsReferral, true);
   assert.equal(core.followupRedFlagSignal({ numbnessOrRadiation: "no", progressiveWeakness: "yes" }).needsReferral, true);
 });
+
+test("T-07：本次主诉部位与上次记录不同时给出比对提示", () => {
+  const notice = core.complaintShiftNotice({ currentLocation: "外踝 / 前外侧", previousLocation: "膝前 / 髌骨周围" });
+  assert.ok(notice);
+  assert.ok(notice.includes("外踝 / 前外侧"));
+  assert.ok(notice.includes("膝前 / 髌骨周围"));
+  assert.equal(core.complaintShiftNotice({ currentLocation: "跟腱 / 踝后方", previousLocation: "跟腱 / 踝后方" }), null);
+  assert.equal(core.complaintShiftNotice({ currentLocation: "", previousLocation: "膝前" }), null);
+  assert.equal(core.complaintShiftNotice({ currentLocation: "足底 / 足跟", previousLocation: undefined }), null);
+});
+
+test("T-08：归档合并按次去重排序，不修改输入", () => {
+  const archived = [{ sessionNumber: 1, completedAt: "a" }, { sessionNumber: 2, completedAt: "b" }];
+  const incoming = [{ sessionNumber: 2, completedAt: "b" }, { sessionNumber: 3, completedAt: "c" }];
+  const merged = core.mergeArchivedSessions(archived, incoming);
+  assert.deepEqual(merged.map((item) => item.sessionNumber), [1, 2, 3]);
+  assert.equal(merged[1].completedAt, "b");
+  assert.equal(archived.length, 2);
+});

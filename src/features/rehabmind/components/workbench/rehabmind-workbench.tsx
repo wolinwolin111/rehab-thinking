@@ -50,7 +50,7 @@ import { INITIAL_TRAINING_PRIORITY, nextSessionTrainingIds } from "@/src/domain/
 import { KNEE_CORE_CANDIDATE_IDS, kneeDecisionInputFromWorkflow, kneeExerciseIdsForDecision, kneeLegacyCandidateIdsForUnit, kneeRetestInstruction, kneeTreatmentInstruction } from "@/src/domain/rehab/shared/knee-workflow-adapter";
 import { normalizePilotMuscleRegion, pilotMotionKnowledge, primaryRetestMotionIdsForRegion, professionalAssessmentTitle } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
 import { strengthAnswerForWorkflow, strengthAnswerResult } from "@/src/domain/rehab/assessment/assessment-answer-core";
-import { firstAssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, treatmentRelatesToChief, valueForPhysicalAction } from "@/src/domain/rehab/intake/action-identity-core";import { mergeSessionReviewResults, previousSessionEndingScore, trendFromAssessmentResult, type AssessmentReviewResult, type ReviewResult } from "@/src/domain/rehab/followup/followup-review-core";
+import { firstAssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, treatmentRelatesToChief, valueForPhysicalAction } from "@/src/domain/rehab/intake/action-identity-core";import { mergeSessionReviewResults, mergeArchivedSessions, previousSessionEndingScore, trendFromAssessmentResult, type AssessmentReviewResult, type ReviewResult } from "@/src/domain/rehab/followup/followup-review-core";
 import { buildProblemLedger, emptyTreatmentMessage, hasUnroutedImmediateProblem, unresolvedImmediateProblems } from "@/src/domain/rehab/shared/problem-ledger-core";import { needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/domain/rehab/treatment/treatment-session-core";
 import { capturesChiefRetestScore, nextRangeCandidateType, shouldRequestChiefRetest } from "@/src/domain/rehab/retest/retest-routing-core";
 import { canExecutePlan, createAdverseResponse, focusedReassessmentIds, focusedReassessmentComplete, nextAssessmentRevision, resolveAdverseResponse, type AdverseResponseEvent, type AdverseSource, type AdverseTiming } from "@/src/domain/rehab/followup/adverse-response-core";
@@ -228,6 +228,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [hasNewSymptom, setHasNewSymptom] = useState<FollowupNewSymptomAnswer>("");
   const [followupTrends, setFollowupTrends] = useState<Record<string, FollowupReviewAnswer>>({});
   const [sessionHistory, setSessionHistory] = useState<RehabSessionSummary[]>([]);
+  // T-08：新症状路径重置会话链前，把已有康复记录归档，避免内存链断裂后不可见。
+  const [archivedSessions, setArchivedSessions] = useState<RehabSessionSummary[]>([]);
+  const sessionHistoryRef = useRef<RehabSessionSummary[]>([]);
+  useEffect(() => { sessionHistoryRef.current = sessionHistory; }, [sessionHistory]);
   const [assessmentRevision, setAssessmentRevision] = useState(0);
   const [treatmentPlanRevision, setTreatmentPlanRevision] = useState(0);
   const [adverseResponse, setAdverseResponse] = useState<AdverseResponseEvent | null>(null);
@@ -3834,6 +3838,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const firstSessionSummary: RehabSessionSummary | undefined = sessionNumber === 1 ? {
       sessionNumber: 1,
       completedAt: sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt ?? new Date().toISOString(),
+      location: intake.location,
       startedScore: chiefScoreComparable ? intake.baselineScore : undefined,
       endingScore: chiefScoreComparable ? (latestScoreOverride ?? sessionEndScore) : undefined,
       reviewResults: mergeSessionReviewResults(
@@ -4179,6 +4184,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupFinalScoreConfirmed(false);
     setHasNewSymptom("");
     setFollowupTrends({});
+    const staleChain = sessionHistoryRef.current;
+    if (staleChain.length) {
+      setArchivedSessions((current) => mergeArchivedSessions(current, staleChain));
+    }
+    sessionHistoryRef.current = [];
     setSessionHistory([]);
     setAssessmentRevision(0);
     setTreatmentPlanRevision(0);
@@ -4286,6 +4296,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupTensionLocations([]);
     setHasNewSymptom("");
     setFollowupTrends({});
+    const staleChain = sessionHistoryRef.current;
+    if (staleChain.length) {
+      setArchivedSessions((current) => mergeArchivedSessions(current, staleChain));
+    }
+    sessionHistoryRef.current = [];
     setSessionHistory([]);
     setAssessmentRevision(0);
     setTreatmentPlanRevision(0);
@@ -4454,6 +4469,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const sessionSummary: RehabSessionSummary = {
       sessionNumber,
       completedAt: sessionHistory.find((item) => item.sessionNumber === sessionNumber)?.completedAt ?? new Date().toISOString(),
+      location: intake.location,
       startedScore: followupScoreConfirmed ? followupScore : undefined,
       endingScore: chiefScoreComparable ? finalScore : undefined,
       reviewResults: reviewLabels,
@@ -4576,6 +4592,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const firstSummary: RehabSessionSummary = {
       sessionNumber: 1,
       completedAt: sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt ?? new Date().toISOString(),
+      location: intake.location,
       startedScore: chiefScoreComparable ? intake.baselineScore : undefined,
       endingScore: chiefScoreComparable ? sessionEndScore : undefined,
       reviewResults: mergeSessionReviewResults(
@@ -5082,6 +5099,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 trainingPlanSaved,
                 followupMode,
                 sessionHistory,
+                archivedSessions,
                 region,
                 findings,
                 treatmentProblems,

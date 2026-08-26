@@ -123,8 +123,8 @@
 | T-04 | P1 | 特殊检查阳性可无视 | special test 阳性的转诊建议为纯文案，"下一个检查/查看评估结果"不受限（assessment-stage:689-693）。 | 阳性+锐痛配合时已有硬门禁保留；普通阳性升级为需显式确认继续。 | 待验证（2026-08-26 D 批：未确认阳性进入结果页需确认，会话内每处一次；待测试会话回归） |
 | T-05 | P1 | 转诊理由死数据 | tissue-pathway-core 三条路径的 referralReasons（:54,:76,:93）全库无 UI 消费，骨应力/肌腱断裂预警清单完全静默。 | 预警清单在对应路径出口展示给用户或书面说明为何不展示。 | 待验证（2026-08-26 E 批：tissueReferralAdvice 纯函 2 单测 + 首次/随访总结页就医预警卡展示全部条目；待测试会话回归） |
 | T-06 | P1 | 复查趋势覆写历史 | followup-review-core:58-81 用本次趋势单选直接覆写上次记录；趋势与分数反向矛盾（说更好但分更高）无检测，错误趋势固化为下期基线。 | 反向矛盾时提醒确认；覆写前保留原值可追溯。 | 待验证（2026-08-26 F 批：mergeSessionReviewResults 覆写带 overwrittenFrom 溯源字段（链式保留最早原值）3 单测 + trendScoreContradiction 反向矛盾检测 1 单测 + 复查页矛盾提醒卡；待测试会话回归） |
-| T-07 | P2 | 新部位沿用旧方案 | 第二次及以后康复报全新部位但答"没有新症状"时静默沿用旧主诉；"继续X"建议与已变主诉无冲突检测（summary-stage:549-600）。 | 本次主诉与上次记录部位/症状明显不同时给出比对提示。 | 待整改 |
-| T-08 | P2 | 康复史断链 | hasNewSymptom=yes 触发 invalidateAfterIntake 清空 sessionHistory 并将 sessionNumber 归 1（workbench:4274,4294-4295），多期随访链在内存中断裂。 | 新症状路径保留历史摘要或迁移到新案例并明示。 | 待整改 |
+| T-07 | P2 | 新部位沿用旧方案 | 第二次及以后康复报全新部位但答"没有新症状"时静默沿用旧主诉；"继续X"建议与已变主诉无冲突检测（summary-stage:549-600）。 | 本次主诉与上次记录部位/症状明显不同时给出比对提示。 | 待验证（2026-08-26 G 批：complaintShiftNotice 纯函 1 单测 + RehabSessionSummary 记录当次部位 + 复查页比对提醒卡；待测试会话回归） |
+| T-08 | P2 | 康复史断链 | hasNewSymptom=yes 触发 invalidateAfterIntake 清空 sessionHistory 并将 sessionNumber 归 1（workbench:4274,4294-4295），多期随访链在内存中断裂。 | 新症状路径保留历史摘要或迁移到新案例并明示。 | 待验证（2026-08-26 G 批：mergeArchivedSessions 归档合并 1 单测 + 重置前归档全部历史 + 首次总结页「历史档案」卡片明示；待测试会话回归） |
 | T-09 | P2 | 快照时间陈旧性 | 快照恢复只校验结构与取值域，onset/急性判定/组织路径按冻结旧时间运算，恢复越久偏差越大（snapshot-schema:219-257）。 | 恢复时按当前日期重算时间敏感结论或给出"距上次记录 X 天"提醒。 | 待整改 |
 | T-10 | P2 | 训练反馈洗白 | recordQuickFeedback 允许对同一动作重复点击，worse 后改选 hold 即刻消除加重警告，无确认或审计（training-stage:107-126）。 | 加重→降档改选需二次确认并保留原始记录。 | 待验证（2026-08-26 D 批：planQuickFeedbackRecord 7/7 单测 + symptomHistory 追加式；待测试会话回归） |
 | T-11 | P2 | 不良反应记录覆写 | regress-training 分支确认退阶后把 feedback.symptom 从 worse 改写为 same，加重原始记录被覆写、警告条消失（assessment-stage:274-280）。 | 原始加重记录保留，退阶作为派生状态叠加而非替换。 | 待验证（2026-08-26 D 批：followUpAction 叠加不覆写，训练页门禁按处置标记放行；待测试会话回归） |

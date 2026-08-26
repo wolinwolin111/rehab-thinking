@@ -12,7 +12,7 @@ import { professionalAssessmentTitle } from "@/src/knowledge/pilot/pilot-motion-
 import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, motionWasSymptomatic, samePhysicalAction, valueForPhysicalAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest, needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { formatRecommendedDateRange, recommendNextSession } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { compareFollowupScore, followupRedFlagSignal, trendScoreContradiction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { compareFollowupScore, complaintShiftNotice, followupRedFlagSignal, trendScoreContradiction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateTreatmentKey } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, reportedActionSummary } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -60,6 +60,7 @@ export type SummaryStageView = {
   trainingPlanSaved: boolean;
   followupMode: boolean;
   sessionHistory: RehabSessionSummary[];
+  archivedSessions: RehabSessionSummary[];
   region?: FullRegion;
   findings: Finding[];
   treatmentProblems: TreatmentProblem[];
@@ -150,7 +151,7 @@ export type SummaryStageActions = {
 export function SummaryStage({ view, actions }: { view: SummaryStageView; actions: SummaryStageActions }) {
   const {
     intake, assessmentResults, trialRecords, exerciseFeedback, trainingComplete, trainingPlanSaved,
-    followupMode, sessionHistory, region, findings, treatmentProblems, treatmentWorsened,
+    followupMode, sessionHistory, archivedSessions, region, findings, treatmentProblems, treatmentWorsened,
     chiefScoreComparable, sessionEndScore, effectiveFocusLabels, effectiveControlLabels,
     exerciseStage, exercises, homeRelaxationTargets, hasSafetySignal, hasClearance,
     structuralImagingSignal, assessmentNeedsReferral, sessionNumber, followupScore,
@@ -204,6 +205,8 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     trends: Object.values(followupTrends),
     comparison: compareFollowupScore({ currentScore: followupScore, currentConfirmed: followupScoreConfirmed, previousScore: previousSessionScore }),
   });
+  // T-07：本次主诉部位与上次记录不同时给出比对提醒。
+  const complaintShift = complaintShiftNotice({ currentLocation: intake.location, previousLocation: previousSessionForReview?.location });
 
   function followupDecision(reviewComplete: boolean) {
   const values = Object.values(followupTrends);
@@ -569,6 +572,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     {hasChiefAction ? <ScoreHistory scores={history} condition={retestConditionLabel(intake)} /> : null}
     {hasChiefAction ? <ScoreSlider value={followupScore} selected={followupScoreConfirmed} onChange={updateFollowupScore} label="现在做主诉动作，有多不舒服？" context={chiefActionLabel(intake)} /> : <section className="rm-route-note"><h2>{chiefRetestUnavailableTitle}</h2><p>{chiefRetestUnavailableText}</p></section>}
     {trendContradiction ? <section className="rm-route-note is-waiting rm-trend-contradiction"><span>请再确认</span><h2>{trendContradiction === "trend-better-score-worse" ? "趋势说更好，但分数更高" : "趋势说更差，但分数更低"}</h2><p>分数和逐项趋势指向相反。请复核今天的评分与各项选择；两条记录都会分别保留，不会互相覆盖。</p></section> : null}
+    {complaintShift ? <section className="rm-route-note is-waiting rm-complaint-shift"><span>请确认</span><h2>主诉部位与上次记录不同</h2><p>{complaintShift}</p></section> : null}
     {reviewItems.length ? <section className="rm-followup-items"><header><span>快速复查上次问题</span></header>{reviewItems.map(([id, title, note]) => {
       const options: Array<[FollowupReviewAnswer, string]> = id.startsWith("motion:")
         ? [["better", "接近健侧"], ["same", "仍然偏小"], ["worse", "比上次更差"], ["unknown", "看不出来"], ["unable", "现在做不了"]]
@@ -704,6 +708,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     <StepHeading eyebrow="第6步" title="本次康复总结" />
     <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
+    {archivedSessions.length ? <section className="rm-route-note rm-archived-sessions"><span>历史档案</span><h2>新问题开始前，已有 {archivedSessions.length} 次康复记录归档</h2><ul>{archivedSessions.map((item) => <li key={`${item.sessionNumber}:${item.completedAt ?? ""}`}>第{item.sessionNumber}次{typeof item.endingScore === "number" ? ` · 结束 ${item.endingScore}/10` : ""}{item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString("zh-CN")}` : ""}</li>)}</ul><p>这些记录仍保存在案例历史中，可随时在记录页查看。</p></section> : null}
     {firstSessionTissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{firstSessionTissueReferral.title}</h2><ul>{firstSessionTissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
     <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">
       <div className="rm-summary-column">

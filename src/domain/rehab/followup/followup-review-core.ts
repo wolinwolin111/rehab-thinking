@@ -121,6 +121,37 @@ export function followupRedFlagSignal(answers: {
   };
 }
 
+/**
+ * T-07：本次主诉部位与上次记录明显不同时给出比对提醒。
+ * 任一侧缺省或一致时不提示；只产出文案，不改变任何决策。
+ */
+export function complaintShiftNotice(input: {
+  currentLocation?: string;
+  previousLocation?: string;
+}): string | null {
+  const current = typeof input.currentLocation === "string" ? input.currentLocation.trim() : "";
+  const previous = typeof input.previousLocation === "string" ? input.previousLocation.trim() : "";
+  if (!current || !previous || current === previous) return null;
+  return `本次主诉部位（${current}）与上次记录（${previous}）不同：如果仍是同一个问题的延续，请复核「有没有新症状」的回答；如果是新问题，建议保存为新案例再开始。`;
+}
+
+const archivedSessionKey = (item: { sessionNumber: number; completedAt?: string }) => `${item.sessionNumber}:${item.completedAt ?? ""}`;
+
+/**
+ * T-08：新症状路径重置会话前，把已有康复记录并入历史档案。
+ * 按次号+完成时间去重，升序排列；不修改任何输入数组。
+ */
+export function mergeArchivedSessions<T extends { sessionNumber: number; completedAt?: string }>(
+  archived: T[],
+  incoming: T[],
+): T[] {
+  const known = new Set(archived.map(archivedSessionKey));
+  return [
+    ...archived,
+    ...incoming.filter((item) => !known.has(archivedSessionKey(item))),
+  ].sort((a, b) => a.sessionNumber - b.sessionNumber);
+}
+
 export function unresolvedReviewIds(previous?: { reviewResults: ReviewResult[] }) {
   if (!previous) return null;
   return new Set(previous.reviewResults.filter((item) => item.result !== "better").map((item) => item.id));

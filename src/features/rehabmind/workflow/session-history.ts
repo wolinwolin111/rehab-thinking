@@ -9,6 +9,8 @@ export type SavedTreatmentResponseRole = "partial-contribution" | "key-completio
 export type RehabSessionSummary = {
   sessionNumber: number;
   completedAt?: string;
+  /** T-07：记录当次主诉部位，供跨次比对提示使用。 */
+  location?: string;
   startedScore?: number;
   endingScore?: number;
   reviewResults: Array<{ id: string; label: string; result: SessionTrend }>;
