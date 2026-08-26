@@ -1,11 +1,31 @@
 # 测试会话交接文档
 
 **会话 ID**：test-session-2026-08-24~26
-**当前测试工作树**：`D:\Study\codex\project\rehab-thinking-demo`（branch `main`，HEAD `fdaee6f`，worktree dirty）
+**当前测试工作树**：`D:\Study\codex\project\rehab-thinking-demo`（branch `main`，开发整改最终 HEAD `42c0efb`；构建生成的 release manifest 可能是未提交产物）
 **上一轮隔离工作树**：`D:\Study\codex\project\rehabmind-agent`（branch `agent/testing`，commit `a805361`；仅作历史对照）
 **前序文档**：`docs/handover/HANDOVER.md`（第一代会话手写）、`docs/quality/test-infrastructure-delivery-2026-08-26.md`（基础设施交付记录）
 **创建日期**：2026-08-26
 **适用对象**：接替测试窗口
+
+---
+
+## 最新补充：2026-08-27 开发整改已收口
+
+本文件上方及后续旧章节记录的是 2026-08-26 测试窗口的历史快照；接替测试时，当前结论以《回归测试总表》的最终收口章节、真实浏览器覆盖矩阵的最终证据索引和同一 buildId 的 manifest 为准。
+
+| 项目 | 最终值 |
+|---|---|
+| 修复提交 | `f4c7b393500ac85c830ea15ff609f7027ba70688`、`9233d0fa86cc291f9e84aba33cadec0862ee1b5c`、`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1` |
+| buildId | `local-42c0efb1c85f` |
+| 指定缺陷 | `UX-01`、`INSPECT-ENTRY-GATE-01`、`BODY-MAP-UI-02`、多标签页冲突、已确认视觉基线 |
+| 定向回归 | UX 3/3、身体图契约 3/3、入口巡检全部通过、视觉 3/3；多标签页 2 passed + 1 既有显式 skipped |
+| 完整浏览器 | 41 项：32 passed、9 skipped、0 failed |
+| 快速质量门禁 | `npm run test:fast` 通过；lint 0 error / 2 warning |
+| 巡检 | 320/360/390/412/430/1440px、HTTP/API、运行时、axe、视觉和遮挡全部通过 |
+
+证据入口：`artifacts/quality/playwright/full-final-42c0efb1c85f`、`artifacts/quality/playwright/ux-01-final-42c0efb1c85f`、`artifacts/quality/playwright/body-map-final-42c0efb1c85f`、`artifacts/quality/playwright/entry-gate-final-42c0efb1c85f`、`artifacts/quality/playwright/multitab-final-42c0efb1c85f`、`artifacts/quality/playwright/visual-final-42c0efb1c85f`、`artifacts/quality/inspect-local/2026-08-26T21-41-36-389Z/report.md`。
+
+本次没有修改测试断言来制造通过；视觉截图仅在产品设计确认多功能动作队列后更新对应基线。仍保留的 skipped/blocked 场景，以最终回归总表和覆盖矩阵中的非阻塞范围为准。
 
 ---
 

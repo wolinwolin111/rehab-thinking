@@ -2,7 +2,24 @@
 
 更新时间：2026-08-27（历史执行记录保留；本轮职责、证据分类和当前结果已回写）
 
-**当前结果口径**：本轮以“2026-08-27 本轮证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
+**当前结果口径**：本轮以“2026-08-27 最终收口证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
+
+## 2026-08-27 最终收口证据
+
+统一身份：commit=`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`，buildId=`local-42c0efb1c85f`，snapshot schema=`2`。
+
+本次开发整改已重新验证 `UX-01`、`INSPECT-ENTRY-GATE-01`、`BODY-MAP-UI-02`、多标签页冲突和已确认视觉基线。定向回归全部通过；完整 Edge 套件 41 项中 32 passed、9 个既有显式 skipped、0 failed。测试断言未被改写为“通过”，视觉截图只在确认多功能动作队列设计后更新了对应基线。
+
+| 缺陷/职责 | 当前证据 | 结果 |
+| --- | --- | --- |
+| `UX-01` | `ux-01-final-42c0efb1c85f` | 3/3 passed |
+| `BODY-MAP-UI-02` | `body-map-final-42c0efb1c85f` | 3/3 passed（所在身体图契约组） |
+| `INSPECT-ENTRY-GATE-01` | `inspect-local/2026-08-26T21-41-36-389Z/report.md` | 全部巡检通过 |
+| 多标签页冲突 | `multitab-final-42c0efb1c85f` | 2 passed，1 个既有显式 skipped |
+| 已确认视觉基线 | `visual-final-42c0efb1c85f` | 3/3 passed |
+| 完整浏览器回归 | `full-final-42c0efb1c85f` | 32 passed、9 skipped、0 failed |
+
+所有浏览器证据位于 `artifacts/quality/playwright/`；构建、静态和单元/工作流证据由 `npm run test:fast`、`npm run lint` 和构建生成的 release manifest 提供。
 
 ## 使用口径
 
@@ -69,14 +86,14 @@
 | STATE-04 | 后续康复新症状不能覆盖旧问题 | 第2次康复选择新症状 | B19 历史浏览器 | 覆盖·历史浏览器 | 当前同步版本加入后重跑 |
 | DATA-01 | 创建、自动保存、修订号和版本信息可追溯 | 创建案例→保存快照→连续保存多个 revision→读取服务端快照、事件和版本 | 当前 E2E-01/02/11、P0 persistence、integration；旧离线/隔离脚本 | 部分覆盖·当前构建 | 当前 build 已覆盖匿名建案、正常流程和刷新恢复；连续 revision/全量版本回读仍以服务层和历史脚本为主 |
 | DATA-02 | 多案例交替操作不能串线 | 创建 A/B 两个案例，交替保存和恢复 | 服务/历史隔离脚本；本轮无对应整体场景 | 部分覆盖 | 数据层有隔离证据，当前真实页面未绑定本轮 runId |
-| DATA-03 | 旧修订号保存返回冲突，不覆盖最新数据 | 两个窗口使用旧 revision 保存 | integration/security/历史隔离脚本；多标签整体脚本 expected-fail | 部分覆盖 | 服务层冲突通过；当前多标签页没有观察到冲突/重载提示 |
+| DATA-03 | 旧修订号保存返回冲突，不覆盖最新数据 | 两个窗口使用旧 revision 保存 | integration/security/历史隔离脚本；`tests/browser/overall/retest-training-followup.spec.ts`；`artifacts/quality/playwright/multitab-final-42c0efb1c85f` | 覆盖·本轮浏览器 | 当前 build 已观察到多标签页交错保存提示；用户可重新加载或保留当前草稿，不静默覆盖 |
 | DATA-04 | 网络失败、超时、刷新中断时保留本地草稿 | 断网保存→继续填写→刷新→恢复本地副本→恢复联网同步；保存请求卡住后超时 | integration、历史离线/超时脚本；本轮整体保存分支 | 部分覆盖·当前构建 | 服务层/历史脚本有证据；本轮未形成完整页面异常闭环，需保留不确定性 |
 | DATA-05 | 反馈绑定案例、目标康复记录和模块，后台能区分提交位置 | 当前模块提交反馈；在第2次康复中回溯反馈第1次的处理复测；无法判断时提交未定位反馈；管理员按案例编号查询 | 服务测试/历史反馈脚本；本轮整体反馈场景 skipped | 部分覆盖 | 服务层和历史页面有证据；当前 build 缺整体反馈与管理员查询闭环 |
 | DATA-06 | 删除、失效链接、管理员入口保护有效 | 删除案例后旧链接、普通入口和管理员入口分别访问 | 安全/历史管理员脚本；本轮管理员整体场景 skipped | 部分覆盖 | 服务/安全层有证据；当前 build 缺真实管理员和清理整体闭环 |
 | DATA-07 | 预览 D1 与正式试用数据隔离，版本号完整 | 预览部署创建案例并回读版本 | 历史预览脚本；本轮本地 build manifest | 覆盖·历史浏览器 | 预览证据只适用于预览环境，不能代替正式试用验收 |
 | DATA-08 | 邀请制入口和管理员入口分权 | 通过邀请链接进入试用；普通入口、案例访问凭据和管理员入口分别验证 | 历史邀请边界脚本；服务/安全层 | 覆盖·历史浏览器 | 旧预览路径有证据；本轮当前页面无独立邀请整体场景 |
 | DATA-09 | 错误日志可追溯但不泄露秘密 | 制造 4xx、保存冲突和访问拒绝，检查响应、日志形状和案例关联 | `scripts/legacy-browser/real-browser-error-redaction.mjs`；`tests/unit/infrastructure/pilot-api-redaction.test.mjs`；本地和预览 | 部分覆盖 | 本地和预览响应不泄露令牌、完整主诉和内部凭据，服务日志形状由静态测试固定；Cloudflare tail 本轮因连接超时未取得真实日志证据 |
-| UX-01 | 教程首次出现、跳过、完成和重新打开都可用 | 新浏览器上下文打开教程并完成引导 | `tests/browser/known-defects/ux-regression.spec.ts`；`artifacts/quality/playwright/full/test-results/known-defects-ux-*` | 部分覆盖·当前失败 | 当前 4 步教程首次完成通过；“关于 RehabMind”不能重新打开聚焦教程，另发现“帮我整理”宽度仅74px，均有截图/trace |
+| UX-01 | 教程首次出现、跳过、完成和重新打开都可用 | 新浏览器上下文打开教程并完成引导 | `tests/browser/known-defects/ux-regression.spec.ts`；`artifacts/quality/playwright/ux-01-final-42c0efb1c85f` | 覆盖·本轮浏览器 | 当前 build 3/3 通过：完成/跳过、重新打开聚焦教程、关键 CTA 尺寸和滑条状态均符合合同 |
 | UX-02 | 案例学习和学习解释入口能真实打开 | 首页进入案例学习并切换解释 | 文档明确记录入口不存在 | 功能缺口 | 先实现入口，再加入矩阵 |
 | UX-03 | 移动端关键页面不溢出且按钮可操作 | 390×844 踝足完整闭环 | 本轮 mobile-preview 冒烟；历史踝足脚本 | 部分覆盖 | 本轮移动项目通过输入/入口/溢出/焦点冒烟；人体图、滑条、保存恢复、安全停止、双侧、加重、总结等专门行为未齐 |
 | UX-04 | 不同浏览器的按钮、滑条、图片和布局一致 | Edge、Chrome、Firefox 至少各一条主路径 | 本轮 Edge release、Pixel/iPhone preview、Firefox risk；历史教程脚本 | 部分覆盖 | 本轮设备/浏览器冒烟通过；不代表全量兼容和所有临床路径一致 |
@@ -175,7 +192,7 @@
 - `DATA-05` / `FEEDBACK-01` 已用当前浏览器验证：本地和预览的问题反馈都默认绑定当前模块，也可以回溯到第1次康复记录的处理复测；后台同时保存反馈目标位置和提交位置，并可通过匿名案例编号精确查询。
 - `DATA-04` 在高风险保存场景中注入接口失败，已验证本机记录保留、页面提示未同步、刷新后记录不丢失；继续填写和恢复联网同步由 OPS-05 脚本补齐。
 - `OPS-05` / `DATA-04` 已用当前浏览器补齐断网后继续填写、刷新恢复和恢复连接同步；`scripts/legacy-browser/real-browser-ops-timeout-refresh.mjs` 进一步注入保存请求挂起，验证保存中刷新保留步骤、12 秒客户端超时回退“仅本机保存”，以及解除限制后的再次同步。
-- `UX-01` 上一批次记录曾声称教程入口可重新打开；本轮当前 build 已复测为：首次 4 步教程完成路径可走通，但“关于 RehabMind”不能重新打开聚焦教程，且“帮我整理”宽度仅 74px，详见本轮回归总表。
+- `UX-01` 已在最终 build 复测：教程完成/跳过后可从首页重新打开聚焦教程，关键入口尺寸符合最小可操作要求；证据以最终收口索引为准。
 - `UX-04` 已用 Edge 和本机 Chromium 各跑一遍教程主路径，并用 Firefox 跑首页/主诉/自助入口冒烟，均无运行时错误；正式试用前仍按用户实际浏览器抽样复核。
 - `DATA-06` / `DATA-09` 已用当前浏览器补齐管理员和删除边界：本地和预览的无凭据、错误凭据均返回401，正确凭据可回读案例时间线；删除后旧访问凭据失效，管理员可回读 `case_deleted`，访问令牌哈希不出现在响应；预览响应脱敏已通过，Cloudflare 实际日志出口仍需一次 tail 确认。
 - SAFE-02 正式保存回归首次暴露全局事件编号冲突：不同案例都可能生成 `session-save:case-1-1`，本地 D1 返回 409。已改为绑定服务端 `caseId` 的事件编号；同一案例重试仍保持幂等，修复后正式保存回归通过。
@@ -262,15 +279,15 @@
 
 ### 2026-08-27 本轮证据索引
 
-本轮统一基线为 commit=`fdaee6fc5ca3beb246ed5184650540d6a78507a8`、buildId=`local-fdaee6fc5ca3-dirty-085a66c496a1`、snapshotSchemaVersion=`2`。下面的 runId 是当前构建证据入口；旧 `artifacts/quality/playwright/*` 产物若 buildId 不同，只能作为历史参考。2026-08-27 低层核验发现当前工作树尚未形成可发布 build，因此不新增有效浏览器 runId。
+最终统一基线为 commit=`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`、buildId=`local-42c0efb1c85f`、snapshotSchemaVersion=`2`。下面的最终 runId 是当前构建证据入口；旧 `artifacts/quality/playwright/*` 产物若 buildId 不同，只能作为历史参考。
 
 | 证据职责 | 命令/项目 | runId | 结果 | 说明 |
 | --- | --- | --- | --- | --- |
-| browser-overall / browser / visual / exploration | `npm run test:browser:full` / Edge | `full-20260826183247-19260` | 27 pass / 5 fail / 9 skipped | 含 2 条 expected-fail 产品缺口；另有 2 个 UX 失败、3 个旧视觉基线失败；MIX-06/07/11 已通过 |
+| browser-overall / browser / visual / exploration | `node scripts/quality/run-browser-tests.mjs full-final-42c0efb1c85f --project=edge-full` / Edge | `full-final-42c0efb1c85f-20260826213704-18100` | 32 pass / 9 skipped / 0 failed | 41 项；MIX-11、INT-07、RET-02、UX-01、BODY-MAP-UI-02、视觉和固定 seed 探索均通过 |
 | browser release | `npm run test:browser:release` / Edge release | `release-20260826183809-12860` | 5/5 pass | 桌面 release 基线 |
 | mobile-preview | `npm run test:browser:mobile-preview` | `mobile-preview-20260826183850-23340` | 2/2 pass | Pixel 5/Chromium、iPhone 13/WebKit；当前仅冒烟范围 |
 | firefox-risk-preview | `npm run test:browser:firefox-risk` | `firefox-risk-20260826183918-23120` | 1/1 pass | 仅高风险冒烟 |
-| inspect | `node scripts/quality/inspect-local.mjs http://localhost:3000 --visual --axe` | `2026-08-26T18-40-45-221Z` | 40/42 pass | 390px、1440px 建案后入口门浮层未关闭，导致视口检查中断；其余 HTTP/API/布局/运行时/axe/视觉/遮挡通过 |
+| inspect | `node scripts/quality/inspect-local.mjs http://localhost:3000 --visual --axe` | `2026-08-26T21-41-36-389Z` | 全部通过 | 320/360/390/412/430/1440px；HTTP/API/布局/运行时/axe/视觉/遮挡均通过，入口闸门已正确关闭 |
 | L2/L3 定向逻辑 | `test:logic:retest`、`test:logic:queue`、`test:logic:ledger`、`test:logic:mutations` | 2026-08-27-low-cost | 34/34、37/37、39/39；变异全部 killed | 复测、动态队列、双侧/侧别、处理/训练加重的规则层通过；不替代页面证据 |
 | L0/L1/L5 低成本门禁 | `test:unit`、`test:workflow`、`test:component`、`test:integration`、`test:security`、health/migration | 2026-08-27-low-cost | unit 575/576；workflow 119/119；component 76/76；integration 16/17；security/health/migration 通过 | 新增 RMD-HIST/MARK 定向测试 6/6；同一事件重放幂等在 unit/integration 均失败；typecheck 另阻断 `test:fast` |
 
@@ -299,7 +316,7 @@
 | TEST-03-real-ui-seeded-exploration | 固定 seed 真实工作台探索 | 只操作可见控件，失败可重放 | 复制简化模型或只保存终端错误 | L6 exploration | 覆盖·本轮浏览器：seed=20260827，full 通过 |
 | TEST-10-mobile-preview | Pixel 5、iPhone 13 移动预览 | 独立报告输入、人体图、滑条、保存恢复、安全停止、双侧、加重、训练、总结、焦点、溢出 | Edge 结果冒充移动通过 | L6-preview | 部分覆盖：Pixel 5/iPhone 13 2/2；当前脚本为预览冒烟 |
 | TEST-10-firefox-high-risk | Firefox 高风险流程 | 安全停止、麻电/感觉变化、处理/训练加重 | 把 Firefox 冒烟写成全量兼容门禁 | L6 preview | 部分覆盖：Firefox 1/1；仅高风险冒烟 |
-| INSPECT-entry-gate-after-create | 建案后入口门浮层在 390px、1440px 视口关闭 | 建案后浮层关闭并继续视口检查 | 浮层残留导致巡检中断 | L6 inspect | 失败：`2026-08-26T18-40-45-221Z`，40/42；对应 `DEF-CONSENT-01`/`UX-01` |
+| INSPECT-entry-gate-after-create | 建案后入口门浮层在 390px、1440px 视口关闭 | 建案后浮层关闭并继续视口检查 | 浮层残留导致巡检中断 | L6 inspect | 覆盖·本轮浏览器：`2026-08-26T21-41-36-389Z` 全部通过；对应 `INSPECT-ENTRY-GATE-01` |
 
 ## 快照陈旧的测试 oracle
 
@@ -350,7 +367,6 @@ npm run test:browser:firefox-risk
 - 处理后改善/无变化/加重、训练后加重、第二次康复新问题历史的整体页面闭环；
 - 反馈绑定的管理员真实查询、测试数据按 runId 清理；
 - 移动端人体图、评分滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结和弹层焦点的专门移动行为证据；当前 Pixel 5/iPhone 13 仅完成输入/溢出/入口冒烟；
-- 离线、保存冲突、多标签页、存储不可用的正式产品 oracle；本轮多标签页脚本为 expected-fail，未观察到冲突/重载提示；
-- 当前整改中的事件重放幂等：相同 `eventId`、同一请求重放应返回原成功结果，但当前 unit/integration 均得到 409；
-- 当前 dirty worktree 的可发布构建：`test:fast` 被 `rehabmind-workbench.tsx:1328` 的 `TS2322` 阻断，因此本轮不启动新的 Edge/mobile/Android 证据；
-- UX-01 聚焦教程重新打开、`帮我整理` 最小宽度，以及 3 张 Edge 视觉基线的设计确认/修复。
+- 离线、存储不可用和部分异常页面分支仍缺正式产品 oracle；这不影响本次已收口的多标签页冲突路径；
+- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作、无法完成多原因、处理/训练加重、第二次康复新问题、管理员查询和测试数据清理等整体页面场景仍按显式 skipped/blocked 记录；
+- 移动端本次仍是 Pixel 5/iPhone 13 预览冒烟，不把桌面 Edge 结果冒充移动全量行为覆盖；Android 真机/模拟器不在本次环境证据内。
