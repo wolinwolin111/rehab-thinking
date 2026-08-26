@@ -1,5 +1,6 @@
 import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTreatmentCandidate } from "@/src/knowledge/pilot/pilot-knowledge";
 import type { WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
+import { chiefFunctionAssessmentIds } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 
 export type PilotRole = "general" | "coach" | "rehab";
 
@@ -23,6 +24,10 @@ export type PilotIntakeInput = {
   symptomsConfirmed: boolean;
   provocationTypes: string[];
   provocationConfirmed: boolean;
+  reportedActions?: Array<{ raw?: string; label?: string }>;
+  customAction?: string;
+  reproduction?: string;
+  actionAnalysis?: { task?: string } | null;
   currentTask?: string;
   noFixedTask?: boolean;
   baselineScoreConfirmed?: boolean;
@@ -335,12 +340,25 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
       "motion:knee-extension",
       "motion:knee-flexion",
     ].filter((id) => availableIds.includes(id));
-    const explicitFunction = rankedIds.find((id) => id.startsWith("function:") && taskPriority(id, input) > 0);
+    const explicitFunctionIds = chiefFunctionAssessmentIds(input, "knee");
+    const explicitFunctions = [
+      ...explicitFunctionIds.filter((id) => rankedIds.includes(id)),
+      ...rankedIds.filter((id) => id.startsWith("function:") && taskPriority(id, input) > 0 && !explicitFunctionIds.includes(id)),
+    ];
+    const primaryExplicitFunction = explicitFunctions[0];
+    const secondaryExplicitFunctions = explicitFunctions.slice(1);
     const localKneeCheck = /膝前|髌骨|髌骨下|髌腱/.test(locationSource)
       ? ["special:knee-patella-tenderness-self"].find((id) => availableIds.includes(id))
       : /膝内侧|膝外侧|关节线/.test(locationSource)
         ? ["special:knee-joint-line-tenderness"].find((id) => availableIds.includes(id))
         : undefined;
+    const localKneeStrength = /膝内侧|鹅足|内侧关节线/.test(locationSource)
+      ? ["strength:knee-adductor-pes"].find((id) => availableIds.includes(id))
+      : /膝外侧|外侧关节线/.test(locationSource)
+        ? ["strength:knee-glute"].find((id) => availableIds.includes(id))
+        : /膝前|髌骨|髌骨下|髌腱/.test(locationSource)
+          ? ["strength:knee-quadriceps"].find((id) => availableIds.includes(id))
+          : undefined;
     const hamstringStrength = /屈膝|弯膝发力|脚跟向后拉|膝后无力|大腿后侧无力/.test(`${input.currentTask ?? ""} ${input.symptomType ?? ""} ${input.symptoms.join(" ")}`)
       ? ["strength:knee-hamstring"].find((id) => availableIds.includes(id))
       : undefined;
@@ -348,12 +366,14 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     // 膝伸直和弯曲是完整的基础活动检查组，不能被力量或功能检查挤掉。
     // 主诉功能动作仍可先复现；进入关节活动后固定先看伸直，再看弯曲。
     return [
-      ...(explicitFunction ? [explicitFunction] : []),
+      ...(primaryExplicitFunction ? [primaryExplicitFunction] : []),
       ...kneeMotionIds,
       ...(localKneeCheck ? [localKneeCheck] : []),
+      ...secondaryExplicitFunctions,
+      ...(localKneeStrength ? [localKneeStrength] : []),
       ...(hamstringStrength ? [hamstringStrength] : []),
-      ...rankedIds.filter((id) => !kneeMotionIds.includes(id) && id !== explicitFunction && id !== localKneeCheck && id !== hamstringStrength),
-    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], kneeMotionIds.length + Number(Boolean(explicitFunction)) + Number(Boolean(localKneeCheck)) + Number(Boolean(hamstringStrength))));
+      ...rankedIds.filter((id) => !kneeMotionIds.includes(id) && !explicitFunctions.includes(id) && id !== localKneeCheck && id !== localKneeStrength && id !== hamstringStrength),
+    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], kneeMotionIds.length + explicitFunctions.length + Number(Boolean(localKneeCheck)) + Number(Boolean(localKneeStrength)) + Number(Boolean(hamstringStrength))));
   }
 
   return rankedIds.slice(0, PILOT_ASSESSMENT_BUDGET[role]);

@@ -1254,7 +1254,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       : includesAny(intake.symptomType, ["刺", "胀"])
         ? [...combinedMotionItems, ...specialItems, ...functionItems, ...standaloneStrengthItems]
         : [...interleaved, ...specialItems, ...functionItems];
-    return rankAndLimit(order);
+    // 专业模式也必须保留用户明确选中的多个功能动作；通用排序预算只负责
+    // 排顺序，不能把第二个主诉动作静默挤出独立评估队列。
+    return rankAndLimit(order, functionItems.map((item) => item.id));
   }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile.isGuided, workflowProfile.operationTarget, workflowProfile.palpationMode, imaging]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”
