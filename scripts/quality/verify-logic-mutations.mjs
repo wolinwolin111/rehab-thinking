@@ -172,6 +172,59 @@ for (const mutation of cases) {
   console.log(`${mutation.id}: killed`);
 }
 
+// H 批 S-01/S-05：膝决策输入的侧别保真定向变异。
+// 适配器依赖 knee-decision-core（@/ 别名），data-URL 无法解析——按场景测试
+// 的方式把核心与适配器拼成单包（核心去导出、适配器去导入）后再做变异对照。
+function stripKneeImports(text) {
+  return text
+    .replace(/import\s+(?:type\s+)?\{[^}]*\}\s*from\s*"[^"]*";?/g, "")
+    .replace(/import\s+[^"'\n]+\s+from\s*"[^"]*";?/g, "");
+}
+const kneeCoreSource = await readFile(new URL("../../src/domain/rehab/shared/knee-decision-core.ts", import.meta.url), "utf8");
+const kneeAdapterSource = await readFile(new URL("../../src/domain/rehab/shared/knee-workflow-adapter.ts", import.meta.url), "utf8");
+const kneeBundleSource = [stripKneeImports(kneeCoreSource).replace(/export\s+/g, ""), stripKneeImports(kneeAdapterSource)].join("\n");
+const kneeAdapterOriginal = await load(kneeBundleSource);
+const kneeMutationCases = [
+  {
+    id: "MUT-KNEE-01-finding-side-flattened",
+    needle: "const itemSide: KneeSide = item.side ? toSide(item.side) : side;",
+    replacement: "const itemSide: KneeSide = side;",
+    snapshot: {
+      role: "general",
+      side: "右侧",
+      location: "膝前",
+      action: "膝盖绷直",
+      baselineScore: 5,
+      assessments: [{ id: "motion:knee-extension", kind: "motion", title: "膝伸直", active: "limited", passive: "skip", side: "左侧" }],
+    },
+  },
+  {
+    id: "MUT-KNEE-02-dedup-side-ignored",
+    needle: "return fromKey ? toSide(fromKey) : fallback;",
+    replacement: "return fallback;",
+    snapshot: {
+      role: "general",
+      side: "双侧/中间",
+      location: "膝前",
+      action: "膝盖绷直",
+      baselineScore: 5,
+      assessments: [],
+      treatmentRecords: [
+        { candidateId: "knee-lateral-chain", treatmentKey: "左侧:muscle:lateral-chain" },
+        { candidateId: "knee-lateral-chain", treatmentKey: "右侧:muscle:lateral-chain" },
+      ],
+    },
+  },
+];
+for (const mutation of kneeMutationCases) {
+  assert.ok(kneeAdapterSource.includes(mutation.needle), `${mutation.id} mutation target disappeared`);
+  const expected = kneeAdapterOriginal.kneeDecisionInputFromWorkflow(mutation.snapshot);
+  const mutated = await load(kneeBundleSource.replace(mutation.needle, mutation.replacement));
+  const mutatedResult = mutated.kneeDecisionInputFromWorkflow(mutation.snapshot);
+  assert.notDeepEqual(mutatedResult, expected, `${mutation.id} was not detected`);
+  console.log(`${mutation.id}: killed`);
+}
+
 const ledgerSource = await readFile(new URL("../../src/domain/rehab/treatment/treatment-ledger-core.ts", import.meta.url), "utf8");
 const ledgerCases = [
   {

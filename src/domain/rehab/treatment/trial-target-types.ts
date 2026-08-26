@@ -96,6 +96,8 @@ export type IntakeInput = ChiefActionIntake & {
   description: string;
   baselineScore: number;
   baselineScoreConfirmed: boolean;
+  /** S-06：双侧场景下用户明确选择的优先处理侧；单侧或未选时缺省。 */
+  prioritySide?: string;
 };
 
 export type TrialTargetOutput = {

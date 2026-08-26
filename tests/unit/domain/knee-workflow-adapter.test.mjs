@@ -352,3 +352,119 @@ test("knee swelling management hands off to the remaining pain-related muscle un
   }));
   assert.equal(after.currentTreatment?.id, "knee-anterior-thigh-rectus-femoris");
 });
+
+test("S-01：各检查事实携带自身侧别，缺省回退主诉侧", () => {
+  const input = kneeDecisionInputFromWorkflow({
+    role: "general",
+    side: "右侧",
+    location: "膝前",
+    action: "膝盖绷直",
+    baselineScore: 5,
+    assessments: [
+      { id: "motion:knee-extension", kind: "motion", title: "膝伸直", active: "limited", passive: "skip", side: "左侧" },
+      { id: "strength:knee-quadriceps", kind: "strength", title: "股四头肌力量", simple: "weak" },
+    ],
+  });
+  const extension = input.findings.find((finding) => finding.id === "motion:knee-extension");
+  assert.equal(extension?.side, "left", "检查结果自带左侧时不得压平成主诉右侧");
+  const strength = input.findings.find((finding) => finding.kind === "strength");
+  assert.equal(strength?.side, "right", "未带侧别的检查沿用主诉侧");
+});
+
+test("S-03：被动检查看不出来时仍生成事实且不丢答案", () => {
+  const input = kneeDecisionInputFromWorkflow({
+    role: "general",
+    side: "双侧/中间",
+    location: "膝前",
+    action: "膝盖绷直",
+    baselineScore: 5,
+    assessments: [{ id: "motion:knee-extension", kind: "motion", title: "膝伸直", active: "same", passive: "unsure", side: "左侧" }],
+  });
+  const fact = input.findings.find((finding) => finding.id === "motion:knee-extension");
+  assert.ok(fact, "passive unsure 不能静默丢弃");
+  assert.equal(fact?.result, "unknown");
+});
+
+test("S-03：主动单侧受限按真实侧别生成受限事实", () => {
+  const input = kneeDecisionInputFromWorkflow({
+    role: "general",
+    side: "右侧",
+    location: "膝前",
+    action: "弯膝",
+    baselineScore: 5,
+    assessments: [{ id: "motion:knee-flexion", kind: "motion", title: "膝屈曲", active: "left-limited", passive: "skip", side: "左侧" }],
+  });
+  const fact = input.findings.find((finding) => finding.kind === "motion-range");
+  assert.equal(fact?.result, "limited");
+  assert.equal(fact?.side, "left");
+});
+
+test("S-07：worse 复测映射为双维度受限，未知取值显式告警", () => {
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (value) => warnings.push(String(value));
+  try {
+    const worse = kneeDecisionInputFromWorkflow({
+      role: "general",
+      side: "右侧",
+      location: "膝前",
+      action: "膝盖绷直",
+      baselineScore: 4,
+      assessments: [{ id: "motion:knee-extension", kind: "motion", title: "膝伸直", active: "limited", passive: "limited" }],
+      treatmentRecords: [{ candidateId: "knee-extension-control", retestOnly: true, rangeOutcomes: { "knee-extension": "worse" } }],
+    });
+    const worseValues = worse.observations[0]?.values;
+    assert.equal(worseValues?.["active-range"], "limited");
+    assert.equal(worseValues?.["passive-range"], "limited", "worse 的被动维度信息不得丢失");
+    kneeDecisionInputFromWorkflow({
+      role: "general",
+      side: "右侧",
+      location: "膝前",
+      action: "膝盖绷直",
+      assessments: [],
+      treatmentRecords: [{ candidateId: "knee-extension-control", retestOnly: true, rangeOutcomes: { "knee-extension": "mystery-value" } }],
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+  assert.ok(warnings.some((message) => message.includes("未知")), "未知复测取值必须显式告警而不是静默兜底");
+});
+
+test("S-05：双侧左右处理记录去重键独立，中文侧前缀被识别", () => {
+  const input = kneeDecisionInputFromWorkflow({
+    role: "general",
+    side: "双侧/中间",
+    location: "膝前",
+    action: "膝盖绷直",
+    baselineScore: 5,
+    assessments: [],
+    treatmentRecords: [
+      { candidateId: "knee-lateral-chain", treatmentKey: "左侧:muscle:lateral-chain" },
+      { candidateId: "knee-lateral-chain", treatmentKey: "右侧:muscle:lateral-chain" },
+      { candidateId: "custom-manual-release", treatmentKey: "左侧:custom:manual-release" },
+    ],
+  });
+  const keys = input.completedTreatments.map((record) => record.dedupKey);
+  assert.equal(new Set(keys).size, keys.length, `dedupKey 必须互不相同: ${keys.join(", ")}`);
+  assert.ok(keys.includes("左侧:custom:manual-release"), "非核心处理沿用原 treatmentKey");
+});
+
+test("S-02：结构化标记按各自侧别生成事实，旧文本格式兼容", () => {
+  const base = { role: "general", side: "右侧", location: "膝前", action: "下蹲", baselineScore: 4, symptoms: ["肿胀或淤青", "按压痛"], assessments: [] };
+  const structured = kneeDecisionInputFromWorkflow({
+    ...base,
+    swellingMarks: [{ side: "左侧", location: "髌骨上方" }, { side: "右侧", location: "腘窝" }],
+    tendernessMarks: [{ side: "左侧", location: "髌骨下方" }],
+  });
+  const swellingFacts = structured.findings.filter((finding) => finding.kind === "swelling");
+  assert.deepEqual(swellingFacts.map((finding) => finding.side).sort(), ["left", "right"]);
+  assert.deepEqual(swellingFacts.find((finding) => finding.side === "left")?.locations, ["髌骨上方"]);
+  const tendernessFacts = structured.findings.filter((finding) => finding.kind === "tenderness");
+  assert.equal(tendernessFacts.length, 1);
+  assert.equal(tendernessFacts[0].side, "left");
+
+  const legacy = kneeDecisionInputFromWorkflow({ ...base, swellingLocation: "髌骨上方" });
+  const legacySwelling = legacy.findings.filter((finding) => finding.kind === "swelling");
+  assert.equal(legacySwelling.length, 1);
+  assert.equal(legacySwelling[0].side, "right");
+});

@@ -143,3 +143,34 @@ test("a direction chief (勾脚) keeps the chief direction in the chief target r
   const hasChiefInRetest = (chief.retestFindings ?? []).some((f) => f.id === "motion:ankle-dorsiflexion");
   assert.ok(hasChiefInRetest, "chief direction must stay in retestFindings so it is labeled 主诉动作 in the batch retest");
 });
+
+test("S-06：主诉优先侧不被评估更差侧替换", () => {
+  // 双侧主诉、用户明确选择优先处理右膝；检查中左膝活动更差。
+  // 主诉目标必须保持右侧——系统承诺不静默替换主诉。
+  const ctx = makeContext({
+    intake: {
+      ...makeContext().intake,
+      side: "双侧/中间",
+      prioritySide: "右侧",
+      reportedActions: [{ raw: "弯膝", label: "弯膝" }],
+    },
+  });
+  const targets = core.buildTrialTargets(ctx);
+  const chief = targets.find((t) => t.id === "target:chief");
+  assert.ok(chief, "chief target should exist");
+  assert.equal(chief.finding.side, "右侧", "target:chief 侧别必须跟随主诉优先侧");
+});
+
+test("S-06：没有明确优先侧时保留原值，不得清空也不得用其他证据侧覆写", () => {
+  const ctx = makeContext({
+    findings: [
+      { id: "track:motion:knee-flexion", priority: "track", title: "膝关节屈曲活动度", side: "右侧", tags: ["knee-flexion", "motion"] },
+      { id: "motion:knee-flexion", priority: "support", title: "膝关节屈曲活动度", side: "左侧", tags: ["knee-flexion", "motion"] },
+    ],
+    intake: { ...makeContext().intake, reportedActions: [{ raw: "弯膝", label: "弯膝" }] },
+  });
+  const targets = core.buildTrialTargets(ctx);
+  const chief = targets.find((t) => t.id === "target:chief");
+  assert.ok(chief, "chief target should exist");
+  assert.equal(chief.finding.side, "右侧", "无优先侧时保持首条发现原侧别");
+});

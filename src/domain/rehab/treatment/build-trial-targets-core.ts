@@ -544,7 +544,10 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     const remainingMotionTargets = sameDirectionMotionTarget ? motionTargets.filter((target) => target !== sameDirectionMotionTarget) : motionTargets;
     const targets: TrialTargetOutput[] = [];
     if (hasClearChiefAction(intake)) {
-      const chiefSide = sameDirectionMotionTarget?.finding.side ?? findings.find((finding) => finding.priority === "support" && finding.side)?.side;
+      // S-06：target:chief 的侧别只跟随主诉明确声明的优先侧；无优先侧时保留
+      // 首条发现原值（不清空、也不用评估更差侧覆写）——与 bilateral-flow-core
+      // 「评估更差侧只能提醒、不得静默替换主诉」的承诺一致。
+      const chiefComplaintSide = intake.prioritySide;
       const combinedChiefCandidates = [...(sameDirectionMotionTarget?.candidates ?? []), ...chiefCandidates]
         .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
       const combinedOptional = [...(sameDirectionMotionTarget?.optionalCandidates ?? []), ...chiefOptionalCandidates]
@@ -559,7 +562,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const selectedChiefCandidates = selectTreatmentChainCandidates(combinedChiefCandidates, explicitChiefMuscleLimit);
       const chiefCandidateRetestIds = new Set(selectedChiefCandidates.flatMap((candidate) => candidate.retestIds ?? []));
       const chiefRetestFindings = motionFindings.filter((finding) => [...chiefCandidateRetestIds].some((id) => samePhysicalAction(id, motionIdFromFinding(finding))));
-      if (selectedChiefCandidates.length) targets.push({ id: "target:chief", finding: { ...findings[0], side: chiefSide }, retestFindings: chiefRetestFindings, candidates: selectedChiefCandidates, optionalCandidates: [...combinedChiefCandidates.filter((candidate) => !selectedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate))), ...combinedOptional].filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index).slice(0, 3), chain: chiefDirection ? directionChain(chiefDirection) : "主诉相关", retestLabel: chiefActionLabel(intake), sourceCaseIds: pilotSourceCaseIds });
+      if (selectedChiefCandidates.length) targets.push({ id: "target:chief", finding: chiefComplaintSide ? { ...findings[0], side: chiefComplaintSide } : findings[0], retestFindings: chiefRetestFindings, candidates: selectedChiefCandidates, optionalCandidates: [...combinedChiefCandidates.filter((candidate) => !selectedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate))), ...combinedOptional].filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index).slice(0, 3), chain: chiefDirection ? directionChain(chiefDirection) : "主诉相关", retestLabel: chiefActionLabel(intake), sourceCaseIds: pilotSourceCaseIds });
     }
     const provisionalSymptomTargets = [...painfulMotionOnlyTargets, ...painfulStrengthTargets, ...painfulFunctionTargets];
     if (!hasClearChiefAction(intake)) targets.push(...provisionalSymptomTargets, ...remainingMotionTargets);

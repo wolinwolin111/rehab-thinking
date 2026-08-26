@@ -1467,6 +1467,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         tensionChecked: item.kind === "motion" ? Boolean(record.tensionChecked || assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionChecked) : record.tensionChecked,
         discomfortLocations: (record.discomfortLocations ?? []).map((location) => location.location),
         control: item.kind === "function" ? functionControlValue(record) : undefined,
+        // S-01：双侧场景下逐项携带该检查自身侧别，供膝决策按真实侧归属。
+        side: ["左侧", "右侧"].includes(record.worseSide ?? "") ? record.worseSide : undefined,
       }];
       if (item.kind === "motion" && item.pairedStrengthId && record.pairedStrength) workflowItems.push({
         id: item.pairedStrengthId,
@@ -1482,11 +1484,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
          // 活动度疼痛和保持疼痛分开记录：保持检查用 pairedStrength 自己的字段。
         discomfortType: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.pairedStrengthType : undefined,
         symptomScore: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? record.pairedStrengthScore : undefined,
-        tensionLocations: undefined,
-        tensionChecked: undefined,
-        discomfortLocations: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? (record.pairedStrengthLocations ?? []).map((location) => location.location) : [],
-        control: undefined,
-      });
+         tensionLocations: undefined,
+         tensionChecked: undefined,
+         discomfortLocations: strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? (record.pairedStrengthLocations ?? []).map((location) => location.location) : [],
+         control: undefined,
+         side: ["左侧", "右侧"].includes(record.worseSide ?? "") ? record.worseSide : undefined,
+       });
       return workflowItems;
     });
   }, [region, assessments, assessmentResults, intake]);
@@ -1503,6 +1506,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       symptoms: intake.symptoms,
       swellingLocation: intake.swellingLocation,
       tendernessLocation: intake.tendernessLocation,
+      // S-02：结构化带侧别标记原样传入，膝决策不再只看压平文本。
+      swellingMarks: intake.swellingLocations.map((item) => ({ side: item.side, location: item.location })),
+      tendernessMarks: intake.tendernessLocations.map((item) => ({ side: item.side, location: item.location })),
       assessments: kneeWorkflowAssessments,
       treatmentRecords: trialRecords.map((record) => ({
         candidateId: record.candidateId,

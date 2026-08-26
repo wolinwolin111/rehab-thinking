@@ -103,13 +103,13 @@
 
 | 编号 | 优先级 | 范围 | 问题 | 验收标准 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| S-01 | P1 | 方案C候选池·膝决策输入 | `knee-workflow-adapter.ts:301` 所有评估 finding（活动度/力量/功能）的 side 一律取自主诉侧一处解析，系统性压平更细的侧别证据。 | 决策输入携带各 finding 自身侧别；双侧用例中问题台账与 dedupKey 按真实侧别归属；定向变异覆盖。 | 待整改 |
-| S-02 | P1 | 方案C候选池·标记数据流 | `rehabmind-workbench.tsx:1501-1502` 构造快照时把带侧别的结构化标记（swellingLocations/tendernessLocations）压成拼接文本，侧别在 adapter 入口即丢失。 | 快照携带结构化带侧别标记；旧快照兼容迁移。 | 待整改 |
-| S-03 | P1 | 方案C候选池·双侧活动度 | `knee-workflow-adapter.ts:214-223` active 的 left/right-limited 被折叠为泛化 limited 且挂主诉侧；passive 非 same/limited 的取值整条 fact 不生成（静默丢弃）。 | 双侧被动受限答案生成对应 fact 且侧别正确；不丢答案。 | 待整改 |
-| S-04 | P1 | 方案C候选池·感觉异常死输入 | UI 必答麻电范围并持久化，但 `KneeWorkflowSnapshot`（adapter:131-143）无 sensory 字段，`knee-decision-core` 的 `kind:"sensory"` 无生产方——麻电禁忌对膝路径不可见。 | 麻电范围进入膝决策输入或书面确认由 pilot 层独担并加注释。 | 待整改 |
-| S-05 | P1 | 方案C候选池·处理去重键 | `knee-workflow-adapter.ts:312-316` treatmentKey 前缀为中文侧别而 side 为英文枚举，startsWith 恒 false（死代码）；双侧主诉时左右处理记录被合成同一 dedupKey，第二侧误标"仅复测"。 | 修复前缀匹配或删除死分支；双侧两侧各自独立推进。 | 待整改 |
-| S-06 | P1 | 方案C候选池·主诉目标侧别 | `build-trial-targets-core.ts:547,562` target:chief 的 finding.side 被改写为评估侧，极端时 undefined 清空，违背 bilateral-flow-core"不得静默替换主诉"承诺。 | 主诉目标 side 保持主诉侧；chiefSide 为空时不清空原值。 | 待整改 |
-| S-07 | P2 | 方案C候选池·复测结果映射 | `knee-workflow-adapter.ts:293-298` outcomeValues 不识别合法值 "worse"，落入兜底 "limited"，被动维度信息丢失。 | 合法枚举全覆盖映射；未知值显式告警而非静默兜底。 | 待整改 |
+| S-01 | P1 | 方案C候选池·膝决策输入 | `knee-workflow-adapter.ts:301` 所有评估 finding（活动度/力量/功能）的 side 一律取自主诉侧一处解析，系统性压平更细的侧别证据。 | 决策输入携带各 finding 自身侧别；双侧用例中问题台账与 dedupKey 按真实侧别归属；定向变异覆盖。 | 待验证（2026-08-26 H 批：KneeWorkflowAssessment 增侧别字段+workbench 逐项传入+adapter 按自身侧别归属，缺省回退主诉侧；MUT-KNEE-01 killed） |
+| S-02 | P1 | 方案C候选池·标记数据流 | `rehabmind-workbench.tsx:1501-1502` 构造快照时把带侧别的结构化标记（swellingLocations/tendernessLocations）压成拼接文本，侧别在 adapter 入口即丢失。 | 快照携带结构化带侧别标记；旧快照兼容迁移。 | 待验证（2026-08-26 H 批：快照携带结构化带侧别标记 swellingMarks/tendernessMarks，按侧分组生成事实；旧压平文本兼容回退） |
+| S-03 | P1 | 方案C候选池·双侧活动度 | `knee-workflow-adapter.ts:214-223` active 的 left/right-limited 被折叠为泛化 limited 且挂主诉侧；passive 非 same/limited 的取值整条 fact 不生成（静默丢弃）。 | 双侧被动受限答案生成对应 fact 且侧别正确；不丢答案。 | 待验证（2026-08-26 H 批：passive unsure/unable 生成 unknown 事实不再静默丢弃；单侧受限事实随真实侧别） |
+| S-04 | P1 | 方案C候选池·感觉异常死输入 | UI 必答麻电范围并持久化，但 `KneeWorkflowSnapshot`（adapter:131-143）无 sensory 字段，`knee-decision-core` 的 `kind:"sensory"` 无生产方——麻电禁忌对膝路径不可见。 | 麻电范围进入膝决策输入或书面确认由 pilot 层独担并加注释。 | 待验证（2026-08-26 H 批：书面确认职责划分——pilot 层 selfNeuralReferral 出口卡兜底，膝路径不重复产生感觉异常台账；已在 adapter 注明） |
+| S-05 | P1 | 方案C候选池·处理去重键 | `knee-workflow-adapter.ts:312-316` treatmentKey 前缀为中文侧别而 side 为英文枚举，startsWith 恒 false（死代码）；双侧主诉时左右处理记录被合成同一 dedupKey，第二侧误标"仅复测"。 | 修复前缀匹配或删除死分支；双侧两侧各自独立推进。 | 待验证（2026-08-26 H 批：删除英文前缀恒假死分支，dedupKey 按 treatmentKey 中文侧前缀解析记录真实侧别；非核心处理沿用原 key；MUT-KNEE-02 killed） |
+| S-06 | P1 | 方案C候选池·主诉目标侧别 | `build-trial-targets-core.ts:547,562` target:chief 的 finding.side 被改写为评估侧，极端时 undefined 清空，违背 bilateral-flow-core"不得静默替换主诉"承诺。 | 主诉目标 side 保持主诉侧；chiefSide 为空时不清空原值。 | 待验证（2026-08-26 H 批：target:chief 侧别只跟随 intake.prioritySide，无优先侧保留首条发现原值不清空） |
+| S-07 | P2 | 方案C候选池·复测结果映射 | `knee-workflow-adapter.ts:293-298` outcomeValues 不识别合法值 "worse"，落入兜底 "limited"，被动维度信息丢失。 | 合法枚举全覆盖映射；未知值显式告警而非静默兜底。 | 待验证（2026-08-26 H 批：outcomeValues 全枚举覆盖含 worse 双维度映射；未知值 console.warn 显式告警） |
 | M-01 | P1 | 标记侧别提示 | 肿胀标记侧别与主诉侧别不一致时系统零提醒且决策按主诉侧处理（knee-workflow-adapter.ts:305）。 | 选与主诉不同侧时出现非阻断温和确认提示；同侧不提示；单测正反断言。 | 待验证（2026-08-26：肿胀单项已实现并随 D 批扩展至按压痛/麻电；待测试会话回归） |
 | M-02 | P1 | 标记侧别提示扩展 | 同 M-1 的按压痛、麻电两个同源场景（symptom-stage 三处 picker 均可自由切侧，全库无比较代码）。 | 同 M-1 验收标准扩展至按压痛与麻电标记。 | 待验证（2026-08-26 D 批：专业/自助 4 处接线完成，复用 noun 用例；待测试会话回归） |
 | M-03 | P0 | 外伤矛盾绕过安全门 | 描述含外伤词（自动解析机制）但用户手选"没有明确受伤"时静默通过：isAcuteTrauma 失效连锁跳过 Ottawa 骨性三问并解除急性负荷限制（workbench:2610,2664）。 | 检测到描述与所选机制矛盾时给出确认提示；确认后按所选值执行并留痕。 | 待验证（2026-08-26 D 批：trauma-mechanism-consistency-core 5/5 单测，专业/自助双端接线；待测试会话回归） |

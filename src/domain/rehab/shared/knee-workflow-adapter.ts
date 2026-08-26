@@ -112,8 +112,10 @@ export type KneeWorkflowAssessment = {
   passiveSymptomScore?: number;
   tensionLocations?: string[];
   tensionChecked?: boolean;
-  discomfortLocations?: string[];
-  control?: string;
+   discomfortLocations?: string[];
+   control?: string;
+  /** S-01：该检查项自身的侧别（双侧场景逐项记录的更差侧）；缺省回退主诉侧。 */
+  side?: string;
 };
 
 export type KneeWorkflowRecord = {
@@ -128,6 +130,14 @@ export type KneeWorkflowRecord = {
   reviewOnly?: boolean;
 };
 
+export type KneeWorkflowMark = {
+  side?: string;
+  location?: string;
+};
+
+// S-04：麻电范围（感觉异常）刻意不进入膝决策输入——pilot 层已在症状阶段
+// 提供「出现麻、电或感觉变化 → 建议线下确认」出口卡兜底（selfNeuralReferral），
+// 膝路径不重复产生感觉异常问题台账；如未来需要接入，从新增 sensoryMarks 字段起步。
 export type KneeWorkflowSnapshot = {
   role: string;
   side: string;
@@ -138,6 +148,9 @@ export type KneeWorkflowSnapshot = {
   symptoms?: string[];
   swellingLocation?: string;
   tendernessLocation?: string;
+  /** S-02：带侧别的结构化标记；提供时优先于压平文本（旧快照兼容）。 */
+  swellingMarks?: KneeWorkflowMark[];
+  tendernessMarks?: KneeWorkflowMark[];
   assessments: KneeWorkflowAssessment[];
   treatmentRecords?: KneeWorkflowRecord[];
 };
@@ -205,6 +218,8 @@ function isLimited(value?: string) {
 function assessmentFindings(items: KneeWorkflowAssessment[], side: KneeSide) {
   const facts: KneeFindingFact[] = [];
   items.forEach((item) => {
+    // S-01：优先使用检查项自身侧别（双侧逐项证据），缺省回退主诉侧。
+    const itemSide: KneeSide = item.side ? toSide(item.side) : side;
     const actionId = actionFromAssessment(item);
     const action = actionLabel(actionId) ?? item.title;
     const locations = [...(item.tensionLocations ?? []), ...(item.discomfortLocations ?? [])]
@@ -216,11 +231,13 @@ function assessmentFindings(items: KneeWorkflowAssessment[], side: KneeSide) {
         : ["same", "normal"].includes(item.active ?? "")
           ? "matches" as const
           : "unknown" as const;
-      const passiveRange = item.passive === "same"
-        ? "matches" as const
+      const passiveRange: KneeFindingFact["passiveRange"] = item.passive === "same"
+        ? "matches"
         : item.passive === "limited"
-          ? "limited" as const
-          : "not-checked" as const;
+          ? "limited"
+          : ["unsure", "unable"].includes(item.passive ?? "")
+            ? "unknown"
+            : "not-checked";
       const hasRangeProblem = activeRange === "limited" || passiveRange === "limited";
       const hasSymptom = item.discomfort === "yes"
         || item.passiveDiscomfort === "yes"
@@ -230,7 +247,7 @@ function assessmentFindings(items: KneeWorkflowAssessment[], side: KneeSide) {
         facts.push({
           id: item.id,
           kind: "motion-range",
-          side,
+          side: itemSide,
           action,
           direction,
           result: "limited",
@@ -243,28 +260,31 @@ function assessmentFindings(items: KneeWorkflowAssessment[], side: KneeSide) {
         });
       }
       if (hasSymptom) {
-        facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side, action, direction, result: "painful", symptomScore: item.symptomScore ?? item.passiveSymptomScore, sensation: item.discomfortType, locations });
+        facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side: itemSide, action, direction, result: "painful", symptomScore: item.symptomScore ?? item.passiveSymptomScore, sensation: item.discomfortType, locations });
       } else if (!hasRangeProblem && ["same", "normal"].includes(item.active ?? "") && ["same", undefined, "skip"].includes(item.passive)) {
-        facts.push({ id: item.id, kind: "motion-range", side, action, direction, result: "normal", activeRange: "matches", passiveRange: item.passive === "same" ? "matches" : "not-checked", locationChecked: item.tensionChecked });
+        facts.push({ id: item.id, kind: "motion-range", side: itemSide, action, direction, result: "normal", activeRange: "matches", passiveRange: item.passive === "same" ? "matches" : "not-checked", locationChecked: item.tensionChecked });
       } else if (["unsure", "skip"].includes(item.active ?? "")) {
-        facts.push({ id: item.id, kind: "motion-range", side, action, direction, result: "unknown", activeRange: "unknown", passiveRange: "unknown", locationChecked: item.tensionChecked });
+        facts.push({ id: item.id, kind: "motion-range", side: itemSide, action, direction, result: "unknown", activeRange: "unknown", passiveRange: "unknown", locationChecked: item.tensionChecked });
+      } else if (passiveRange === "unknown") {
+        // S-03：被动「看不出来/做不了」不丢答案——生成 unknown 事实保留作答痕迹。
+        facts.push({ id: item.id, kind: "motion-range", side: itemSide, action, direction, result: "unknown", activeRange: "matches", passiveRange: "unknown", locationChecked: item.tensionChecked });
       }
       return;
     }
     if (item.kind === "strength" && item.simple === "weak") {
-      facts.push({ id: item.id, kind: "strength", side, action, result: "weak", locations: locations.length ? locations : item.title.includes("膝盖伸直") ? ["股四头肌"] : [] });
+      facts.push({ id: item.id, kind: "strength", side: itemSide, action, result: "weak", locations: locations.length ? locations : item.title.includes("膝盖伸直") ? ["股四头肌"] : [] });
       return;
     }
     if (item.kind === "strength" && item.simple === "painful") {
-      facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side, action, result: "painful", symptomScore: item.symptomScore, sensation: item.discomfortType, locations });
+      facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side: itemSide, action, result: "painful", symptomScore: item.symptomScore, sensation: item.discomfortType, locations });
       return;
     }
     if (item.kind === "function") {
       if (item.control === "compensated" || item.simple === "present" || item.simple === "weak") {
-        facts.push({ id: `${item.id}:control`, kind: "function-control", side, action, result: "unstable", locations });
+        facts.push({ id: `${item.id}:control`, kind: "function-control", side: itemSide, action, result: "unstable", locations });
       }
       if (item.discomfort === "yes" || item.simple === "painful" || item.simple === "unable") {
-        facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side, action, result: "painful", symptomScore: item.symptomScore, sensation: item.discomfortType, locations });
+        facts.push({ id: `${item.id}:symptom`, kind: "motion-symptom", side: itemSide, action, result: "painful", symptomScore: item.symptomScore, sensation: item.discomfortType, locations });
       }
     }
   });
@@ -293,8 +313,53 @@ function treatmentDedupKey(candidateId: string, side: KneeSide) {
 function outcomeValues(outcome: string) {
   if (outcome === "both-match") return { "active-range": "matches", "passive-range": "matches" };
   if (outcome === "passive-match-active-limited") return { "active-range": "limited", "passive-range": "matches" };
-  if (["better-passive-limited", "passive-limited"].includes(outcome)) return { "active-range": "limited", "passive-range": "limited" };
-  return { "active-range": "limited" };
+  if (["better-passive-limited", "passive-limited", "worse"].includes(outcome)) {
+    // S-07：worse 是合法复测取值——主动与被动维度同时受限，被动信息不得丢失。
+    return { "active-range": "limited", "passive-range": "limited" };
+  }
+  console.warn(`[knee-workflow-adapter] 未知的复测结果取值: ${JSON.stringify(outcome)}，已按活动度受限保守处理`);
+  return { "active-range": "limited" as const, "passive-range": "not-checked" as const };
+}
+
+/**
+ * S-02：结构化带侧别标记按侧别分组生成事实；无有效标记时回退压平文本
+ * （旧快照兼容，行为与历史版本一致）。
+ */
+function symptomMarkFindings(
+  id: string,
+  kind: "swelling" | "tenderness",
+  marks: KneeWorkflowMark[] | undefined,
+  fallbackLocation: string | undefined,
+  fallbackSide: KneeSide,
+): KneeFindingFact[] {
+  const valid = (marks ?? [])
+    .map((mark) => ({ side: toSide(mark.side ?? ""), location: (mark.location ?? "").trim() }))
+    .filter((mark) => mark.location);
+  if (!valid.length) {
+    return [{ id, kind, side: fallbackSide, result: "painful", locations: [fallbackLocation ?? ""].filter(Boolean) }];
+  }
+  const groups = new Map<KneeSide, string[]>();
+  valid.forEach((mark) => {
+    const locations = groups.get(mark.side) ?? [];
+    locations.push(mark.location);
+    groups.set(mark.side, locations);
+  });
+  return [...groups.entries()].map(([markSide, locations], index) => ({
+    id: index === 0 ? id : `${id}:${markSide}`,
+    kind,
+    side: markSide,
+    result: "painful" as const,
+    locations,
+  }));
+}
+
+/**
+ * S-05：treatmentKey 的中文侧前缀是记录的真实归属（左侧:/右侧:）。
+ * 双侧场景下左右记录必须各自独立推进，不得合成主诉侧的同一个键。
+ */
+function recordDedupSide(record: KneeWorkflowRecord, fallback: KneeSide): KneeSide {
+  const fromKey = /^(左侧|右侧)/.exec(record.treatmentKey ?? "")?.[1];
+  return fromKey ? toSide(fromKey) : fallback;
 }
 
 export function kneeDecisionInputFromWorkflow(snapshot: KneeWorkflowSnapshot): KneeDecisionInput {
@@ -302,18 +367,24 @@ export function kneeDecisionInputFromWorkflow(snapshot: KneeWorkflowSnapshot): K
   const actionId = canonicalKneeAction(snapshot.action);
   const action = snapshot.action || actionLabel(actionId);
   const findings = assessmentFindings(snapshot.assessments, side);
-  if (snapshot.symptoms?.includes("肿胀或淤青")) findings.push({ id: "workflow:swelling", kind: "swelling", side, result: "painful", locations: [snapshot.swellingLocation || snapshot.location].filter(Boolean) });
-  if (snapshot.symptoms?.includes("按压痛")) findings.push({ id: "workflow:tenderness", kind: "tenderness", side, result: "painful", locations: [snapshot.tendernessLocation || snapshot.location].filter(Boolean) });
+  // S-02：结构化带侧别标记优先；旧快照回退压平文本（兼容不变）。
+  if (snapshot.symptoms?.includes("肿胀或淤青")) {
+    findings.push(...symptomMarkFindings("workflow:swelling", "swelling", snapshot.swellingMarks, snapshot.swellingLocation || snapshot.location, side));
+  }
+  if (snapshot.symptoms?.includes("按压痛")) {
+    findings.push(...symptomMarkFindings("workflow:tenderness", "tenderness", snapshot.tendernessMarks, snapshot.tendernessLocation || snapshot.location, side));
+  }
 
   const workflowRecords = (snapshot.treatmentRecords ?? []).filter((record) => !record.reviewOnly);
   const treatmentRecords = workflowRecords.filter((record) => !record.retestOnly);
   const completedTreatments: KneeTreatmentRecord[] = treatmentRecords.map((record, index) => ({
     unitId: record.candidateId,
+    // S-05：核心处理按记录真实侧别重建规范键；非核心处理沿用原 treatmentKey
+    // （其自带中文侧前缀，天然按侧独立），缺失时才按侧别兜底。
+    // 原先对英文枚举前缀的 startsWith 判断恒为假（死分支），已删除。
     dedupKey: Object.hasOwn(KNEE_CORE_CANDIDATE_IDS, record.candidateId)
-      ? treatmentDedupKey(record.candidateId, side)
-      : record.treatmentKey?.startsWith(`${side}:`)
-        ? record.treatmentKey
-        : treatmentDedupKey(record.candidateId, side),
+      ? treatmentDedupKey(record.candidateId, recordDedupSide(record, side))
+      : record.treatmentKey || treatmentDedupKey(record.candidateId, recordDedupSide(record, side)),
     completedAt: index + 1,
     relatedActionIds: [...new Set([
       ...(record.relatedActionIds ?? []),
