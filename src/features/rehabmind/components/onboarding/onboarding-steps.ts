@@ -9,14 +9,6 @@ export type FocusStep = {
 
 export const FOCUS_STEPS: readonly FocusStep[] = [
   {
-    eyebrow: "开始使用",
-    title: "你的康复伙伴",
-    description: "描述问题，跟着提示完成康复。进度自动保存。",
-    targetLabel: "",
-    targetKeys: [],
-    placement: "bottom",
-  },
-  {
     eyebrow: "第 1 步 · 症状信息",
     title: "描述你的不适",
     description: "哪边哪里、什么时候开始、什么动作不舒服。不确定的可以直接写“不清楚”。",
@@ -38,14 +30,6 @@ export const FOCUS_STEPS: readonly FocusStep[] = [
     description: "跟着提示完成评估、复测和训练。",
     targetLabel: "康复流程",
     targetKeys: ["flow-mobile", "flow-current", "flow"],
-    placement: "bottom",
-  },
-  {
-    eyebrow: "随时可以回来",
-    title: "历史案例",
-    description: "保存后从这里找到历史案例，继续上次进度或新建。",
-    targetLabel: "康复记录",
-    targetKeys: ["records", "top-actions"],
     placement: "bottom",
   },
   {

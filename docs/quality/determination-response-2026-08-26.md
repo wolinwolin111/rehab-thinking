@@ -112,3 +112,17 @@ C-1/C-2：排期到本批次 Phase 0，立即执行（C-1 含 orchestrator.test 
 - `contextual-tip-contract.test.mjs:20` 删除「已保存，下次打开可以从这里继续。」断言（`:19` 案例编号断言保留）。
 
 **预期影响**：本批提交后 `stage-render-contract` 与 `contextual-tip-contract` 两个文件转红，属本条定性范畴，非回归。
+
+---
+
+## RQ-S5：引导卡整层移除 + 聚焦教程精简为 4 步（2026-08-26 晚间产品决策·B 批）
+
+**有意变更** —— 用户确认引导卡内容与欢迎页/教程大面积重合（卡1 逐字重复欢迎页三行文案），且"保存"主题出现 4 次违反"效果提醒只出现一次"规范。定稿：引导卡连组件带 localStorage 标记彻底删除；聚焦教程由 6 步精简为 4 步（症状输入 → 帮我整理 → 康复流程 → 问题反馈），删除原步 1（你的康复伙伴）与步 5（历史案例）。
+
+开发会话已实现：`guide-cards.tsx` 删除、workbench 插播逻辑移除、`onboarding-steps.ts` 精简、CSS 块清理、`scripts/browser-full-walkthrough.mjs` 断言更新（引导卡 7 断言删除、新增"直达来源渠道/引导卡不存在" 2 断言、教程步标题断言改 4 步口径，总断言数 27 → 22）、`tests/browser/support/export-real-snapshot.mjs` 跳卡逻辑移除。
+
+→ 测试会话动作：
+- `stage-render-contract.test.mjs`：删除 `:16` GuideCards 的 loadTsxModule 行与 `:71-75` 附近的引导卡渲染测试整块；如合同中有依赖教程 6 步的断言一并按 4 步修订
+- 老用户 `rehabmind-guide-cards-seen` key 残留无害（不再被读取）；`rehabmind-onboarding-v1`（欢迎页已看标记）语义不变
+
+**预期影响**：`stage-render-contract` 在 RQ-S4 基础上继续红（同文件），按 S4+S5 一次性更新后转绿。

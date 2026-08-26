@@ -32,17 +32,8 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(800);
 
-  async function dismissGuideCards() {
-    const skip = page.getByRole("button", { name: "跳过引导", exact: true });
-    for (let i = 0; i < 4 && await skip.isVisible().catch(() => false); i += 1) {
-      await skip.click();
-      await page.waitForTimeout(150);
-    }
-  }
-
   await step("点击开始康复", () => page.getByRole("button", { name: "开始康复", exact: true }).click());
-  // cf47910 起，点击开始康复后会先出现三张引导卡浮层；跳过后才进入来源门。
-  await dismissGuideCards();
+  // B 批（2026-08-26）：引导卡已移除，开始康复后直接进入来源门。
   await step("选择来源渠道", async () => {
     // 渠道角色化定位：免疫渠道合并/文案调整（2026-08-26 渠道已合并为「抖音」等）。
     await page.getByRole("radio").first().check();

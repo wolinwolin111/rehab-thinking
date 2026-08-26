@@ -22,30 +22,11 @@ const welcome = await page.locator(".rm-product-welcome").isVisible().catch(() =
 check("1 欢迎页出现", welcome);
 if (!welcome) { console.log("FATAL"); await browser.close(); process.exit(1); }
 
-// ===== 2. 开始康复 → 引导卡 =====
+// ===== 2. 开始康复 → 直达来源渠道（引导卡已按产品决策移除，B 批） =====
 await page.getByRole("button", { name: "开始康复" }).click();
 await page.waitForTimeout(800);
-const guide = await page.locator(".rm-guide-cards-backdrop").isVisible().catch(() => false);
-check("2 引导卡出现", guide);
-
-const NEXT_BTN = ".rm-guide-cards-next";
-if (guide) {
-  for (let s = 0; s < 3; s++) {
-    const t = await page.textContent(".rm-guide-cards-title").catch(() => "");
-    if (s === 0) check("2a 卡1", t.includes("康复伙伴"), t);
-    if (s === 1) check("2b 卡2", t.includes("自动保存"), t);
-    if (s === 2) check("2c 卡3", t.includes("反馈") || t.includes("随时说"), t);
-    if (s < 2) { await page.click(NEXT_BTN); await page.waitForTimeout(300); }
-  }
-  const lastLabel = await page.textContent(NEXT_BTN).catch(() => "");
-  check("2c' 最后按钮=开始使用", lastLabel.includes("开始使用") || lastLabel.includes("完成"), lastLabel);
-  await page.click(NEXT_BTN);
-  await page.waitForTimeout(300);
-  check("2d 关闭", !(await page.locator(".rm-guide-cards-backdrop").isVisible().catch(() => false)));
-  check("2e 标记已看", await page.evaluate(() => localStorage.getItem("rehabmind-guide-cards-seen")) === "seen");
-} else {
-  check("2 引导卡流程", false, "跳过");
-}
+check("2 开始康复后直达来源渠道", await page.locator(".rm-source-gate").isVisible().catch(() => false));
+check("2a 引导卡已不存在", !(await page.locator(".rm-guide-cards-backdrop").isVisible().catch(() => false)));
 
 // ===== 3. 来源 =====
 const src = await page.locator(".rm-source-gate").isVisible().catch(() => false);
@@ -70,7 +51,7 @@ if (con) {
   await page.waitForTimeout(800);
 }
 
-// ===== 4b. 聚焦教程（同意后首次自动弹出，6 步） =====
+// ===== 4b. 聚焦教程（同意后首次自动弹出，4 步——B 批精简后） =====
 const focusShown = await page.locator(".rm-focus-onboarding").isVisible().catch(() => false);
 check("4b 聚焦教程弹出", focusShown);
 if (focusShown) {
@@ -79,8 +60,8 @@ if (focusShown) {
     if (!(await nextBtn.isVisible().catch(() => false))) break;
     const label = (await nextBtn.textContent().catch(() => "")) || "";
     const title = (await page.textContent(".rm-focus-copy h1").catch(() => "")) || "";
-    if (s === 0) check("4b1 第1步=你的康复伙伴", title.includes("康复伙伴"), title);
-    if (s === 3) check("4b2 第4步含流程", title.includes("康复") || title.includes("流程"), title);
+    if (s === 0) check("4b1 第1步=描述你的不适", title.includes("描述"), title);
+    if (s === 2) check("4b2 第3步含流程", title.includes("康复") || title.includes("流程"), title);
     await nextBtn.click();
     await page.waitForTimeout(400);
     if (label.includes("开始使用")) break;
@@ -252,7 +233,6 @@ await mp.goto(BASE, { waitUntil: "networkidle", timeout: 30_000 });
 await mp.waitForTimeout(1500);
 await mp.getByRole("button", { name: "开始康复" }).click();
 await mp.waitForTimeout(400);
-for (let i = 0; i < 3; i++) { await mp.click(".rm-guide-cards-next"); await mp.waitForTimeout(200); }
 await mp.locator(".rm-source-options label").nth(1).click();
 await mp.locator(".rm-source-gate footer button").first().click();
 await mp.waitForTimeout(400);

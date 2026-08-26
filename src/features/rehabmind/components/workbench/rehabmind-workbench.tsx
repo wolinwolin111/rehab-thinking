@@ -29,7 +29,6 @@ import { keepOtherSessionRecords, resolveDownstreamInvalidation, shouldInvalidat
 import { resolveRestoredAssessmentProgress, restoredAssessmentNotice } from "@/src/domain/rehab/assessment/restored-position-core";
 import { PilotConsentGate } from "@/src/features/rehabmind/components/onboarding/pilot-consent-gate";
 import { PilotSourceGate } from "@/src/features/rehabmind/components/onboarding/pilot-source-gate";
-import { GuideCards, hasSeenGuideCards, markGuideCardsSeen } from "@/src/features/rehabmind/components/onboarding/guide-cards";
 import { DevToolbar } from "@/src/features/rehabmind/components/onboarding/dev-toolbar";
 import { attachPilotConsent, buildPilotConsentRecord, isPilotConsentDeclined, markPilotConsentDeclined, readPilotConsent, writePilotConsent, type PilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
 import { readPilotSource, writePilotSource, type PilotSourceRecord } from "@/src/infrastructure/pilot/onboarding/source-channel";
@@ -191,7 +190,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const pilotSourceRef = useRef<PilotSourceRecord | null>(testContext ? { channel: "internal_test", detail: null } : null);
   const [pilotSourceGateOpen, setPilotSourceGateOpen] = useState(false);
   const [pilotConsentGateOpen, setPilotConsentGateOpen] = useState(false);
-  const [guideCardsOpen, setGuideCardsOpen] = useState(false);
   const focusTutorialStorageKey = "rehabmind-focus-tutorial-seen";
   const [focusTutorialOpen, setFocusTutorialOpen] = useState(false);
   const [pilotConsentDeclined, setPilotConsentDeclined] = useState(false);
@@ -361,29 +359,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   function startFromWelcome() {
     firstUseIntentRef.current = "new";
-    if (!hasSeenGuideCards()) {
-      setOnboardingOpen(false);
-      setGuideCardsOpen(true);
-      return;
-    }
     closeOnboarding("completed");
-  }
-
-  function handleGuideCardsComplete() {
-    markGuideCardsSeen();
-    setGuideCardsOpen(false);
-    closeOnboarding("completed");
-  }
-
-  function handleGuideCardsSkip() {
-    markGuideCardsSeen();
-    setGuideCardsOpen(false);
-    closeOnboarding("skipped");
   }
 
   function devResetFlow() {
     try {
-      localStorage.removeItem("rehabmind-guide-cards-seen");
       localStorage.removeItem(onboardingStorageKey);
     } catch {}
     window.location.reload();
@@ -5290,8 +5270,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
     {!testContext ? <RehabMindOnboarding key={onboardingOpen ? "open" : "closed"} open={onboardingOpen} mode="welcome" canContinue={savedRecords.length > 0} onContinue={continueFromWelcome} onStart={startFromWelcome} /> : null}
     {!testContext ? <RehabMindOnboarding key={focusTutorialOpen ? "focus-open" : "focus-closed"} open={focusTutorialOpen} mode="focus" onSkip={markFocusTutorialSeen} onContinue={markFocusTutorialSeen} /> : null}
-
-    {!testContext ? <GuideCards open={guideCardsOpen} onComplete={handleGuideCardsComplete} onSkip={handleGuideCardsSkip} /> : null}
 
     {!testContext ? <DevToolbar onReset={devResetFlow} onClearAll={devClearAllData} onJumpToStep={devJumpToStep} /> : null}
 
