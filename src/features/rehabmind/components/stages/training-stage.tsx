@@ -3,7 +3,7 @@ import { ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/sh
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { pendingTrainingFeedback, trainingFeedbackComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { pendingTrainingFeedback, planQuickFeedbackRecord, trainingFeedbackComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { RetestEligibility } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { BilateralTrainingGate } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -106,16 +106,19 @@ export function TrainingStage(props: TrainingStageProps) {
 
   function recordQuickFeedback(exercise: FullExercise, mode: "reduce" | "hold" | "progress" | "worse") {
     const targetReps = firstNumber(exercise.reps);
-    const hadFeedback = Boolean(exerciseFeedback[exercise.id]);
+    const previous = exerciseFeedback[exercise.id];
+    const hadFeedback = Boolean(previous);
+    let plan = planQuickFeedbackRecord(previous, mode, targetReps);
+    if (plan.requiresConfirmation) {
+      // T-10：把已记录加重的动作改选为其它反馈，需要显式确认；加重事实保留在 symptomHistory。
+      if (!window.confirm(`「${exercise.title}」刚才记录了加重。确定改为其它反馈吗？加重记录会保留在历史里。`)) return;
+      plan = planQuickFeedbackRecord(previous, mode, targetReps, { confirmed: true });
+    }
+    if (!plan.feedback) return;
+    const feedback = plan.feedback;
     setExerciseFeedback((current) => ({
       ...current,
-      [exercise.id]: mode === "worse"
-        ? { completed: targetReps, formChanged: false, symptom: "worse", reserve: 3 }
-        : mode === "reduce"
-          ? { completed: Math.max(1, targetReps - 3), formChanged: true, symptom: "same", reserve: 0 }
-          : mode === "progress"
-            ? { completed: targetReps, formChanged: false, symptom: "same", reserve: 5 }
-            : { completed: targetReps, formChanged: false, symptom: "same", reserve: 3 },
+      [exercise.id]: feedback,
     }));
     const nextExerciseId = nextTrainingExerciseId(
       exercises.map((item) => item.id),
@@ -140,8 +143,22 @@ export function TrainingStage(props: TrainingStageProps) {
       ? firstPendingExerciseIndex
       : Math.max(0, exercises.length - 1);
   const visibleExercise = exercises[visibleExerciseIndex];
-  const trainingHasWorsened = exercises.some((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
-  const worsenedExercise = exercises.find((exercise) => exerciseFeedback[exercise.id]?.symptom === "worse");
+  // T-11：加重后若用户已确认退阶继续（followUpAction），警示解除但事实保留。
+  const trainingHasWorsened = exercises.some((exercise) => {
+    const feedback = exerciseFeedback[exercise.id];
+    return feedback?.symptom === "worse" && feedback.followUpAction !== "regress-training";
+  });
+  const worsenedExercise = exercises.find((exercise) => {
+    const feedback = exerciseFeedback[exercise.id];
+    return feedback?.symptom === "worse" && feedback.followUpAction !== "regress-training";
+  });
+  // T-10/T-11 细化：改口确认或退阶继续后，警示解除，但“曾记录加重”在界面上保留一行降级提示。
+  const handledWorsenedExercise = !trainingHasWorsened
+    ? exercises.find((exercise) => {
+      const feedback = exerciseFeedback[exercise.id];
+      return feedback?.symptomHistory?.includes("worse") || (feedback?.symptom === "worse" && feedback.followUpAction === "regress-training");
+    })
+    : undefined;
   const worsenedExerciseAssessmentIds = worsenedExercise
     ? assessments.filter((assessment) => (assessment.tags ?? []).some((tag) => worsenedExercise.tags.includes(tag))).map((assessment) => assessment.id).slice(0, 3)
     : [];
@@ -192,7 +209,11 @@ export function TrainingStage(props: TrainingStageProps) {
         <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
         <p>{finalResult === "better" ? "本次方向有帮助，按当前训练版本继续。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "本次没有明显变化，先不进阶；持续不变时建议线下评估。"}</p>
       </section> : null}
-        <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => { setTrainingPlanSaved(false); setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>完成并查看总结</button></div>
+        <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => {
+          // T-02：最终复测记录加重时，结束前需要显式确认（取消则留在本页重新复测）。
+          if (finalResult === "worse" && !window.confirm("刚才的最终复测记录了加重。确定现在结束并查看总结吗？建议先停止加重的训练并观察。")) return;
+          setTrainingPlanSaved(false); setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" });
+        }}>完成并查看总结</button></div>
     </section>;
   }
   if (bilateralTrainingBlocked) return <section className="rm-page">
@@ -251,6 +272,8 @@ export function TrainingStage(props: TrainingStageProps) {
     </details> : null}
 
     {trainingHasWorsened ? <section className="rm-training-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
+
+    {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
     {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section className="rm-training-feedback-gate"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
 

@@ -85,3 +85,13 @@ test("guided explicit chief action opens the next function only after the chief 
   });
   assert.deepEqual(progressed.map((item) => item.id), ["knee-squat", "knee-single-leg"]);
 });
+
+test("M-06: 提取被跳过的主诉动作标题（剥离占位后缀）", () => {
+  const findings = [
+    { id: "track:function:knee-step-down", title: "下楼暂时没判断清楚", priority: "track", tags: ["chief-skip"] },
+    { id: "track:function:knee-hop", title: "单腿跳暂时没判断清楚", priority: "track", tags: [] },
+    { id: "function:knee-squat", title: "下蹲", priority: "support", tags: [] },
+  ];
+  assert.deepEqual(core.skippedChiefActionTitles(findings), ["下楼"]);
+  assert.deepEqual(core.skippedChiefActionTitles([]), []);
+});

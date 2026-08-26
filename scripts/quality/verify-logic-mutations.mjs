@@ -146,6 +146,19 @@ const cases = [
     },
     functionName: "resolveTreatmentRetestGate",
   },
+  {
+    id: "MUT-FRET-05-completion-worsening-ignored",
+    needle: "&& input.completion === \"unable\";",
+    replacement: "&& false;",
+    input: {
+      isFunctionTarget: true,
+      mode: "ordinary",
+      completion: "unable",
+      unableReason: "pain",
+      scoreConfirmed: true,
+      initialCompletion: "complete",
+    },
+  },
 ];
 
 const original = await load(source);

@@ -22,6 +22,7 @@ export type { TissuePathwayDecision } from "@/src/domain/rehab/safety/tissue-pat
 export { summarizeTreatmentCoverage } from "@/src/domain/rehab/treatment/treatment-coverage-core";
 export { chiefChangeExplanation } from "@/src/domain/rehab/retest/chief-change-explanation-core";
 export { assessmentGapActionLabel } from "@/src/domain/rehab/assessment/assessment-gap-core";
+export { skippedChiefActionTitles } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 export type { AssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";
 export { nextRangeCandidateType } from "@/src/domain/rehab/retest/retest-routing-core";
 export { candidateTreatmentKey, candidateTreatmentName } from "@/src/domain/rehab/treatment/candidate-treatment-core";
@@ -36,8 +37,10 @@ export type { RetestEligibility } from "@/src/domain/rehab/retest/retest-eligibi
 export type { KneeAssessmentCheck } from "@/src/domain/rehab/shared/knee-decision-core";
 export { needsTrainingToleranceRetest, needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/domain/rehab/treatment/treatment-session-core";
 export { pendingTrainingFeedback, trainingFeedbackComplete } from "@/src/domain/rehab/training/training-feedback-core";
+export { planQuickFeedbackRecord } from "@/src/domain/rehab/training/training-feedback-core";
 export type { HomeRelaxationTarget } from "@/src/domain/rehab/training/home-relaxation-core";
 export { resolvedTreatmentCombination, treatmentResponsePriority } from "@/src/domain/rehab/treatment/treatment-response-core";
 export { formatRecommendedDateRange, recommendNextSession } from "@/src/domain/rehab/followup/next-session-recommendation-core";
 export { compareFollowupScore } from "@/src/domain/rehab/followup/followup-review-core";
 export { markingSideMismatchHint } from "@/src/domain/rehab/shared/marking-side-consistency-core";
+export { descriptionSuggestsTraumaText, traumaMechanismMismatchHint } from "@/src/domain/rehab/intake/trauma-mechanism-consistency-core";

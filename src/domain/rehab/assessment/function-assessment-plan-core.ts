@@ -296,3 +296,17 @@ export function selectFunctionAssessmentPlan(input: FunctionAssessmentPlanInput)
 export function reportedChiefFunctionLabels(intake: ChiefActionIntake, regionId: string) {
   return chiefFunctionActionLabels(intake, regionId);
 }
+
+/**
+ * M-06：从 findings 中提取被跳过的主诉功能动作标题（剥离“暂时没判断清楚”占位后缀）。
+ * 只认 workbench 在 skip 分支打的 chief-skip 标记；非主诉动作的跳过不提醒。
+ */
+export function skippedChiefActionTitles(
+  findings: Array<{ id: string; title: string; priority?: string; tags?: string[] }>,
+): string[] {
+  return findings
+    .filter((finding) => finding.priority === "track"
+      && finding.id.startsWith("track:function:")
+      && (finding.tags ?? []).includes("chief-skip"))
+    .map((finding) => finding.title.replace(/暂时没判断清楚$/, ""));
+}

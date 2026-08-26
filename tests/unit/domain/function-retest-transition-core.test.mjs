@@ -101,3 +101,54 @@ test("普通主诉没有可比较分数时被阻断，但完成状态复测保�
   assert.equal(completionOnly.retestReady, true);
   assert.equal(completionOnly.evidenceCaptured, true);
 });
+
+test("T-01: 首次能完成的动作复测变成做不完时，视同加重", () => {
+  const result = core.resolveFunctionRetestTransition({
+    isFunctionTarget: true,
+    mode: "ordinary",
+    completion: "unable",
+    unableReason: "pain",
+    scoreConfirmed: true,
+    initialCompletion: "complete",
+  });
+  assert.equal(result.automaticResult, "worse");
+});
+
+test("T-01: 首次就没完成的动作走完成状态复核，不适用加重规则", () => {
+  const result = core.resolveFunctionRetestTransition({
+    isFunctionTarget: true,
+    mode: "completion-status",
+    completion: "unable",
+    unableReason: "pain",
+    scoreConfirmed: false,
+    initialCompletion: "unable",
+  });
+  assert.equal(result.automaticResult, "same");
+});
+
+test("T-01: 首次完成、复测仍完成时不适用加重规则", () => {
+  const result = core.resolveFunctionRetestTransition({
+    isFunctionTarget: true,
+    mode: "ordinary",
+    completion: "complete",
+    unableReason: "",
+    scoreConfirmed: true,
+    initialCompletion: "complete",
+  });
+  assert.notEqual(result.automaticResult, "worse");
+});
+
+test("T-01: 主诉分数不可比时完成状态恶化仍要触发加重", () => {
+  const gate = core.resolveTreatmentRetestGate({
+    isFunctionTarget: true,
+    mode: "ordinary",
+    completion: "unable",
+    unableReason: "pain",
+    scoreConfirmed: false,
+    initialCompletion: "complete",
+    targetId: "target:chief",
+    chiefScoreComparable: false,
+  });
+  assert.equal(gate.chiefScoreRetestBlocked, true);
+  assert.equal(gate.automaticResult, "worse");
+});

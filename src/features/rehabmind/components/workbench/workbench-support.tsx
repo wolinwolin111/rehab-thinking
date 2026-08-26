@@ -756,6 +756,16 @@ export const DEFAULT_INTAKE: IntakeState = {
 export const EXAMPLE_DESCRIPTION = "右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。";
 
 /**
+ * T-12：恢复旧快照时 baselineScoreConfirmed 缺失不再盲猜为 true。
+ * 有正分数视为当时真实作答过（不打扰）；零分或缺失按未确认处理（恢复后补问一次），
+ * 避免占位分数绕过 isComparableNow 的前后可比性门控。
+ */
+export function restoredBaselineScoreConfirmed(intake: Partial<IntakeState>): boolean {
+  if (typeof intake.baselineScoreConfirmed === "boolean") return intake.baselineScoreConfirmed;
+  return typeof intake.baselineScore === "number" && intake.baselineScore > 0;
+}
+
+/**
  * 旧版记录只保存了 userRole/examSetup；新版记录保存产品模式、操作对象和
  * 能力声明。恢复记录时统一走这里，避免旧快照在症状页出现“字段不存在”或
  * 直接跳过操作对象的问题。

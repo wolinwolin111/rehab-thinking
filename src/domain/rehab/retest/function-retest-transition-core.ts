@@ -10,6 +10,8 @@ export type FunctionRetestTransitionInput = {
   unableReason?: FunctionUnableReason | "";
   scoreConfirmed: boolean;
   chiefScoreRetestBlocked?: boolean;
+  /** T-01：首次评估的动作完成状态；ordinary 复测中从 complete 变 unable 视同加重。 */
+  initialCompletion?: "complete" | "unable" | "skip" | "unknown";
 };
 
 export type FunctionRetestTransition = {
@@ -20,7 +22,7 @@ export type FunctionRetestTransition = {
   functionReady: boolean;
   retestReady: boolean;
   evidenceCaptured: boolean;
-  automaticResult?: "partial" | "same";
+  automaticResult?: "partial" | "same" | "worse";
 };
 
 export type TreatmentRetestGateInput = FunctionRetestTransitionInput & {
@@ -52,6 +54,11 @@ export function resolveFunctionRetestTransition(
     : input.scoreConfirmed;
   const retestReady = input.chiefScoreRetestBlocked ? true : functionReady;
   const evidenceCaptured = input.isFunctionTarget ? functionReady : input.scoreConfirmed;
+  // T-01：首次能完成的动作，处理后复测变成做不完——这是功能层面的恶化信号，
+  // 即使疼痛分数相同也视同加重（A 方案：直接停止当前处理队列）。
+  const completionWorsened = !completionOnly
+    && input.initialCompletion === "complete"
+    && input.completion === "unable";
 
   return {
     completionOnly,
@@ -63,7 +70,9 @@ export function resolveFunctionRetestTransition(
     evidenceCaptured,
     automaticResult: completionOnly && answerComplete
       ? input.completion === "complete" ? "partial" : "same"
-      : undefined,
+      : completionWorsened && answerComplete
+        ? "worse"
+        : undefined,
   };
 }
 

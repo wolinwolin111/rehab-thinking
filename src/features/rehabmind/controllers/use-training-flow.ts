@@ -1,10 +1,15 @@
 import { useState } from "react";
+import { type QuickFeedbackSymptom } from "@/src/domain/rehab/training/training-feedback-core";
 
 export type ExerciseFeedback = {
   completed: number;
   formChanged: boolean;
-  symptom: "better" | "same" | "worse";
+  symptom: QuickFeedbackSymptom;
   reserve: number;
+  /** T-10：既往 symptom 轨迹。一旦记录过 worse，改口后仍保留在历史里。 */
+  symptomHistory?: QuickFeedbackSymptom[];
+  /** T-11：加重后用户确认采用退阶版本继续——原始 worse 保留，仅叠加处置标记。 */
+  followUpAction?: "regress-training";
 };
 
 export function useTrainingFlow() {

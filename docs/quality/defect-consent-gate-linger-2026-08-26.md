@@ -55,3 +55,22 @@
 - 本缺陷导致 release 浏览器规格暂缓执行（其现有断言无法暴露此缺陷，跑通无意义）；
 - RQ-1/RQ-S1/S2/S3 的合同预期更新已完成并随本批提交；`test:fast` 在合并后代码上已**首次全绿**（逻辑层收敛达成）；
 - 逻辑层全绿 + 浏览器 P0 阻断并存，正是双轨体系要抓的缝——本例为首个实锤案例。
+
+---
+
+## 修复方案（2026-08-26 开发会话定稿，暂缓执行——排在 D/A/B/C 批之后）
+
+**静态排查结论**：agree 链路（关门→写存储→建案）自 cf47910 以来字节级未变（6f30920 仅加 `mode="welcome"` prop，diff 证实）；各环节代码正确。症状组合（201 已到 + 无错误 + 门不关 + 同意未持久化 + 刷新重开门）唯一自洽解释：**agree 异步链在 201 响应之后、`setPilotConsentGateOpen(false)`（workbench:488）之前挂起且永不落定**。嫌疑收敛：`await persistLocalRecords`（IndexedDB 写，`openDatabase` 缺 `onblocked` 处理）或 `await createPilotCase` 尾段。静态无法再定位，需运行时埋点。另需排查 dev(:3001) vs build 维度——08-25 全流程通过是在生产构建上验证的。
+
+### 执行步骤
+
+1. **埋点定位**：agree 链路 4 节点 console.debug（before-create / after-create / after-persist / gate-closed）→ 复现矩阵（:3000/:3001 × dev/build）→ 精确挂起点
+2. **分支修复**：A（`openDatabase` 补 `onblocked` 处理 + `saveLocalCaseRecords` 加 3s 超时降级 localStorage）或 B（API 尾段对应点，按定位结果）
+3. **加固一（根因无关）**：`createInitialPilotCaseRecord` 整体加 15s 超时（Promise.race）→ 超时转错误提示、按钮复位可重试，消灭"永远正在创建"
+4. **加固二（保守版，待最终确认）**：`writePilotConsent` + 清拒绝标记前置到建案 await 之前，关门时机不变（建案成功才关）——同意事实先落盘，挂起/失败后刷新不再二次卡门；执行时验证自愈路径（同步队列自动补建案例）的请求携带 consent
+5. **永久防线（测试会话）**：`tests/browser/release/minimal-wiring.spec.ts` 增加「创建后 `.rm-entry-sheet-backdrop` 数量=0」断言，先红后绿
+6. **回归**：定向 spec → test:fast → 证据道（--visual --axe）→ 测试会话按上述 4 条验收标准确认
+
+⚠️ 暂缓期约束：本缺陷为 P0 首次使用主路径阻断，修复落地前不得向任何真实用户分发产品入口。
+
+**补充复现证据（2026-08-26 D 批回归时）**：证据道巡检（inspect-local --visual --axe，主仓库 :3000 @ D 批工作树）新增的建案后浮层探针在 **390px 与 1440px 双视口均报「建案后仍有入口门浮层未关闭：开始前，请确认数据使用方式」**——证实缺陷在主仓库 HEAD 代码上 100% 复现，与 worktree/环境无关；同轮其余检查（布局/控制台/axe/视觉基线 0.00%）全部通过。
