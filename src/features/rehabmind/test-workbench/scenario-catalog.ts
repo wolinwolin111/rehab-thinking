@@ -78,6 +78,17 @@ const NORMAL_MOTION: AssessmentRecord = { active: "same", discomfort: "no", pair
 const NORMAL_STRENGTH: AssessmentRecord = { simple: "normal" };
 const NORMAL_FUNCTION: AssessmentRecord = { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "no" };
 
+function withCompletedBilateralComparisons(records: Record<string, AssessmentRecord>) {
+  return Object.fromEntries(Object.entries(records).map(([id, record]) => {
+    if (!/^(strength|function|special):/.test(id)) return [id, record];
+    return [id, {
+      ...record,
+      bilateralComparison: "两侧接近",
+      worseSide: "两侧接近",
+    } satisfies AssessmentRecord];
+  })) as Record<string, AssessmentRecord>;
+}
+
 function locationSelection(side: string, location: string, regionId: string): LowerLimbLocationSelection {
   const selection = makeLowerLimbLocationSelection(side, location, regionId);
   if (!selection) throw new Error(`Invalid test fixture location: ${side}/${location}/${regionId}`);
@@ -382,7 +393,9 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
 
   if (scenario.fixtureKind === "bilateral-longitudinal") {
     seededIdentity.assessmentResults = {
-      ...snapshot.assessmentResults,
+      // 双侧功能/力量/专项检查即使结果正常，也必须明确记录“两侧接近”才算
+      // 完成；把这些合法前置补齐，避免恢复时落到并非本夹具目标的检查卡。
+      ...withCompletedBilateralComparisons(snapshot.assessmentResults),
       // 其余项目保持已记录，只把主诉相关的下蹲动作留作真实逐侧操作入口。
       // 右侧虽是优先侧，但左右都完成前不会生成汇总结论或开放处理。
       "motion:knee-extension": NORMAL_MOTION,
