@@ -292,7 +292,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       controller.dispose();
       draftPersistenceRef.current = null;
     };
-  }, [storageScope]);
+  }, [storageScope, testStorageWriteBlocked]);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
