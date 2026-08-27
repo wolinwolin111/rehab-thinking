@@ -603,7 +603,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const next = savedRecordsRef.current.map((item) => savedRecordIdentity(item) === identity ? { ...item, ...patch } : item);
     savedRecordsRef.current = next;
     setSavedRecords(next);
-    void persistLocalRecords(next).catch(() => setPilotSyncState("offline"));
+    void persistLocalRecords(next).catch(() => setPilotSyncState("error"));
   }
 
   async function copyPilotPublicCode(record: SavedDemoRecord) {
@@ -864,9 +864,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           dispatchPilotSync(identity, { type: "remote-create-failed", caseId: identity, code: "remote-create-failed" });
         }
         if (activeCaseIdentityRef.current === identity) {
-          setToast(error instanceof PilotCaseClientError && error.status === 409
-              ? "本机已保存，但服务器记录已变化，请刷新后继续"
-              : "本机已保存，服务器暂时未同步");
+          if (testStorageWriteBlocked) setPilotSyncState("error");
+          setToast(testStorageWriteBlocked
+              ? "本机保存失败，当前案例未持久化；请检查浏览器存储权限"
+              : error instanceof PilotCaseClientError && error.status === 409
+                ? "本机已保存，但服务器记录已变化，请刷新后继续"
+                : "本机已保存，服务器暂时未同步");
           window.setTimeout(() => setToast(""), 2800);
         }
         if (telemetryAccess) {
@@ -4288,15 +4291,18 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const next = [record, ...currentRecords.filter((item) => savedRecordIdentity(item) !== localCaseId && item.id !== record.id)];
     savedRecordsRef.current = next;
     setSavedRecords(next);
-    dispatchPilotSync(localCaseId, { type: "local-changed", caseId: localCaseId });
+    if (testStorageWriteBlocked) setPilotSyncState("error");
+    else dispatchPilotSync(localCaseId, { type: "local-changed", caseId: localCaseId });
     setSessionHistory(nextSessionHistory);
     draftPersistenceRef.current?.cancel();
     void clearLocalDraft(storageScope);
     void persistLocalRecords(next)
       .then(() => setToast(status === "等待影像" ? "本次信息已保存，获得影像后可继续" : status === "待医学评估" ? "本次信息已保存，可在完成医学评估后继续" : `第${sessionNumber}次康复记录已保存到本机`))
       .catch(() => {
-        setPilotSyncState("offline");
-        setToast("本机存储空间不足，当前案例未持久化；请先删除或导出旧记录");
+        setPilotSyncState("error");
+        setToast(testStorageWriteBlocked
+          ? "本机保存失败，当前案例未持久化；请检查浏览器存储权限"
+          : "本机存储空间不足，当前案例未持久化；请先删除或导出旧记录");
       });
     enqueuePilotRecordSync(record, { eventType: lifecycle === "draft" ? "session_draft_saved" : "session_completed" });
     window.setTimeout(() => setToast(""), 2400);
@@ -4363,7 +4369,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const next = [nextRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
     savedRecordsRef.current = next;
     setSavedRecords(next);
-    void persistLocalRecords(next).catch(() => setPilotSyncState("offline"));
+    void persistLocalRecords(next).catch(() => setPilotSyncState("error"));
     enqueuePilotRecordSync(nextRecord, { eventType: "problem_thread_archived" });
   }
 
@@ -4502,7 +4508,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       const migratedRecords = savedRecordsRef.current.map((item) => item.id === storedRecord.id ? migratedRecord : item);
       savedRecordsRef.current = migratedRecords;
       setSavedRecords(migratedRecords);
-      void persistLocalRecords(migratedRecords).catch(() => setPilotSyncState("offline"));
+      void persistLocalRecords(migratedRecords).catch(() => setPilotSyncState("error"));
     }
     const restoredIds = legacySessionIdentity(nextIdentity, snapshot.sessionNumber);
     setProblemThreadId(snapshot.problemThreadId ?? latestRecord.problemThreadId ?? restoredIds.problemThreadId);
