@@ -1,13 +1,34 @@
+import java.net.URI
+
 plugins {
     id("com.android.application")
 }
 
-val debugUrl = providers.gradleProperty("rehabmindDebugUrl")
-    .orElse("http://10.0.2.2:3000/")
-    .get()
-val releaseUrl = providers.gradleProperty("rehabmindReleaseUrl")
-    .orElse("https://66.154.101.204/RehabMind/")
-    .get()
+fun configuredWebUrl(propertyName: String, defaultValue: String, requireHttps: Boolean): String {
+    val value = providers.gradleProperty(propertyName).orElse(defaultValue).get().trim()
+    val uri = runCatching { URI(value) }.getOrElse {
+        error("$propertyName must be a valid absolute HTTP(S) URL")
+    }
+    require(uri.host != null && uri.userInfo == null && uri.fragment == null) {
+        "$propertyName must contain a host and no user info or fragment"
+    }
+    val scheme = uri.scheme ?: error("$propertyName must use http or https")
+    require(scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)) {
+        "$propertyName must use http or https"
+    }
+    if (requireHttps) {
+        require(scheme.equals("https", ignoreCase = true)) {
+            "$propertyName must use https for a release build"
+        }
+    }
+    return value
+}
+
+fun buildConfigString(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val debugUrl = configuredWebUrl("rehabmindDebugUrl", "http://10.0.2.2:3000/", requireHttps = false)
+val releaseUrl = configuredWebUrl("rehabmindReleaseUrl", "https://66.154.101.204/RehabMind/", requireHttps = true)
 
 android {
     namespace = "com.yueshu.rehabmind"
@@ -19,8 +40,8 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "REHABMIND_DEBUG_URL", "\"$debugUrl\"")
-        buildConfigField("String", "REHABMIND_RELEASE_URL", "\"$releaseUrl\"")
+        buildConfigField("String", "REHABMIND_DEBUG_URL", buildConfigString(debugUrl))
+        buildConfigField("String", "REHABMIND_RELEASE_URL", buildConfigString(releaseUrl))
     }
 
     buildFeatures {

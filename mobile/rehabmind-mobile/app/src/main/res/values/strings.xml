@@ -1,4 +1,7 @@
 <resources>
-    <string name="app_name">RehabMind</string>
+    <string name="app_name">RehabMind 康复助手</string>
     <string name="download_started">已开始下载</string>
+    <string name="download_description">RehabMind 文件</string>
+    <string name="download_failed">文件下载失败，请稍后重试</string>
+    <string name="external_link_blocked">此链接类型不受支持</string>
 </resources>
