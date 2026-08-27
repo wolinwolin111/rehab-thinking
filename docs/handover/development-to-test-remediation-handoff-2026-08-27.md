@@ -130,15 +130,34 @@
 | 删除本批次 | 删除当前 runId 的服务器测试案例和本机同批记录，并生成新 runId | 先导出证据；不能清理其他 runId 或正式案例 |
 | 切换场景 | 返回场景选择页 | 不等于删除当前批次，旧测试数据仍保留 |
 
-### 5.4 当前 14 个场景怎么使用
+### 5.4 当前场景和稳定入口
 
-完整流程场景有 7 个：单侧膝动作疼痛、单侧踝扭伤、双侧与优先侧、明显肿胀、麻木或力量变化、高不适停止、动作无法完成。它们用于真正走症状—确认—评估—处理—复测—训练—总结或安全结束。
+完整流程场景仍有 7 个：单侧膝关节动作疼痛、单侧踝扭伤、双侧问题与优先侧、明显肿胀、麻木或力量变化、高不适停止、动作无法完成。它们只预填问题描述，必须按真实页面走症状—确认—评估—处理—复测—训练—总结或安全结束。
 
-页面定向场景有 7 个：处理后改善、无变化、加重，训练后加重，第二次康复，出现新问题，返回修改旧答案。它们适合快速复查单个页面边界，不得写成完整流程通过。
+页面定向场景现在增加了合法的 v2 快照种子。它们用于把真实页面稳定地放在目标边界，不能写成前序步骤已经被真实操作过：
 
-“导出复现包”只在已经生成当前测试案例快照后可用。它用于缩短开发定位时间，内容包含 `scenarioId`、`testRunId`、发布版本、案例状态和最新快照，不包含 Cookie、访问令牌或服务端访问凭证；它不能替代测试会话的实际操作证据。
+| 场景卡 `scenarioId` | 用途和页面预期 | 稳定观察点 |
+| --- | --- | --- |
+| `snapshot-fresh-under-24h` | 23 小时前、时间敏感记录；不应提示陈旧 | `snapshot-freshness-banner` 不存在 |
+| `snapshot-stale-24h-acute` | 24 小时后、急性记录；只提醒、不阻断 | `snapshot-freshness-banner`，`data-freshness-band="stale"`，按钮 `snapshot-freshness-review` |
+| `snapshot-stale-7d-acute` | 7 天后、急性/时间敏感记录；先确认再继续 | `data-requires-reconfirmation="true"`、按钮 `snapshot-freshness-reconfirm`；对话框 `snapshot-freshness-dialog`，三项复选框分别为 `snapshot-freshness-symptoms`、`snapshot-freshness-safety`、`snapshot-freshness-onset`，最后用 `snapshot-freshness-confirm` |
+| `snapshot-stale-7d-chronic` | 7 天后、慢性记录；只提醒、不阻断 | 同一 banner，`data-requires-reconfirmation="false"`；原症状答案不能被改写 |
+| `bilateral-priority` | 从描述开始真实建立双侧和优先侧 | 页面应出现“本次优先侧”，并在后续左右分别评估/复测；这是纵向证据入口 |
+| `bilateral-training-gate` | 合法 v2 快照：左右标记、右侧优先、另一侧评估未完成 | `bilateral-low-load-gate`；文案“当前只开放低负荷基础活动”，正常进阶不可用 |
+| `treatment-improved` / `treatment-same` / `treatment-worse` | 真实进入处理—复测页，分别观察改善、无变化、加重分支 | 复测继续按钮 `data-rehabmind-test="treatment-retest-continue"`；实际分数仍须通过页面的评分控件输入 |
+| `training-worse` | 真实进入训练页，记录第一组反馈为“做完更不舒服” | 反馈按钮 `data-rehabmind-test="training-feedback-worse"`；警示区 `training-worsening-warning`，处理加重按钮 `training-worsening-reassess` |
+| `second-session` | v2 快照中保留第 1 次已完成会话，再打开第 2 次复查 | 顶部 `records-trigger` 打开记录页；核对旧 `sessionId`、旧线程和当前 `sessionId` 均存在 |
+| `new-problem` | 旧膝问题归档，新踝问题追加为新线程 | 记录页必须同时能看到旧线程和新线程；新线程有 `supersedesProblemThreadId`，旧线程内容不得被覆盖 |
+| `network-save-failure` / `timeout-save-failure` | 真实本机保存后，分别注入同步网络失败/超时 | 工作台根节点 `data-test-fault-mode` 为 `network`/`timeout`；页面显示“网络断开，正在本机保存”，不得显示已同步 |
+| `storage-unavailable` | 读取种子后只阻断后续本机写入 | `data-test-fault-mode="storage"`；页面显示“本机保存失败”，不得把失败写成“已保存到本机” |
 
-场景目录不是固定总数。新增 RMD 场景时，必须满足以下条件之一：现有场景无法表达新的业务入口；需要稳定的合法边界快照；需要在桌面和 debug APK 间复用同一起点。只为了省几次点击，不应不断增加预置场景。
+每个页面边界场景都会先创建一个真正的测试案例（带 `testRunId/scenarioId`、服务端 v2 快照和访问令牌），再把同一份快照放入测试命名空间。这样“问题反馈”“后台记录”“删除本批次”都指向真实测试案例；不是在浏览器里只塞一份脱离服务的假 JSON。测试工作台根节点为 `test-workbench-runtime`，同时暴露 `data-scenario-id` 和 `data-test-run-id`。
+
+本轮不新增生产快照版本：`schemaVersion` 仍为 v2，问题线程和会话索引继续使用既有 `problemThreads/sessionIndex` 合同；场景的 `restoreAgeMs`、`fixtureKind`、`faultMode` 只存在于测试工作台元数据和 React `testContext`，不会进入正式用户数据。故障注入只在 `testContext` 存在时生效，正式入口没有这条路径。
+
+“导出复现包”只在已经生成当前测试案例快照后可用。它用于缩短开发定位时间，内容包含 `scenarioId`、`testRunId`、发布版本和最新快照，不包含 Cookie、访问令牌或服务端访问凭证；它不能替代测试会话的实际操作证据。
+
+多标签页冲突不另造假状态：打开同一测试案例的两个页面，在一页保存不同版本，另一页使用现有 `重新加载` 或 `保留本页继续`。这是当前正式冲突状态机的真实证据；冲突恢复不应再被 `network`/`storage` 场景重复计数。
 
 ### 5.5 推荐操作示例
 
@@ -163,6 +182,27 @@
 1. 选择“页面定向”和对应场景。
 2. 只断言该页面的可见状态、操作出口和防御行为。
 3. 报告中标记 `page_boundary`，禁止把预置的评估或历史写成真实前序证据。
+
+**陈旧快照四档**
+
+1. 进入“页面定向”，依次启动 `snapshot-fresh-under-24h`、`snapshot-stale-24h-acute`、`snapshot-stale-7d-acute`、`snapshot-stale-7d-chronic`。
+2. 每次先记录症状描述、位置、发生时间和当前步骤，再观察是否出现 banner；这些答案在确认前后都应保持原值。
+3. 急性 7 天场景必须打开对话框；未勾选三项时 `snapshot-freshness-confirm` 必须禁用，勾齐后才允许继续。
+4. 慢性 7 天场景只验证提醒，不要求完成急性确认；不要用测试脚本直接调用分类函数替代页面证据。
+
+**双侧和处理/训练边界**
+
+1. `bilateral-priority` 用于从真实输入建立左右位置和右侧优先；检查同一处理单元是否显示“左右分别执行”，并分别完成左右复测。
+2. `bilateral-training-gate` 用于快速检查另一侧未完成时的安全门；看到低负荷提示后，不要把它记录成正常训练通过。
+3. `treatment-*` 从处理复测页面按实际评分控件输入目标结果，再点击带 `treatment-retest-continue` 的继续按钮；`training-worse` 先对当前动作点击 `training-feedback-worse`，再验证停止、重新评估和有限退阶出口。
+
+**反馈、后台、清理和异常**
+
+1. 启动任一页面边界场景后，先用 `feedback-trigger` 打开问题反馈，提交时核对当前案例、目标会话和模块；再用 `test-open-admin` 或 `后台记录` 核对脱敏读取。
+2. 证据导出后点击 `test-delete-run`；只允许本轮 `testRunId` 的服务端案例和本机测试记录消失，其他 runId 与正式案例必须保留。
+3. 启动 `network-save-failure`、`timeout-save-failure` 或 `storage-unavailable`，执行一次页面保存动作，记录错误提示、本机快照是否保留和服务器是否保持未同步；不要修改生产网络或放宽接口断言。
+
+移动验证复用同一 `scenarioId`：Pixel 5/iPhone 13 预览可启动上述页面入口，仍只能记为移动网页/预览证据。Android M2～M5 必须等真实 emulator/adb/Gradle/APK 环境，不能用 `data-test-fault-mode` 或浏览器视口伪造真机通过。
 
 ## 6. 每条测试结果的最低记录格式
 
