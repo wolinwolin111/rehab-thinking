@@ -13,7 +13,18 @@ export type PilotCaseAccess = {
   replayed?: boolean;
 };
 
-export type PilotTestContext = { testRunId: string; scenarioId: string; createdBy: "test_workbench" };
+/**
+ * 测试工作台专用故障注入。它只通过 testContext 传入，不会出现在正式案例
+ * 或生产快照里；页面仍然执行正式的本机保存、同步和冲突状态机。
+ */
+export type PilotTestFaultMode = "network" | "timeout" | "storage";
+
+export type PilotTestContext = {
+  testRunId: string;
+  scenarioId: string;
+  createdBy: "test_workbench";
+  faultMode?: PilotTestFaultMode;
+};
 
 export type PilotCaseView = {
   caseRecord: Record<string, unknown>;

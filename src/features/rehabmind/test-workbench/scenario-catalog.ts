@@ -6,9 +6,29 @@ import {
   type SavedDemoSnapshot,
   type Step,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
+import { makeLowerLimbLocationSelection, type LowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
+import type { ProblemThreadRecord, SessionIndexRecord } from "@/src/domain/rehab/history/session-identity-core";
+import type { RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
 import { PILOT_SNAPSHOT_SCHEMA_VERSION } from "@/src/infrastructure/pilot/api/case-contracts";
+import type { PilotTestFaultMode } from "@/src/infrastructure/pilot/api/case-client";
 
 export type PilotTestMode = "full_flow" | "page_boundary";
+
+export type PilotScenarioFixtureKind = "bilateral-training-gate" | "history-second-session" | "history-new-problem";
+
+export type PilotScenarioSeedContext = Readonly<{
+  localCaseId: string;
+  problemThreadId: string;
+  sessionId: string;
+  historicalProblemThreadId: string;
+  historicalSessionId: string;
+  savedAt: string;
+}>;
+
+export type PilotScenarioSnapshotOverrides = Omit<Partial<SavedDemoSnapshot>, "intake"> & {
+  /** 场景只需改少数 intake 字段，不要求重复整份生产状态。 */
+  intake?: Partial<IntakeState>;
+};
 
 export type PilotTestScenario = Readonly<{
   id: string;
@@ -18,7 +38,14 @@ export type PilotTestScenario = Readonly<{
   target: string;
   initialProblem: string;
   step?: Step;
-  snapshotOverrides?: Partial<SavedDemoSnapshot>;
+  snapshotOverrides?: PilotScenarioSnapshotOverrides;
+  /** 页面恢复时使用的历史年龄；只影响测试种子，不改变生产时间规则。 */
+  restoreAgeMs?: number;
+  /** 需要在页面上直接观察的正式状态组合。 */
+  fixtureKind?: PilotScenarioFixtureKind;
+  /** 仅用于验证既有保存/同步错误出口。 */
+  faultMode?: PilotTestFaultMode;
+  fixtureNote?: string;
 }>;
 
 const COMPLETED_KNEE_INTAKE = {
@@ -51,6 +78,108 @@ const NORMAL_MOTION: AssessmentRecord = { active: "same", discomfort: "no", pair
 const NORMAL_STRENGTH: AssessmentRecord = { simple: "normal" };
 const NORMAL_FUNCTION: AssessmentRecord = { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "no" };
 
+function locationSelection(side: string, location: string, regionId: string): LowerLimbLocationSelection {
+  const selection = makeLowerLimbLocationSelection(side, location, regionId);
+  if (!selection) throw new Error(`Invalid test fixture location: ${side}/${location}/${regionId}`);
+  return selection;
+}
+
+const BILATERAL_INTAKE: IntakeState = {
+  ...({
+    ...DEFAULT_INTAKE,
+    description: "两侧膝盖下蹲都不舒服，右侧更明显，想先改善右侧。",
+    parsed: true,
+    userRole: "general",
+    examSetup: "self",
+    productMode: "guided",
+    operationTarget: "self",
+    capabilitiesConfirmed: true,
+    regionId: "knee",
+    side: "双侧/中间",
+    prioritySide: "右侧",
+    location: "左膝前侧、右膝前侧",
+    locationConfirmed: true,
+    bodyLocations: [locationSelection("左侧", "膝关节前侧", "knee"), locationSelection("右侧", "膝关节前侧", "knee")],
+    bodyLocationHistory: [],
+    onset: "1～6周",
+    mechanism: "逐渐出现",
+    symptomType: "酸痛",
+    painQualityConfirmed: true,
+    provocationTypes: ["走路、站立或负重"],
+    customAction: "下楼和下蹲",
+    reproduction: "下楼和下蹲",
+    actionSelectionConfirmed: true,
+    goal: 3,
+    baselineScore: 5,
+    baselineScoreConfirmed: true,
+  } satisfies IntakeState),
+};
+
+const NEW_PROBLEM_INTAKE: IntakeState = {
+  ...COMPLETED_KNEE_INTAKE,
+  description: "复查原右膝问题时，又出现新的右踝外侧不适。",
+  regionId: "ankle-foot",
+  location: "外踝前外侧",
+  bodyLocations: [locationSelection("右侧", "外踝前外侧", "ankle-foot")],
+  bodyLocationHistory: [locationSelection("右侧", "膝关节前侧", "knee")],
+  customAction: "走路",
+  reproduction: "走路",
+};
+
+function currentThreadForSeed(input: PilotScenarioSeedContext, snapshot: SavedDemoSnapshot): ProblemThreadRecord {
+  const thread: ProblemThreadRecord = {
+    problemThreadId: input.problemThreadId,
+    caseId: input.localCaseId,
+    status: "active",
+    createdAt: input.savedAt,
+    lastActiveAt: input.savedAt,
+    title: snapshot.intake.description,
+  };
+  if (snapshot.intake.regionId) thread.regionId = snapshot.intake.regionId;
+  if (snapshot.intake.location) thread.location = snapshot.intake.location;
+  return thread;
+}
+
+function sessionIndexForSeed(input: PilotScenarioSeedContext, sessionNumber: number, problemThreadId = input.problemThreadId, sessionId = input.sessionId, status: SessionIndexRecord["status"] = "draft", startedAt = input.savedAt): SessionIndexRecord {
+  const index: SessionIndexRecord = {
+    sessionId,
+    problemThreadId,
+    caseId: input.localCaseId,
+    sessionNumber,
+    status,
+    startedAt,
+    lastDraftSavedAt: startedAt,
+  };
+  if (status === "completed") {
+    index.completedAt = startedAt;
+    index.completionReason = "workflow_completed";
+  }
+  return index;
+}
+
+function fixtureSummary(input: { sessionId: string; problemThreadId: string; sessionNumber: number; startedAt: string; status: RehabSessionSummary["status"]; location: string; endingScore?: number }): RehabSessionSummary {
+  return {
+    sessionId: input.sessionId,
+    problemThreadId: input.problemThreadId,
+    status: input.status,
+    sessionNumber: input.sessionNumber,
+    startedAt: input.startedAt,
+    lastDraftSavedAt: input.startedAt,
+    ...(input.status === "completed" ? { completedAt: input.startedAt, completionReason: "workflow_completed" } : {}),
+    location: input.location,
+    startedScore: 5,
+    endingScore: input.endingScore,
+    reviewResults: [{ id: "fixture-chief-action", label: "下楼和下蹲", result: input.status === "completed" ? "better" : "unknown" }],
+    treatments: input.status === "completed" ? [{ id: "fixture-treatment", label: "示例有效处理", result: "better", responseRole: "key-completion" }] : [],
+    effectiveCombination: input.status === "completed" ? ["示例有效处理"] : [],
+    continuedEffectiveTreatments: input.status === "completed" ? ["示例有效处理"] : [],
+    stoppedTreatments: [],
+    resolvedProblems: [],
+    training: input.status === "completed" ? [{ id: "fixture-training", label: "基础控制", adjustment: "hold" }] : [],
+    nextFocus: input.status === "completed" ? ["复查主诉和第一次发现的问题"] : ["完成当前会话"],
+  };
+}
+
 /**
  * A broad, internally consistent knee assessment ledger for page-boundary tests.
  * The production selector still decides which entries are relevant; unused keys are ignored.
@@ -82,7 +211,7 @@ const KNEE_PAGE_ASSESSMENTS: Record<string, AssessmentRecord> = {
   [SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked: true, tensionLocations: ["thigh-anterior"] },
 };
 
-export function createPilotScenarioSnapshot(scenario: PilotTestScenario): SavedDemoSnapshot {
+export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: PilotScenarioSeedContext): SavedDemoSnapshot {
   const isFullFlow = scenario.mode === "full_flow";
   const base: SavedDemoSnapshot = {
     schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION,
@@ -155,12 +284,107 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario): SavedD
     adverseConfirmedAssessmentIds: [],
   };
 
-  return {
+  const fixtureIntake = scenario.fixtureKind === "history-new-problem"
+    ? NEW_PROBLEM_INTAKE
+    : scenario.fixtureKind === "bilateral-training-gate"
+      ? BILATERAL_INTAKE
+      : undefined;
+  const snapshot: SavedDemoSnapshot = {
     ...base,
     ...scenario.snapshotOverrides,
     intake: {
       ...base.intake,
+      ...(fixtureIntake ?? {}),
       ...(scenario.snapshotOverrides?.intake ?? {}),
+    },
+  };
+
+  if (!seed) return snapshot;
+
+  const currentThread = currentThreadForSeed(seed, snapshot);
+  const seededIdentity: Partial<SavedDemoSnapshot> = {
+    localCaseId: seed.localCaseId,
+    problemThreadId: seed.problemThreadId,
+    sessionId: seed.sessionId,
+    sessionStatus: "draft",
+    sessionStartedAt: seed.savedAt,
+    draftSavedAt: seed.savedAt,
+    problemThreads: [currentThread],
+    sessionIndex: [sessionIndexForSeed(seed, snapshot.sessionNumber)],
+  };
+
+  if (scenario.fixtureKind === "history-second-session" || scenario.fixtureKind === "history-new-problem") {
+    const historicalStartedAt = new Date(Date.parse(seed.savedAt) - 24 * 60 * 60 * 1000).toISOString();
+    const historicalLocation = "膝关节前侧";
+    const historicalThread: ProblemThreadRecord = {
+      problemThreadId: seed.historicalProblemThreadId,
+      caseId: seed.localCaseId,
+      status: scenario.fixtureKind === "history-new-problem" ? "archived" : "active",
+      createdAt: historicalStartedAt,
+      lastActiveAt: historicalStartedAt,
+      ...(scenario.fixtureKind === "history-new-problem" ? { closedAt: seed.savedAt } : {}),
+      regionId: "knee",
+      location: historicalLocation,
+      title: "原右膝下楼疼痛",
+    };
+    const currentHistoryThread: ProblemThreadRecord = scenario.fixtureKind === "history-new-problem"
+      ? {
+        ...currentThread,
+        supersedesProblemThreadId: seed.historicalProblemThreadId,
+        regionId: snapshot.intake.regionId,
+        location: snapshot.intake.location,
+        title: "新右踝外侧不适",
+      }
+      : currentThread;
+    const firstSummary = fixtureSummary({
+      sessionId: seed.historicalSessionId,
+      problemThreadId: seed.historicalProblemThreadId,
+      sessionNumber: 1,
+      startedAt: historicalStartedAt,
+      status: "completed",
+      location: historicalLocation,
+      endingScore: 3,
+    });
+    const currentSummary = fixtureSummary({
+      sessionId: seed.sessionId,
+      problemThreadId: scenario.fixtureKind === "history-new-problem" ? seed.problemThreadId : seed.historicalProblemThreadId,
+      sessionNumber: 2,
+      startedAt: seed.savedAt,
+      status: "draft",
+      location: snapshot.intake.location,
+    });
+    seededIdentity.problemThreads = scenario.fixtureKind === "history-new-problem"
+      ? [historicalThread, currentHistoryThread]
+      : [historicalThread];
+    if (scenario.fixtureKind === "history-second-session") {
+      seededIdentity.problemThreadId = seed.historicalProblemThreadId;
+    }
+    seededIdentity.sessionIndex = [
+      sessionIndexForSeed({ ...seed, problemThreadId: seed.historicalProblemThreadId, sessionId: seed.historicalSessionId }, 1, seed.historicalProblemThreadId, seed.historicalSessionId, "completed", historicalStartedAt),
+      sessionIndexForSeed(seed, 2, currentSummary.problemThreadId, seed.sessionId),
+    ];
+    seededIdentity.sessionHistory = [firstSummary, currentSummary];
+    seededIdentity.sessionNumber = 2;
+    seededIdentity.followupMode = true;
+    seededIdentity.followupStage = "review";
+    seededIdentity.followupScoreHistory = [5];
+    seededIdentity.hasNewSymptom = scenario.fixtureKind === "history-new-problem";
+  }
+
+  if (scenario.fixtureKind === "bilateral-training-gate") {
+    seededIdentity.assessmentResults = {
+      ...snapshot.assessmentResults,
+      "motion:knee-extension": { active: "right-limited", discomfort: "yes", pairedStrength: "normal" },
+    };
+    seededIdentity.bilateralTreatmentSides = { "target:chief": ["右侧"] };
+    seededIdentity.bilateralRetestResponses = {};
+  }
+
+  return {
+    ...snapshot,
+    ...seededIdentity,
+    intake: {
+      ...snapshot.intake,
     },
   };
 }
@@ -223,6 +447,65 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     initialProblem: "右膝疼痛导致下蹲动作无法完成，希望能重新完成下蹲。",
   },
   {
+    id: "snapshot-fresh-under-24h",
+    title: "快照未满24小时",
+    description: "真实加载一份23小时前的保存记录，确认不出现陈旧提醒且原答案不变。",
+    mode: "page_boundary",
+    target: "陈旧恢复边界",
+    initialProblem: "右膝下楼时疼痛，昨天刚保存过记录。",
+    step: 2,
+    restoreAgeMs: 23 * 60 * 60 * 1000,
+    snapshotOverrides: { intake: { onset: "昨天" } },
+    fixtureNote: "预期：没有“恢复记录提醒”。",
+  },
+  {
+    id: "snapshot-stale-24h-acute",
+    title: "快照超过24小时（急性）",
+    description: "真实加载一份恰好超过24小时的急性记录，提醒可以继续但不阻断。",
+    mode: "page_boundary",
+    target: "陈旧恢复边界",
+    initialProblem: "右脚踝昨天扭伤，外踝肿痛，昨天保存过记录。",
+    step: 2,
+    restoreAgeMs: 24 * 60 * 60 * 1000,
+    snapshotOverrides: { intake: { onset: "昨天" } },
+    fixtureNote: "预期：显示“恢复记录提醒”，只有“回看当前情况”，不要求三项确认。",
+  },
+  {
+    id: "snapshot-stale-7d-acute",
+    title: "快照超过7天（急性）",
+    description: "真实加载一份7天前的急性/时间敏感记录，必须先重新确认三类信息。",
+    mode: "page_boundary",
+    target: "陈旧恢复边界",
+    initialProblem: "右脚踝扭伤后外踝肿痛，7天前保存过记录。",
+    step: 2,
+    restoreAgeMs: 7 * 24 * 60 * 60 * 1000,
+    snapshotOverrides: { intake: { onset: "昨天" } },
+    fixtureNote: "预期：回到症状信息并显示“重新确认后继续”，原答案仍保留。",
+  },
+  {
+    id: "snapshot-stale-7d-chronic",
+    title: "快照超过7天（慢性）",
+    description: "真实加载一份7天前的慢性记录，只提醒、不阻断继续。",
+    mode: "page_boundary",
+    target: "陈旧恢复边界",
+    initialProblem: "右膝下楼时疼痛已经超过6周，7天前保存过记录。",
+    step: 2,
+    restoreAgeMs: 7 * 24 * 60 * 60 * 1000,
+    snapshotOverrides: { intake: { onset: "超过6周" } },
+    fixtureNote: "预期：显示超过7天提醒，但不要求急性三项确认。",
+  },
+  {
+    id: "bilateral-training-gate",
+    title: "双侧未完成时的训练门",
+    description: "直接进入带左右标记、右侧优先但另一侧未完成评估的训练页。",
+    mode: "page_boundary",
+    target: "双侧流程边界",
+    initialProblem: "两侧膝盖下蹲都不舒服，右侧更明显，想先改善右侧。",
+    step: 4,
+    fixtureKind: "bilateral-training-gate",
+    fixtureNote: "预期：页面显示“当前只开放低负荷基础活动”，进阶按钮不可用。",
+  },
+  {
     id: "treatment-improved",
     title: "后续康复后改善",
     description: "直接检查后续康复与改善复测页面的接线。",
@@ -262,6 +545,39 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     step: 4,
   },
   {
+    id: "network-save-failure",
+    title: "网络保存失败",
+    description: "真实页面本机保存照常执行，只注入同步网络失败，检查离线提示和稍后重试语义。",
+    mode: "page_boundary",
+    target: "异常保存边界",
+    initialProblem: "右膝下楼疼痛，保存时网络暂时不可用。",
+    step: 3,
+    faultMode: "network",
+    fixtureNote: "预期：页面显示“网络断开，正在本机保存”，服务器不应被伪造为已同步。",
+  },
+  {
+    id: "timeout-save-failure",
+    title: "网络保存超时",
+    description: "真实页面本机保存照常执行，只注入同步超时，检查超时也不会丢本地内容。",
+    mode: "page_boundary",
+    target: "异常保存边界",
+    initialProblem: "右膝下楼疼痛，保存请求超时。",
+    step: 3,
+    faultMode: "timeout",
+    fixtureNote: "预期：页面显示“网络断开，正在本机保存”，记录仍留在本机。",
+  },
+  {
+    id: "storage-unavailable",
+    title: "本机存储不可用",
+    description: "真实页面读取种子后禁止后续本机写入，检查保存失败文案和数据不被假报成功。",
+    mode: "page_boundary",
+    target: "异常保存边界",
+    initialProblem: "右膝下楼疼痛，本机存储空间或权限不可用。",
+    step: 3,
+    faultMode: "storage",
+    fixtureNote: "预期：页面显示“本机保存失败”，不会显示“已保存到本机”。",
+  },
+  {
     id: "second-session",
     title: "第二次康复",
     description: "检查历史摘要、复查入口和第二次康复状态。",
@@ -269,6 +585,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     target: "复查边界",
     initialProblem: "右膝下楼疼痛，正在进行第二次康复复查。",
     step: 5,
+    fixtureKind: "history-second-session",
     snapshotOverrides: { followupMode: true, sessionNumber: 2, followupStage: "review", followupScoreHistory: [5] },
   },
   {
@@ -279,6 +596,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     target: "复查边界",
     initialProblem: "原右膝问题复查时，又出现新的右踝不适。",
     step: 5,
+    fixtureKind: "history-new-problem",
     snapshotOverrides: { followupMode: true, sessionNumber: 2, followupStage: "review", hasNewSymptom: "yes", followupScoreHistory: [5] },
   },
   {

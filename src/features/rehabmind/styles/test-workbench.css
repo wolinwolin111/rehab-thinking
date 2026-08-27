@@ -86,6 +86,8 @@
 .rm-test-scenario-list button > span { color: #5168d8; font-size: 12px; font-weight: 700; }
 .rm-test-scenario-list button > strong { font-size: 17px; }
 .rm-test-scenario-list button > small { color: #687287; font-size: 14px; line-height: 1.5; }
+.rm-test-scenario-list button > em,
+.rm-test-fixture-note { color: #9b5b2d; font-size: 12px; line-height: 1.45; font-style: normal; }
 .rm-test-message { margin-top: 14px !important; color: #9b3e34 !important; }
 .rm-test-launcher > footer { display: flex; justify-content: flex-end; padding-top: 22px; }
 .rm-test-launcher > footer button {
@@ -135,6 +137,7 @@
 .rm-test-toolbar-actions button.is-danger { color: #a23636; border-color: #e0bcbc; }
 .rm-test-version { display: grid; gap: 2px; color: #667086; font-size: 11px; white-space: nowrap; }
 .rm-test-toolbar > p { grid-column: 1 / -1; margin: 0; color: #9b3e34; font-size: 13px; }
+.rm-test-fixture-note { grid-column: 1 / -1; margin: 0; }
 .rm-test-product { background: #fff; }
 
 @media (max-width: 820px) {

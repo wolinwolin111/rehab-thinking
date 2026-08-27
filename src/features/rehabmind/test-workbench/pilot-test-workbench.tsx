@@ -7,6 +7,7 @@ import type {
   SavedDemoRecord,
   SavedDemoSnapshot,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
+import { getGoalLabel, STEPS } from "@/src/features/rehabmind/components/workbench/workbench-support";
 import { createLocalCaseId } from "@/src/infrastructure/pilot/persistence/local-case-identity";
 import {
   clearLocalDraft,
@@ -16,11 +17,13 @@ import {
   saveLocalDraft,
 } from "@/src/infrastructure/pilot/persistence/local-case-store";
 import { PILOT_RELEASE_VERSIONS } from "@/src/infrastructure/pilot/release/release-version";
-import type { PilotTestContext } from "@/src/infrastructure/pilot/api/case-client";
+import { buildPilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
+import { createPilotAccessToken, createPilotCase, createPilotClientCreationId, type PilotTestContext } from "@/src/infrastructure/pilot/api/case-client";
 import {
   createPilotScenarioSnapshot,
   findPilotTestScenario,
   PILOT_TEST_SCENARIOS,
+  type PilotScenarioSeedContext,
   type PilotTestMode,
   type PilotTestScenario,
 } from "./scenario-catalog";
@@ -64,16 +67,92 @@ function appUrl(path: string) {
   return `${prefix}${path}`;
 }
 
-async function seedScenario(scenario: PilotTestScenario, snapshotOverride?: PilotDraftEnvelope["snapshot"]) {
+function rebindSnapshotToTestCase(snapshot: SavedDemoSnapshot, localCaseId: string, savedAt: string, seed: PilotScenarioSeedContext): SavedDemoSnapshot {
+  return {
+    ...snapshot,
+    localCaseId,
+    problemThreadId: snapshot.problemThreadId ?? seed.problemThreadId,
+    sessionId: snapshot.sessionId ?? seed.sessionId,
+    sessionStartedAt: savedAt,
+    draftSavedAt: savedAt,
+    problemThreads: snapshot.problemThreads?.map((thread) => ({ ...thread, caseId: localCaseId })),
+    sessionIndex: snapshot.sessionIndex?.map((session) => ({ ...session, caseId: localCaseId })),
+  };
+}
+
+async function seedScenario(scenario: PilotTestScenario, testRunId: string, snapshotOverride?: PilotDraftEnvelope["snapshot"]) {
   const localCaseId = createLocalCaseId();
+  const savedAt = new Date(Date.now() - (scenario.restoreAgeMs ?? 0)).toISOString();
+  const clientCreationId = createPilotClientCreationId();
+  const seed: PilotScenarioSeedContext = {
+    localCaseId,
+    problemThreadId: `thread-test-${localCaseId}`,
+    sessionId: `session-test-${localCaseId}`,
+    historicalProblemThreadId: `thread-history-${localCaseId}`,
+    historicalSessionId: `session-history-${localCaseId}`,
+    savedAt,
+  };
+  const context: PilotTestContext = {
+    testRunId,
+    scenarioId: scenario.id,
+    createdBy: "test_workbench",
+    ...(scenario.faultMode ? { faultMode: scenario.faultMode } : {}),
+  };
+  const snapshot = snapshotOverride
+    ? rebindSnapshotToTestCase(snapshotOverride, localCaseId, savedAt, seed)
+    : createPilotScenarioSnapshot(scenario, seed);
+  const access = await createPilotCase({
+    clientCreationId,
+    accessToken: createPilotAccessToken(),
+    initialSnapshot: snapshot,
+    currentStage: STEPS[snapshot.step] ?? scenario.target,
+    isBilateral: snapshot.intake.side === "双侧/中间",
+    hasSafetyStop: Object.values(snapshot.safety).some((value) => value === "yes"),
+    source: { channel: "internal_test", detail: null },
+    consent: buildPilotConsentRecord(new Date().toISOString()),
+    testContext: context,
+  });
+  const existing = await loadLocalCaseRecords<SavedDemoRecord>("test");
+  const record: SavedDemoRecord = {
+    id: `test-${localCaseId}`,
+    localCaseId,
+    savedAt,
+    region: snapshot.intake.regionId || "待确认",
+    complaint: snapshot.intake.description.trim() || scenario.initialProblem,
+    goal: getGoalLabel(snapshot.intake.goal),
+    initialScore: snapshot.intake.baselineScore,
+    latestScore: snapshot.followupScoreHistory.at(-1) ?? snapshot.intake.baselineScore,
+    scoreComparable: Boolean(snapshot.intake.baselineScoreConfirmed),
+    sessionCount: snapshot.sessionNumber,
+    problemThreadId: snapshot.problemThreadId,
+    sessionId: snapshot.sessionId,
+    sessionStatus: snapshot.sessionStatus ?? "draft",
+    sessionHistory: snapshot.sessionHistory,
+    problemThreads: snapshot.problemThreads,
+    sessionIndex: snapshot.sessionIndex,
+    status: "康复中",
+    snapshot,
+    pilotCaseId: access.caseId,
+    pilotClientCreationId: clientCreationId,
+    pilotPublicCode: access.publicCode,
+    pilotAccessToken: access.accessToken,
+    pilotRevision: access.revision,
+    pilotLastSyncedRevision: access.revision,
+    pilotDirty: false,
+    pilotSnapshotUpdatedAt: savedAt,
+    pilotVersions: access.versions,
+    testRunId,
+    scenarioId: scenario.id,
+  };
+  await saveLocalCaseRecords([record, ...existing.records.filter((item) => item.localCaseId !== localCaseId)], "test");
   const draft: PilotDraftEnvelope = {
     schemaVersion: 2,
     localCaseId,
-    savedAt: new Date().toISOString(),
-    snapshot: snapshotOverride ?? createPilotScenarioSnapshot(scenario),
+    savedAt,
+    snapshot,
   };
   await saveLocalDraft(draft, "test");
-  return draft;
+  return { draft, record, context };
 }
 
 export default function PilotTestWorkbench() {
@@ -129,12 +208,14 @@ export default function PilotTestWorkbench() {
     setBusy(true);
     setMessage("");
     try {
-      const seeded = await seedScenario(scenario, snapshotOverride);
-      setLatestRecord(null);
+      const testRunId = runId || currentRunId();
+      if (!runId) setRunId(testRunId);
+      const seeded = await seedScenario(scenario, testRunId, snapshotOverride);
+      setLatestRecord(seeded.record);
       setActive((current) => ({
-        context: { testRunId: runId || currentRunId(), scenarioId: scenario.id, createdBy: "test_workbench" },
+        context: seeded.context,
         scenario,
-        localCaseId: seeded.localCaseId,
+        localCaseId: seeded.draft.localCaseId,
         instance: (current?.instance ?? 0) + 1,
       }));
     } catch {
@@ -256,7 +337,7 @@ export default function PilotTestWorkbench() {
   }
 
   if (!active) {
-    return <main className="rm-test-launcher">
+    return <main className="rm-test-launcher" data-testid="test-workbench-launcher" data-test-run-id={runId}>
       <header>
         <div><span>内部测试</span><h1>RehabMind 测试工作台</h1><p>测试数据与用户数据隔离，不计入正式统计。</p></div>
         <a href={appUrl("/admin")}>返回管理后台</a>
@@ -271,8 +352,9 @@ export default function PilotTestWorkbench() {
       <section className="rm-test-scenarios">
         <div className="rm-test-section-heading"><div><h2>选择起点</h2><p>{mode === "full_flow" ? "这些场景可以形成纵向流程证据。" : "这些场景带有预置状态，不能算作完整流程证据。"}</p></div><span>运行批次 {runId}</span></div>
         <div className="rm-test-scenario-list">
-          {scenarios.map((scenario) => <button type="button" key={scenario.id} className={selectedId === scenario.id ? "is-selected" : ""} onClick={() => setSelectedId(scenario.id)}>
+          {scenarios.map((scenario) => <button type="button" key={scenario.id} data-testid={`test-scenario-${scenario.id}`} data-scenario-id={scenario.id} className={selectedId === scenario.id ? "is-selected" : ""} onClick={() => setSelectedId(scenario.id)}>
             <span>{scenario.target}</span><strong>{scenario.title}</strong><small>{scenario.description}</small>
+            {scenario.fixtureNote ? <em>{scenario.fixtureNote}</em> : null}
           </button>)}
         </div>
       </section>
@@ -282,17 +364,17 @@ export default function PilotTestWorkbench() {
     </main>;
   }
 
-  return <main className="rm-test-runtime">
+  return <main className="rm-test-runtime" data-testid="test-workbench-runtime" data-scenario-id={active.scenario.id} data-test-run-id={active.context.testRunId} data-test-fault-mode={active.context.faultMode ?? "none"}>
     <header className="rm-test-toolbar">
       <div className="rm-test-toolbar-context"><span>{active.scenario.mode === "full_flow" ? "完整流程" : "页面边界测试"}</span><strong>{active.scenario.title}</strong><small>批次 {active.context.testRunId}</small></div>
       <div className="rm-test-toolbar-actions">
-        <button type="button" disabled={busy} onClick={() => void restartScenario()}>重新开始</button>
-        <button type="button" disabled={busy} onClick={() => void cloneScenario()}>复制为新案例</button>
+        <button type="button" data-testid="test-restart-scenario" disabled={busy} onClick={() => void restartScenario()}>重新开始</button>
+        <button type="button" data-testid="test-clone-scenario" disabled={busy} onClick={() => void cloneScenario()}>复制为新案例</button>
         <button type="button" onClick={() => void clearDraft()}>清除草稿</button>
-        <button type="button" onClick={() => void copyCaseCode()}>复制案例编号</button>
+        <button type="button" data-testid="test-copy-case-code" onClick={() => void copyCaseCode()}>复制案例编号</button>
         <button type="button" onClick={() => void exportReproductionPackage()}>导出复现包</button>
-        <button type="button" onClick={openAdminRecord}>后台记录</button>
-        <button type="button" className="is-danger" disabled={busy} onClick={() => void deleteRun()}>删除本批次</button>
+        <button type="button" data-testid="test-open-admin" onClick={openAdminRecord}>后台记录</button>
+        <button type="button" data-testid="test-delete-run" className="is-danger" disabled={busy} onClick={() => void deleteRun()}>删除本批次</button>
         <button type="button" onClick={() => setActive(null)}>切换场景</button>
       </div>
       <div className="rm-test-version" title="当前发布版本">
@@ -301,6 +383,7 @@ export default function PilotTestWorkbench() {
         <span>决策 {PILOT_RELEASE_VERSIONS.decisionVersion}</span>
       </div>
       {message ? <p role="status">{message}</p> : null}
+      {active.scenario.fixtureNote ? <p className="rm-test-fixture-note" data-testid="test-fixture-note">{active.scenario.fixtureNote}</p> : null}
     </header>
     <div className="rm-test-product">
       <RehabMindCompleteDemo key={active.instance} testContext={active.context} />
