@@ -3448,12 +3448,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   // SAVE-02：恢复到评估阶段后，按派生队列推导作答进度并落到正确位置
   useEffect(() => {
     if (!restoredAssessmentCheck) return;
-    if (!assessments.length) return;
+    if (!assessmentDisplayItems.length) return;
     /* eslint-disable react-hooks/set-state-in-effect -- 恢复落点只能等派生队列就绪后一次性校正，属恢复路径的合法级联 */
-    const answered = assessments.map((item) => {
-      const record = assessmentResults[item.id];
-      return Boolean(record && Object.keys(record).length > 0);
-    });
+    // 不再用“对象非空”冒充已完成。逐侧双侧记录会先创建空容器，功能/力量
+    // 记录也可能只有半份答案；恢复路径必须与页面进度、处理门使用同一完成合同。
+    // 同时按可见队列计算索引，避免髌骨合并项让恢复位置偏移到下一张卡。
+    const answered = assessmentDisplayItems.map((item) => displayAssessmentComplete(item));
     const progress = resolveRestoredAssessmentProgress(answered);
     if (progress.complete) {
       setStep(3);
@@ -3468,9 +3468,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     }
     setRestoredAssessmentCheck(null);
     /* eslint-enable react-hooks/set-state-in-effect */
-    // 恢复标记触发一次；assessments/assessmentResults 由上方长度守卫与闭包快照覆盖。
+    // 恢复标记触发一次；可见队列/assessmentResults 由上方长度守卫与闭包快照覆盖。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restoredAssessmentCheck, assessments.length]);
+  }, [restoredAssessmentCheck, assessmentDisplayItems.length]);
 
   function targetScoreBeforeRetest(target: TrialTarget) {
     if (target.id === "target:chief") return lastChiefScore;
