@@ -1,4 +1,4 @@
-﻿import type { CSSProperties, Dispatch, SetStateAction } from "react";
+﻿import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AnswerChoiceGrid, ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import LowerLimbLocationPicker from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
@@ -327,12 +327,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
     return <section className="rm-page">
       <StepHeading eyebrow={`第3步 · 评估检查 ${assessments.length + 1}/${assessments.length + 1}`} title="肌肉紧张度对比" />
       <article className="rm-check-card rm-shared-tension-check">
-        <header><i>触</i><div><span>按图示同一肌肉区域比较两侧</span><strong>相关区域只检查一次</strong></div></header>
-        <section><b>怎么比较</b><p>{intake.side === "双侧/中间" ? "左右两侧分别轻按同一肌肉区域一次，比较哪一侧更酸或更胀。" : "先按另一侧，再用相近力度轻按不舒服的一侧，比较哪一侧更酸或更胀。"}</p></section>
-        <section><b>选择区域</b><p>选择按压反应明显不同的肌肉区域；不要根据“硬不硬”下结论，也不要按骨头、关节线、明显肿胀中心或尖锐痛点。</p></section>
-        <section className="rm-tension-exit"><b>两侧差别不大？直接选：</b><div className="rm-options" style={{ "--columns": 2 } as CSSProperties}>{tensionExitLabels.map((label) => <button type="button" key={label} className={selectedLocations.includes(label) ? "is-selected" : ""} onClick={() => toggleSharedTensionLocation(label)}>{label}</button>)}</div></section>
-        <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} showSpecials={false} bilateral={intake.side === "双侧/中间"} onToggle={toggleSharedTensionLocation} />
-        <p className="rm-choice-hint">不要按骨头、关节线、明显肿胀中心或尖锐痛点；出现刺痛、麻或电感就停止。</p>
+        <header><i>触</i><div><strong>轻按两侧，看看哪里差别更明显</strong></div></header>
+        <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} onToggle={toggleSharedTensionLocation} />
       </article>
       <div className="rm-page-actions split"><button type="button" onClick={() => setSharedTensionOpen(false)}>返回活动检查</button><button type="button" className="rm-primary" disabled={!sharedTensionComplete} onClick={() => {
         setSharedTensionOpen(false);

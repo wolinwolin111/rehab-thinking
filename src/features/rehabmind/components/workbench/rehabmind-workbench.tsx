@@ -2859,8 +2859,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     [intake.symptoms.includes("肿胀或淤青") && !intake.swellingLocationConfirmed, "肿胀位置"],
     [intakeHasTenderness && !intake.tendernessLocationConfirmed, "按压痛位置"],
     [intakeHasSensorySymptoms && !intake.sensoryLocationConfirmed, "麻电范围"],
-    [!provocationConfirmedForFlow, "诱发场景"],
-    [needsChiefActionConfirmation, "具体动作"],
+    [!provocationConfirmedForFlow || needsChiefActionConfirmation, "诱发动作"],
     [baselineScoreApplicable && !intake.baselineScoreConfirmed, "不适分数"],
     [needsStabbingSpread, "刺痛出现范围"],
     [needsStabbingPalpation, "轻按反应"],
@@ -3052,8 +3051,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       "不适感觉": Boolean(intake.symptomType),
       "疼痛性质": intake.painQualityConfirmed,
       "目前情况": confirmedIntakeMulti.symptoms,
-      "诱发场景": provocationConfirmedForFlow,
-      "具体动作": Boolean(reportedActionSummary(intake).length || hasNoFixedProvocation),
+      "诱发动作": provocationConfirmedForFlow && (!needsChiefActionConfirmation || Boolean(reportedActionSummary(intake).length || hasNoFixedProvocation)),
       "不适分数": intake.baselineScoreConfirmed,
       "肿胀位置": intake.swellingLocationConfirmed,
       "按压痛位置": intake.tendernessLocationConfirmed,
@@ -3095,7 +3093,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       setGuidedIntakeCursor(currentPath.length);
       setGuidedIntakeField("");
     }
-  }, [intake, intakeMissingFields, guidedIntakeField, guidedIntakePath, confirmedIntakeMulti, effectiveOperationTarget, provocationConfirmedForFlow, hasNoFixedProvocation, intakeHasTenderness, intakeHasSensorySymptoms]);
+  }, [intake, intakeMissingFields, guidedIntakeField, guidedIntakePath, confirmedIntakeMulti, effectiveOperationTarget, provocationConfirmedForFlow, hasNoFixedProvocation, needsChiefActionConfirmation, intakeHasTenderness, intakeHasSensorySymptoms]);
 
   function returnToPreviousIntakeQuestion() {
     guidedAdvanceRef.current = null;
@@ -5277,7 +5275,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ...(intake.mechanism || mechanismQuestionRelevant ? [{ field: "发生方式", value: intake.mechanism || "待补充" }] : []),
     { field: "不适感觉", value: intake.symptomType || "待补充" },
     { field: "目前情况", value: confirmedIntakeMulti.symptoms ? intake.symptoms.join("、") || "没有以上情况" : "待补充" },
-    { field: "诱发场景", value: provocationConfirmedForFlow ? hasClearChiefAction(intake) ? chiefActionLabel(intake) : intake.provocationTypes.join("、") || "没有固定动作" : "待补充" },
+    { field: "什么时候最明显", value: provocationConfirmedForFlow ? hasClearChiefAction(intake) ? chiefActionLabel(intake) : intake.provocationTypes.join("、") || "没有固定情况" : "待补充" },
     ...(baselineScoreApplicable ? [{ field: "不适分数", value: intake.baselineScoreConfirmed ? `${intake.baselineScore}/10` : "待补充" }] : []),
     ...(intake.symptoms.includes("肿胀或淤青") ? [{ field: "肿胀位置", value: intake.swellingLocationConfirmed ? intake.swellingLocation || "说不清" : "待补充" }] : []),
     ...(intakeHasTenderness ? [{ field: "按压痛位置", value: intake.tendernessLocationConfirmed ? intake.tendernessLocation || "说不清" : "待补充" }] : []),

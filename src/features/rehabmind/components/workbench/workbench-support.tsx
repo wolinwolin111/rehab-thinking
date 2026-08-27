@@ -885,6 +885,7 @@ export function migrateIntakeState(raw: Partial<IntakeState> | undefined): Intak
 export function canonicalIntakeField(field: string) {
   if (field === "使用身份") return "使用方式";
   if (field === "检查方式") return "操作对象";
+  if (["诱发场景", "具体动作", "什么时候最明显"].includes(field)) return "诱发动作";
   return field;
 }
 

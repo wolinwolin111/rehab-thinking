@@ -1,13 +1,15 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-24",
+  "updatedAt": "2026-08-28",
   "policy": "This manifest records file identity only. replacement-required assets are not approved visual content.",
   "assets": [
     { "id": "brand-og-complete", "url": "/og-rehabmind-complete.png", "purpose": "social-preview", "version": "legacy", "reviewStatus": "current" },
     { "id": "brand-og-rehabmind", "url": "/og-rehabmind.png", "purpose": "social-preview", "version": "legacy", "reviewStatus": "current" },
     { "id": "brand-og-default", "url": "/og.png", "purpose": "social-preview", "version": "legacy", "reviewStatus": "current" },
-    { "id": "anatomy-lower-limb-back", "url": "/rehabmind-lower-limb-back-v1.png", "purpose": "location-reference", "version": "v1", "reviewStatus": "replacement-required" },
-    { "id": "anatomy-lower-limb-front", "url": "/rehabmind-lower-limb-front-v1.png", "purpose": "location-reference", "version": "v1", "reviewStatus": "replacement-required" },
+    { "id": "anatomy-lower-limb-back", "url": "/rehabmind-lower-limb-back-v1.png", "purpose": "location-reference-and-muscle-location-base", "version": "v1", "reviewStatus": "current" },
+    { "id": "anatomy-lower-limb-front", "url": "/rehabmind-lower-limb-front-v1.png", "purpose": "location-reference-and-muscle-location-base", "version": "v1", "reviewStatus": "current" },
+    { "id": "anatomy-lower-limb-lateral", "url": "/rehabmind-lower-limb-lateral-v1.png", "purpose": "muscle-location-base", "version": "v1", "reviewStatus": "current" },
+    { "id": "anatomy-lower-limb-medial", "url": "/rehabmind-lower-limb-medial-v1.png", "purpose": "muscle-location-base", "version": "v1", "reviewStatus": "current" },
     { "id": "anatomy-ankle-atlas", "url": "/rehabmind-region-ankle-atlas-v2.png", "purpose": "location-reference", "version": "v2", "reviewStatus": "replacement-required" },
     { "id": "anatomy-ankle", "url": "/rehabmind-region-ankle-v1.png", "purpose": "location-reference", "version": "v1", "reviewStatus": "replacement-required" },
     { "id": "anatomy-calf-atlas", "url": "/rehabmind-region-calf-atlas-v2.png", "purpose": "location-reference", "version": "v2", "reviewStatus": "replacement-required" },

@@ -490,21 +490,22 @@ body:has(.rm-app) {
 .rm-muscle-location-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 .rm-muscle-location-card {
   width: 100%;
-  min-height: 168px;
-  padding: 13px 14px 13px 16px;
+  min-height: 294px;
+  padding: 17px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px;
-  align-items: center;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-content: start;
+  gap: 12px;
   border: 1px solid #dbe6e6;
   border-radius: 15px;
   color: var(--rm-visual-ink);
   background: rgba(255, 255, 255, .92);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
@@ -523,23 +524,12 @@ body:has(.rm-app) {
 }
 .rm-muscle-location-card__copy {
   min-width: 0;
-  display: grid;
-  gap: 7px;
+  display: block;
 }
 .rm-muscle-location-card__copy strong {
   color: #214c48;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.25;
-}
-.rm-muscle-location-card__copy small,
-.rm-muscle-location-card__copy em {
-  color: #5d7075;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.rm-muscle-location-card__copy em {
-  color: #7d8b8e;
-  font-style: normal;
 }
 .rm-muscle-location-figure {
   width: 100%;
@@ -551,7 +541,7 @@ body:has(.rm-app) {
 }
 .rm-muscle-location-figure__canvas {
   width: 100%;
-  max-width: 124px;
+  max-width: 220px;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border: 1px solid #d5e0df;
@@ -594,11 +584,6 @@ body:has(.rm-app) {
 .rm-muscle-location-figure__map-base { stroke: #b58e78; stroke-width: 2.5; stroke-linejoin: round; }
 .rm-muscle-location-figure__map-line { fill: none; stroke: rgba(117, 104, 97, .38); stroke-width: 1.5; stroke-linecap: round; }
 .rm-muscle-location-figure__map-label { fill: #6a817d; font-size: 9px; font-weight: 800; letter-spacing: .02em; }
-.rm-muscle-location-figure figcaption {
-  color: #819092;
-  font-size: 10px;
-  line-height: 1.2;
-}
 .rm-muscle-location-figure__highlight {
   fill: rgba(65, 158, 133, .28);
   stroke: rgba(43, 126, 105, .9);
@@ -614,11 +599,11 @@ body:has(.rm-app) {
 }
 .rm-muscle-location-card.is-bilateral-card {
   cursor: default;
-  grid-template-columns: minmax(0, 1fr) 112px;
-  grid-template-rows: auto auto;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
 }
 .rm-muscle-location-card.is-bilateral-card .rm-muscle-location-card__sides {
-  grid-column: 1 / -1;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -655,32 +640,11 @@ body:has(.rm-app) {
 }
 .rm-muscle-treatment-map > header {
   padding: 14px 18px 12px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
   border-bottom: 1px solid #d8e6e2;
-}
-.rm-muscle-treatment-map > header div {
-  display: grid;
-  gap: 3px;
-}
-.rm-muscle-treatment-map > header span {
-  color: #347565;
-  font-size: 11px;
-  font-weight: 950;
-  letter-spacing: .04em;
 }
 .rm-muscle-treatment-map > header strong {
   color: #193f36;
   font-size: 17px;
-}
-.rm-muscle-treatment-map > header small {
-  max-width: 280px;
-  color: #61766f;
-  font-size: 11px;
-  line-height: 1.45;
-  text-align: right;
 }
 .rm-muscle-treatment-map__grid {
   padding: 14px 18px 17px;
@@ -692,7 +656,7 @@ body:has(.rm-app) {
   min-width: 0;
   padding: 10px;
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: 140px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   border: 1px solid #d5e5df;
@@ -700,22 +664,12 @@ body:has(.rm-app) {
   background: rgba(255, 255, 255, .84);
 }
 .rm-muscle-treatment-map__grid .rm-muscle-location-figure__canvas {
-  max-width: 88px;
+  max-width: 140px;
 }
-.rm-muscle-treatment-map__grid article > div {
-  min-width: 0;
-  display: grid;
-  gap: 5px;
-}
-.rm-muscle-treatment-map__grid article > div strong {
+.rm-muscle-treatment-map__grid article > strong {
   color: #214c48;
   font-size: 14px;
   line-height: 1.35;
-}
-.rm-muscle-treatment-map__grid article > div span {
-  color: #60736f;
-  font-size: 11px;
-  line-height: 1.45;
 }
 .rm-muscle-location-specials {
   margin-top: 12px;
@@ -741,26 +695,29 @@ body:has(.rm-app) {
   background: #eff7f5;
 }
 .rm-muscle-location-specials button strong { font-size: 14px; }
-.rm-muscle-location-specials button small { color: #718086; font-size: 11px; line-height: 1.4; }
+.rm-muscle-location-picker__safety {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #dbe6e6;
+  color: #596d70;
+  font-size: 12px;
+  line-height: 1.5;
+}
 
 @media (max-width: 760px) {
   .rm-muscle-location-picker { padding: 15px 17px 18px; }
   .rm-muscle-location-grid { grid-template-columns: 1fr; gap: 10px; }
-  .rm-muscle-location-card { min-height: 142px; grid-template-columns: minmax(0, 1fr) 104px; }
-  .rm-muscle-location-figure__canvas { max-width: 104px; }
-  .rm-muscle-treatment-map > header { align-items: flex-start; flex-direction: column; gap: 7px; }
-  .rm-muscle-treatment-map > header small { max-width: none; text-align: left; }
+  .rm-muscle-location-card { min-height: 270px; grid-template-columns: 1fr; }
+  .rm-muscle-location-figure__canvas { max-width: 205px; }
   .rm-muscle-treatment-map__grid { grid-template-columns: 1fr; padding-inline: 14px; }
 }
 
 @media (max-width: 380px) {
-  .rm-muscle-location-card { grid-template-columns: minmax(0, 1fr) 88px; padding-inline: 12px; }
-  .rm-muscle-location-figure__canvas { max-width: 88px; }
+  .rm-muscle-location-card { grid-template-columns: 1fr; padding-inline: 12px; }
+  .rm-muscle-location-figure__canvas { max-width: 180px; }
   .rm-muscle-location-card__copy strong { font-size: 16px; }
-  .rm-muscle-location-card__copy small,
-  .rm-muscle-location-card__copy em { font-size: 11px; }
-  .rm-muscle-treatment-map__grid article { grid-template-columns: 76px minmax(0, 1fr); }
-  .rm-muscle-treatment-map__grid .rm-muscle-location-figure__canvas { max-width: 76px; }
+  .rm-muscle-treatment-map__grid article { grid-template-columns: 132px minmax(0, 1fr); }
+  .rm-muscle-treatment-map__grid .rm-muscle-location-figure__canvas { max-width: 132px; }
 }
 
 /* Mobile refinement: keep the six-stage workspace readable at phone widths.
