@@ -394,7 +394,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     });
   };
   const bilateralSideLedgerEnabled = intake.side === "双侧/中间"
-    && item.kind === "function"
+    && (item.kind === "function" || item.kind === "motion")
     && record.bilateralSideResults !== undefined;
   const updateBilateralSideResult = (side: "左侧" | "右侧", result: "normal" | "limited") => {
     updateAssessment(item.id, (latestRecord) => {
@@ -402,22 +402,43 @@ export function AssessmentStage(props: AssessmentStageProps) {
       const left = bilateralSideResults["左侧"];
       const right = bilateralSideResults["右侧"];
       if (!left || !right) {
-        return {
+        const incompleteRecord: AssessmentRecord = {
           ...latestRecord,
           bilateralSideResults,
+          active: undefined,
+          discomfort: undefined,
+          pairedStrength: undefined,
+          bilateralComparison: undefined,
+          worseSide: undefined,
+        };
+        if (item.kind === "function") return {
+          ...incompleteRecord,
           functionCompletion: undefined,
           functionControl: undefined,
           functionDiscomfort: undefined,
           compensations: undefined,
-          bilateralComparison: undefined,
-          worseSide: undefined,
           simple: undefined,
         };
+        return incompleteRecord;
       }
       const hasLimitedSide = left === "limited" || right === "limited";
       const bilateralComparison = left === right
         ? left === "limited" ? "两侧异常" : "两侧接近"
         : left === "limited" ? "左侧更差" : "右侧更差";
+      if (item.kind === "motion") {
+        const active: AssessmentRecord["active"] = left === right
+          ? left === "limited" ? "both-limited" : "same"
+          : left === "limited" ? "left-limited" : "right-limited";
+        return {
+          ...latestRecord,
+          bilateralSideResults,
+          active,
+          discomfort: "no",
+          pairedStrength: item.pairedStrengthId ? "normal" : undefined,
+          bilateralComparison,
+          worseSide: bilateralComparisonToSide(bilateralComparison),
+        };
+      }
       const nextRecord: AssessmentRecord = {
         ...latestRecord,
         bilateralSideResults,

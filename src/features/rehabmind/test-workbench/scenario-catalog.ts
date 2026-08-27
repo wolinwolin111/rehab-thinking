@@ -396,10 +396,11 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
       // 双侧功能/力量/专项检查即使结果正常，也必须明确记录“两侧接近”才算
       // 完成；把这些合法前置补齐，避免恢复时落到并非本夹具目标的检查卡。
       ...withCompletedBilateralComparisons(snapshot.assessmentResults),
-      // 其余项目保持已记录，只把主诉相关的下蹲动作留作真实逐侧操作入口。
-      // 右侧虽是优先侧，但左右都完成前不会生成汇总结论或开放处理。
-      "motion:knee-extension": NORMAL_MOTION,
-      "function:knee-squat": { bilateralSideResults: {} },
+      // 其余项目保持已记录，只把膝伸直活动度留作真实逐侧操作入口。
+      // 双侧受限会形成可即时处理和逐侧复测的活动度发现；不能用只进入
+      // 训练的功能代偿结果冒充处理链。右侧虽是优先侧，左右都完成前仍
+      // 不会生成汇总结论或开放处理。
+      "motion:knee-extension": { bilateralSideResults: {} },
     };
     seededIdentity.bilateralTreatmentSides = {};
     seededIdentity.bilateralRetestResponses = {};
