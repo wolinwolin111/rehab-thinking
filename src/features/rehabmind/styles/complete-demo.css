@@ -596,11 +596,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-treatment-back { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
 .rm-treatment-back button { min-height: 46px; padding: 9px 16px; border: 1px solid var(--rm-line-strong); background: white; font-weight: 800; cursor: pointer; }
 .rm-treatment-back .rm-retest-return { border-color: #0c756b; color: #075f57; background: #eefaf7; box-shadow: 0 5px 16px rgba(12, 117, 107, .1); }
-.rm-demo-strip { margin: 20px 22px; display: grid; grid-template-columns: 1fr 30px 1fr 30px 1fr; align-items: center; gap: 5px; }
-.rm-demo-strip > div { min-height: 84px; padding: 11px; border: 1px solid var(--rm-line); background: var(--rm-paper); display: grid; align-content: center; justify-items: center; gap: 7px; text-align: center; }
-.rm-demo-strip > div i { width: 29px; height: 29px; color: white; border-radius: 50%; background: var(--rm-blue); display: grid; place-items: center; font: 750 12px/1 "Roboto Condensed", ui-monospace, monospace; font-style: normal; }
-.rm-demo-strip > div span { font-size: 12px; font-weight: 750; }
-.rm-demo-strip > b { color: var(--rm-blue); text-align: center; }
 .rm-candidate > footer { padding: 17px 22px; border-top: 1px solid var(--rm-line); background: var(--rm-blue-soft); display: grid; grid-template-columns: 110px 1fr; gap: 12px; }
 .rm-retest { margin-top: 18px; border: 1px solid var(--rm-line); border-top: 6px solid var(--rm-green); background: white; }
 .rm-retest > header { padding: 20px 23px; border-bottom: 1px solid var(--rm-line); }
@@ -735,7 +730,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-exercise-summary > em { color: var(--rm-blue); font-size: 12px; font-style: normal; font-weight: 800; }
 .rm-exercise-detail { padding: 0 20px 20px; border-top: 1px solid var(--rm-line); }
 .rm-exercise-detail > .rm-action-reference { margin-top: 20px; }
-.rm-demo-strip.is-training { margin-inline: 0; }
 .rm-exercise-detail dl { margin: 0; border: 1px solid var(--rm-line); }
 .rm-exercise-detail dl > div { min-height: 62px; padding: 12px 14px; border-bottom: 1px solid var(--rm-line); display: grid; grid-template-columns: 88px 1fr; gap: 12px; }
 .rm-exercise-detail dl > div:last-child { border-bottom: 0; }
@@ -749,7 +743,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-feedback-grid label { display: grid; gap: 5px; }
 .rm-feedback-grid label span { color: var(--rm-muted); font-size: 11px; font-weight: 750; }
 .rm-feedback-grid input, .rm-feedback-grid select { width: 100%; min-height: 42px; padding: 6px 8px; border: 1px solid #9fc9bf; background: white; }
-.rm-video-placeholder { width: 100%; min-height: 50px; margin-top: 12px; padding: 9px 13px; border: 1px dashed var(--rm-line-strong); color: var(--rm-muted); background: var(--rm-paper); display: flex; justify-content: space-between; gap: 12px; }
 .rm-next-stage { margin-top: 20px; padding: 22px; color: white; background: var(--rm-ink); }
 .rm-next-stage span { color: #8faaf4; font-size: 12px; font-weight: 850; }
 .rm-next-stage h2 { margin: 5px 0 0; font-size: 24px; }
@@ -1318,8 +1311,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-treatment-unit-followup { align-items: flex-start; flex-direction: column; gap: 4px; padding: 14px 18px; }
   .rm-home-relaxation > header { grid-template-columns: 1fr; gap: 4px; }
   .rm-home-relaxation > div { grid-template-columns: 1fr; padding: 12px 14px; }
-  .rm-demo-strip { margin: 14px; grid-template-columns: 1fr 18px 1fr 18px 1fr; }
-  .rm-demo-strip > div { min-height: 76px; padding: 7px; }
   .rm-candidate > footer { grid-template-columns: 1fr; gap: 3px; }
   .rm-track { grid-template-columns: 1fr; }
   .rm-track-change { min-height: 48px; }
@@ -1333,7 +1324,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-exercise-summary > b { grid-column: 2; width: max-content; }
   .rm-exercise-summary > em { grid-column: 3; grid-row: 1 / 3; }
   .rm-feedback-grid { grid-template-columns: 1fr 1fr; }
-  .rm-video-placeholder { text-align: left; flex-direction: column; }
   .rm-session-hero { grid-template-columns: 1fr; }
   .rm-session-hero .rm-final-score { justify-content: flex-start; }
   .rm-summary-grid { grid-template-columns: 1fr; }
@@ -1377,8 +1367,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-result-grid { grid-template-columns: 1fr; }
   .rm-findings article { grid-template-columns: 78px 1fr; }
   .rm-findings article > b { grid-column: 2; }
-  .rm-demo-strip { grid-template-columns: 1fr; }
-  .rm-demo-strip > b { transform: rotate(90deg); }
   .rm-feedback-grid { grid-template-columns: 1fr; }
   .rm-exercise-summary { grid-template-columns: 40px 1fr; }
   .rm-exercise-summary > b { grid-column: 2; }
@@ -2028,15 +2016,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-exercise-pagination > div { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
   .rm-summary-details > .rm-summary-dashboard { padding-inline: 10px; }
   .rm-context-hints { top: 68px; right: 10px; width: calc(100vw - 20px); }
-}
-
-/* 肌肉紧张度：照片底图 + 半透明区域色块 */
-.rm-muscle-location-figure__photo { object-fit: cover; }
-.rm-muscle-location-figure__highlight--photo {
-  fill: rgba(72, 187, 157, 0.55);
-  stroke: #48bb9d;
-  stroke-width: 2;
-  stroke-opacity: 0.8;
 }
 
 .rm-snapshot-freshness {

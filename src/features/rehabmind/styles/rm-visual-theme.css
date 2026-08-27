@@ -586,9 +586,9 @@ body:has(.rm-app) {
   line-height: 1.2;
 }
 .rm-muscle-location-figure__highlight {
-  fill: rgba(91, 170, 146, .24);
-  stroke: rgba(61, 133, 115, .82);
-  stroke-width: 4;
+  fill: rgba(65, 158, 133, .28);
+  stroke: rgba(43, 126, 105, .9);
+  stroke-width: 2;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   opacity: .82;

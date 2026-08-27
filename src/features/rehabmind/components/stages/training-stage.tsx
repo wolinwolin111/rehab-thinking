@@ -251,7 +251,7 @@ export function TrainingStage(props: TrainingStageProps) {
       return <article className="rm-exercise" key={exercise.id}>
         <div className="rm-exercise-summary"><i>{visibleExerciseIndex + 1}</i><span><small>{exercise.startPosition}</small><strong>{exercise.title}</strong></span><b>{exercise.sets} · {exercise.reps}</b><em>{feedback ? "已反馈" : "当前动作"}</em></div>
         <div className="rm-exercise-detail">
-          {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : <div className="rm-demo-strip is-training"><div><i>1</i><span>起始</span></div><b>→</b><div><i>2</i><span>发力</span></div><b>→</b><div><i>3</i><span>回位</span></div></div>}
+          {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : null}
           <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
           <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
           <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
@@ -264,7 +264,6 @@ export function TrainingStage(props: TrainingStageProps) {
             const selected = mode === "worse" ? feedback?.symptom === "worse" : mode === "reduce" ? Boolean(feedback?.formChanged) : mode === "progress" ? (feedback?.reserve ?? 0) >= 5 && feedback?.symptom !== "worse" : Boolean(feedback && !feedback.formChanged && feedback.reserve >= 2 && feedback.reserve < 5 && feedback.symptom !== "worse");
             return <button type="button" key={mode} data-rehabmind-test={`training-feedback-${mode}`} data-exercise-id={exercise.id} disabled={trainingHasWorsened || bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
           })}</div></section>
-          {!exerciseVisual ? <button type="button" className="rm-video-placeholder" disabled><span>动作视频</span><b>暂未上传</b></button> : null}
         </div>
       </article>;
     }) : null}</div>
