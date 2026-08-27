@@ -54,7 +54,7 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
     <nav className="rm-safety-stages"><span className={safetyStage === 0 ? "is-current" : safetyAnswered ? "is-done" : ""}>1 安全信号</span>{needsBoneQuestions ? <span className={safetyStage === 1 ? "is-current" : safetyStage > 1 ? "is-done" : ""}>2 骨性风险</span> : null}<span className={safetyStage === 2 ? "is-current" : ""}>{needsBoneQuestions ? "3" : "2"} 影像结论</span></nav>
     {priorCare.length ? <details className="rm-prior-care-note">
       <summary><span>已记录既往处理</span><strong>{priorCare.join("、")}</strong></summary>
-      {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要粘贴报告原文。</p> : priorCare.includes("看过医生") && imaging.includes("医生有限制") ? <p>已记录医生限制；后续只在医生允许的负重、活动范围和时间内进行。</p> : priorCare.includes("看过医生") && imaging.includes("医生已允许按建议康复") ? <p>已记录医生允许按建议康复；后续仍以最新医嘱为准。</p> : priorCare.includes("看过医生") ? <p>看过医生不等于一定存在活动限制。请在下方选择“医生已允许按建议康复”“医生有限制”或“不确定报告内容”；不清楚时系统不会擅自放行高负荷训练。</p> : null}
+      {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要粘贴报告原文。</p> : priorCare.includes("看过医生") && imaging.includes("医生有限制") ? <p>已记录医生限制；后续只在医生允许的负重、活动范围和时间内进行。</p> : priorCare.includes("看过医生") && imaging.includes("医生已允许按建议康复") ? <p>已记录医生允许按建议康复；后续仍以最新医嘱为准。</p> : priorCare.includes("看过医生") ? <p>看过医生不等于一定存在活动限制。请在下方选择医生是否允许康复；不清楚时先不进行高负荷训练。</p> : null}
       {priorCare.includes("用过冰敷") ? <p>冰敷不作为恢复必做项；目前证据不能确认它能改善急性踝扭伤的肿胀、活动度或恢复。</p> : null}
     </details> : null}
     {safetyStage === 0 && activeSafetyItems.length ? <div className="rm-safety-list">
@@ -72,7 +72,7 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
 
     {safetyStage === 2 && hasSafetySignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>接下来</span><h2>先完成针对性医学评估</h2><p>明显错位、远端感觉或循环异常、力量持续下降以及发热伴快速加重，不适合继续普通检查。本次信息会保存。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && structuralImagingSignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>先确认医生意见</span><h2>影像提示结构异常</h2><p>先明确允许的负重、活动范围和训练时间。获得医生允许后，可以回到本次记录继续评估。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && safetyAnswered && boneQuestionsAnswered && imaging.length > 0 ? <section className="rm-route-note is-clear"><span>接下来</span><h2>{boneImagingSuggested && imaging.includes("没有做影像") ? "先做轻柔检查，同时安排影像确认" : "开始本次功能检查"}</h2></section> : null}
 
-    {(structuralImagingSignal || imaging.includes("医生有限制")) && <p className="rm-inline-note">后续只在医生允许的负重、活动范围和时间内进行；系统不会覆盖医生限制。</p>}
+    {(structuralImagingSignal || imaging.includes("医生有限制")) && <p className="rm-inline-note">后续只在医生允许的负重、活动范围和时间内进行，并以最新医嘱为准。</p>}
 
     <div className="rm-page-actions split">
       <button type="button" onClick={onBack}>{backLabel}</button>

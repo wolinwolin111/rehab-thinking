@@ -32,6 +32,7 @@ import {
   assessmentSymptomCanDriveRetest,
 } from "@/src/domain/rehab/intake/chief-action-core";
 import { strengthFindingAnswer } from "@/src/domain/rehab/assessment/assessment-answer-core";
+import { functionEvidenceFromRecord } from "@/src/domain/rehab/retest/function-evidence-core";
 import {
   filterPatellaFindingsToLimited,
   isPatellaDirectionId,
@@ -358,7 +359,18 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const pool = allCandidates.filter((candidate) => candidate.tags.some((tag) => finding.tags.includes(tag)) && !["swelling", "control"].includes(candidate.type));
       const relationEntries = relationsForFinding(finding);
       const ordered = orderCandidatesByChain(pool).sort((a, b) => pilotCandidateScore(b, relationEntries) - pilotCandidateScore(a, relationEntries));
-      return ordered.length ? { id: `target:${finding.id}`, finding, candidates: ordered.slice(0, 3), optionalCandidates: ordered.slice(3), chain: directionChain(anyMotionIdFromFinding(finding) ?? ""), retestLabel: assessments.find((item) => item.id === finding.id)?.title ?? finding.title.split(/因为|不稳定|会引起/)[0], sourceCaseIds: sourceCaseIdsForFinding(finding) } : null;
+      const evidence = functionEvidenceFromRecord(finding.id, assessmentResults[finding.id]);
+      const label = assessments.find((item) => item.id === finding.id)?.title ?? finding.title.split(/因为|不稳定|会引起/)[0];
+      const obligation = evidence.channels.retest && (evidence.completion === "complete" || evidence.completion === "unable") && evidence.retestMode !== "none"
+        ? [{
+            assessmentId: finding.id,
+            label,
+            baselineCompletion: evidence.completion,
+            mode: evidence.retestMode,
+            ...(typeof assessmentResults[finding.id]?.symptomScore === "number" ? { baselineScore: assessmentResults[finding.id]?.symptomScore } : {}),
+          }]
+        : [];
+      return ordered.length ? { id: `target:${finding.id}`, finding, candidates: ordered.slice(0, 3), optionalCandidates: ordered.slice(3), functionRetestObligations: obligation, chain: directionChain(anyMotionIdFromFinding(finding) ?? ""), retestLabel: label, sourceCaseIds: sourceCaseIdsForFinding(finding) } : null;
     }).filter((target): target is TrialTargetOutput => Boolean(target));
 
     const painfulMotionOnlyTargets = findings
@@ -543,6 +555,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       };
     };
     const sameDirectionMotionTarget = chiefDirection ? motionTargets.find((target) => samePhysicalAction(motionIdFromFinding(target.finding), chiefDirection)) : undefined;
+    const chiefFunctionTarget = painfulFunctionTargets.find((target) => target.finding.id === chiefFunctionAssessmentId(intake, region.id));
     const remainingMotionTargets = sameDirectionMotionTarget ? motionTargets.filter((target) => target !== sameDirectionMotionTarget) : motionTargets;
     const targets: TrialTargetOutput[] = [];
     if (hasClearChiefAction(intake)) {
@@ -564,7 +577,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const selectedChiefCandidates = selectTreatmentChainCandidates(combinedChiefCandidates, explicitChiefMuscleLimit);
       const chiefCandidateRetestIds = new Set(selectedChiefCandidates.flatMap((candidate) => candidate.retestIds ?? []));
       const chiefRetestFindings = motionFindings.filter((finding) => [...chiefCandidateRetestIds].some((id) => samePhysicalAction(id, motionIdFromFinding(finding))));
-      if (selectedChiefCandidates.length) targets.push({ id: "target:chief", finding: chiefComplaintSide ? { ...findings[0], side: chiefComplaintSide } : findings[0], retestFindings: chiefRetestFindings, candidates: selectedChiefCandidates, optionalCandidates: [...combinedChiefCandidates.filter((candidate) => !selectedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate))), ...combinedOptional].filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index).slice(0, 3), chain: chiefDirection ? directionChain(chiefDirection) : "主诉相关", retestLabel: chiefActionLabel(intake), sourceCaseIds: pilotSourceCaseIds });
+      if (selectedChiefCandidates.length) targets.push({ id: "target:chief", finding: chiefComplaintSide ? { ...findings[0], side: chiefComplaintSide } : findings[0], retestFindings: chiefRetestFindings, functionRetestObligations: chiefFunctionTarget?.functionRetestObligations, candidates: selectedChiefCandidates, optionalCandidates: [...combinedChiefCandidates.filter((candidate) => !selectedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate))), ...combinedOptional].filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index).slice(0, 3), chain: chiefDirection ? directionChain(chiefDirection) : "主诉相关", retestLabel: chiefActionLabel(intake), sourceCaseIds: pilotSourceCaseIds });
     }
     const provisionalSymptomTargets = [...painfulMotionOnlyTargets, ...painfulStrengthTargets, ...painfulFunctionTargets];
     if (!hasClearChiefAction(intake)) targets.push(...provisionalSymptomTargets, ...remainingMotionTargets);

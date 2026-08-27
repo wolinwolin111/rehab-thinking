@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { FUNCTION_COMPLETION_RETEST_COPY } from "@/src/features/rehabmind/components/shared/user-facing-copy";
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -97,11 +98,11 @@ export function TrainingStage(props: TrainingStageProps) {
   const feedback = exerciseFeedback[exercise.id];
   if (!feedback) return "先按建议完成第一组，再根据质量调整。";
   const target = firstNumber(exercise.reps);
-  if (feedback.symptom === "worse") return "先停止这个版本，改做“做不了”里的退阶；退阶后仍加重就结束该动作。";
+  if (feedback.symptom === "worse") return "先停止刚才的做法，改用“做不了”里的简单动作；仍然加重就结束这个动作。";
   if (feedback.formChanged || feedback.completed < Math.max(4, target - 3)) return "改做“做不了”里的退阶，减少个数或增加扶持。";
-  if (feedback.completed >= target && feedback.reserve >= 5) return "当前版本偏轻松，下次只增加阻力、难度或个数中的一项。";
-  if (feedback.reserve >= 2 && feedback.reserve <= 3) return "当前版本合适，保持组数和个数。";
-  return "先保持当前版本，观察当天晚些时候和第二天反应。";
+  if (feedback.completed >= target && feedback.reserve >= 5) return "这个做法比较轻松，下次只增加阻力、难度或个数中的一项。";
+  if (feedback.reserve >= 2 && feedback.reserve <= 3) return "这个强度合适，保持组数和个数。";
+  return "先保持现在的做法，观察当天晚些时候和第二天的反应。";
   }
 
   function recordQuickFeedback(exercise: FullExercise, mode: "reduce" | "hold" | "progress" | "worse") {
@@ -212,11 +213,11 @@ export function TrainingStage(props: TrainingStageProps) {
         <h2>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : chiefComplaintLabel(intake)}</h2>
         <p>{hasClearChiefAction(intake) ? "按最开始的方式完成一次，不额外增加速度、负重或次数。" : "按最开始记录的位置和感觉，判断现在的主要不适。"}</p>
       </section>
-      {finalRetestNeedsScore ? <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} /> : <div className="rm-retest-mode-note"><strong>本次只复核功能完成状态</strong><span>不把首次未完成动作转换成普通疼痛分数比较。</span></div>}
+      {finalRetestNeedsScore ? <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} /> : <div className="rm-retest-mode-note"><strong>{FUNCTION_COMPLETION_RETEST_COPY.title}</strong><span>{FUNCTION_COMPLETION_RETEST_COPY.description}</span></div>}
       {finalRetestNeedsScore && finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
         <span>本次整体结果</span>
         <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
-        <p>{finalResult === "better" ? "本次方向有帮助，按当前训练版本继续。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "本次没有明显变化，先不进阶；持续不变时建议线下评估。"}</p>
+        <p>{finalResult === "better" ? "这次训练有帮助，继续保持现在的做法。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "这次没有明显变化，先不增加难度；持续不变时建议线下评估。"}</p>
       </section> : null}
         <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => {
           // T-02：最终复测记录加重时，结束前需要显式确认（取消则留在本页重新复测）。
@@ -279,13 +280,13 @@ export function TrainingStage(props: TrainingStageProps) {
       <footer>如果出现刺痛、麻、电感或症状加重，立即停止。</footer>
     </details> : null}
 
-    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" data-rehabmind-test="training-worsening-reassess" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" data-rehabmind-test="training-worsening-save" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
+    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止刚才的做法，并记录停下来后的变化。</p><div className="rm-page-actions split"><button type="button" data-rehabmind-test="training-worsening-reassess" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" data-rehabmind-test="training-worsening-save" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
 
     {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
     {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section className="rm-training-feedback-gate" data-testid="training-feedback-gate"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
 
-    <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再决定进阶" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "本次只记录基础活动和反馈，不生成正常训练进阶结论。" : "连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。"}</p></section>
+    <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再增加难度" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "这次先完成基础活动，并记录两侧反馈。" : "连续两次完成、动作稳定且第二天没有持续加重后，一次只增加个数、阻力、难度或训练量中的一项。"}</p></section>
 
     {!trainingHasWorsened ? <div className="rm-page-actions rm-training-actions"><button type="button" onClick={() => goToStep(3)}>返回处理记录</button><button type="button" className="rm-primary" disabled={!hasCompleteTrainingFeedback} onClick={() => {
       if (!exercises.length || tissuePathway.retestTiming !== "same-session" || !trainingNeedsChiefRetest) {

@@ -141,6 +141,7 @@ export type PilotAdminAuditAction =
   | "note_added"
   | "feedback_status_updated"
   | "case_exported"
+  | "snapshot_projection_repaired"
   | "case_deleted";
 
 export type PilotAdminAuditRecord = PilotReleaseVersions & {

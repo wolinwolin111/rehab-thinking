@@ -329,7 +329,7 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
             </div>
           </section>)}
         </div>
-        {!activeSide ? <p>先选择左腿或右腿，再点击具体位置。</p> : <p>{mode === "tenderness" ? "每处只轻按一次，再点击对应区域。" : "点击图上的区域，系统直接记录具体位置。"}</p>}
+        {!activeSide ? <p>先选择左腿或右腿，再点击具体位置。</p> : <p>{mode === "tenderness" ? "每处只轻按一次，再点击对应区域。" : "点击图上的区域即可记录具体位置。"}</p>}
       </section>
     </div>
 

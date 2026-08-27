@@ -8,6 +8,7 @@
 
 import { candidateTreatmentKey, type CandidateTreatmentInput } from "@/src/domain/rehab/treatment/candidate-treatment-core";
 import { dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, type MotionFindingInput } from "@/src/domain/rehab/intake/action-identity-core";
+import type { FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
 
 export type TrialTargetCandidate = CandidateTreatmentInput & { retestIds?: string[] };
 
@@ -18,6 +19,7 @@ export type TrialTargetInput = {
   findingSides?: string[];
   candidates: TrialTargetCandidate[];
   retestFindings?: MotionFindingInput[];
+  functionRetestObligations?: FunctionRetestObligation[];
   optionalCandidates?: TrialTargetCandidate[];
   chain?: string;
   retestLabel?: string;
@@ -36,6 +38,7 @@ export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(t
     findingSides: Array.from(new Set([...(target.findingSides ?? []), target.finding.side].filter(Boolean))),
     candidates: target.candidates.map((candidate) => ({ ...candidate, retestIds: [...(candidate.retestIds ?? [])] })),
     retestFindings: dedupeRetestFindingsByAction([...(target.retestFindings ?? [])]),
+    functionRetestObligations: [...new Map((target.functionRetestObligations ?? []).map((item) => [item.assessmentId, item])).values()],
   }));
   const owners = new Map<string, { targetIndex: number; candidateIndex: number }>();
 
@@ -56,6 +59,10 @@ export function consolidateTrialTargetsByTreatment<T extends TrialTargetInput>(t
         ...(ownerTarget.retestFindings ?? []),
         ...(target.retestFindings ?? []),
       ].filter((finding) => mergedDirectionIds.some((id) => samePhysicalAction(id, motionIdFromFinding(finding)))).map((finding) => [finding.id, finding])).values()]);
+      ownerTarget.functionRetestObligations = [...new Map([
+        ...(ownerTarget.functionRetestObligations ?? []),
+        ...(target.functionRetestObligations ?? []),
+      ].map((item) => [item.assessmentId, item])).values()];
     });
   });
 

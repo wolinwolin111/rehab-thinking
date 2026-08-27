@@ -398,6 +398,20 @@ body:has(.rm-app) {
   background: rgba(136, 112, 231, .25);
   filter: blur(5px);
 }
+.rm-session-hero.is-multi-action::after { opacity: .48; }
+.rm-chief-action-summary { position: relative; z-index: 1; }
+.rm-chief-action-summary > span { width: max-content; padding: 5px 9px; color: #d7dcff !important; border: 1px solid rgba(215, 220, 255, .22); border-radius: 999px; background: rgba(22, 28, 69, .24); }
+.rm-chief-action-summary > ul li { color: #fff; }
+.rm-chief-action-summary > p { color: #cbd7dd; line-height: 1.6; }
+
+.rm-function-retest-list > article {
+  border-color: var(--rm-visual-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(248, 250, 255, .92));
+  box-shadow: 0 7px 18px rgba(49, 67, 96, .06);
+}
+.rm-function-retest-list > article > header span { color: var(--rm-visual-primary-deep); }
+.rm-function-retest-reason { padding-top: 2px; }
 
 .rm-case-aside {
   top: 68px;

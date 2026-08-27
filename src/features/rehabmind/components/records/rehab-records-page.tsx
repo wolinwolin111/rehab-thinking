@@ -18,9 +18,9 @@ function SessionRows({ record }: { record: SavedDemoRecord }) {
 }
 
 function threadStatusLabel(status: ProblemThreadRecord["status"]) {
-  if (status === "archived") return "已归档";
+  if (status === "archived") return "以前的问题";
   if (status === "resolved") return "已解决";
-  if (status === "superseded") return "已被新问题替代";
+  if (status === "superseded") return "后来记录了新的问题";
   return "当前问题";
 }
 
@@ -53,11 +53,11 @@ function ThreadRows({ record }: { record: SavedDemoRecord }) {
           completedAt: summary.completedAt,
         } satisfies SessionIndexRecord));
     return <section className="rm-record-thread" key={thread.problemThreadId}>
-      <header><div><span>{threadStatusLabel(thread.status)}</span><strong>{thread.title ?? thread.location ?? "问题线程"}</strong></div><small>{thread.location ?? "未记录位置"}</small></header>
+      <header><div><span>{threadStatusLabel(thread.status)}</span><strong>{thread.title ?? thread.location ?? "康复问题"}</strong></div><small>{thread.location ?? "未记录位置"}</small></header>
       {rows.length ? <div className="rm-record-session-rows">{rows.map((session) => {
         const summary = summaries.find((item) => item.sessionId === session.sessionId || item.sessionNumber === session.sessionNumber);
         return <div className="rm-record-session-row" key={session.sessionId}><span>{sessionLabel(session, summary)}</span><b>{session.status === "draft" ? "草稿" : session.status === "abandoned" ? "已放弃" : session.completedAt ? "已完成" : "已记录"}</b></div>;
-      })}</div> : <p>尚未形成会话记录</p>}
+      })}</div> : <p>这个问题还没有康复记录。</p>}
     </section>;
   })}</div>;
 }
@@ -87,7 +87,7 @@ export function RehabRecordsPage({
   return <section className="rm-records-page" aria-label="康复记录">
     <header className="rm-records-page-header">
       <button type="button" onClick={onBack}>返回</button>
-      <div><span>联网时同步到服务器</span><h2>康复记录</h2></div>
+      <div><span>联网后自动同步</span><h2>康复记录</h2></div>
     </header>
     <main>
       <OnceHint id="records-open" active={showFirstOpenHint}>这里可以查看以前的恢复情况。</OnceHint>

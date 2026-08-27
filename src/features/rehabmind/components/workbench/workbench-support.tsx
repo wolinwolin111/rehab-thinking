@@ -356,6 +356,7 @@ export type TrialTarget = {
   candidates: FullCandidate[];
   /** 同一项处理完成后需要一起复测、并可分别退出后续流程的活动方向。 */
   retestFindings?: Finding[];
+  functionRetestObligations?: import("@/src/domain/rehab/treatment/trial-record-types").FunctionRetestObligation[];
   chain?: string;
   optionalCandidates?: FullCandidate[];
   /** 给用户看的具体复测动作，不允许回退成“说不清”或系统内部标题。 */
@@ -1458,10 +1459,10 @@ export function TreatmentActionCard({ candidate, display, priorityLabel, control
     ? controlPlans.map((plan) => regionRelationForMotion(plan.id, normalizedRegion.id)?.role).filter(Boolean)
     : [];
   const roleLabel = relationRoles.includes("agonist") && relationRoles.includes("antagonist")
-    ? "动作肌 / 拮抗肌候选"
-    : relationRoles.includes("agonist") ? "动作肌候选"
-      : relationRoles.includes("antagonist") ? "拮抗肌候选"
-        : relationRoles.includes("stabilizer") ? "稳定肌候选" : "检查支持区域";
+    ? "动作肌 / 拮抗肌参考"
+    : relationRoles.includes("agonist") ? "动作肌参考"
+      : relationRoles.includes("antagonist") ? "拮抗肌参考"
+        : relationRoles.includes("stabilizer") ? "稳定肌参考" : "检查支持区域";
   return <article className={`rm-candidate rm-treatment-card is-${candidate.type}`} data-candidate-id={candidate.id}>
     {priorityLabel ? <b className={`rm-treatment-priority is-${priorityLabel === "先做" ? "primary" : "support"}`}>{priorityLabel}</b> : null}
     <header className="rm-treatment-ribbon">

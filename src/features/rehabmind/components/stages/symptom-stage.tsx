@@ -245,7 +245,7 @@ export function SymptomStage(props: SymptomStageProps) {
       <StepHeading eyebrow="第1步 · 专业症状收集" title="记录主诉与评估条件" note="一次展开填写；患者原话、专业判断和后续检查分开保存。" />
 
       <section className="rm-professional-banner">
-        <div><span>专业工作台</span><strong>结构化录入</strong><small>不按普通用户逐题跳转，填写完需要的字段后再进入关键确认。</small></div>
+        <div><span>专业工作台</span><strong>集中填写</strong><small>填写本次需要的信息，再进入安全确认。</small></div>
         <button type="button" onClick={() => selectProfessionalMode("guided")}>切换为自助模式</button>
       </section>
 
@@ -321,27 +321,27 @@ export function SymptomStage(props: SymptomStageProps) {
       </section>
 
       <section className="rm-professional-section">
-        <header><span>04</span><div><h2>诱发动作与负荷</h2><p>主诉动作可多选；没有固定动作时不生成虚假的动作评分。</p></div></header>
-        <div className="rm-trigger-grid">{PROVOCATION_TYPES.map((item) => { const selected = intake.provocationTypes.includes(item); const automatic = selected && autoProvocationTypes.has(item); return <button type="button" key={item} className={`${selected ? "is-selected" : ""} ${automatic ? "is-auto" : ""}`} onClick={() => { if (automatic && !window.confirm(`系统根据描述自动识别了“${item}”，确定取消吗？`)) return; updateProfessionalProvocation(item); }}><i>{selected ? "✓" : ""}</i><span>{item}{automatic ? <small>自动识别</small> : null}</span></button>; })}</div>
+        <header><span>04</span><div><h2>哪些动作会加重不适？</h2><p>可以多选；没有固定动作也可以继续。</p></div></header>
+        <div className="rm-trigger-grid">{PROVOCATION_TYPES.map((item) => { const selected = intake.provocationTypes.includes(item); const automatic = selected && autoProvocationTypes.has(item); return <button type="button" key={item} className={`${selected ? "is-selected" : ""} ${automatic ? "is-auto" : ""}`} onClick={() => { if (automatic && !window.confirm(`描述中识别到“${item}”，确定取消吗？`)) return; updateProfessionalProvocation(item); }}><i>{selected ? "✓" : ""}</i><span>{item}{automatic ? <small>自动识别</small> : null}</span></button>; })}</div>
         <div className="rm-label rm-action-picker-label"><span>主诉动作</span><b>可多选；动作无法归类时保留原话</b></div>
         <div className="rm-action-picker-grid">{actionOptions.map((action) => <button type="button" key={action.id} className={selectedReportedActionIds.has(action.id) ? "is-selected" : ""} onClick={() => updateReportedActions(selectedReportedActionIds.has(action.id) ? (intake.reportedActions ?? []).filter((item) => item.id !== action.id) : [...(intake.reportedActions ?? []), action])}><strong>{action.label.split("｜")[0]}</strong><small>{action.label.split("｜")[1] ?? action.label}</small></button>)}</div>
         <label className="rm-custom-action-field"><span>自定义主诉动作</span><input value={intake.customAction} onChange={(event) => updateReportedActions(intake.reportedActions ?? [], event.target.value)} placeholder="例如：跨步落地、抱孩子起身、骑车踩踏" /><small>保留患者原话；没有标准关键词也不影响后续记录。</small></label>
         <button type="button" className={intake.actionSelectionConfirmed && !professionalActionSummary.length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={() => updateProfessionalProvocation("说不清 / 没有固定动作")}>说不清或没有固定动作</button>
       </section>
 
-      {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>基线评分与恢复目标</h2><p>分数用于本次前后比较；没有明确动作时不生成分数。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作时仍可记录目标，但不会伪造动作分数。</p></div></header><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
+      {baselineScoreApplicable ? <section className="rm-professional-section"><header><span>05</span><div><h2>当前不适与恢复目标</h2><p>记录这个动作现在有多不舒服，后面会用同一动作比较。</p></div></header><ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="当前主诉动作的不适程度" /><div className="rm-label rm-professional-goal-label"><span>恢复目标</span><b>选择患者希望达到的阶段</b></div><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section> : <section className="rm-professional-section"><header><span>05</span><div><h2>恢复目标</h2><p>没有固定动作也可以直接选择恢复目标。</p></div></header><div className="rm-goals">{GOALS_PRO.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></section>}
 
       <section className="rm-professional-section">
         <header><span>06</span><div><h2>本次检查条件</h2><p>先说明由谁操作、能够完成哪些专业检查，后续评估会按此开放。</p></div></header>
         <div className="rm-options rm-professional-options" style={{ "--columns": 2 } as CSSProperties}>
           <button type="button" className={intake.operationTarget === "self" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "self", examSetup: "self", capabilitiesConfirmed: true })}><strong>自我检查</strong><small>记录主动活动与自我感受</small></button>
-          <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: false })}><strong>协助他人检查</strong><small>可继续选择被动、抗阻和触诊能力</small></button>
+          <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: false })}><strong>协助他人检查</strong><small>可以继续选择被动、抗阻和触诊检查</small></button>
         </div>
-        {effectiveOperationTarget === "other" ? <div className="rm-professional-capabilities"><div className="rm-label"><span>可执行的检查能力</span><b>点击即生效；没有的能力可以不选</b></div><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{([ ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"], ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"] ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}</div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">关节处理需要先具备被动活动度检查能力。</small> : null}</div> : null}
-        {isThinkingMode ? <div className="rm-professional-subfield"><div className="rm-label"><span>学习解释</span><b>只影响说明文字，不改变检查、候选、排序或安全门控</b></div><button type="button" className={intake.learningExplanation ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, learningExplanation: !intake.learningExplanation })}>{intake.learningExplanation ? "已开启：显示为什么进入下一步" : "关闭：只显示当前操作"}</button></div> : null}
+        {effectiveOperationTarget === "other" ? <div className="rm-professional-capabilities"><div className="rm-label"><span>这次能做哪些检查？</span><b>选择实际可以完成的项目</b></div><div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>{([ ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"], ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"] ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}</div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">要做关节处理，需要先选择被动活动度检查。</small> : null}</div> : null}
+        {isThinkingMode ? <div className="rm-professional-subfield"><div className="rm-label"><span>学习解释</span><b>只增加步骤说明，不会改变后续建议</b></div><button type="button" className={intake.learningExplanation ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, learningExplanation: !intake.learningExplanation })}>{intake.learningExplanation ? "已开启：显示为什么进入下一步" : "关闭：只显示当前操作"}</button></div> : null}
       </section>
 
-      <section className="rm-professional-section rm-professional-notes"><header><span>07</span><div><h2>专业备注</h2><p>记录你的判断或需要后续验证的假设，不直接等同于已确认的查体结果。</p></div></header><textarea value={intake.professionalNotes} onChange={(event) => invalidateAfterIntake({ ...intake, professionalNotes: event.target.value })} placeholder="例如：考虑外侧链参与；待活动度与抗阻结果验证。" /></section>
+      <section className="rm-professional-section rm-professional-notes"><header><span>07</span><div><h2>专业备注</h2><p>记录尚未确认的判断；备注不会改变页面建议。</p></div></header><textarea value={intake.professionalNotes} onChange={(event) => invalidateAfterIntake({ ...intake, professionalNotes: event.target.value })} placeholder="例如：考虑外侧链参与；待活动度与抗阻结果验证。" /></section>
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting"><span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion.name}</h2><p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p></section> : null}
       {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
@@ -423,18 +423,18 @@ export function SymptomStage(props: SymptomStageProps) {
         <div className="rm-label"><span>这次怎样完成检查？</span><b>这次由谁完成检查？选择给自己检查，还是给别人检查</b></div>
         <div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>
           <button type="button" className={intake.operationTarget === "self" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "self", examSetup: "self", capabilitiesConfirmed: true })}><strong>给自己检查</strong><small>自己跟随提示检查，只记录主动活动</small></button>
-          <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: true })}><strong>给别人检查</strong><small>我在给别人检查，能力选项点击即生效</small></button>
+          <button type="button" className={intake.operationTarget === "other" ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, operationTarget: "other", examSetup: "professional-other", capabilitiesConfirmed: true })}><strong>给别人检查</strong><small>继续选择这次能完成的检查</small></button>
         </div>
       </div> : null}
 
       {showCapabilitiesChoice && showIntakeQuestion("检查能力") ? <div className="rm-form-block rm-capability-choice">
-        <div className="rm-label"><span>这次可以完成哪些检查？</span><b>点击即生效；没有的能力可以不选</b></div>
+        <div className="rm-label"><span>这次可以完成哪些检查？</span><b>选择实际可以完成的项目</b></div>
         <div className="rm-options" style={{ "--columns": 3 } as CSSProperties}>
           {([
             ["passiveRange", "被动活动度"], ["resistedStrength", "抗阻力量"], ["endFeel", "末端感觉"],
             ["palpation", "基础触诊"], ["specialTest", "专项检查"], ["jointMobilization", "关节处理"],
           ] as Array<[CapabilityKey, string]>).map(([key, label]) => <button type="button" key={key} disabled={key === "jointMobilization" && !intake.capabilities.passiveRange && !intake.capabilities.jointMobilization} className={intake.capabilities[key] ? "is-selected" : ""} onClick={() => toggleIntakeCapability(key)}>{label}</button>)}
-        </div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">关节处理需要先具备被动活动度检查能力。</small> : null}
+        </div>{!intake.capabilities.passiveRange ? <small className="rm-capability-hint">要做关节处理，需要先选择被动活动度检查。</small> : null}
       </div> : null}
 
       {needsSpineModeChoice && showIntakeQuestion("活动度检查方式") ? <div className="rm-form-block rm-spine-mode-choice">
@@ -496,7 +496,7 @@ export function SymptomStage(props: SymptomStageProps) {
         const selected = intake.provocationTypes.includes(item);
         const automatic = selected && autoProvocationTypes.has(item);
         return <button type="button" key={item} className={`${selected ? "is-selected" : ""} ${automatic ? "is-auto" : ""}`} onClick={() => {
-          if (automatic && !window.confirm(`系统根据描述自动识别了“${item}”，确定取消吗？`)) return;
+          if (automatic && !window.confirm(`描述中识别到“${item}”，确定取消吗？`)) return;
           const unknownOption = "说不清 / 没有固定动作";
           const selectingUnknown = item === unknownOption && !selected;
           const provocationTypes = item === unknownOption

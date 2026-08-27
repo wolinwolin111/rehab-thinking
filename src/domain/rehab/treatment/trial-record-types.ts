@@ -10,6 +10,22 @@ export type CompletedRangeRetestAnswer = Exclude<RangeRetestAnswer, "">;
 
 export type FunctionRetestCompletion = "complete" | "unable";
 export type FunctionRetestMode = "ordinary" | "completion-status";
+export type FunctionUnableReason = "pain" | "weak" | "fear" | "instruction";
+
+/** 一次处理后仍需逐项复查的真实功能动作；处理可以合并，复测义务不能丢失。 */
+export type FunctionRetestObligation = {
+  assessmentId: string;
+  label: string;
+  baselineCompletion: FunctionRetestCompletion;
+  mode: FunctionRetestMode;
+  baselineScore?: number;
+};
+
+export type FunctionRetestRecord = FunctionRetestObligation & {
+  afterCompletion: FunctionRetestCompletion;
+  unableReason?: FunctionUnableReason;
+  afterScore?: number;
+};
 
 export type TrialRecord = {
   candidateId: string;
@@ -51,6 +67,8 @@ export type TrialRecord = {
   functionBaselineCompletion?: FunctionRetestCompletion;
   functionAfterCompletion?: FunctionRetestCompletion;
   functionRetestMode?: FunctionRetestMode;
+  /** 多动作场景按 assessmentId 分别保存；旧的单项字段继续兼容读取。 */
+  functionRetests?: Record<string, FunctionRetestRecord>;
   /** 区分部分贡献、关键完成和组合解决，不能只按下降分数排名。 */
   responseRole?: TreatmentResponseRole;
   /** 处理发生时的知识来源快照；旧记录缺失时保持 undefined。 */
@@ -91,6 +109,7 @@ export type TrialRecordBuildInput = {
   functionBaselineCompletion?: FunctionRetestCompletion;
   functionAfterCompletion?: FunctionRetestCompletion;
   functionRetestMode?: FunctionRetestMode;
+  functionRetests?: Record<string, FunctionRetestRecord>;
   responseRole: TreatmentResponseRole;
   priorTreatmentTitle?: string;
   retestActionKey?: string;

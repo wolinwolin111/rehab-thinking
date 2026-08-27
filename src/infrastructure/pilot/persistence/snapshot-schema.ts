@@ -276,6 +276,18 @@ function validateTrialRecords(value: unknown, label: "trialRecords" | "followupT
     for (const key of ["decisionTraceId", "beforeScoreRecordId", "afterScoreRecordId"] as const) {
       if (raw[key] !== undefined && (typeof raw[key] !== "string" || !raw[key])) return `snapshot ${label}[${index}].${key} is invalid`;
     }
+    if (raw.functionRetests !== undefined) {
+      if (!isObject(raw.functionRetests)) return `snapshot ${label}[${index}].functionRetests is invalid`;
+      for (const [assessmentId, value] of Object.entries(raw.functionRetests)) {
+        if (!assessmentId || !isObject(value) || value.assessmentId !== assessmentId) return `snapshot ${label}[${index}].functionRetests is invalid`;
+        if (typeof value.label !== "string" || !value.label) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.label is invalid`;
+        if (!["complete", "unable"].includes(String(value.baselineCompletion)) || !["complete", "unable"].includes(String(value.afterCompletion))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.completion is invalid`;
+        if (!["ordinary", "completion-status"].includes(String(value.mode))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.mode is invalid`;
+        if (value.unableReason !== undefined && !["pain", "weak", "fear", "instruction"].includes(String(value.unableReason))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.unableReason is invalid`;
+        if (value.baselineScore !== undefined && !isScore(value.baselineScore)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.baselineScore is invalid`;
+        if (value.afterScore !== undefined && !isScore(value.afterScore)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.afterScore is invalid`;
+      }
+    }
     if (label === "trialRecords" && !["smoother", "same", "worse"].includes(String(raw.movement))) {
       return `snapshot ${label}[${index}].movement is invalid`;
     }

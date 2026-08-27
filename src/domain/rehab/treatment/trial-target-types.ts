@@ -14,6 +14,7 @@ import { type PilotTreatmentUnit } from "@/src/domain/rehab/shared/pilot-decisio
 import { type KneeDecisionOutput } from "@/src/domain/rehab/shared/knee-decision-core";
 import { type LocalLimbDecision } from "@/src/domain/rehab/shared/local-limb-decision-core";
 import { type WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
+import { type FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
 
 export type FullCandidateInput = CandidateTreatmentInput & {
   access: string;
@@ -41,6 +42,7 @@ export type AssessmentRecordInput = {
   unableReason?: string;
   tensionLocations?: string[];
   tensionChecked?: boolean;
+  symptomScore?: number;
 };
 
 export type TrialRecordInput = {
@@ -107,6 +109,7 @@ export type TrialTargetOutput = {
   candidates: FullCandidateInput[];
   optionalCandidates?: FullCandidateInput[];
   retestFindings?: FindingInput[];
+  functionRetestObligations?: FunctionRetestObligation[];
   chain?: string;
   retestLabel?: string;
   sourceCaseIds?: string[];

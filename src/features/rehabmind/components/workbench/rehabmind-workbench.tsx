@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StageTransition } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import { OnceHint } from "@/src/features/rehabmind/components/shared/once-hint";
+import { localSaveFailureCopy } from "@/src/features/rehabmind/components/shared/user-facing-copy";
 import { RehabMindOnboarding } from "@/src/features/rehabmind/components/onboarding/rehabmind-onboarding";
 import { SymptomStage } from "@/src/features/rehabmind/components/stages/symptom-stage";
 import { ConfirmationStage } from "@/src/features/rehabmind/components/stages/confirmation-stage";
@@ -16,7 +17,7 @@ import { useFunctionRetestState } from "@/src/features/rehabmind/controllers/use
 import { useTrainingFlow } from "@/src/features/rehabmind/controllers/use-training-flow";
 import { resultFromScore } from "@/src/domain/rehab/treatment/trial-record-builder";
 import { computeBatchResult } from "@/src/domain/rehab/retest/batch-retest-compute";
-import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type FunctionRetestRecord, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
 import { makeLowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegion, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { buildPilotTreatmentUnits, classifyPilotAssessmentEvidence, matchPilotRelations, rankPilotAssessmentIds, type PilotFindingInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
@@ -171,6 +172,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const {
     functionRetestCompletion, setFunctionRetestCompletion,
     functionRetestUnableReason, setFunctionRetestUnableReason,
+    treatmentFunctionRetests, setTreatmentFunctionRetests,
     finalFunctionRetests, setFinalFunctionRetests,
   } = useFunctionRetestState();
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -183,6 +185,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [toast, setToast] = useState("");
   const [savedRecords, setSavedRecords] = useState<SavedDemoRecord[]>([]);
   const savedRecordsRef = useRef<SavedDemoRecord[]>([]);
+  const archivedProblemThreadIdsRef = useRef(new Set<string>());
   const [localCaseId, setLocalCaseId] = useState(() => createLocalCaseId());
   const [problemThreadId, setProblemThreadId] = useState(() => createProblemThreadId());
   const [sessionId, setSessionId] = useState(() => createSessionId());
@@ -631,7 +634,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     link.download = `${record.pilotPublicCode ?? record.localCaseId ?? record.id}-local-conflict.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setToast("本机版本已导出");
+    setToast("这台设备的记录已导出");
     window.setTimeout(() => setToast(""), 2400);
   }
 
@@ -875,7 +878,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         if (activeCaseIdentityRef.current === identity) {
           if (testStorageWriteBlocked) setPilotSyncState("error");
           setToast(testStorageWriteBlocked
-              ? "本机保存失败，当前案例未持久化；请检查浏览器存储权限"
+              ? localSaveFailureCopy(true)
               : error instanceof PilotCaseClientError && error.status === 409
                 ? "本机已保存，但服务器记录已变化，请刷新后继续"
                 : "本机已保存，服务器暂时未同步");
@@ -904,7 +907,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     void persistLocalRecords(next);
     void restoreRecord(copied);
     void enqueuePilotRecordSync(copied);
-    setToast("已另存为新案例，原案例的两个版本都未被覆盖");
+    setToast("已另存为新案例，原来的两份记录仍然保留");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -1011,6 +1014,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMovementDiscomforts({});
     setMovementScores({});
     setMovementScoreConfirmed({});
+    setFunctionRetestCompletion("");
+    setFunctionRetestUnableReason("");
+    setTreatmentFunctionRetests({});
+    setFinalFunctionRetests({});
     setTrainingComplete(false);
     setTrainingPlanSaved(false);
     setExerciseFeedback({});
@@ -1021,6 +1028,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFinalRetestConfirmed(false);
     setAdverseResponse(null);
     setAdverseConfirmedAssessmentIds([]);
+    archivedProblemThreadIdsRef.current.clear();
     // 方案会在当前渲染中按新能力配置重新计算；用同一新 revision 标记这次
     // 重新计算已经完成，同时不删除历史 trialRecords。
     setAssessmentRevision((current) => {
@@ -1041,7 +1049,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMultiTabConflict(null);
     currentDraftFingerprintRef.current = localDraftContentFingerprint({ snapshot: buildCurrentSnapshot() });
     setPilotSyncState("local-saved");
-    setToast("已保留本页版本；接下来保存时会生成新的本机草稿版本");
+    setToast("已保留当前页面，接下来会另存一份草稿");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -2985,7 +2993,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setGuidedIntakeCursor(0);
     guidedAdvanceRef.current = null;
     setConfirmedIntakeMulti({ symptoms: next.symptoms.length > 0, provocationTypes: next.provocationTypes.length > 0 });
-    invalidateAfterIntake(next);
+    applyIntakeChange(next);
   }
 
   function rewriteIntakeDescription() {
@@ -2998,7 +3006,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setGuidedIntakeCursor(0);
     guidedAdvanceRef.current = null;
     setGuidedIntakeField("");
-    invalidateAfterIntake(next);
+    applyIntakeChange(next);
   }
 
   function advanceGuidedQuestion(field = currentIntakeField) {
@@ -3011,7 +3019,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setGuidedIntakePath((path) => path.includes(canonicalField) ? path : [...path, canonicalField]);
     if (canonicalField === "不舒服的位置" && intake.bodyLocations.length) {
       const primary = intake.bodyLocations[0];
-      invalidateAfterIntake({
+      applyIntakeChange({
         ...intake,
         locationConfirmed: true,
         side: sideFromLocationSelections(intake.bodyLocations),
@@ -3019,11 +3027,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         location: intake.bodyLocations.map((item) => item.location).join("、"),
       });
     } else if (canonicalField === "肿胀位置" && intake.swellingLocations.length) {
-      invalidateAfterIntake({ ...intake, swellingLocationConfirmed: true, swellingLocation: locationSelectionsLabel(intake.swellingLocations) });
+      applyIntakeChange({ ...intake, swellingLocationConfirmed: true, swellingLocation: locationSelectionsLabel(intake.swellingLocations) });
     } else if (canonicalField === "按压痛位置" && intake.tendernessLocations.length) {
-      invalidateAfterIntake({ ...intake, tendernessLocationConfirmed: true, tendernessLocation: locationSelectionsLabel(intake.tendernessLocations) });
+      applyIntakeChange({ ...intake, tendernessLocationConfirmed: true, tendernessLocation: locationSelectionsLabel(intake.tendernessLocations) });
     } else if (canonicalField === "麻电范围" && intake.sensoryLocations.length) {
-      invalidateAfterIntake({ ...intake, sensoryLocationConfirmed: true, sensoryLocation: locationSelectionsLabel(intake.sensoryLocations) });
+      applyIntakeChange({ ...intake, sensoryLocationConfirmed: true, sensoryLocation: locationSelectionsLabel(intake.sensoryLocations) });
     }
     // 清空当前字段，等待 effect 根据“当前路径的下一项”或新增问题推进。
     setGuidedIntakeField("");
@@ -3230,6 +3238,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMovementDiscomforts({});
     setMovementScores({});
     setMovementScoreConfirmed({});
+    setFunctionRetestCompletion("");
+    setFunctionRetestUnableReason("");
+    setTreatmentFunctionRetests({});
+    setFinalFunctionRetests({});
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -3532,16 +3544,30 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const singleRangeScore = typeof singleRangeScoreValue === "number" && Number.isFinite(singleRangeScoreValue)
       ? singleRangeScoreValue
       : undefined;
-    const activeFunctionEvidence = activeTarget.finding.id.startsWith("function:")
+    const activeFunctionObligations = activeTarget.functionRetestObligations ?? [];
+    const activeFunctionEvidence = !activeFunctionObligations.length && activeTarget.finding.id.startsWith("function:")
       ? functionEvidenceFromRecord(activeTarget.finding.id, assessmentResults[activeTarget.finding.id])
       : undefined;
-    const functionBaselineCompletion: FunctionRetestCompletion | undefined = activeFunctionEvidence?.completion === "complete" || activeFunctionEvidence?.completion === "unable"
-      ? activeFunctionEvidence.completion
+    const functionRetests = activeFunctionObligations.length
+      ? Object.fromEntries(activeFunctionObligations.flatMap((obligation) => {
+          const answer = treatmentFunctionRetests[obligation.assessmentId];
+          if (!answer?.completion) return [];
+          return [[obligation.assessmentId, {
+            ...obligation,
+            afterCompletion: answer.completion,
+            unableReason: answer.completion === "unable" ? answer.unableReason : undefined,
+            afterScore: answer.scoreConfirmed ? answer.score : undefined,
+          } satisfies FunctionRetestRecord]];
+        }))
       : undefined;
-    const functionAfterCompletion: FunctionRetestCompletion | undefined = functionRetestCompletion || undefined;
-    const functionRetestMode: FunctionRetestMode | undefined = activeFunctionEvidence?.retestMode === "ordinary" || activeFunctionEvidence?.retestMode === "completion-status"
-      ? activeFunctionEvidence.retestMode
+    const singleFunctionRetest = functionRetests && Object.keys(functionRetests).length === 1
+      ? Object.values(functionRetests)[0]
       : undefined;
+    const functionBaselineCompletion: FunctionRetestCompletion | undefined = singleFunctionRetest?.baselineCompletion
+      ?? (activeFunctionEvidence?.completion === "complete" || activeFunctionEvidence?.completion === "unable" ? activeFunctionEvidence.completion : undefined);
+    const functionAfterCompletion: FunctionRetestCompletion | undefined = singleFunctionRetest?.afterCompletion ?? (functionRetestCompletion || undefined);
+    const functionRetestMode: FunctionRetestMode | undefined = singleFunctionRetest?.mode
+      ?? (activeFunctionEvidence?.retestMode === "ordinary" || activeFunctionEvidence?.retestMode === "completion-status" ? activeFunctionEvidence.retestMode : undefined);
     const functionRetestState = resolveFunctionRetestTransition({
       isFunctionTarget: Boolean(activeFunctionEvidence),
       mode: activeFunctionEvidence?.retestMode ?? "none",
@@ -3549,10 +3575,17 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       unableReason: functionRetestUnableReason,
       scoreConfirmed: postScoreConfirmed,
     });
-    const retestEvidenceCaptured = functionRetestState.evidenceCaptured;
+    const retestEvidenceCaptured = activeFunctionObligations.length
+      ? activeFunctionObligations.every((obligation) => {
+          const answer = treatmentFunctionRetests[obligation.assessmentId];
+          return Boolean(answer?.completion && (answer.completion === "complete" || answer.unableReason)
+            && (obligation.mode === "completion-status" || answer.completion === "unable" || answer.scoreConfirmed));
+        })
+      : functionRetestState.evidenceCaptured;
     const mergedChiefDirection = region ? chiefMotionDirectionId(intake, region.id) : undefined;
     const targetChiefRetestAllowed = activeTarget.id !== "target:chief"
       || chiefScoreComparable
+      || activeFunctionObligations.some((item) => item.mode === "completion-status")
       || functionRetestMode === "completion-status";
     const chiefWasActuallyRetested = resolveChiefRetestCapture({
       timeBased,
@@ -3566,13 +3599,16 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       chiefImprovedDuringTreatment,
       chiefRetestCompletedDuringTreatment,
     });
-    const recordRetestLabel = activeTarget.retestLabel
+    const recordRetestLabel = activeFunctionObligations.length
+      ? activeFunctionObligations.map((item) => item.label).join("、")
+      : activeTarget.retestLabel
       ?? assessments.find((item) => item.id === activeTarget.finding.id.replace(/^symptom:/, ""))?.title
       ?? activeTarget.finding.title;
-    const recordedAfterScore = timeBased || deferredRetest || !postScoreConfirmed ? beforeScore : postScore;
+    const recordedAfterScore = timeBased || deferredRetest || !postScoreConfirmed || activeFunctionObligations.length > 1 ? beforeScore : postScore;
     const activityWorsened = movementResponse === "worse"
       || Object.values(movementResponses).some((outcome) => outcome === "worse")
-      || Object.values(bilateralRetestResponses).some((outcome) => outcome === "worse");
+      || Object.values(bilateralRetestResponses).some((outcome) => outcome === "worse")
+      || Object.values(functionRetests ?? {}).some((record) => record.baselineCompletion === "complete" && record.afterCompletion === "unable");
     const mixedImprovementAndActivityWorsening = activityWorsened
       && chiefWasActuallyRetested
       && recordedAfterScore < beforeScore;
@@ -3628,6 +3664,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         functionBaselineCompletion,
         functionAfterCompletion,
         functionRetestMode,
+        functionRetests,
         responseRole,
         priorTreatmentTitle: priorTreatmentRecord?.targetTitle,
         treatmentSide,
@@ -3672,6 +3709,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setBilateralRetestResponses({});
     setFunctionRetestCompletion("");
     setFunctionRetestUnableReason("");
+    setTreatmentFunctionRetests({});
     setPostDiscomfort("");
     setPostScoreConfirmed(false);
     setReadyToRetest(false);
@@ -4314,9 +4352,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .then(() => setToast(status === "等待影像" ? "本次信息已保存，获得影像后可继续" : status === "待医学评估" ? "本次信息已保存，可在完成医学评估后继续" : `第${sessionNumber}次康复记录已保存到本机`))
       .catch(() => {
         setPilotSyncState("error");
-        setToast(testStorageWriteBlocked
-          ? "本机保存失败，当前案例未持久化；请检查浏览器存储权限"
-          : "本机存储空间不足，当前案例未持久化；请先删除或导出旧记录");
+        setToast(localSaveFailureCopy(testStorageWriteBlocked));
       });
     enqueuePilotRecordSync(record, { eventType: lifecycle === "draft" ? "session_draft_saved" : "session_completed" });
     window.setTimeout(() => setToast(""), 2400);
@@ -4333,6 +4369,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
    * 的当前会话链；记录页因此仍能按线程找到旧会话，刷新也不会丢失。
    */
   function archiveActiveProblemThread() {
+    if (archivedProblemThreadIdsRef.current.has(problemThreadId)) return;
     const currentRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === localCaseId);
     const currentSnapshot = currentRecord?.snapshot;
     if (!currentRecord || !currentSnapshot) return;
@@ -4381,6 +4418,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       localContentFingerprint: contentFingerprint(nextSnapshot),
     };
     const next = [nextRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
+    archivedProblemThreadIdsRef.current.add(problemThreadId);
     savedRecordsRef.current = next;
     setSavedRecords(next);
     void persistLocalRecords(next).catch(() => setPilotSyncState("error"));
@@ -4482,7 +4520,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
             dispatchPilotSync(nextIdentity, { type: "restore-succeeded", caseId: nextIdentity, revision: remote.snapshot.revision });
           } else if (decision === "use-local") {
             dispatchPilotSync(nextIdentity, { type: "restore-conflict", caseId: nextIdentity });
-            remoteReadNotice = "服务器没有更新到本机之后，已保留本机未同步版本";
+            remoteReadNotice = "这台设备上的记录更新较晚，已继续保留";
           } else {
             dispatchPilotSync(nextIdentity, { type: "restore-conflict", caseId: nextIdentity });
             void recordPilotCaseOperation("save_conflict", access);
@@ -4491,11 +4529,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               pilotConflictRevision: remote.snapshot.revision,
               pilotConflictSnapshotUpdatedAt: remote.snapshot.updatedAt,
             });
-            remoteReadNotice = "本机和服务器都有更新，已保留本机版本，未静默覆盖；请处理冲突";
+            remoteReadNotice = "这台设备和云端都有修改，请选择要继续查看的记录";
           }
         } else {
           dispatchPilotSync(nextIdentity, { type: "restore-failed", caseId: nextIdentity, code: "invalid-remote-snapshot" });
-          remoteReadNotice = "服务器返回的案例快照无法识别，已使用本机副本";
+          remoteReadNotice = "云端记录暂时无法读取，已打开这台设备上的记录";
         }
       } catch {
         dispatchPilotSync(nextIdentity, { type: "restore-failed", caseId: nextIdentity, code: "remote-read-failed" });
@@ -4776,8 +4814,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCaseId]);
 
-  function invalidateAfterIntake(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
-    archiveActiveProblemThread();
+  function applyIntakeChange(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
     const next = typeof nextOrUpdater === "function" ? nextOrUpdater(intakeRef.current) : nextOrUpdater;
     intakeRef.current = next;
     setIntake(next);
@@ -4807,6 +4844,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMovementDiscomforts({});
     setMovementScores({});
     setMovementScoreConfirmed({});
+    setFunctionRetestCompletion("");
+    setFunctionRetestUnableReason("");
+    setTreatmentFunctionRetests({});
+    setFinalFunctionRetests({});
     setPostScore(0);
     setPostScoreConfirmed(false);
     setPostDiscomfort("");
@@ -4820,10 +4861,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFinalRetestConfirmed(false);
     setFollowupStage("review");
     setFollowupMode(false);
-    setSessionNumber(1);
-    setProblemThreadId(createProblemThreadId());
-    setSessionId(createSessionId());
-    setSessionStartedAt(new Date().toISOString());
     setFollowupScore(0);
     setFollowupScoreConfirmed(false);
     setFollowupScoreHistory([]);
@@ -4844,12 +4881,22 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupTensionLocations([]);
     setHasNewSymptom("");
     setFollowupTrends({});
-    sessionHistoryRef.current = [];
-    setSessionHistory([]);
     setAssessmentRevision(0);
     setTreatmentPlanRevision(0);
     setAdverseResponse(null);
     setAdverseConfirmedAssessmentIds([]);
+  }
+
+  /** 只有用户明确确认“出现新问题”时，才归档旧问题并建立新的身份链。 */
+  function startNewProblemThread(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
+    archiveActiveProblemThread();
+    setProblemThreadId(createProblemThreadId());
+    setSessionId(createSessionId());
+    setSessionStartedAt(new Date().toISOString());
+    setSessionNumber(1);
+    sessionHistoryRef.current = [];
+    setSessionHistory([]);
+    applyIntakeChange(nextOrUpdater);
   }
 
   function followupRetestIds(candidate: FullCandidate) {
@@ -5212,11 +5259,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   }
 
   const summaryFacts = [
-    { label: "当前诱发动作", value: intake.parsed ? chiefActionLabel(intake) : "等待描述" },
     { label: "位置", value: intake.bodyLocations.length ? intake.bodyLocations.map((item) => `${item.side} · ${item.location}`).join("；") : "待确认" },
     { label: "时间", value: intake.onset || "待确认" },
     { label: "感觉", value: intake.symptomType || "待确认" },
-    { label: "什么时候出现", value: hasClearChiefAction(intake) ? chiefActionLabel(intake) : intake.provocationTypes.length ? intake.provocationTypes.join("、") : "待确认" },
     ...(intake.symptoms.includes("肿胀或淤青") ? [{ label: "肿胀位置", value: intake.swellingLocation || "待确认" }] : []),
     ...(intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? [{ label: "按压痛位置", value: intake.tendernessLocation || "待确认" }] : []),
     ...(intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化") ? [{ label: "麻电范围", value: intake.sensoryLocation || "待确认" }] : []),
@@ -5288,7 +5333,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const displayedScoreNote = !intake.baselineScoreConfirmed
     ? "还需要补充评分"
         : !chiefScoreComparable
-          ? intake.side === "双侧/中间" && hasClearChiefAction(intake) ? "双侧整体感受记录，不生成单侧式评分对比" : "当前一般不适评分，不生成动作前后对比"
+          ? intake.side === "双侧/中间" && hasClearChiefAction(intake) ? "已分别记录两侧的整体感受" : "已记录当前的不适程度"
         : followupMode
           ? followupStage === "review" && !followupScoreConfirmed ? `上次结束 ${sessionHistory.find((item) => item.sessionNumber === sessionNumber - 1)?.endingScore ?? sessionHistory.at(-1)?.endingScore ?? sessionEndScore}分 · 等待本次复测` : followupTrainingReadyForRetest && followupFinalScoreConfirmed ? `本次训练前 ${latestFollowupRecord?.afterScore ?? followupScore}分 → 结束复测 ${followupFinalScore}分` : `第${sessionNumber}次康复当前评分`
       : step >= 4 && finalRetestConfirmed ? `初次 ${intake.baselineScore}分 → 结束复测 ${sessionEndScore}分` : step >= 3 && lastChiefScore !== intake.baselineScore ? `初次 ${intake.baselineScore}分 → 当前 ${lastChiefScore}分` : "首次评分，后续复测会显示作参考";
@@ -5387,7 +5432,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       onReturnToPreviousIntakeQuestion={returnToPreviousIntakeQuestion}
       onEnterKeyConfirmation={enterKeyConfirmation}
       onSaveRecord={saveRecord}
-      onInvalidateAfterIntake={invalidateAfterIntake}
+      onInvalidateAfterIntake={applyIntakeChange}
     />
     : targetStep === 1
       ? <ConfirmationStage
@@ -5513,6 +5558,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               directionChiefRetestConfirmed,
               functionRetestCompletion,
               functionRetestUnableReason,
+              treatmentFunctionRetests,
               region,
               canAssessPassive,
               canMobilizeJoint,
@@ -5592,6 +5638,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               onDirectionChiefRetestConfirmedChange: setDirectionChiefRetestConfirmed,
               onFunctionRetestCompletionChange: setFunctionRetestCompletion,
               onFunctionRetestUnableReasonChange: setFunctionRetestUnableReason,
+              onTreatmentFunctionRetestsChange: setTreatmentFunctionRetests,
               onToastChange: setToast,
               onJumpToIntakeQuestion: jumpToIntakeQuestion,
               onGoToStep: goToStep,
@@ -5734,7 +5781,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 onReopenAssessment: reopenAssessment,
                 onBeginAdverseReassessment: beginAdverseReassessment,
                 onSaveRecord: saveRecord,
-                onInvalidateAfterIntake: invalidateAfterIntake,
+                onInvalidateAfterIntake: startNewProblemThread,
                 onRecordFollowupTrial: recordFollowupTrial,
                 onInvalidateCurrentFollowupWork: invalidateCurrentFollowupWork,
                 onUpdateFollowupScore: updateFollowupScore,
@@ -5765,8 +5812,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     {multiTabConflict ? <section className="rm-multi-tab-conflict" role="alert" aria-live="assertive">
       <div>
         <strong>其他标签页已保存了更新</strong>
-        <p>本页仍保留当前内容，没有静默覆盖任何一方。请重新加载其他标签页版本，或明确保留本页继续。</p>
-        <small>{multiTabConflict.action === "cleared" ? "另一标签页清理了本机草稿。" : "检测到同一案例的本机草稿版本不同。"}</small>
+        <p>另一个标签页保存了新内容。当前页面内容仍在，请选择重新加载或保留当前页面继续。</p>
+        <small>{multiTabConflict.action === "cleared" ? "另一个标签页清理了草稿。" : "同一个案例在另一个标签页有新修改。"}</small>
       </div>
       <div className="rm-multi-tab-conflict-actions">
         <button type="button" className="rm-primary" onClick={reloadFromOtherTab}>重新加载</button>
@@ -5802,7 +5849,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       }}
       onSaveAsNew={() => savePilotConflictAsNew(currentPilotConflictRecord)}
       onExportLocal={() => exportPilotLocalConflict(currentPilotConflictRecord)}
-      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留本机版本，稍后仍可处理冲突"); }}
+      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留这台设备上的记录，稍后可以继续选择"); }}
     /> : null}
 
     <div className={`rm-shell ${displayedStep === 0 ? "is-intake-step" : ""}`}>

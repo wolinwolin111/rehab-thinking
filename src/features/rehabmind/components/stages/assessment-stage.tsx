@@ -282,7 +282,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
   </section>;
   if (adverseResponse && adverseResolution === "regress-training") return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="训练调整" title="先降低一个难度变量" />
-    <section className="rm-adverse-source"><span>停止当前版本</span><strong>{adverseResponse.sourceLabel}</strong><p>改小动作范围、减少个数或换成更稳定的体位，只试一小组。</p></section>
+    <section className="rm-adverse-source"><span>先停止刚才的做法</span><strong>{adverseResponse.sourceLabel}</strong><p>减小范围、减少个数或换成更稳定的姿势，只试一小组。</p></section>
     <div className="rm-page-actions split"><button type="button" onClick={() => setAdverseResponse((current) => current ? { ...current, regressionAttempted: true, settledAfterStopping: "no" } : current)}>退阶后仍然加重</button><button type="button" className="rm-primary" onClick={() => {
       // T-11：不再把 symptom 从 worse 改写为 same；原始加重保留，仅叠加退阶处置标记。
       setExerciseFeedback((current) => {
@@ -295,8 +295,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
       setAdverseResponse(null);
       setAdverseConfirmedAssessmentIds([]);
       setStep(4);
-      setToast("已记录加重并保留退阶版本；本次不再进阶");
-    }}>采用退阶版本</button></div>
+      setToast("已记录这次加重，后面只保留更简单的做法");
+    }}>改用更简单的做法</button></div>
   </section>;
   if (isThinkingMode && thinkingWorkbenchOpen && !assessmentSummaryOpen && !sharedTensionOpen) return renderThinkingWorkbench();
   const visibleAssessmentIndex = Math.min(assessmentIndex, Math.max(assessmentDisplayItems.length - 1, 0));
@@ -357,7 +357,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <StepHeading eyebrow="第3步 · 评估结果" title="先看清问题，再开始处理" />
       <article><span>你最开始说的</span><strong>{intake.description}</strong></article>
       {intake.side === "双侧/中间" ? <section className="rm-bilateral-order" data-testid="bilateral-priority-summary" data-priority-side={intake.prioritySide}><b>本次优先处理：{intake.prioritySide || "尚未选择"}</b><span>另一侧仍保留独立评估和复测记录。</span></section> : null}
-      {bilateralPriorityResolution.needsConfirmation && bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>按主诉规则仍先处理{intake.prioritySide}；如果你希望改顺序，请返回症状信息修改优先侧，系统不会静默替换。</p></section> : null}
+      {bilateralPriorityResolution.needsConfirmation && bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的问题更多</h2><p>仍按你选择的{intake.prioritySide}先处理；想改顺序，可以返回症状信息修改。</p></section> : null}
       <section className="rm-finding-board"><header><span>本次发现的问题</span><strong>{discovered.length + tracking.length}项</strong></header>{assessmentFindingGroups.length ? <div>{assessmentFindingGroups.map((group) => <section key={group.key} className={`is-${group.key}`}><header><i aria-hidden="true" /><div><strong>{group.label}</strong><span>{group.items.length}项</span></div></header><ul>{group.items.map((finding) => findingRow(finding, group.short))}</ul></section>)}</div> : <p>本次没有找到需要现场处理的明确问题。</p>}</section>
       {skippedChiefActionTitles(findings).length ? <p className="rm-choice-hint" role="status">你的主诉动作{skippedChiefActionTitles(findings).map((title) => `「${title}」`).join("、")}这次没有评估，下次康复建议先补上。</p> : null}
       {tissuePathway.id !== "standard" ? <section className="rm-route-note"><span>{tissuePathway.title}</span><h2>{tissuePathway.immediateActions[0]}</h2><p>{tissuePathway.blockedActions[0]}</p></section> : null}
@@ -533,7 +533,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
   return <section className="rm-page">
     <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title={item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)} current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
     {isThinkingMode && !focusedReassessmentActive ? <button type="button" className="rm-workbench-back" onClick={() => setThinkingWorkbenchOpen(true)}>返回阶段工作台</button> : null}
-    {focusedReassessmentActive && adverseResponse ? <section className="rm-focused-reassessment"><header><span>只复查相关内容</span><strong>{adverseResponse.sourceLabel}后出现加重</strong></header><div>{focusedAssessmentIds.map((id, index) => { const assessment = assessments.find((entry) => entry.id === id); const done = adverseConfirmedAssessmentIds.includes(id); return <article key={id} className={id === item.id ? "is-current" : done ? "is-done" : ""}><i>{done ? "✓" : index + 1}</i><span>{assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : id}</span></article>; })}</div><p>完成并确认这些项目后，系统会停用旧方案并重新安排后续内容。</p></section> : null}
+    {focusedReassessmentActive && adverseResponse ? <section className="rm-focused-reassessment"><header><span>只复查相关内容</span><strong>{adverseResponse.sourceLabel}后出现加重</strong></header><div>{focusedAssessmentIds.map((id, index) => { const assessment = assessments.find((entry) => entry.id === id); const done = adverseConfirmedAssessmentIds.includes(id); return <article key={id} className={id === item.id ? "is-current" : done ? "is-done" : ""}><i>{done ? "✓" : index + 1}</i><span>{assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : id}</span></article>; })}</div><p>完成这些项目后，会重新安排后续内容；刚才的方案不再继续使用。</p></section> : null}
     <details className="rm-assessment-progress"><summary><span>检查进度</span><strong>{assessmentDisplayItems.filter((entry) => displayAssessmentComplete(entry)).length + (sharedTensionComplete && sharedTensionRequired ? 1 : 0)}/{assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}</strong></summary><div>{assessmentDisplayItems.map((entry, index) => { const done = displayAssessmentComplete(entry); return <button type="button" key={entry.id} disabled={index > visibleAssessmentIndex} className={done ? "is-done" : ""} onClick={() => setAssessmentIndex(index)}><i>{done ? "✓" : index + 1}</i><span>{entry.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(entry.id, entry.title)}</span>{done ? <b>已记录</b> : null}</button>; })}{sharedTensionRequired ? <button type="button" disabled className={sharedTensionComplete ? "is-done" : ""}><i>{sharedTensionComplete ? "✓" : assessmentDisplayItems.length + 1}</i><span>相关肌群触诊比较</span>{sharedTensionComplete ? <b>已记录</b> : null}</button> : null}</div></details>
     {bilateralSideLedgerEnabled ? <section
       className="rm-bilateral-side-assessment"

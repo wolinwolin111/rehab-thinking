@@ -108,7 +108,6 @@ export function MobileMoreMenu({
         <button type="button" onClick={onOpenHelp}>关于 RehabMind</button>
         <button type="button" onClick={onSave}>保存本次记录</button>
       </nav>
-      {record?.pilotVersions ? <small className="rm-mobile-version">版本 {record.pilotVersions.appVersion}</small> : null}
     </section>
   </div>;
 }

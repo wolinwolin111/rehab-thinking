@@ -1,6 +1,14 @@
 import { useState } from "react";
+import type { FunctionUnableReason } from "@/src/domain/rehab/treatment/trial-record-types";
 
-export type FunctionUnableReason = "pain" | "weak" | "fear" | "instruction";
+export type { FunctionUnableReason } from "@/src/domain/rehab/treatment/trial-record-types";
+
+export type TreatmentFunctionRetestAnswer = {
+  completion: "" | "complete" | "unable";
+  unableReason?: FunctionUnableReason;
+  score?: number;
+  scoreConfirmed?: boolean;
+};
 
 export type FinalFunctionRetest = {
   completion: "" | "complete" | "unable";
@@ -16,12 +24,15 @@ export type FinalFunctionRetest = {
 export function useFunctionRetestState() {
   const [functionRetestCompletion, setFunctionRetestCompletion] = useState<"complete" | "unable" | "">("");
   const [functionRetestUnableReason, setFunctionRetestUnableReason] = useState<FunctionUnableReason | "">("");
+  const [treatmentFunctionRetests, setTreatmentFunctionRetests] = useState<Record<string, TreatmentFunctionRetestAnswer>>({});
   const [finalFunctionRetests, setFinalFunctionRetests] = useState<Record<string, FinalFunctionRetest>>({});
   return {
     functionRetestCompletion,
     setFunctionRetestCompletion,
     functionRetestUnableReason,
     setFunctionRetestUnableReason,
+    treatmentFunctionRetests,
+    setTreatmentFunctionRetests,
     finalFunctionRetests,
     setFinalFunctionRetests,
   };

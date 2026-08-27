@@ -19,7 +19,7 @@ export function buildTrialRecords(input: TrialRecordBuildInput): TrialRecord[] {
   const {
     candidates, carryoverOnly, beforeScore, recordedAfterScore, result, activityWorsened, timeBased, deferredRetest,
     hasSingleRangeEvidence, singleRangeDirectionId, singleRangeDiscomfort, singleRangeScore,
-    movementResponse, chiefWasActuallyRetested, functionBaselineCompletion, functionAfterCompletion, functionRetestMode, responseRole, priorTreatmentTitle,
+    movementResponse, chiefWasActuallyRetested, functionBaselineCompletion, functionAfterCompletion, functionRetestMode, functionRetests, responseRole, priorTreatmentTitle,
     retestActionKey, treatmentSide, treatmentSides, sideResults, targetId, targetTitle, residualReviewId,
   } = input;
 
@@ -54,6 +54,7 @@ export function buildTrialRecords(input: TrialRecordBuildInput): TrialRecord[] {
     functionBaselineCompletion,
     functionAfterCompletion,
     functionRetestMode,
+    functionRetests,
     reusedFromTargetTitle: carryoverOnly ? priorTreatmentTitle : undefined,
     retestActionKey: deferredRetest || timeBased ? undefined : retestActionKey,
     responseRole: candidates.length > 1 && index > 0 ? "not-immediately-testable" : responseRole,

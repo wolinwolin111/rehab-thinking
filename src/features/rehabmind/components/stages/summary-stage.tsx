@@ -52,6 +52,20 @@ import {
   treatmentDisplay,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
+function ChiefSummaryContent({ intake, completed = false }: { intake: IntakeState; completed?: boolean }) {
+  const actions = reportedActionSummary(intake);
+  if (actions.length > 1) return <div className="rm-chief-action-summary">
+    <span>本次不舒服的动作</span>
+    <ul>{actions.map((action) => <li key={action}>{action}</li>)}</ul>
+    <p>{completed ? "已保存本次实际完成的动作记录。" : "后续会按评估中实际做过的动作，逐项查看变化。"}</p>
+  </div>;
+  return <div>
+    <span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span>
+    <h2>{chiefComplaintLabel(intake)}</h2>
+    {completed ? <p>本次康复已经保存</p> : actions.length ? null : <p>这次没有固定的加重动作</p>}
+  </div>;
+}
+
 export type SummaryStageView = {
   intake: IntakeState;
   assessmentResults: Record<string, AssessmentRecord>;
@@ -223,12 +237,12 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     if (values.includes("worse")) return { tone: "reduce", title: "降低刺激并重新评估", text: "不要继续增加同一处理力度或训练量，回查活动、局部反应和遗漏因素。" };
     if (followupCandidates.length) return { tone: "hold", title: "复查后继续上次有效处理", text: "先快速比较相关活动范围，再继续上次有效的轻柔松解，最后进入训练。" };
     if (values.includes("better")) return { tone: "progress", title: "继续有效方向", text: "保留出现改善的活动或训练，一次只进阶一个变量。" };
-    return { tone: "hold", title: "保持当前方案", text: "复查仍存在的问题，保持当前组数、个数和动作版本。" };
+    return { tone: "hold", title: "保持当前方案", text: "继续复查还存在的问题，训练组数和个数暂时不变。" };
   }
   if (scoreComparison === "worse" || values.includes("worse")) return { tone: "reduce", title: "本次状态比上次差", text: "先完成本次评估，不沿用旧结论直接增加处理或训练。" };
   if (followupCandidates.length) return { tone: "hold", title: "复查后继续上次有效处理", text: "先快速比较相关活动范围，再继续上次有效的轻柔松解，最后进入训练。" };
   if (scoreComparison === "better" && values.filter((item) => item === "better").length >= 1) return { tone: "progress", title: "继续处理，并推进一个变量", text: "仍存在的活动或疼痛问题继续处理；训练一次只进阶一个变量。" };
-  return { tone: "hold", title: "保持当前方案", text: "复查仍存在的问题，保持当前组数、个数和动作版本。" };
+  return { tone: "hold", title: "保持当前方案", text: "继续复查还存在的问题，训练组数和个数暂时不变。" };
   }
 
   function renderFollowup() {
@@ -247,19 +261,19 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const chiefWasRecorded = hasClearChiefAction(intake);
   const hasChiefAction = chiefScoreComparable && chiefWasRecorded;
   const chiefRetestUnavailableTitle = intake.side === "双侧/中间"
-    ? "双侧主诉采用整体感受记录"
+    ? "分别看两侧的变化"
     : reportedActionSummary(intake).length > 1
-      ? "多个主诉动作分别复查"
+      ? "逐项查看不舒服的动作"
       : chiefWasRecorded
-        ? "先完成实际动作评估"
-        : "当前没有固定主诉动作";
+        ? "先完成这个动作的第一次记录"
+        : "这次没有固定的加重动作";
   const chiefRetestUnavailableText = intake.side === "双侧/中间"
-    ? "复查双侧整体感受、活动范围和动作质量，不生成单侧式前后评分。"
+    ? "分别记录两侧的感受、活动范围和动作质量。"
     : reportedActionSummary(intake).length > 1
-      ? "主诉动作只用于筛选评估和处理线索；本次分别复查已经实际完成的动作，不合并成一个分数。"
+      ? "下面会按实际做过的动作逐项查看变化。"
       : chiefWasRecorded
-        ? "主诉动作还没有形成可比较的现场基线；先复查已记录的活动范围、症状和动作质量。"
-        : "本次先复查活动度、肿胀或按压痛等已有问题，不强行生成动作评分。";
+        ? "先复查已经记录的活动范围、症状和动作质量。"
+        : "先复查活动度、肿胀或按压痛等已有问题。";
   const followupTrainingNeedsChiefRetest = needsTrainingToleranceRetest({
     comparableChief: hasChiefAction,
     immediateTiming: tissuePathway.retestTiming === "same-session",
@@ -448,7 +462,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
     return <section className="rm-page rm-session-summary">
       <StepHeading eyebrow={`第${sessionNumber}次康复`} title="本次康复总结" />
-      <section className="rm-session-hero"><div><span>本次主诉</span><h2>{chiefComplaintLabel(intake)}</h2><p>本次康复已经保存</p></div>{typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
+      <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} completed />{reportedActionSummary(intake).length <= 1 && typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
       {summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
       <NextSessionCard recommendation={nextRecommendation} nextSessionNumber={sessionNumber + 1} completedAt={completedSummary?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startNextFollowupSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: `session-${sessionNumber}`, sourceLabel: `第${sessionNumber}次康复结束后的反应`, timing: "later", beforeScore: completedSummary?.endingScore ?? followupSessionScore, afterScore: completedSummary?.endingScore ?? followupSessionScore, relatedAssessmentIds: completedSummary?.reviewResults.filter((item) => item.result !== "better").map((item) => item.id) ?? [] })} />
       {tissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{tissueReferral.title}</h2><ul>{tissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
@@ -555,10 +569,10 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     {tissuePathway.id === "standard" && followupTensionLocations.some((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)) ? <section className="rm-training-preparation"><header><span>训练前准备</span><strong>先做一次轻柔松解</strong></header><div>{followupTensionLocations.filter((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)).map((location) => <article key={location}><b>{location}</b><span>轻柔松解30～60秒</span></article>)}</div><footer>完成后直接开始训练，不新增复测步骤。</footer></section> : null}
     <div className="rm-followup-training">{exercises.map((exercise) => {
       const choice = followupExerciseChoices[exercise.id];
-      return <article key={exercise.id}><header><div><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}</span></div><b>第{exercise.stage}层</b></header><p>{choice === "reduce" ? exercise.easier : choice === "progress" ? exercise.harder : choice === "worse" ? "先停止当前版本，记录停止后的反应。" : exercise.observe}</p><div>{([[
+      return <article key={exercise.id}><header><div><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}</span></div><b>第{exercise.stage}层</b></header><p>{choice === "reduce" ? exercise.easier : choice === "progress" ? exercise.harder : choice === "worse" ? "先停止刚才的做法，记录停下来后的反应。" : exercise.observe}</p><div>{([[
         "reduce", "降低一档"], ["hold", "保持当前"], ["progress", "进阶一项"], ["worse", "做完更不舒服"]] as Array<[FollowupExerciseChoice, string]>).map(([value, label]) => <button type="button" key={value} disabled={value === "progress" && ["reduce", "review"].includes(decision.tone)} className={choice === value ? "is-selected" : ""} onClick={() => setFollowupExerciseChoices((current) => ({ ...current, [exercise.id]: value }))}>{label}</button>)}</div></article>;
     })}</div>
-    {followupWorsenedExercise ? <section className="rm-training-warning"><strong>{followupWorsenedExercise.title}后不适更重</strong><p>先停止这个版本，确认停止后的变化。</p><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: followupWorsenedExercise.id, sourceLabel: followupWorsenedExercise.title, timing: "during", beforeScore: followupSessionScore, afterScore: followupSessionScore, relatedAssessmentIds: followupWorsenedExerciseAssessmentIds })}>处理这次加重</button></section> : <>{exercises.length > 0 ? <section className="rm-training-feedback-gate"><strong>完成本次训练前，还需要记录每个动作的反馈</strong><span>未选择反馈的动作：{pendingFollowupFeedbackExercises.map((exercise) => exercise.title).join("、") || "无"}</span></section> : null}<section className="rm-next-stage"><span>下次继续</span><h2>先复查旧问题，再决定是否进阶</h2></section>
+    {followupWorsenedExercise ? <section className="rm-training-warning"><strong>{followupWorsenedExercise.title}后不适更重</strong><p>先停止刚才的做法，看看停下来后是否缓解。</p><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: followupWorsenedExercise.id, sourceLabel: followupWorsenedExercise.title, timing: "during", beforeScore: followupSessionScore, afterScore: followupSessionScore, relatedAssessmentIds: followupWorsenedExerciseAssessmentIds })}>处理这次加重</button></section> : <>{exercises.length > 0 ? <section className="rm-training-feedback-gate"><strong>完成本次训练前，还需要记录每个动作的反馈</strong><span>未选择反馈的动作：{pendingFollowupFeedbackExercises.map((exercise) => exercise.title).join("、") || "无"}</span></section> : null}<section className="rm-next-stage"><span>下次继续</span><h2>先复查以前的问题，再决定是否增加难度</h2></section>
     <div className="rm-page-actions split"><button type="button" onClick={() => setFollowupStage("treatment")}>返回继续处理</button><button type="button" className="rm-primary" disabled={!followupTrainingFeedbackComplete} onClick={() => { if (!followupTrainingNeedsChiefRetest) { completeFollowupSession(); return; } setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); setFollowupTrainingReadyForRetest(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{followupTrainingNeedsChiefRetest ? "训练完成，整体复测" : `保存第${sessionNumber}次康复`}</button></div></>}
   </section>;
 
@@ -677,16 +691,16 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   if (followupMode) return renderFollowup();
 
   const summaryTreatmentFeedback = (record: TrialRecord) => {
-    if (record.responseRole === "key-completion") return "在前面已有部分改善的基础上，本项使剩余主诉降至0；记录为关键完成项";
-    if (record.responseRole === "independent-completion") return "本项单独使当前主诉降至0；下次有自然症状时优先复验";
-    if (record.responseRole === "partial-contribution") return "主诉部分下降，说明该区域有贡献，但仍有剩余来源需要处理";
-    if (record.responseRole === "range-contribution") return "活动表现改善，主诉未同步改变；保留为活动相关候选";
-    if (record.responseRole === "not-immediately-testable") return "本次无法单独归因，留待后续康复观察";
+    if (record.responseRole === "key-completion") return "前面的处理已经有帮助，这一项让剩余不适继续下降";
+    if (record.responseRole === "independent-completion") return "完成这一项后，当前不适明显下降";
+    if (record.responseRole === "partial-contribution") return "不适有下降，但还需要继续观察";
+    if (record.responseRole === "range-contribution") return "活动比之前顺畅，但不舒服的感觉没有一起改变";
+    if (record.responseRole === "not-immediately-testable") return "这项变化需要在后续康复中继续观察";
     if (record.timeBased) return "留到今天晚些时候或下次比较";
     if (record.rangeOutcomes && Object.keys(record.rangeOutcomes).length) {
       const restored = Object.values(record.rangeOutcomes).filter((outcome) => outcome === "both-match").length;
       return restored === Object.keys(record.rangeOutcomes).length
-        ? "相关活动已接近比较目标"
+        ? "相关活动已接近参照范围"
         : restored ? "部分方向恢复，剩余方向继续跟进"
           : record.result === "better" || record.result === "partial" ? "主诉变轻，活动仍受限，继续巩固"
             : record.result === "worse" ? "出现加重，本次停止" : "变化不足，后续调整处理";
@@ -709,15 +723,15 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const visibleBodyMarks = bodyMarks.filter((mark) => mark.status !== "invalidated");
     return <section className="rm-page rm-session-summary">
     <StepHeading eyebrow="第6步" title="本次康复总结" />
-    <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
-     {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是记录者的判断或待验证假设，不等同于已确认的查体结果。</small></section> : null}
-     {visibleBodyMarks.length ? <section className="rm-route-note rm-body-mark-summary"><span>症状位置记录</span><div className="rm-body-mark-summary-list">{visibleBodyMarks.map((mark) => <span key={mark.markId}><b>{bodyMarkKindLabels[mark.symptomKind]}</b>{mark.humanLabel}{mark.coordinateCompleteness === "zone-only" ? "（区域记录）" : ""}</span>)}</div><small>位置以结构化区域和侧别保存；没有真实点击坐标的旧记录不会补猜坐标。</small></section> : null}
+    <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} />{reportedActionSummary(intake).length <= 1 && chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : null}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
+     {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是尚未确认的判断，不会改变页面建议。</small></section> : null}
+     {visibleBodyMarks.length ? <section className="rm-route-note rm-body-mark-summary"><span>症状位置记录</span><div className="rm-body-mark-summary-list">{visibleBodyMarks.map((mark) => <span key={mark.markId}><b>{bodyMarkKindLabels[mark.symptomKind]}</b>{mark.humanLabel}{mark.coordinateCompleteness === "zone-only" ? "（大致位置）" : ""}</span>)}</div>{visibleBodyMarks.some((mark) => mark.coordinateCompleteness === "zone-only") ? <small>较早的记录只保存了大致位置。</small> : null}</section> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
     {firstSessionTissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{firstSessionTissueReferral.title}</h2><ul>{firstSessionTissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
     <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">
       <div className="rm-summary-column">
         <section className="rm-summary-module is-findings"><header><div><span>评估结果</span><strong>{summaryProblems.length}项</strong></div></header>{summaryProblemGroups.length ? <div className="rm-summary-finding-groups">{summaryProblemGroups.map((group) => <article key={group.key}><b>{group.label}</b><ul>{group.items.map((problem) => <li key={problem.id}><strong>{problem.title}</strong>{problem.status ? <span>{problem.status}</span> : null}</li>)}</ul></article>)}</div> : <p>未记录明确异常。</p>}</section>
-        <section className="rm-summary-module is-training"><header><div><span>居家训练</span><strong>{trainingPlanSaved ? "方案已保存，未执行" : trainingComplete ? `${exercises.length}个 · 已完成` : `${exercises.length}个`}</strong></div></header>{trainingPlanSaved ? <p className="rm-summary-unexecuted">本次没有生成训练改善或进阶结论；下次开始前先确认是否实际执行。</p> : <div className="rm-summary-compact-list">{exercises.map((exercise) => <article key={exercise.id}><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}{exerciseFeedback[exercise.id] ? ` · ${exerciseFeedback[exercise.id]?.symptom === "worse" ? "加重" : exerciseFeedback[exercise.id]?.formChanged ? "需要退阶" : "已记录反馈"}` : " · 待反馈"}</span></article>)}{homeRelaxationTargets.map((target) => <article key={target.id}><strong>{target.title}</strong><span>{target.dosage}</span></article>)}</div>}</section>
+        <section className="rm-summary-module is-training"><header><div><span>居家训练</span><strong>{trainingPlanSaved ? "方案已保存，未执行" : trainingComplete ? `${exercises.length}个 · 已完成` : `${exercises.length}个`}</strong></div></header>{trainingPlanSaved ? <p className="rm-summary-unexecuted">这次只保存了训练方案。下次开始前先确认是否做过。</p> : <div className="rm-summary-compact-list">{exercises.map((exercise) => <article key={exercise.id}><strong>{exercise.title}</strong><span>{exercise.sets} · {exercise.reps}{exerciseFeedback[exercise.id] ? ` · ${exerciseFeedback[exercise.id]?.symptom === "worse" ? "加重" : exerciseFeedback[exercise.id]?.formChanged ? "需要简单一些" : "已记录反馈"}` : " · 待反馈"}</span></article>)}{homeRelaxationTargets.map((target) => <article key={target.id}><strong>{target.title}</strong><span>{target.dosage}</span></article>)}</div>}</section>
       </div>
       <div className="rm-summary-column">
         <section className="rm-summary-module is-treatments"><header><div><span>处理记录</span><strong>{summarizedTreatments.length}项</strong></div></header>{summarizedTreatments.length ? <><div className="rm-summary-treatment-cards">{summarizedTreatments.map((record) => <article key={record.treatmentKey ?? record.candidateId} className={`is-${record.result}`}><header><span>{record.responseRole === "key-completion" ? "关键完成" : record.responseRole === "independent-completion" ? "单项完成" : record.responseRole === "partial-contribution" ? "部分贡献" : record.responseRole === "range-contribution" ? "活动改善" : record.result === "better" ? "有效" : record.result === "partial" ? "待巩固" : record.result === "worse" ? "已停止" : "变化小"}</span><strong>{record.treatmentName ?? record.candidateTitle}</strong></header><p>{summaryTreatmentFeedback(record)}</p></article>)}</div>{resolvedTreatmentCombination(summarizedTreatments).length > 1 ? <section className="rm-effective-combination"><strong>本次组合解决</strong><span>{resolvedTreatmentCombination(summarizedTreatments).map((record) => record.treatmentName ?? record.candidateTitle).join(" ＋ ")}</span><small>记录处理顺序与组合反应，不直接认定病因。</small></section> : null}</> : <p>本次无处理记录。</p>}</section>
