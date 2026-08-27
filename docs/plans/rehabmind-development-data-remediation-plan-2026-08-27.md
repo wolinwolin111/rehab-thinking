@@ -41,9 +41,9 @@
 | --- | --- | --- | --- | --- |
 | RMD-HIST-01 | P0 | 开发完成，待测试会话 | 草稿保存被当作完成会话 | A/B |
 | RMD-HIST-02 | P0 | 开发完成，待测试会话 | 缺少稳定 sessionId 和 problemThreadId | B |
-| RMD-HIST-03 | P0 | 部分完成（归档已持久化与隔离，线程模型后续），待测试会话 | archivedSessions 可能丢失或跨案例串显示 | A/B |
+| RMD-HIST-03 | P0 | 开发完成，待测试会话 | 历史归档必须由问题线程持久化承载，不能依赖页面内存状态 | A/B |
 | RMD-HIST-04 | P0 | 开发完成，待测试会话 | case_events 不能重建临床历史 | B |
-| RMD-MARK-01 | P0 | 开发完成（基础投影），待测试会话 | BodyMark 合同缺失、切换大部位立即清点 | B |
+| RMD-MARK-01 | P0 | 开发完成（合同、快照投影、总结消费），待测试会话 | BodyMark 合同缺失、切换大部位立即清点 | B |
 | RMD-SCORE-01 | P0 | 开发完成，待测试会话 | 评分缺少 ScoreRecord 身份和版本 | B |
 | RMD-SPECIAL-01 | P1 | 开发完成（基础合同），待测试会话 | 专项检查记录缺少触发、能力快照和停止原因 | C/D |
 | RMD-WIRE-01 | P1 | 开发完成，待测试会话 | 配对力量 finding 读取错误字段 | A |
@@ -61,9 +61,9 @@
 | RMD-MODE-03 | P1 | 开发完成（兼容读取保留），待测试会话 | userRole/examSetup 仍直接控制生产流程 | C |
 | RMD-PRO-01 | P2 | 开发完成（轻量工作台），待测试会话 | 原专业工作台方案超出内部场景走读用途，需要降级为轻量测试支撑 | D |
 | RMD-DOC-01 | P2 | 开发完成，待测试会话 | 位置“最多 3 个”与“不设硬上限”冲突 | A |
-| RMD-DOC-02 | P1 | 开发完成（Debug 壳 + unsigned Release candidate），待测试验收与正式签名 | 手机网页与 Android APK 口径已统一，APK 工程与发布待实施 | A/F |
+| RMD-DOC-02 | P1 | 开发完成（Debug 壳 + unsigned Release candidate），待测试验收与正式签名 | 手机网页与 Android APK 口径已统一，正式 APK 仍需验收后签名交付 | A/F |
 | RMD-DOC-03 | P1 | 开发完成，待测试会话 | 双侧页面提示与正式流程冲突 | A |
-| RMD-ARCH-01 | P1 | 部分完成（已提取合同），后续分批 | 主组件仍承担过多状态与记录语义 | B～E |
+| RMD-ARCH-01 | P1 | 部分完成（合同/历史投影已提取，stage 边界已修复；主组件进一步拆分待后续） | 主组件仍承担过多状态与记录语义 | B～E |
 
 ## 3.1 本批开发已落地内容（2026-08-27）
 
@@ -76,8 +76,31 @@
 - 案例学习模式：本期生产入口关闭；旧 `study` 快照在规范化和服务端保存边界拒绝写入。
 - 能力切换：变更检查能力时只重算待执行评估/处理路径，保留已经发生的检查、处理、复测、评分和会话历史，并记录能力快照编号。
 - 内部工作台与手机载体：工作台继续加载正式 `RehabMindCompleteDemo`，增加场景隔离和 JSON 复现包导出；仓库新增 Android Debug WebView 壳及构建工作流。
+- 历史投影收口：移除工作台运行时 `archivedSessions` 内存篮子，使用 `ProblemThreadRecord` 与 `SessionIndexRecord` 持久化问题线程/会话索引；旧 `archivedSessionHistory` 只保留迁移兼容，记录页按“案例 → 问题线程 → 会话”展示，归档追加 `problem_thread_archived` 事件。
+- BodyMark 消费收口：当前结构化标记从工作台统一生成并写入快照/同步事件，在总结阶段按症状类型、人体标签和坐标完整性展示；展示层通过 `stage-domain-adapters` facade 引用类型，避免 stage 直接跨层导入 domain 实现。
 
-本批开发会话只做类型检查和静态复核，没有代替测试会话执行整体回归、浏览器矩阵、真机或 APK 验收。剩余的完整结构消费、主组件分层和 Release APK 放行，继续按测试结果和后续批次推进。
+本批开发会话只做类型检查和静态复核，没有代替测试会话执行整体回归、浏览器矩阵、真机或 APK 验收。当前开发侧仍需后续批次处理主工作台进一步拆分、正式 APK 签名交付和少量“只记录但未形成产品消费”的字段；测试会话负责按回归总表确认本批代码的行为结果。
+
+### 3.2 本批提交与开发侧证据
+
+| 提交 | 内容 | 开发侧检查 |
+| --- | --- | --- |
+| `b60f68a` | 将问题线程和会话索引正式投影到快照、保存记录和记录页；归档写入追加事件；移除运行时 `archivedSessions` 事实源。 | `npm run typecheck` 通过；测试契约由测试会话独立更新和执行。 |
+| `977caa4` | 将结构化 BodyMark 接入当前快照/同步事件，并在总结阶段按症状类型和位置完整性只读展示。 | `npm run typecheck`、此前开发构建通过。 |
+| `ab218d4` | 修复 stage 架构边界：`summary-stage` 通过 `stage-domain-adapters` 引用 `BodyMark` 类型，不直接导入 domain 实现。 | `npm run typecheck` 通过；等待测试会话重新执行 architecture boundary 和回归。 |
+
+### 3.3 数据消费收口说明
+
+本批已经把以下数据从“只写入或只存在内存”推进到可解释的消费链：
+
+| 数据 | 当前写入位置 | 当前消费位置 | 仍需后续处理 |
+| --- | --- | --- | --- |
+| `problemThreads` / `sessionIndex` | 本地快照、保存记录、同步事件 | 记录页线程/会话树、归档事件 | 测试会话验证刷新、跨案例、归档/恢复和迁移兼容。 |
+| `BodyMark` | 当前快照、保存记录、同步事件 | 总结阶段位置记录；结构化区域仍供既有安全/专项检查链路使用 | 继续把更多页面的字符串展示替换为统一投影；不能在未确认临床语义前扩大规则含义。 |
+| `ScoreRecord`、专项检查、专业备注、`DecisionTrace` | 临床记录合同、快照/事件 | 现有流程结果、历史/同步和只读追踪链路 | 补齐完整记录页的版本比较和审计展示。 |
+| 被动活动度、`sourceCaseIds`、`explain/note` | 评估/处理记录和决策追踪 | 结果、复测或追踪链路中的兼容投影 | 继续清理仍只有存储没有明确用户可见消费的字段。 |
+
+因此，“整改方案完成”在开发侧的含义是：合同、写入边界、核心消费端和回退兼容已经落地；并不把测试会话的浏览器/整体/真机结论提前写成通过，也不把正式签名 APK 伪装成已交付。
 
 ---
 
@@ -181,28 +204,23 @@ type ProblemThread = {
 - 两个问题线程不能互相读取评分、标记或复测结果；
 - 所有同步、反馈和事件不再以 `sessionNumber` 作为关联键。
 
-### RMD-HIST-03：修复 archivedSessions 丢失与跨案例串显示
+### RMD-HIST-03：修复历史归档丢失与跨案例串显示
 
 **通俗解释**
 
-当前“历史档案”只是页面内存里的临时篮子：刷新就没了，新建案例时还可能把上一案例的篮子带过来。
+旧实现把“历史档案”放在页面内存里的临时篮子中：刷新就没了，新建案例时还可能把上一案例的篮子带过来。
 
 **专业定义**
 
 禁止组件级非持久化状态承载临床归档。历史归属必须由 `caseId/problemThreadId` 明确表达；创建新案例必须清除所有旧案例的派生展示状态。
 
-**热修步骤（批次 A）**
+**开发实现（批次 A/B）**
 
-1. 新建或恢复案例时立即重置 `archivedSessions`，先阻止跨案例显示。
-2. 在正式历史模型完成前，编辑 intake 不得清空已有 `sessionHistory`；如果变更会改变问题身份，提示用户选择“修正当前问题”或“建立新问题”。
-3. 删除“仍保存在案例历史中”的误导文案，直到持久化事实成立。
-
-**正式整改（批次 B）**
-
-1. 用 `ProblemThread.status=archived` 替代独立 `archivedSessions` state。
-2. 归档只改变线程状态，不移动或复制完成会话。
-3. 记录页按案例展示线程，线程内展示会话；当前工作台只加载活动线程。
-4. 归档、恢复归档线程都写追加事件。
+1. 已移除组件运行时 `archivedSessions` state；它不再承担任何临床历史事实。
+2. 使用 `ProblemThreadRecord.status=archived` 表达线程归档，归档只更新线程状态，不移动、复制或删除完成会话。
+3. 当前快照和保存记录携带 `problemThreads`、`sessionIndex`；旧 `archivedSessionHistory` 只在迁移层保留兼容读取。
+4. 记录页按“案例 → 问题线程 → 会话”展示；归档写入 `problem_thread_archived` 追加事件。
+5. 新建/恢复案例时由 `caseId/problemThreadId` 重新建立当前投影，禁止旧案例的页面派生状态继续显示。
 
 **开发完成定义**
 
@@ -210,6 +228,8 @@ type ProblemThread = {
 - 新案例看不到旧案例历史；
 - 修改备注或补充症状不会删除已完成会话；
 - 页面关于历史保存的每一句文案都可由持久化数据证明。
+
+测试会话需要重点验证上述行为；开发会话不代替刷新、跨案例切换、归档和恢复的整体回归。
 
 ### RMD-HIST-04：让 case_events 能重建临床历史
 
@@ -926,7 +946,7 @@ type RangeMeasurement = {
 | --- | --- | --- | --- |
 | RMD-WIRE-01 | `src/features/rehabmind/components/workbench/rehabmind-workbench.tsx`、`stage-domain-adapters.ts`、`src/domain/rehab/shared/knee-workflow-adapter.ts`；新增 `src/domain/rehab/assessment/paired-strength-finding-core.ts` | 先固定配对力量输入合同，再替换两处 finding 映射；不得顺带调整候选排序权重。 | 纯映射提交可单独回退。交付一组固定输入/输出夹具，包含“活动不适与力量不适故意不同”的样例，测试会话验证显示与决策使用的是力量字段。 |
 | RMD-WIRE-02 | `confirmation-stage.tsx`、`training-stage.tsx`、`src/domain/rehab/training/training-stage-gate-core.ts`、`rehabmind-workbench.tsx`、`snapshot-schema.ts` | 先增加 `MedicalGuidance` 兼容读取，再替换 `priorCare` 的布尔推断；不得放宽明确医生限制和安全信号。 | 保留旧字段 reader 一个版本，writer 可由开关退回旧 UI，但不能删除已写新字段。交付 `none/restricted/cleared/unknown` 四类合同样例和训练门控结果。 |
-| RMD-HIST-03（热修） | `rehabmind-workbench.tsx`、`components/records/rehab-records-page.tsx`、`workflow/session-history.ts` | 本批只阻止跨案例串显示和静默清历史，不提前伪造完整问题线程。 | 独立热修提交，可直接回退。交付案例 A/B 切换前后内存状态说明和旧快照样例；测试会话负责刷新、建新案例和恢复案例验证。 |
+| RMD-HIST-03（热修） | `rehabmind-workbench.tsx`、`components/records/rehab-records-page.tsx`、`workflow/session-history.ts` | 先停止跨案例串显示和静默清历史，再由正式问题线程投影承载归档事实；不再保留独立内存档案篮子。 | 热修与正式投影均可独立回退；测试会话负责刷新、建新案例、恢复案例、归档和线程树验证。 |
 | RMD-DOC-01 | `docs/rehabmind-complete-product-design.md`、`docs/rehab-decision-framework.md`、`lower-limb-location-picker.tsx`、相关页面文案 | 只统一为“同一主要大部位不设硬上限、后续按标准区域去重”，不改变多大部位拆线程规则。 | 文档与调用参数同提交回退。交付最终文案和大于 3 个标记时的稳定 UI 标识。 |
 | RMD-DOC-02（口径） | 根 `README.md`、`docs/README.md`、正式产品设计与发布说明 | 区分手机网页、Android APK、其他原生能力；明确手机网页和 APK 都是本轮交付，APK 在网页/VPS 验收后执行。 | 纯文档/文案提交可回退。交付支持矩阵：320～430px 手机网页正式维护、Android APK 待网页验收后构建、iOS 与额外原生能力未纳入。 |
 | RMD-DOC-03 | `symptom-stage.tsx`、`src/domain/rehab/shared/bilateral-flow-core.ts`、总结与记录页文案 | 只修正提示和优先侧语义，不把两个不同大部位合并。 | 文案提交和逻辑提交分开，便于回退。交付左右标记、prioritySide 与总结投影的合同样例。 |
@@ -937,12 +957,12 @@ type RangeMeasurement = {
 | --- | --- | --- | --- |
 | RMD-HIST-01 | `workflow/session-history.ts`、`workflow/workflow-commands.ts`、`controllers/workflow-command-adapter.ts`、`persistence/persistence-controller.ts`、`snapshot-schema.ts`、`components/records/rehab-records-page.tsx` | 先定义生命周期和三条命令，再改按钮调用；禁止继续用一个 `saveRecord` 同时表达草稿、完成和转诊。依赖 RMD-HIST-02 的稳定身份合同。 | Reader 保持 v1/v2；writer 通过功能开关切换。交付三条命令、幂等键、事件名称及草稿/完成/转诊夹具。 |
 | RMD-HIST-02 | `local-case-identity.ts`、`snapshot-schema.ts`、`api/case-contracts.ts`、`feedback/feedback-context.ts`、`db/schema/pilot-schema.ts`、新增 Drizzle migration、案例 API/服务/SQLite repository | 身份必须由 UUID 生成并持久化，不能从序号或文本推导；数据库只新增迁移，禁止改已执行 SQL。 | 先 reader 后 writer；关闭新 writer 时旧应用仍能忽略新增列。交付同草稿重复保存、下一会话、新问题线程和身份不匹配四类 API 样例。 |
-| RMD-HIST-03（正式） | `workflow/session-history.ts`、`rehab-records-page.tsx`、`snapshot-schema.ts`、`case-service.ts`、`db/sqlite/sqlite-pilot-case-repository.ts` | 依赖 problemThread；归档改变线程状态，不移动、复制或删除会话。 | 回滚只关闭归档入口，已写线程/事件继续可读。交付 active/archived/resolved 三类线程投影和归档/恢复事件。 |
+| RMD-HIST-03（正式） | `src/domain/rehab/history/session-identity-core.ts`、`workbench-support.tsx`、`rehabmind-workbench.tsx`、`rehab-records-page.tsx`、`snapshot-schema.ts`、`case-contracts.ts` | 依赖 problemThread；归档改变线程状态，不移动、复制或删除会话；旧 `archivedSessionHistory` 仅作迁移兼容。 | 回滚只关闭归档入口，已写线程/事件继续可读。交付 active/archived/resolved/superseded 线程合同、线程/会话索引投影和归档事件。 |
 | RMD-HIST-04 | `db/schema/pilot-schema.ts`、新增 migration、`sqlite-pilot-case-repository.ts`、`case-service.ts`、`persistence/timeline.ts`、`app/api/pilot/cases/[caseId]/progress/route.ts`、后台详情页 | 事件 envelope 先版本化；当前快照是投影，不替代完成历史。依赖 HIST-01/02、MARK-01、SCORE-01 的稳定引用。 | Reader 必须先接受未知 v2 事件；writer 开关可停写新事件，但绝不删除已写事件。交付事件 JSON Schema、事件序列夹具和投影重建说明。 |
-| RMD-MARK-01 | `lower-limb-location-picker.tsx`、`symptom-stage.tsx`、`rehabmind-workbench.tsx`、`snapshot-schema.ts`；新增 `src/domain/rehab/records/body-mark.ts` 和 builder | 先让 UI 只产生 draft，再由领域 builder 生成身份和状态；不得给旧 zone-only 数据伪造坐标。 | 保留旧数组读取和新旧双投影一个版本；关闭新 writer 后新标记仍可降级显示 humanLabel。交付五种 symptomKind、建议/确认/失效和 zone-only 迁移夹具。 |
+| RMD-MARK-01 | `lower-limb-location-picker.tsx`、`symptom-stage.tsx`、`rehabmind-workbench.tsx`、`summary-stage.tsx`、`snapshot-schema.ts`；`src/domain/rehab/records/body-mark-core.ts` 和 builder | UI 只产生 draft，再由领域 builder 生成身份和状态；不得给旧 zone-only 数据伪造坐标。当前工作台负责统一写入，Summary 负责只读消费；stage 通过 facade 引用类型。 | 保留旧数组读取和新旧双投影一个版本；关闭新 writer 后新标记仍可降级显示 humanLabel。交付五种 symptomKind、建议/确认/失效和 zone-only 迁移夹具。 |
 | RMD-SCORE-01 | `components/shared/ui-primitives.tsx`、各评分阶段、`trial-record-builder.ts`、`trial-record-types.ts`、`snapshot-schema.ts`；新增 `src/domain/rehab/records/score-record.ts` | 先建立 0 与未选择的状态差异，再替换裸数字比较；趋势比较必须经过统一可比性函数。 | 旧数字字段保留只读投影一个版本；新 record writer 可停，但不得覆盖已写版本。交付 0/unselected/not-applicable、跨侧不可比和 supersede 样例。 |
 | RMD-MODE-02 | `src/domain/rehab/shared/downstream-invalidation-core.ts`、`workflow/workflow-commands.ts`、`workflow-orchestrator.ts`、`rehabmind-workbench.tsx`、`snapshot-schema.ts`；新增 capability snapshot 合同 | 依赖稳定记录 ID；只重算未执行计划，完成记录不可进入普通清空集合。 | 先保留旧 invalidation 适配器但默认关闭；出现问题可切回旧计划投影，不得恢复删除历史的行为。交付能力变更前后 planRevision、已完成记录和未执行候选的快照差异。 |
-| RMD-ARCH-01（阶段 1/2） | `rehabmind-workbench.tsx`、`controllers/*`、`workflow/*`；新增 `session-controller`、`clinical-record-builders`、`finding-projection` | 只提取纯合同、builder 和会话命令，不在同一提交重做 UI；每次迁移一个事实源。 | 每个提取提交都保持旧 UI 可运行并可独立回退。交付公开函数签名、状态机命令和禁止页面直接构造临床事件的边界清单。 |
+| RMD-ARCH-01（阶段 1/2） | `rehabmind-workbench.tsx`、`components/workbench/stage-domain-adapters.ts`、`controllers/*`、`workflow/*`；新增/复用 `session-controller`、`clinical-record-builders`、`finding-projection` | 只提取纯合同、builder、投影和会话命令，不在同一提交重做 UI；每次迁移一个事实源。已完成历史/BodyMark 投影和 stage facade 边界修复，主组件继续分批拆分。 | 每个提取提交都保持旧 UI 可运行并可独立回退。交付公开函数签名、状态机命令和禁止页面直接构造临床事件的边界清单。 |
 
 ### 14.3 批次 C：字段消费、模式与能力
 
