@@ -20,6 +20,12 @@ function isObject(value: unknown): value is SnapshotObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function nonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
 function isNonNegativeInteger(value: unknown) {
   return Number.isInteger(value) && (value as number) >= 0;
 }
@@ -392,8 +398,8 @@ function migrateHistoryProjection(value: SnapshotObject): SnapshotObject {
         status: "active",
         createdAt: threadCreatedAt,
         lastActiveAt: typeof value.draftSavedAt === "string" && value.draftSavedAt.trim() ? value.draftSavedAt : threadCreatedAt,
-        regionId: isObject(value.intake) && typeof value.intake.regionId === "string" ? value.intake.regionId : undefined,
-        location: isObject(value.intake) && typeof value.intake.location === "string" ? value.intake.location : undefined,
+        regionId: isObject(value.intake) ? nonEmptyString(value.intake.regionId) : undefined,
+        location: isObject(value.intake) ? nonEmptyString(value.intake.location) : undefined,
       }];
   const archived = Array.isArray(value.archivedSessionHistory) ? value.archivedSessionHistory : [];
   const archivedThreadId = `thread-legacy-archived-${caseId}`;
@@ -402,9 +408,9 @@ function migrateHistoryProjection(value: SnapshotObject): SnapshotObject {
       problemThreadId: archivedThreadId,
       caseId,
       status: "archived",
-      createdAt: typeof archived[0]?.completedAt === "string" ? archived[0].completedAt : threadCreatedAt,
-      lastActiveAt: typeof archived.at(-1)?.completedAt === "string" ? archived.at(-1).completedAt : threadCreatedAt,
-      closedAt: typeof archived.at(-1)?.completedAt === "string" ? archived.at(-1).completedAt : threadCreatedAt,
+      createdAt: nonEmptyString(archived[0]?.completedAt) ?? threadCreatedAt,
+      lastActiveAt: nonEmptyString(archived.at(-1)?.completedAt) ?? threadCreatedAt,
+      closedAt: nonEmptyString(archived.at(-1)?.completedAt) ?? threadCreatedAt,
       title: "旧版历史档案",
     });
   }
@@ -424,10 +430,10 @@ function migrateHistoryProjection(value: SnapshotObject): SnapshotObject {
       sessionNumber,
       status: summary.status === "abandoned" ? "abandoned" : summary.status === "draft" ? "draft" : summary.completedAt ? "completed" : "draft",
       startedAt: typeof summary.startedAt === "string" && summary.startedAt.trim() ? summary.startedAt : typeof summary.completedAt === "string" && summary.completedAt.trim() ? summary.completedAt : threadCreatedAt,
-      lastDraftSavedAt: typeof summary.lastDraftSavedAt === "string" ? summary.lastDraftSavedAt : undefined,
-      completedAt: typeof summary.completedAt === "string" ? summary.completedAt : undefined,
-      completionReason: typeof summary.completionReason === "string" ? summary.completionReason : undefined,
-      location: typeof summary.location === "string" ? summary.location : undefined,
+      lastDraftSavedAt: nonEmptyString(summary.lastDraftSavedAt),
+      completedAt: nonEmptyString(summary.completedAt),
+      completionReason: nonEmptyString(summary.completionReason),
+      location: nonEmptyString(summary.location),
     });
   };
   if (!existingIndex.length) {
@@ -442,7 +448,7 @@ function migrateHistoryProjection(value: SnapshotObject): SnapshotObject {
       lastDraftSavedAt: value.draftSavedAt,
       completedAt: value.completedAt,
       completionReason: value.completionReason,
-      location: isObject(value.intake) ? value.intake.location : undefined,
+      location: isObject(value.intake) ? nonEmptyString(value.intake.location) : undefined,
     }, activeThreadId);
   }
   return { ...value, problemThreads, sessionIndex };
