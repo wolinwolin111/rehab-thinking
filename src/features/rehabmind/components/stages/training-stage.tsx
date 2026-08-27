@@ -105,6 +105,9 @@ export function TrainingStage(props: TrainingStageProps) {
   }
 
   function recordQuickFeedback(exercise: FullExercise, mode: "reduce" | "hold" | "progress" | "worse") {
+    // 未处理的训练加重是硬门：在用户完成加重处置或明确采用一次退阶前，
+    // 不接受任何动作的新反馈，避免继续生成“合适/进阶”等矛盾记录。
+    if (trainingHasWorsened) return;
     const targetReps = firstNumber(exercise.reps);
     const previous = exerciseFeedback[exercise.id];
     const hadFeedback = Boolean(previous);
@@ -120,10 +123,16 @@ export function TrainingStage(props: TrainingStageProps) {
       ...current,
       [exercise.id]: feedback,
     }));
+    if (mode === "worse") {
+      // 当前动作写入反馈后会从“待反馈”集合退出；显式固定当前动作，避免
+      // 页面按第一个待反馈项自动跳到下一动作，造成用户误以为可以继续训练。
+      setOpenExercise(exercise.id);
+      return;
+    }
     const nextExerciseId = nextTrainingExerciseId(
       exercises.map((item) => item.id),
       exercise.id,
-      { hadFeedback, worsened: mode === "worse" },
+      { hadFeedback, worsened: false },
     );
     if (nextExerciseId) setOpenExercise(nextExerciseId);
   }
@@ -235,7 +244,7 @@ export function TrainingStage(props: TrainingStageProps) {
       <div className="rm-effective-home-focus">{effectiveFocusLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留轻柔放松</small></article>)}{effectiveControlLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留练习</small></article>)}</div>
     </details> : null}
 
-    {visibleExercise ? <nav className="rm-exercise-pagination" aria-label="训练动作切换"><span>训练动作 {visibleExerciseIndex + 1}/{exercises.length}</span><div><button type="button" disabled={visibleExerciseIndex === 0} onClick={() => setOpenExercise(exercises[visibleExerciseIndex - 1]?.id ?? "")}>上一个</button><button type="button" disabled={visibleExerciseIndex >= exercises.length - 1 || !exerciseFeedback[visibleExercise.id]} onClick={() => setOpenExercise(exercises[visibleExerciseIndex + 1]?.id ?? "")}>下一个</button></div></nav> : null}
+    {visibleExercise ? <nav className="rm-exercise-pagination" aria-label="训练动作切换"><span>训练动作 {visibleExerciseIndex + 1}/{exercises.length}</span><div><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex === 0} onClick={() => setOpenExercise(exercises[visibleExerciseIndex - 1]?.id ?? "")}>上一个</button><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex >= exercises.length - 1 || !exerciseFeedback[visibleExercise.id]} onClick={() => setOpenExercise(exercises[visibleExerciseIndex + 1]?.id ?? "")}>下一个</button></div></nav> : null}
     <div className="rm-exercise-list">{visibleExercise ? [visibleExercise].map((exercise) => {
       const feedback = exerciseFeedback[exercise.id];
       const exerciseVisual = exerciseActionVisual(exercise, actionImageVariant(intake));
@@ -253,7 +262,7 @@ export function TrainingStage(props: TrainingStageProps) {
             ["worse", "做完更不舒服"],
           ] as const).map(([mode, label]) => {
             const selected = mode === "worse" ? feedback?.symptom === "worse" : mode === "reduce" ? Boolean(feedback?.formChanged) : mode === "progress" ? (feedback?.reserve ?? 0) >= 5 && feedback?.symptom !== "worse" : Boolean(feedback && !feedback.formChanged && feedback.reserve >= 2 && feedback.reserve < 5 && feedback.symptom !== "worse");
-            return <button type="button" key={mode} data-rehabmind-test={`training-feedback-${mode}`} data-exercise-id={exercise.id} disabled={bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
+            return <button type="button" key={mode} data-rehabmind-test={`training-feedback-${mode}`} data-exercise-id={exercise.id} disabled={trainingHasWorsened || bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
           })}</div></section>
           {!exerciseVisual ? <button type="button" className="rm-video-placeholder" disabled><span>动作视频</span><b>暂未上传</b></button> : null}
         </div>
