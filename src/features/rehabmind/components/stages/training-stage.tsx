@@ -225,7 +225,7 @@ export function TrainingStage(props: TrainingStageProps) {
     {tissuePathway.id !== "standard" ? <section className="rm-training-hold"><span>{tissuePathway.title}</span><strong>{tissuePathway.trainingStages[0]}</strong><p>{tissuePathway.trainingStages.join(" → ")}</p></section> : null}
     {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低刺激基础活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
     {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低刺激基础活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
-    {bilateralLowLoadOnly ? <section className="rm-training-hold"><span>双侧评估尚未全部完成</span><strong>当前只开放低负荷基础活动</strong><p>另一侧未完成针对性评估前，不进入正常训练、不增加阻力或动作难度。完成反馈后可返回处理记录继续另一侧。</p></section> : null}
+    {bilateralLowLoadOnly ? <section className="rm-training-hold" data-testid="bilateral-low-load-gate" data-rehabmind-test="bilateral-training-gate"><span>双侧评估尚未全部完成</span><strong>当前只开放低负荷基础活动</strong><p>另一侧未完成针对性评估前，不进入正常训练、不增加阻力或动作难度。完成反馈后可返回处理记录继续另一侧。</p></section> : null}
     <details className="rm-training-path"><summary><span>恢复目标</span><strong>{displayGoals.find((goal) => goal.level === exerciseStage)?.title ?? "当前阶段"}</strong></summary><div className="rm-stage-line" aria-label="训练目标进度">{displayGoals.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div></details>
     {lowLoadTrainingOnly ? <div className="rm-training-load-badge" role="note"><strong>低负荷基础活动</strong><span>当前只保持舒适活动和基础控制，暂不增加速度、阻力或动作难度。</span></div> : null}
 
@@ -253,7 +253,7 @@ export function TrainingStage(props: TrainingStageProps) {
             ["worse", "做完更不舒服"],
           ] as const).map(([mode, label]) => {
             const selected = mode === "worse" ? feedback?.symptom === "worse" : mode === "reduce" ? Boolean(feedback?.formChanged) : mode === "progress" ? (feedback?.reserve ?? 0) >= 5 && feedback?.symptom !== "worse" : Boolean(feedback && !feedback.formChanged && feedback.reserve >= 2 && feedback.reserve < 5 && feedback.symptom !== "worse");
-            return <button type="button" key={mode} disabled={bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
+            return <button type="button" key={mode} data-rehabmind-test={`training-feedback-${mode}`} data-exercise-id={exercise.id} disabled={bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
           })}</div></section>
           {!exerciseVisual ? <button type="button" className="rm-video-placeholder" disabled><span>动作视频</span><b>暂未上传</b></button> : null}
         </div>
@@ -271,11 +271,11 @@ export function TrainingStage(props: TrainingStageProps) {
       <footer>如果出现刺痛、麻、电感或症状加重，立即停止。</footer>
     </details> : null}
 
-    {trainingHasWorsened ? <section className="rm-training-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
+    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止这个版本，确认停止后的变化；不会直接返回整套评估。</p><div className="rm-page-actions split"><button type="button" data-rehabmind-test="training-worsening-reassess" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" data-rehabmind-test="training-worsening-save" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
 
     {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
-    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section className="rm-training-feedback-gate"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
+    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section className="rm-training-feedback-gate" data-testid="training-feedback-gate"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
 
     <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再决定进阶" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "本次只记录基础活动和反馈，不生成正常训练进阶结论。" : "连续两次完成、动作质量稳定且第二天没有持续加重后，一次只增加个数、阻力、动作难度或训练量中的一个变量。"}</p></section>
 

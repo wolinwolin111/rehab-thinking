@@ -96,6 +96,7 @@ import { deriveMedicalGuidance, medicalGuidanceNeedsClarification } from "@/src/
 
 export default function RehabMindCompleteDemo({ testContext }: { testContext?: PilotTestContext } = {}) {
   const storageScope = testContext ? "test" : "user";
+  const testStorageWriteBlocked = testContext?.faultMode === "storage";
   const workflowController = useWorkflowController();
   const onboardingStorageKey = "rehabmind-onboarding-v1";
   const [step, setStep] = useState<Step>(0);
@@ -192,7 +193,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const draftHydratedRef = useRef(false);
   const draftPersistenceRef = useRef<ReturnType<typeof createPilotDraftPersistenceController<PilotDraftEnvelope>> | null>(null);
   const recordsPersistenceRef = useRef<PilotSerialPersistenceQueue<SavedDemoRecord[]> | null>(null);
-  if (!recordsPersistenceRef.current) recordsPersistenceRef.current = createPilotSerialPersistenceQueue((records) => saveLocalCaseRecords(records, storageScope));
+  if (!recordsPersistenceRef.current) recordsPersistenceRef.current = createPilotSerialPersistenceQueue((records) => testStorageWriteBlocked
+    ? Promise.reject(new Error("TEST_FAULT_STORAGE_UNAVAILABLE"))
+    : saveLocalCaseRecords(records, storageScope));
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [mobileStageOpen, setMobileStageOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -279,7 +282,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   useEffect(() => {
     const controller = createPilotDraftPersistenceController<PilotDraftEnvelope>({
       delayMs: 800,
-      save: (draft) => saveLocalDraft(draft, storageScope),
+      save: (draft) => testStorageWriteBlocked
+        ? Promise.reject(new Error("TEST_FAULT_STORAGE_UNAVAILABLE"))
+        : saveLocalDraft(draft, storageScope),
       onState: (state) => setPilotSyncState(state),
     });
     draftPersistenceRef.current = controller;
@@ -773,6 +778,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           baseRevision: access.revision,
         };
         dispatchPilotSync(identity, { type: "remote-save-started", operation });
+        if (testContext?.faultMode === "network") {
+          throw new PilotCaseClientError(0, "network", "TEST_FAULT_NETWORK_UNAVAILABLE");
+        }
+        if (testContext?.faultMode === "timeout") {
+          throw new PilotCaseClientError(0, "timeout", "TEST_FAULT_REQUEST_TIMEOUT");
+        }
         const progress = await savePilotCaseProgress({
           access,
           snapshot: attachPilotConsent(currentSnapshot as unknown as Record<string, unknown>, consentRecord),
@@ -5719,7 +5730,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     <header className="rm-topbar">
       <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>RehabMind</strong><small>康复思路工作台</small></span></button>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
-      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于 RehabMind</button><button type="button" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" onClick={saveDraftRecord}>保存草稿</button></div>
+      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于 RehabMind</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">

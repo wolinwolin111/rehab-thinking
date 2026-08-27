@@ -19,7 +19,7 @@ export function SnapshotFreshnessBanner({
   const ageText = formatSnapshotAge(freshness);
   const required = freshness.requiresReconfirmation && !reconfirmed;
   const strongReminder = freshness.band === "very-stale" || freshness.band === "unknown";
-  return <section className={`rm-snapshot-freshness ${required ? "is-blocking" : strongReminder ? "is-strong" : "is-reminder"}`} role={required ? "alert" : "status"} aria-live="polite">
+  return <section className={`rm-snapshot-freshness ${required ? "is-blocking" : strongReminder ? "is-strong" : "is-reminder"}`} data-testid="snapshot-freshness-banner" data-freshness-band={freshness.band} data-requires-reconfirmation={required ? "true" : "false"} role={required ? "alert" : "status"} aria-live="polite">
     <div>
       <span>{required ? "继续前先更新情况" : "恢复记录提醒"}</span>
       <strong>{freshness.band === "unknown" ? "暂时无法确定距上次保存多久" : `距上次记录已过去${ageText}`}</strong>
@@ -31,8 +31,8 @@ export function SnapshotFreshnessBanner({
       {reconfirmed ? <small>本次已重新确认当前情况；如有变化，请先修改症状信息。</small> : null}
     </div>
     {required
-      ? <button type="button" className="rm-primary" onClick={onReconfirm}>重新确认后继续</button>
-      : <button type="button" onClick={onReviewIntake}>回看当前情况</button>}
+      ? <button type="button" data-testid="snapshot-freshness-reconfirm" className="rm-primary" onClick={onReconfirm}>重新确认后继续</button>
+      : <button type="button" data-testid="snapshot-freshness-review" onClick={onReviewIntake}>回看当前情况</button>}
   </section>;
 }
 
@@ -59,7 +59,7 @@ export function SnapshotFreshnessReconfirmationDialog({
   if (!open) return null;
   const ready = symptomsConfirmed && safetyConfirmed && onsetConfirmed;
   return <div className="rm-snapshot-freshness-backdrop" role="presentation" onMouseDown={onClose}>
-    <section ref={dialogRef} className="rm-snapshot-freshness-dialog" role="dialog" aria-modal="true" aria-labelledby="rm-snapshot-freshness-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
+    <section ref={dialogRef} className="rm-snapshot-freshness-dialog" data-testid="snapshot-freshness-dialog" role="dialog" aria-modal="true" aria-labelledby="rm-snapshot-freshness-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
       <header>
         <span>恢复前确认</span>
         <h2 id="rm-snapshot-freshness-title">这份记录距上次保存已过去{ageText}</h2>
@@ -70,13 +70,13 @@ export function SnapshotFreshnessReconfirmationDialog({
         <button type="button" onClick={onReviewSafety}>先重新确认安全信号</button>
       </div>
       <div className="rm-snapshot-freshness-checks">
-        <label><input type="checkbox" checked={symptomsConfirmed} onChange={(event) => setSymptomsConfirmed(event.target.checked)} />我已重新确认当前症状和活动受影响情况</label>
-        <label><input type="checkbox" checked={safetyConfirmed} onChange={(event) => setSafetyConfirmed(event.target.checked)} />我已重新确认当前安全信号，包括有没有新的明显加重</label>
-        <label><input type="checkbox" checked={onsetConfirmed} onChange={(event) => setOnsetConfirmed(event.target.checked)} />我已重新确认发生时间；有变化时已先修改症状信息</label>
+        <label><input type="checkbox" data-testid="snapshot-freshness-symptoms" checked={symptomsConfirmed} onChange={(event) => setSymptomsConfirmed(event.target.checked)} />我已重新确认当前症状和活动受影响情况</label>
+        <label><input type="checkbox" data-testid="snapshot-freshness-safety" checked={safetyConfirmed} onChange={(event) => setSafetyConfirmed(event.target.checked)} />我已重新确认当前安全信号，包括有没有新的明显加重</label>
+        <label><input type="checkbox" data-testid="snapshot-freshness-onset" checked={onsetConfirmed} onChange={(event) => setOnsetConfirmed(event.target.checked)} />我已重新确认发生时间；有变化时已先修改症状信息</label>
       </div>
       <footer>
         <button type="button" onClick={onClose}>稍后再确认</button>
-        <button type="button" className="rm-primary" disabled={!ready} onClick={onConfirm}>确认当前情况并继续</button>
+        <button type="button" data-testid="snapshot-freshness-confirm" className="rm-primary" disabled={!ready} onClick={onConfirm}>确认当前情况并继续</button>
       </footer>
     </section>
   </div>;
