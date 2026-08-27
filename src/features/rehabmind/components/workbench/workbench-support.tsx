@@ -259,6 +259,8 @@ export function isPatellaGroupSecondaryId(id: string) {
 export const isPatellaTreatmentCandidate = isPatellaSpecificCandidate;
 
 export type AssessmentRecord = {
+  /** 双侧检查的逐侧事实；两侧都记录后才允许生成比较结论。 */
+  bilateralSideResults?: Partial<Record<BilateralSide, "normal" | "limited">>;
   active?: MotionAnswer | BilateralMotionAnswer;
   passive?: PassiveAnswer;
   simple?: SimpleAnswer;

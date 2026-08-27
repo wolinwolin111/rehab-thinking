@@ -102,6 +102,12 @@ function validateAssessmentResults(value: unknown): string | null {
   const yesNo = ["yes", "no"];
   for (const [id, raw] of Object.entries(value)) {
     if (!isObject(raw)) return `snapshot assessmentResults.${id} is invalid`;
+    if (raw.bilateralSideResults !== undefined) {
+      if (!isObject(raw.bilateralSideResults)) return `snapshot assessmentResults.${id}.bilateralSideResults is invalid`;
+      const sideKeys = Object.keys(raw.bilateralSideResults);
+      if (sideKeys.some((key) => !["左侧", "右侧"].includes(key))) return `snapshot assessmentResults.${id}.bilateralSideResults is invalid`;
+      if (Object.values(raw.bilateralSideResults).some((result) => !["normal", "limited"].includes(String(result)))) return `snapshot assessmentResults.${id}.bilateralSideResults is invalid`;
+    }
     for (const key of ["discomfort", "passiveDiscomfort", "functionDiscomfort"] as const) {
       if (raw[key] !== undefined && !yesNo.includes(String(raw[key]))) return `snapshot assessmentResults.${id}.${key} is invalid`;
     }

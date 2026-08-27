@@ -356,7 +356,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     return <section className="rm-page rm-assessment-summary">
       <StepHeading eyebrow="第3步 · 评估结果" title="先看清问题，再开始处理" />
       <article><span>你最开始说的</span><strong>{intake.description}</strong></article>
-      {intake.side === "双侧/中间" ? <section className="rm-bilateral-order"><b>本次优先处理：{intake.prioritySide || "尚未选择"}</b><span>另一侧仍保留独立评估和复测记录。</span></section> : null}
+      {intake.side === "双侧/中间" ? <section className="rm-bilateral-order" data-testid="bilateral-priority-summary" data-priority-side={intake.prioritySide}><b>本次优先处理：{intake.prioritySide || "尚未选择"}</b><span>另一侧仍保留独立评估和复测记录。</span></section> : null}
       {bilateralPriorityResolution.needsConfirmation && bilateralPriorityResolution.conflictSide ? <section className="rm-route-note is-waiting"><span>评估结果提醒</span><h2>{bilateralPriorityResolution.conflictSide}的异常更多</h2><p>按主诉规则仍先处理{intake.prioritySide}；如果你希望改顺序，请返回症状信息修改优先侧，系统不会静默替换。</p></section> : null}
       <section className="rm-finding-board"><header><span>本次发现的问题</span><strong>{discovered.length + tracking.length}项</strong></header>{assessmentFindingGroups.length ? <div>{assessmentFindingGroups.map((group) => <section key={group.key} className={`is-${group.key}`}><header><i aria-hidden="true" /><div><strong>{group.label}</strong><span>{group.items.length}项</span></div></header><ul>{group.items.map((finding) => findingRow(finding, group.short))}</ul></section>)}</div> : <p>本次没有找到需要现场处理的明确问题。</p>}</section>
       {skippedChiefActionTitles(findings).length ? <p className="rm-choice-hint" role="status">你的主诉动作{skippedChiefActionTitles(findings).map((title) => `「${title}」`).join("、")}这次没有评估，下次康复建议先补上。</p> : null}
@@ -391,6 +391,44 @@ export function AssessmentStage(props: AssessmentStageProps) {
     updateAssessment(item.id, (latestRecord) => {
       const nextRecord = { ...latestRecord, ...patch };
       return { ...patch, simple: functionSimpleAnswer(nextRecord) };
+    });
+  };
+  const bilateralSideLedgerEnabled = intake.side === "双侧/中间"
+    && item.kind === "function"
+    && record.bilateralSideResults !== undefined;
+  const updateBilateralSideResult = (side: "左侧" | "右侧", result: "normal" | "limited") => {
+    updateAssessment(item.id, (latestRecord) => {
+      const bilateralSideResults = { ...(latestRecord.bilateralSideResults ?? {}), [side]: result };
+      const left = bilateralSideResults["左侧"];
+      const right = bilateralSideResults["右侧"];
+      if (!left || !right) {
+        return {
+          ...latestRecord,
+          bilateralSideResults,
+          functionCompletion: undefined,
+          functionControl: undefined,
+          functionDiscomfort: undefined,
+          compensations: undefined,
+          bilateralComparison: undefined,
+          worseSide: undefined,
+          simple: undefined,
+        };
+      }
+      const hasLimitedSide = left === "limited" || right === "limited";
+      const bilateralComparison = left === right
+        ? left === "limited" ? "两侧异常" : "两侧接近"
+        : left === "limited" ? "左侧更差" : "右侧更差";
+      const nextRecord: AssessmentRecord = {
+        ...latestRecord,
+        bilateralSideResults,
+        functionCompletion: "complete",
+        functionControl: hasLimitedSide ? "compensated" : "stable",
+        functionDiscomfort: "no",
+        compensations: hasLimitedSide ? [functionCompensationOptions(item.id)[0]] : undefined,
+        bilateralComparison,
+        worseSide: bilateralComparisonToSide(bilateralComparison),
+      };
+      return { ...nextRecord, simple: functionSimpleAnswer(nextRecord) };
     });
   };
   const renderSymptomDetails = (scoreLabel: string, context?: string) => <div className="rm-motion-symptom-detail rm-assessment-symptom-capture">
@@ -476,6 +514,33 @@ export function AssessmentStage(props: AssessmentStageProps) {
     {isThinkingMode && !focusedReassessmentActive ? <button type="button" className="rm-workbench-back" onClick={() => setThinkingWorkbenchOpen(true)}>返回阶段工作台</button> : null}
     {focusedReassessmentActive && adverseResponse ? <section className="rm-focused-reassessment"><header><span>只复查相关内容</span><strong>{adverseResponse.sourceLabel}后出现加重</strong></header><div>{focusedAssessmentIds.map((id, index) => { const assessment = assessments.find((entry) => entry.id === id); const done = adverseConfirmedAssessmentIds.includes(id); return <article key={id} className={id === item.id ? "is-current" : done ? "is-done" : ""}><i>{done ? "✓" : index + 1}</i><span>{assessment ? professionalAssessmentTitle(assessment.id, assessment.title) : id}</span></article>; })}</div><p>完成并确认这些项目后，系统会停用旧方案并重新安排后续内容。</p></section> : null}
     <details className="rm-assessment-progress"><summary><span>检查进度</span><strong>{assessmentDisplayItems.filter((entry) => displayAssessmentComplete(entry)).length + (sharedTensionComplete && sharedTensionRequired ? 1 : 0)}/{assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}</strong></summary><div>{assessmentDisplayItems.map((entry, index) => { const done = displayAssessmentComplete(entry); return <button type="button" key={entry.id} disabled={index > visibleAssessmentIndex} className={done ? "is-done" : ""} onClick={() => setAssessmentIndex(index)}><i>{done ? "✓" : index + 1}</i><span>{entry.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(entry.id, entry.title)}</span>{done ? <b>已记录</b> : null}</button>; })}{sharedTensionRequired ? <button type="button" disabled className={sharedTensionComplete ? "is-done" : ""}><i>{sharedTensionComplete ? "✓" : assessmentDisplayItems.length + 1}</i><span>相关肌群触诊比较</span>{sharedTensionComplete ? <b>已记录</b> : null}</button> : null}</div></details>
+    {bilateralSideLedgerEnabled ? <section
+      className="rm-bilateral-side-assessment"
+      data-testid="bilateral-assessment-ledger"
+      data-priority-side={intake.prioritySide}
+      data-complete={record.bilateralSideResults?.["左侧"] && record.bilateralSideResults?.["右侧"] ? "true" : "false"}
+    >
+      <header><span>双侧分别评估</span><strong>先记录{intake.prioritySide || "优先侧"}，再记录另一侧</strong><p>左右结果分别保存；只完成一侧时，本项仍是未完成，不能进入普通训练。</p></header>
+      <div>{(["右侧", "左侧"] as const).map((side) => {
+        const sideResult = record.bilateralSideResults?.[side];
+        const sideKey = side === "左侧" ? "left" : "right";
+        return <article key={side} data-testid={`bilateral-assessment-${sideKey}`} data-side={side} data-status={sideResult ?? "pending"}>
+          <div><strong>{side}</strong><span>{side === intake.prioritySide ? "主诉优先侧" : "另一侧"}</span><b>{sideResult ? "已记录" : "待记录"}</b></div>
+          <p>单独完成这一侧的动作，不要用另一侧的结果代替。</p>
+          <div className="rm-result-grid is-two">
+            {([['normal', '完成稳定'], ['limited', '受限或代偿']] as const).map(([value, label]) => <button
+              type="button"
+              key={value}
+              data-testid={`bilateral-assessment-${sideKey}-${value}`}
+              aria-pressed={sideResult === value}
+              className={sideResult === value ? "is-selected" : ""}
+              onClick={() => updateBilateralSideResult(side, value)}
+            >{label}</button>)}
+          </div>
+        </article>;
+      })}</div>
+      <footer role="status">{record.bilateralSideResults?.["左侧"] && record.bilateralSideResults?.["右侧"] ? `左右均已记录 · 优先侧仍为${intake.prioritySide}` : "另一侧尚未完成 · 保持训练限制"}</footer>
+    </section> : null}
     {item.kind === "motion" ? <div className="rm-assessment-stack">
       {!passiveOnly ? <article className="rm-check-card">
         <header><i>1</i><div><span>关节活动度检查</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>

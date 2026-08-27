@@ -17,6 +17,7 @@ export type AssessmentCompleteItem = {
 };
 
 export type AssessmentCompleteRecord = {
+  bilateralSideResults?: Partial<Record<"左侧" | "右侧", "normal" | "limited">>;
   functionCompletion?: string;
   functionControl?: string;
   functionDiscomfort?: string;
@@ -53,6 +54,11 @@ export function assessmentRecordComplete(
   requireEndFeel = false,
 ) {
   if (!record) return false;
+  // 新双侧逐侧记录一旦启用，就以左右两份事实作为完成门；汇总字段不能
+  // 反向冒充另一侧已经做过，也不能让旧的单侧答案绕过该门。
+  if (bilateral && record.bilateralSideResults) {
+    if (!record.bilateralSideResults["左侧"] || !record.bilateralSideResults["右侧"]) return false;
+  }
   if (item.kind === "function") {
     const completion = functionCompletionValue(record);
     const control = functionControlValue(record);

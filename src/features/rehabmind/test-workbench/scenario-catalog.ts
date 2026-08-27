@@ -14,7 +14,7 @@ import type { PilotTestFaultMode } from "@/src/infrastructure/pilot/api/case-cli
 
 export type PilotTestMode = "full_flow" | "page_boundary";
 
-export type PilotScenarioFixtureKind = "bilateral-training-gate" | "history-second-session" | "history-new-problem";
+export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem";
 
 export type PilotScenarioSeedContext = Readonly<{
   localCaseId: string;
@@ -286,7 +286,7 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
 
   const fixtureIntake = scenario.fixtureKind === "history-new-problem"
     ? NEW_PROBLEM_INTAKE
-    : scenario.fixtureKind === "bilateral-training-gate"
+    : scenario.fixtureKind === "bilateral-training-gate" || scenario.fixtureKind === "bilateral-longitudinal"
       ? BILATERAL_INTAKE
       : undefined;
   const snapshot: SavedDemoSnapshot = {
@@ -378,6 +378,19 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
     };
     seededIdentity.bilateralTreatmentSides = { "target:chief": ["右侧"] };
     seededIdentity.bilateralRetestResponses = {};
+  }
+
+  if (scenario.fixtureKind === "bilateral-longitudinal") {
+    seededIdentity.assessmentResults = {
+      ...snapshot.assessmentResults,
+      // 其余项目保持已记录，只把主诉相关的下蹲动作留作真实逐侧操作入口。
+      // 右侧虽是优先侧，但左右都完成前不会生成汇总结论或开放处理。
+      "motion:knee-extension": NORMAL_MOTION,
+      "function:knee-squat": { bilateralSideResults: {} },
+    };
+    seededIdentity.bilateralTreatmentSides = {};
+    seededIdentity.bilateralRetestResponses = {};
+    seededIdentity.midpointDecisionDone = false;
   }
 
   return {
@@ -493,6 +506,17 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     restoreAgeMs: 7 * 24 * 60 * 60 * 1000,
     snapshotOverrides: { intake: { onset: "超过6周" } },
     fixtureNote: "预期：显示超过7天提醒，但不要求急性三项确认。",
+  },
+  {
+    id: "bilateral-longitudinal",
+    title: "双侧完整纵向流程",
+    description: "从左右分别评估开始，完成优先侧处理、另一侧处理、左右分别复测和训练门检查。",
+    mode: "page_boundary",
+    target: "双侧纵向流程",
+    initialProblem: "两侧膝盖下蹲都不舒服，右侧更明显，想先改善右侧。",
+    step: 2,
+    fixtureKind: "bilateral-longitudinal",
+    fixtureNote: "先记录右侧，再记录左侧；只完成一侧时保持未完成。两侧均选受限后进入处理，页面应先处理右侧并分别复测左右。",
   },
   {
     id: "bilateral-training-gate",
