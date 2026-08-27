@@ -455,7 +455,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     initialProblem: "右膝下楼时疼痛，昨天刚保存过记录。",
     step: 2,
     restoreAgeMs: 23 * 60 * 60 * 1000,
-    snapshotOverrides: { intake: { onset: "昨天" } },
+    snapshotOverrides: { intake: { onset: "今天或昨天" } },
     fixtureNote: "预期：没有“恢复记录提醒”。",
   },
   {
@@ -467,7 +467,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     initialProblem: "右脚踝昨天扭伤，外踝肿痛，昨天保存过记录。",
     step: 2,
     restoreAgeMs: 24 * 60 * 60 * 1000,
-    snapshotOverrides: { intake: { onset: "昨天" } },
+    snapshotOverrides: { intake: { onset: "今天或昨天" } },
     fixtureNote: "预期：显示“恢复记录提醒”，只有“回看当前情况”，不要求三项确认。",
   },
   {
@@ -479,7 +479,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     initialProblem: "右脚踝扭伤后外踝肿痛，7天前保存过记录。",
     step: 2,
     restoreAgeMs: 7 * 24 * 60 * 60 * 1000,
-    snapshotOverrides: { intake: { onset: "昨天" } },
+    snapshotOverrides: { intake: { onset: "今天或昨天" } },
     fixtureNote: "预期：回到症状信息并显示“重新确认后继续”，原答案仍保留。",
   },
   {
