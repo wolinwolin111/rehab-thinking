@@ -30,6 +30,7 @@ export { nextRangeCandidateType } from "@/src/domain/rehab/retest/retest-routing
 export { candidateTreatmentKey, candidateTreatmentName } from "@/src/domain/rehab/treatment/candidate-treatment-core";
 export { candidateAction } from "@/src/domain/rehab/treatment/candidate-action-core";
 export { functionEvidenceFromRecord } from "@/src/domain/rehab/retest/function-evidence-core";
+export { combineRetestResults, functionRetestAnswerKey, summarizeFunctionRetestObligations } from "@/src/domain/rehab/retest/retest-obligation-core";
 export { resolveTreatmentRetestGate } from "@/src/domain/rehab/retest/function-retest-transition-core";
 export { canReuseLatestRetest, canReuseLatestRetest as canReuseLatestRetestDecision } from "@/src/domain/rehab/retest/retest-reuse-core";
 export type { PendingQueueAdvance } from "@/src/domain/rehab/shared/workflow-state-core";

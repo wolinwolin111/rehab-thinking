@@ -30,6 +30,8 @@ export type WorkflowProjectionInput = {
   pendingAssessmentCheck: boolean;
   queueLength: number;
   queueIndex: number;
+  /** 已执行处理后仍未记录的必需复查；队列为空也不能绕过。 */
+  pendingRetestCount?: number;
   bilateral: boolean;
   assessmentComplete: boolean;
   safetySignal: boolean;

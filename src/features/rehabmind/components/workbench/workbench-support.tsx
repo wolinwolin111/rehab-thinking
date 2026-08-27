@@ -400,6 +400,8 @@ export type FollowupTreatmentRecord = {
 
 export type SavedDemoSnapshot = {
   schemaVersion?: number;
+  /** v2 内部复查闭环合同；旧总结缺省时只读展示，不强制退回处理。 */
+  retestContractVersion?: 1;
   localCaseId?: string;
   bodyMarks?: BodyMark[];
   /** 评分的可追溯投影；旧的裸数字字段继续保留用于兼容读取。 */

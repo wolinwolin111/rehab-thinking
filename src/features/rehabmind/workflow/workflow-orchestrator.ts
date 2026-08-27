@@ -113,6 +113,7 @@ export function orchestrateTreatmentQueueRecomputed<TTarget extends StableQueueT
 export function projectWorkflowState(input: WorkflowProjectionInput): WorkflowProjection {
   const treatmentComplete = !input.queueRefreshing
     && !input.pendingAssessmentCheck
+    && (input.pendingRetestCount ?? 0) === 0
     && (input.queueLength === 0 || input.queueIndex >= input.queueLength);
   const trainingStageGate = resolveTrainingStageGate({
     bilateral: input.bilateral,

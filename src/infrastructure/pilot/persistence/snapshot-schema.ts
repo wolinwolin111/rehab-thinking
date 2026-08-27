@@ -286,6 +286,15 @@ function validateTrialRecords(value: unknown, label: "trialRecords" | "followupT
         if (value.unableReason !== undefined && !["pain", "weak", "fear", "instruction"].includes(String(value.unableReason))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.unableReason is invalid`;
         if (value.baselineScore !== undefined && !isScore(value.baselineScore)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.baselineScore is invalid`;
         if (value.afterScore !== undefined && !isScore(value.afterScore)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.afterScore is invalid`;
+        if (value.sides !== undefined && (!Array.isArray(value.sides) || value.sides.some((side) => !["左侧", "右侧"].includes(String(side))))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.sides is invalid`;
+        if (value.sideResults !== undefined) {
+          if (!isObject(value.sideResults)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.sideResults is invalid`;
+          for (const [side, result] of Object.entries(value.sideResults)) {
+            if (!["左侧", "右侧"].includes(side) || !isObject(result) || !["complete", "unable"].includes(String(result.afterCompletion))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.sideResults is invalid`;
+            if (result.unableReason !== undefined && !["pain", "weak", "fear", "instruction"].includes(String(result.unableReason))) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.sideResults.${side}.unableReason is invalid`;
+            if (result.afterScore !== undefined && !isScore(result.afterScore)) return `snapshot ${label}[${index}].functionRetests.${assessmentId}.sideResults.${side}.afterScore is invalid`;
+          }
+        }
       }
     }
     if (label === "trialRecords" && !["smoother", "same", "worse"].includes(String(raw.movement))) {
@@ -325,6 +334,7 @@ function validateSnapshotCollections(value: SnapshotObject): string | null {
 }
 
 function validateOptionalWorkflowFields(value: SnapshotObject): string | null {
+  if (value.retestContractVersion !== undefined && value.retestContractVersion !== 1) return "snapshot retestContractVersion is invalid";
   const identityStringKey = invalidOptionalFields(value, ["localCaseId", "problemThreadId", "sessionId", "capabilitySnapshotId", "sessionStartedAt", "draftSavedAt", "completedAt"], (item) => typeof item === "string" && Boolean(item.trim()));
   if (identityStringKey) return `snapshot ${identityStringKey} is invalid`;
   if (value.sessionStatus !== undefined && !["draft", "completed", "abandoned"].includes(String(value.sessionStatus))) return "snapshot sessionStatus is invalid";

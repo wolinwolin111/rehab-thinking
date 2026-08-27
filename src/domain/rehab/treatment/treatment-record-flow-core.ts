@@ -1,6 +1,6 @@
 import { buildTrialRecords } from "@/src/domain/rehab/treatment/trial-record-builder";
 import { chiefRetestWasRecorded, shouldCaptureChiefRetest, type ChiefRetestCaptureInput } from "@/src/domain/rehab/retest/retest-routing-core";
-import type { CompletedRangeRetestAnswer, TrialRecord, TrialRecordBuildInput, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import type { CompletedRangeRetestAnswer, FunctionRetestRecord, TrialRecord, TrialRecordBuildInput, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
 import type { TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 
 export type TreatmentRecordFlowInput = {
@@ -33,6 +33,7 @@ export type RangeTreatmentRecordBuildInput = {
   rangeOutcomes: Record<string, CompletedRangeRetestAnswer>;
   rangeDiscomforts: Record<string, YesNo>;
   rangeScores: Record<string, number>;
+  functionRetests?: Record<string, FunctionRetestRecord>;
   beforeScore: number;
   afterScore: number;
   result: TrialResult;
@@ -97,6 +98,7 @@ export function buildRangeTreatmentRecords(input: RangeTreatmentRecordBuildInput
     rangeOutcomes: input.rangeOutcomes,
     rangeDiscomforts: input.rangeDiscomforts,
     rangeScores: input.rangeScores,
+    functionRetests: input.functionRetests,
     beforeScore: input.beforeScore,
     afterScore: input.afterScore,
     result: input.result,

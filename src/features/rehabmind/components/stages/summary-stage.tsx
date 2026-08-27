@@ -17,6 +17,7 @@ import { candidateTreatmentKey } from "@/src/features/rehabmind/components/workb
 import { candidateAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, reportedActionSummary } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { pendingTrainingFeedback, trainingFeedbackComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { functionCompletionValue, functionDiscomfortValue } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { LocalLimbDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { tissueReferralAdvice } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -52,12 +53,83 @@ import {
   treatmentDisplay,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
-function ChiefSummaryContent({ intake, completed = false }: { intake: IntakeState; completed?: boolean }) {
+type FunctionActionSummary = {
+  id: string;
+  label: string;
+  initial: string;
+  retest: string;
+  retested: boolean;
+};
+
+function functionActionSummaries(
+  assessmentResults: Record<string, AssessmentRecord>,
+  assessments: AssessmentItem[],
+  trialRecords: TrialRecord[],
+): FunctionActionSummary[] {
+  return Object.entries(assessmentResults).flatMap<FunctionActionSummary>(([assessmentId, record]) => {
+    if (!assessmentId.startsWith("function:")) return [];
+    const completion = functionCompletionValue(record);
+    if (!completion || completion === "skip") return [];
+    const label = assessments.find((item) => item.id === assessmentId)?.title
+      ?? assessmentId.replace(/^function:/, "");
+    const initial = completion === "unable"
+      ? record.functionUnableReason === "weak" ? "第一次因没力没有做完" : "第一次因不舒服没有做完"
+      : functionDiscomfortValue(record) === "yes" && typeof record.symptomScore === "number"
+        ? `第一次能完成，不适 ${record.symptomScore}/10`
+        : functionDiscomfortValue(record) === "yes" ? "第一次能完成，但有不适" : "第一次能完成";
+    const retest = [...trialRecords].reverse()
+      .map((trial) => trial.functionRetests?.[assessmentId])
+      .find(Boolean);
+    if (!retest) return [{ id: assessmentId, label, initial, retest: "本次未复查", retested: false }];
+    let retestLabel = "已完成复查";
+    if (retest.sideResults && Object.keys(retest.sideResults).length) {
+      retestLabel = (["左侧", "右侧"] as const).flatMap((side) => {
+        const result = retest.sideResults?.[side];
+        if (!result) return [];
+        return [`${side}${result.afterCompletion === "complete" ? "能完成" : "仍做不完"}`];
+      }).join("，");
+    } else if (retest.afterCompletion === "unable") {
+      retestLabel = retest.unableReason === "weak" ? "复查时仍因没力做不完" : "复查时仍然做不完";
+    } else if (retest.baselineCompletion === "unable") {
+      retestLabel = "复查时已经可以完成";
+    } else if (typeof retest.baselineScore === "number" && typeof retest.afterScore === "number") {
+      retestLabel = retest.afterScore < retest.baselineScore
+        ? `复查后不适降到 ${retest.afterScore}/10`
+        : retest.afterScore > retest.baselineScore
+          ? `复查后更不舒服，${retest.afterScore}/10`
+          : `复查后仍为 ${retest.afterScore}/10`;
+    }
+    return [{ id: assessmentId, label, initial, retest: retestLabel, retested: true }];
+  });
+}
+
+function ChiefSummaryContent({
+  intake,
+  assessmentResults,
+  assessments,
+  trialRecords,
+  completed = false,
+}: {
+  intake: IntakeState;
+  assessmentResults: Record<string, AssessmentRecord>;
+  assessments: AssessmentItem[];
+  trialRecords: TrialRecord[];
+  completed?: boolean;
+}) {
+  const functionActions = functionActionSummaries(assessmentResults, assessments, trialRecords);
+  if (functionActions.length) return <div className="rm-chief-action-summary rm-function-action-summary">
+    <span>本次动作变化</span>
+    <ul>{functionActions.map((action) => <li key={action.id} className={action.retested ? "is-retested" : "is-pending"}>
+      <strong>{action.label}</strong>
+      <small>{action.initial}</small>
+      <em>{action.retest}</em>
+    </li>)}</ul>
+  </div>;
   const actions = reportedActionSummary(intake);
   if (actions.length > 1) return <div className="rm-chief-action-summary">
     <span>本次不舒服的动作</span>
     <ul>{actions.map((action) => <li key={action}>{action}</li>)}</ul>
-    <p>{completed ? "已保存本次实际完成的动作记录。" : "后续会按评估中实际做过的动作，逐项查看变化。"}</p>
+    {completed ? <p>本次记录已保存。</p> : null}
   </div>;
   return <div>
     <span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span>
@@ -462,7 +534,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
     return <section className="rm-page rm-session-summary">
       <StepHeading eyebrow={`第${sessionNumber}次康复`} title="本次康复总结" />
-      <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} completed />{reportedActionSummary(intake).length <= 1 && typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
+      <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} assessmentResults={assessmentResults} assessments={assessments} trialRecords={trialRecords} completed />{reportedActionSummary(intake).length <= 1 && typeof completedSummary?.endingScore === "number" ? <div className="rm-final-score"><b>{completedSummary.startedScore ?? previousSessionScore ?? "—"}</b><i>→</i><strong>{completedSummary.endingScore}</strong><small>/10</small></div> : null}</section>
       {summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
       <NextSessionCard recommendation={nextRecommendation} nextSessionNumber={sessionNumber + 1} completedAt={completedSummary?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startNextFollowupSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: `session-${sessionNumber}`, sourceLabel: `第${sessionNumber}次康复结束后的反应`, timing: "later", beforeScore: completedSummary?.endingScore ?? followupSessionScore, afterScore: completedSummary?.endingScore ?? followupSessionScore, relatedAssessmentIds: completedSummary?.reviewResults.filter((item) => item.result !== "better").map((item) => item.id) ?? [] })} />
       {tissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{tissueReferral.title}</h2><ul>{tissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
@@ -723,7 +795,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const visibleBodyMarks = bodyMarks.filter((mark) => mark.status !== "invalidated");
     return <section className="rm-page rm-session-summary">
     <StepHeading eyebrow="第6步" title="本次康复总结" />
-    <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} />{reportedActionSummary(intake).length <= 1 && chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : null}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
+    <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} assessmentResults={assessmentResults} assessments={assessments} trialRecords={trialRecords} />{reportedActionSummary(intake).length <= 1 && chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : null}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
      {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是尚未确认的判断，不会改变页面建议。</small></section> : null}
      {visibleBodyMarks.length ? <section className="rm-route-note rm-body-mark-summary"><span>症状位置记录</span><div className="rm-body-mark-summary-list">{visibleBodyMarks.map((mark) => <span key={mark.markId}><b>{bodyMarkKindLabels[mark.symptomKind]}</b>{mark.humanLabel}{mark.coordinateCompleteness === "zone-only" ? "（大致位置）" : ""}</span>)}</div></section> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />

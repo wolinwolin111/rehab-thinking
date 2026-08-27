@@ -19,12 +19,19 @@ export type FunctionRetestObligation = {
   baselineCompletion: FunctionRetestCompletion;
   mode: FunctionRetestMode;
   baselineScore?: number;
+  /** 双侧问题必须分别回答；缺省表示单侧或整体动作。 */
+  sides?: Array<"左侧" | "右侧">;
 };
 
 export type FunctionRetestRecord = FunctionRetestObligation & {
   afterCompletion: FunctionRetestCompletion;
   unableReason?: FunctionUnableReason;
   afterScore?: number;
+  sideResults?: Partial<Record<"左侧" | "右侧", {
+    afterCompletion: FunctionRetestCompletion;
+    unableReason?: FunctionUnableReason;
+    afterScore?: number;
+  }>>;
 };
 
 export type TrialRecord = {

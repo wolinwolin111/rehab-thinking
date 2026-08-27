@@ -368,6 +368,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
             baselineCompletion: evidence.completion,
             mode: evidence.retestMode,
             ...(typeof assessmentResults[finding.id]?.symptomScore === "number" ? { baselineScore: assessmentResults[finding.id]?.symptomScore } : {}),
+            ...(intake.side === "双侧/中间" ? { sides: ["左侧", "右侧"] as Array<"左侧" | "右侧"> } : {}),
           }]
         : [];
       return ordered.length ? { id: `target:${finding.id}`, finding, candidates: ordered.slice(0, 3), optionalCandidates: ordered.slice(3), functionRetestObligations: obligation, chain: directionChain(anyMotionIdFromFinding(finding) ?? ""), retestLabel: label, sourceCaseIds: sourceCaseIdsForFinding(finding) } : null;

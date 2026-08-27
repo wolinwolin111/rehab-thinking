@@ -17,6 +17,7 @@ import { candidateAction } from "@/src/features/rehabmind/components/workbench/s
 import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { bilateralCheckpointOptions, type BilateralPriorityResolution, type BilateralSide, type BilateralTrainingGate } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { functionEvidenceFromRecord } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { combineRetestResults, functionRetestAnswerKey, summarizeFunctionRetestObligations } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { resolveTreatmentRetestGate } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { canReuseLatestRetest as canReuseLatestRetestDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { PendingQueueAdvance } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -93,6 +94,7 @@ export type TreatmentRetestStageView = {
   tissuePathway: TissuePathwayDecision;
   swellingGuidance?: FullCandidate;
   trialTargets: TrialTarget[];
+  pendingFunctionRetestItems: Array<{ assessmentId: string; label: string }>;
   activeTarget?: TrialTarget;
   activeCandidate?: FullCandidate;
   activeTargetSides: BilateralSide[];
@@ -190,7 +192,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     treatmentFinalRetestConfirmed, directionChiefRetestScore, directionChiefRetestConfirmed,
     functionRetestCompletion, functionRetestUnableReason, treatmentFunctionRetests, region, canAssessPassive, canMobilizeJoint,
     assessments, bilateralPriorityResolution, treatmentProblems, localLimbDecision, tissuePathway,
-    swellingGuidance, trialTargets, activeTarget, activeCandidate, activeTargetSides,
+    swellingGuidance, trialTargets, pendingFunctionRetestItems, activeTarget, activeCandidate, activeTargetSides,
     activeTargetIsBilateral, activeTargetCompletedSides, activeTargetPendingSides, activeTargetCurrentSide,
     weakStrengthProblems, assessmentEvidenceInsufficient, assessmentGap, treatmentWorsened,
     activeCandidateGroup, activeGroupPriorRecords, activeNewCandidates, localNewSourceNeedsChiefRetest,
@@ -279,37 +281,39 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
   const chiefScoreRetestBlocked = treatmentRetestGate.chiefScoreRetestBlocked;
   const functionRetestState = treatmentRetestGate;
   const functionRetestIsCompletionOnly = functionRetestState.completionOnly;
-  const functionObligationResults = activeFunctionObligations.map((obligation) => {
-    const answer = treatmentFunctionRetests[obligation.assessmentId];
-    if (!answer?.completion) return null;
-    if (answer.completion === "unable" && !answer.unableReason) return null;
-    if (obligation.mode === "ordinary" && answer.completion === "complete" && !answer.scoreConfirmed) return null;
-    if (obligation.baselineCompletion === "unable") return answer.completion === "complete" ? "better" as const : "same" as const;
-    if (answer.completion === "unable") return "worse" as const;
-    if (typeof obligation.baselineScore === "number" && typeof answer.score === "number") {
-      return resultFromScore(obligation.baselineScore, answer.score);
-    }
-    return "same" as const;
+  const functionRetestSummary = summarizeFunctionRetestObligations({
+    obligations: activeFunctionObligations,
+    answers: treatmentFunctionRetests,
   });
-  const functionObligationsReady = activeFunctionObligations.length > 0 && functionObligationResults.every(Boolean);
-  const functionObligationResult: TrialResult = functionObligationResults.includes("worse")
-    ? "worse"
-    : functionObligationResults.length > 0 && functionObligationResults.every((result) => result === "better")
-      ? "better"
-      : functionObligationResults.includes("better")
-        ? "partial"
-        : "same";
-  const updateFunctionRetest = (assessmentId: string, patch: Partial<TreatmentFunctionRetestAnswer>) => {
+  const updateFunctionRetest = (answerKey: string, patch: Partial<TreatmentFunctionRetestAnswer>) => {
     setTreatmentFunctionRetests((current) => ({
       ...current,
-      [assessmentId]: { ...(current[assessmentId] ?? { completion: "" }), ...patch },
+      [answerKey]: { ...(current[answerKey] ?? { completion: "" }), ...patch },
     }));
   };
-  const retestReady = activeFunctionObligations.length ? functionObligationsReady : functionRetestState.retestReady;
+  const functionRetestFields = activeFunctionObligations.length ? <section className="rm-function-retest-list" data-testid="function-retest-obligations">
+    <header className="rm-retest-checklist-header"><div><span>功能动作复查</span><strong>{activeFunctionObligations.length}个动作</strong></div><small>活动范围和实际动作都记录完，才算完成本次复查。</small></header>
+    {activeFunctionObligations.map((obligation) => <article key={obligation.assessmentId} data-assessment-id={obligation.assessmentId}>
+        <header><span>再试一次</span><h3>{obligation.label}</h3></header>
+        <p className="rm-choice-hint">从头做到尾就算完成；可以借力，姿势不需要完全标准。</p>
+        {(obligation.sides?.length ? obligation.sides : [undefined]).map((side) => {
+          const answerKey = functionRetestAnswerKey(obligation.assessmentId, side);
+          const answer = treatmentFunctionRetests[answerKey] ?? { completion: "" };
+          return <section key={answerKey} className="rm-function-retest-side" data-side={side}>
+            {side ? <strong>{side}</strong> : null}
+            <div className="rm-result-grid is-two">{([['complete', '能完成'], ['unable', '还是做不完']] as const).map(([value, label]) => <button type="button" key={value} className={answer.completion === value ? "is-selected" : ""} onClick={() => updateFunctionRetest(answerKey, { completion: value, unableReason: value === "complete" ? undefined : answer.unableReason, score: value === "unable" ? undefined : answer.score, scoreConfirmed: value === "unable" ? false : answer.scoreConfirmed })}>{label}</button>)}</div>
+            {answer.completion === "unable" ? <div className="rm-function-retest-reason"><strong>主要是什么原因？</strong><div className="rm-result-grid is-two">{([['pain', '疼或不舒服'], ['weak', '没力或撑不住'], ['fear', '担心继续会加重']] as const).map(([value, label]) => <button type="button" key={value} className={answer.unableReason === value ? "is-selected" : ""} onClick={() => updateFunctionRetest(answerKey, { unableReason: value })}>{label}</button>)}</div></div> : null}
+            {obligation.mode === "ordinary" && answer.completion === "complete" ? <ScoreSlider compact value={answer.score ?? 0} selected={answer.scoreConfirmed ?? false} onChange={(score) => updateFunctionRetest(answerKey, { score, scoreConfirmed: true })} label={side ? `${side}现在有多不舒服？` : "现在有多不舒服？"} context={typeof obligation.baselineScore === "number" ? scoreBeforeContext(obligation.baselineScore) : undefined} /> : null}
+          </section>;
+        })}
+        {obligation.mode === "completion-status" ? <div className="rm-retest-mode-note"><strong>{FUNCTION_COMPLETION_RETEST_COPY.title}</strong><span>{FUNCTION_COMPLETION_RETEST_COPY.description}</span></div> : null}
+      </article>)}
+  </section> : null;
+  const retestReady = activeFunctionObligations.length ? functionRetestSummary.ready : functionRetestState.retestReady;
   // 从「做不了」到「能完成」算改善；疼痛分没变时也记为 partial。
   // T-01：完成状态恶化（能完成→做不完）即使分数不可比也按加重放行。
   const automaticResult: TrialResult = activeFunctionObligations.length
-    ? functionObligationResult
+    ? functionRetestSummary.result
     : chiefScoreRetestBlocked
     ? functionRetestState.automaticResult === "worse" ? "worse" : "same"
     : isFunctionTarget && functionRetestState.automaticResult
@@ -317,6 +321,10 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     : isFunctionTarget && functionRetestCompletion === "complete" && resultFromScore(beforeScore, postScore) === "same"
       ? "partial"
       : resultFromScore(beforeScore, postScore);
+  const resultWithFunctionRetest = (baseResult: TrialResult) => combineRetestResults(
+    baseResult,
+    activeFunctionObligations.length ? functionRetestSummary.result : undefined,
+  );
   const isTimeBasedTarget = activeCandidate?.type === "swelling";
   const isBatchRangeTarget = Boolean(activeCandidate?.retestIds?.length && activeRetestFindings.length);
   const isRangeTarget = Boolean(activeTarget?.finding.id.startsWith("motion:"));
@@ -373,7 +381,9 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     && (activeTarget?.id === "target:chief" || activeTarget?.id === "target:local-limb" && (singleRangeRetestsChief || localNewSourceNeedsChiefRetest))
     && !chiefImprovedDuringTreatment;
   const chiefScoreComplete = !shouldRetestChiefInBatch || Boolean(postDiscomfort && (postDiscomfort === "no" || postScoreConfirmed));
-  const batchComplete = batchRangeComplete && chiefScoreComplete;
+  const batchComplete = batchRangeComplete
+    && chiefScoreComplete
+    && (!activeFunctionObligations.length || functionRetestSummary.ready);
   const batchResultParts = activeRetestFindings.reduce<string[]>((parts, finding) => {
     const directionId = motionIdFromFinding(finding);
     const outcome = movementResponses[directionId];
@@ -541,6 +551,16 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
       <div className="rm-one-action"><button type="button" className="rm-primary" disabled={!finalRetestComplete} onClick={() => { setTreatmentFinalRetestScore(hasFunctionChief ? postScore : directionChiefRetestScore); setTreatmentFinalRetestConfirmed(true); }}>记录本轮最终结果</button></div>
     </section>
   </> : null;
+  const pendingFunctionRetestPanel = pendingFunctionRetestItems.length ? <section className="rm-complete-panel is-caution" data-testid="pending-function-retests">
+    <span>本次复查还没完成</span>
+    <h2>还有动作需要再试一次</h2>
+    <ul>{pendingFunctionRetestItems.map((item) => <li key={item.assessmentId}>{item.label}</li>)}</ul>
+    <p>这些动作已经在前面实际做过，不能用活动范围记录代替。</p>
+    <div className="rm-page-actions split">
+      <button type="button" className="rm-primary" onClick={() => reopenAssessment("请重新确认相关动作；完成后会重新安排处理和复查。")}>返回相关评估</button>
+      <button type="button" onClick={() => saveRecord("康复中")}>保存，之后继续</button>
+    </div>
+  </section> : null;
   // 不再用“问题数 >= 6 且处理数 >= 3”中断流程。队列中仍有一个
   // 尚未覆盖、且由当前检查支持的处理区域时继续；只有这些区域全部
   // 覆盖后仍无变化，才在结束页停止继续扩大处理范围。
@@ -618,6 +638,12 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
       .filter((label, index, list) => label && list.indexOf(label) === index)
       .slice(0, 4);
     const rangeChangedWithoutChiefChange = treatmentCoverage.hasRangeImprovement && !chiefImprovedDuringTreatment;
+    if (pendingFunctionRetestPanel) {
+      return <section className="rm-page">
+        <StepHeading eyebrow="第4步 · 处理与即时复测" title="完成本次复查" />
+        {pendingFunctionRetestPanel}
+      </section>;
+    }
     // 队列空且还需要最终主诉复测时，先做统一复测，再做「仍有待处理」判断。
     if (finalChiefRetestFragment) {
       return <section className="rm-page">
@@ -654,7 +680,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
         <section className="rm-complete-panel is-caution">
           <span>本轮处理已完成</span>
           <h2>{chiefComplaintLabel(intake)}</h2>
-          {chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : hasClearChiefAction(intake) ? <p>后续会按实际做过的动作逐项查看变化。</p> : <p>这次没有固定的加重动作，已记录其他活动和症状变化。</p>}
+          {chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : hasClearChiefAction(intake) ? <p>已记录本次实际做过的动作和复查结果。</p> : <p>这次没有固定的加重动作，已记录其他活动和症状变化。</p>}
           {(() => { const note = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: lastChiefScore, hasRangeImprovement: treatmentCoverage.hasRangeImprovement, noImmediateResponse: noImmediateTreatmentResponse }); return note ? <p className="rm-chief-change-note">{note}</p> : null; })()}
           <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
           {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><strong>仍有待处理</strong><span>{unresolvedImmediateLabels.join("、")}</span><small>可重新确认或先进入训练巩固。</small></section> : null}
@@ -730,7 +756,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
        {isTimeBasedTarget ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("partial", true)}>完成这项处理</button></div> : canReuseLatestRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" data-rehabmind-test="retest-reuse-next" data-retest-action-key={canonicalRetestAction(plannedRetestLabel)} onClick={continueWithReusedRetest}>继续下一项</button></div> : isUnspecifiedChiefTarget ? <section className="rm-retest rm-no-action-retest">
         <header><span>本次不做动作评分</span><h2>目前没有确认会引起不适的动作</h2><p>先保存这项处理。活动受限会按该方向的比较方式单独复测，肿胀和压痛留到后续复查。</p></header>
         <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("partial", false, undefined, true)}>完成并继续</button></div>
-       </section> : !showingRetest && activeTarget.id === "target:chief" && (chiefImprovedDuringTreatment || chiefRetestCompletedDuringTreatment) && !isBatchRangeTarget ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("same", false, undefined, true)}>完成这项处理，继续下一项</button></div> : !showingRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={handleTreatmentCompletion}>{isResidualReviewStep ? "开始复查" : noRetestNeededAfterLatestResult ? "完成并继续下一项" : activeTargetIsBilateral && activeTargetPendingSides.length ? `完成${activeTargetCurrentSide ?? "当前侧"}，继续另一侧` : activeCandidateGroup.length > 1 ? "本轮处理完成，统一复测" : isRangeTarget ? singleRangeRetestsChief ? "处理完成，复测主诉和活动范围" : "处理完成，复测活动范围" : isStrengthSymptomTarget ? "处理完成，复测发力" : hasClearChiefAction(intake) ? "处理完成，复测原来的动作" : "处理完成，复测这个动作"}</button></div> : intake.side === "双侧/中间" && activeTargetSides.length ? <section className="rm-retest rm-bilateral-retest" data-testid="bilateral-retest-ledger" data-priority-side={intake.prioritySide}><header><span>双侧分别复测</span><h2>分别记录左右两侧处理后的变化</h2><small>同一处理卡只展示一次，但左右结果不能互相覆盖。</small></header><div className="rm-bilateral-side-retest-list">{activeTargetSides.map((side) => { const value = bilateralRetestResponses[side]; const sideKey = side === "左侧" ? "left" : "right"; return <article key={side} data-testid={`bilateral-retest-${sideKey}`} data-status={value ?? "pending"}><strong>{side}</strong><div className="rm-result-grid is-three">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([response, label]) => <button type="button" key={response} data-testid={`bilateral-retest-${sideKey}-${response}`} aria-pressed={value === response} className={value === response ? "is-selected" : ""} onClick={() => setBilateralRetestResponses((current) => ({ ...current, [side]: response }))}>{label}</button>)}</div></article>; })}</div><button type="button" className="rm-primary" data-testid="bilateral-retest-confirm" disabled={activeTargetSides.some((side) => !bilateralRetestResponses[side])} onClick={() => { const responses = activeTargetSides.map((side) => bilateralRetestResponses[side]); const result = responses.includes("worse") ? "worse" : responses.includes("better") ? "better" : "same"; setBilateralNeedsReferral(result === "worse"); finishTrial(result); }}>确认双侧复测</button><p>任一侧加重都停止后续同类处理；只有一侧有改善时，另一侧仍保留为未改善。</p></section> : intake.side === "双侧/中间" ? <section className="rm-retest rm-bilateral-retest"><header><span>整体反馈</span><h2>和刚才比，双侧的疼痛或轻松感有变化吗？</h2></header><div className="rm-result-grid">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([value,label]) => <button type="button" key={value} onClick={() => { setBilateralNeedsReferral(value === "worse"); finishTrial(value); }}>{label}</button>)}</div><p>当前处理没有明确侧别，先记录整体反应。</p></section> : isBatchRangeTarget ? <section className={`rm-retest rm-batch-range-retest rm-followup-retest ${isPatellaCombinedUnit ? "is-combined-patella" : ""}`}>
+       </section> : !showingRetest && activeTarget.id === "target:chief" && (chiefImprovedDuringTreatment || chiefRetestCompletedDuringTreatment) && !isBatchRangeTarget && !activeFunctionObligations.length ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={() => finishTrial("same", false, undefined, true)}>完成这项处理，继续下一项</button></div> : !showingRetest ? <div className="rm-one-action"><button type="button" className="rm-primary" onClick={handleTreatmentCompletion}>{isResidualReviewStep ? "开始复查" : noRetestNeededAfterLatestResult ? "完成并继续下一项" : activeTargetIsBilateral && activeTargetPendingSides.length ? `完成${activeTargetCurrentSide ?? "当前侧"}，继续另一侧` : activeCandidateGroup.length > 1 ? "本轮处理完成，统一复测" : isRangeTarget ? singleRangeRetestsChief ? "处理完成，复测主诉和活动范围" : "处理完成，复测活动范围" : isStrengthSymptomTarget ? "处理完成，复测发力" : hasClearChiefAction(intake) ? "处理完成，复测原来的动作" : "处理完成，复测这个动作"}</button></div> : intake.side === "双侧/中间" && activeTargetSides.length && !(isBatchRangeTarget && activeFunctionObligations.length) ? <section className="rm-retest rm-bilateral-retest" data-testid="bilateral-retest-ledger" data-priority-side={intake.prioritySide}><header><span>双侧分别复测</span><h2>分别记录左右两侧处理后的变化</h2><small>同一处理卡只展示一次，但左右结果不能互相覆盖。</small></header><div className="rm-bilateral-side-retest-list">{activeTargetSides.map((side) => { const value = bilateralRetestResponses[side]; const sideKey = side === "左侧" ? "left" : "right"; return <article key={side} data-testid={`bilateral-retest-${sideKey}`} data-status={value ?? "pending"}><strong>{side}</strong><div className="rm-result-grid is-three">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([response, label]) => <button type="button" key={response} data-testid={`bilateral-retest-${sideKey}-${response}`} aria-pressed={value === response} className={value === response ? "is-selected" : ""} onClick={() => setBilateralRetestResponses((current) => ({ ...current, [side]: response }))}>{label}</button>)}</div></article>; })}</div>{functionRetestFields}<button type="button" className="rm-primary" data-testid="bilateral-retest-confirm" disabled={activeTargetSides.some((side) => !bilateralRetestResponses[side]) || activeFunctionObligations.length > 0 && !functionRetestSummary.ready} onClick={() => { const responses = activeTargetSides.map((side) => bilateralRetestResponses[side]); const bilateralResult = responses.includes("worse") ? "worse" : responses.includes("better") ? "better" : "same"; const result = resultWithFunctionRetest(bilateralResult); setBilateralNeedsReferral(result === "worse"); finishTrial(result); }}>确认双侧复测</button><p>任一侧加重都停止后续同类处理；只有一侧有改善时，另一侧仍保留为未改善。</p></section> : intake.side === "双侧/中间" && !(isBatchRangeTarget && activeFunctionObligations.length) ? <section className="rm-retest rm-bilateral-retest"><header><span>整体反馈</span><h2>和刚才比，双侧的疼痛或轻松感有变化吗？</h2></header><div className="rm-result-grid">{([['better','轻了'],['same','没变化'],['worse','更重']] as const).map(([value,label]) => <button type="button" key={value} disabled={activeFunctionObligations.length > 0 && !functionRetestSummary.ready} onClick={() => { const result = resultWithFunctionRetest(value); setBilateralNeedsReferral(result === "worse"); finishTrial(result); }}>{label}</button>)}</div>{functionRetestFields}<p>当前处理没有明确侧别，先记录整体反应。</p></section> : isBatchRangeTarget ? <section className={`rm-retest rm-batch-range-retest rm-followup-retest ${isPatellaCombinedUnit ? "is-combined-patella" : ""}`}>
          {isPatellaCombinedUnit ? <header className="rm-combined-retest-header"><span>同一处理单元 · 完成后立即复测</span><h2>刚才受限的髌骨方向</h2><small>只复测刚才标记受限的方向，并记录活动范围和不适。</small></header> : null}
          {shouldRetestChiefInBatch ? <header><span>复测动作</span><h2>{hasChiefFunctionAction ? chiefFunctionLabels.join("、") : chiefActionLabel(intake)}</h2><strong>处理前 {beforeScore}/10</strong></header> : null}
         {shouldRetestChiefInBatch ? <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostDiscomfort(value === 0 ? "no" : "yes"); setPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${beforeScore}/10`} /> : null}
@@ -769,6 +795,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
             }} label={passiveOnly ? "现在有多不舒服？" : "现在有多不舒服？"} context={typeof previousScore === "number" ? `处理前 ${previousScore}/10` : "处理前未记录不适分数"} /> : null}</section>}
           </article>;
         })}</div>
+        {functionRetestFields}
         <section className={`rm-auto-result is-${batchComplete ? "partial" : "waiting"}`}><span>复测结果</span><strong>{batchResultParts.length ? batchResultParts.join("；") : "请记录每个方向的结果"}</strong><button type="button" data-rehabmind-test="treatment-retest-continue" className="rm-primary" disabled={!batchComplete} onClick={finishRangeBatch}>继续</button></section>
         </section>
       </section> : isRangeTarget ? <section className="rm-retest rm-range-retest">
@@ -803,6 +830,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           ? <ScoreSlider compact value={movementScores[activeRangeDirection] ?? 0} selected={singleRangeScoreConfirmed} onChange={(value) => { setMovementScores((current) => ({ ...current, [activeRangeDirection]: value })); setMovementScoreConfirmed((current) => ({ ...current, [activeRangeDirection]: true })); }} label="现在有多不舒服？" context="处理前没有不适" />
           : <ScoreSlider compact value={postScore} selected={postScoreConfirmed} onChange={(value) => { setPostScore(value); setPostScoreConfirmed(true); }} label="现在有多不舒服？" context={`处理前 ${beforeScore}/10`} />
         : null}</section>}
+        {functionRetestFields}
         <section className={`rm-auto-result is-${movementResponse === "both-match" ? "better" : ["passive-match-active-limited", "better-passive-limited", "passive-limited"].includes(movementResponse) ? "partial" : movementResponse || "waiting"}`}><span>复测结果</span><strong>{movementResponse === "both-match"
           ? `${activeRangePassiveOnly ? "被动范围" : activeRangeAllowsPassive ? "主动和被动范围" : "主动范围"}已接近${activeComparisonTarget}`
           : movementResponse === "passive-match-active-limited"
@@ -815,29 +843,17 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
               ? `${activeRangePassiveOnly || activeRangeAllowsPassive ? "被动范围" : "主动范围"}仍小于${activeComparisonTarget}`
             : movementResponse === "worse"
               ? "活动范围比处理前更小或更痛"
-              : `请选择处理后与${activeComparisonTarget}相比的活动范围`}</strong><button type="button" className="rm-primary" disabled={!movementResponse || (singleRangeRetestsChief && !postScoreConfirmed) || !(singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) || ((singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) === "yes" && !(singleRangeRetestsChief ? singleRangeScoreConfirmed : postScoreConfirmed))} onClick={() => {
-                if (movementResponse === "both-match") finishTrial("better");
+              : `请选择处理后与${activeComparisonTarget}相比的活动范围`}</strong><button type="button" className="rm-primary" disabled={!movementResponse || (singleRangeRetestsChief && !postScoreConfirmed) || !(singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) || ((singleRangeRetestsChief ? singleRangeDiscomfort : postDiscomfort) === "yes" && !(singleRangeRetestsChief ? singleRangeScoreConfirmed : postScoreConfirmed)) || activeFunctionObligations.length > 0 && !functionRetestSummary.ready} onClick={() => {
+                if (movementResponse === "both-match") finishTrial(resultWithFunctionRetest("better"));
                 else {
                   const nextCandidateType = nextRangeCandidateType(movementResponse, activeRangeAllowsPassive && canMobilizeJoint);
-                  if (nextCandidateType) finishTrial("partial", false, nextCandidateType);
-                  else finishTrial("worse");
+                  if (nextCandidateType) finishTrial(resultWithFunctionRetest("partial"), false, nextCandidateType);
+                  else finishTrial(resultWithFunctionRetest("worse"));
                 }
               }}>继续</button></section>
       </section> : <section className="rm-retest">
         <header><span>复测动作</span><h2>{retestActionTitle}</h2></header>
-        {activeFunctionObligations.length ? <section className="rm-function-retest-list" data-testid="function-retest-obligations">
-          {activeFunctionObligations.map((obligation) => {
-            const answer = treatmentFunctionRetests[obligation.assessmentId] ?? { completion: "" };
-            return <article key={obligation.assessmentId} data-assessment-id={obligation.assessmentId}>
-              <header><span>复测动作</span><h3>{obligation.label}</h3></header>
-              <p className="rm-choice-hint">从头做到尾就算完成；可以借力，姿势不需要完全标准。</p>
-              <div className="rm-result-grid is-two">{([['complete', '能完成'], ['unable', '还是做不完']] as const).map(([value, label]) => <button type="button" key={value} className={answer.completion === value ? "is-selected" : ""} onClick={() => updateFunctionRetest(obligation.assessmentId, { completion: value, unableReason: value === "complete" ? undefined : answer.unableReason, score: value === "unable" ? undefined : answer.score, scoreConfirmed: value === "unable" ? false : answer.scoreConfirmed })}>{label}</button>)}</div>
-              {answer.completion === "unable" ? <div className="rm-function-retest-reason"><strong>主要是什么原因？</strong><div className="rm-result-grid is-two">{([['pain', '疼或不舒服'], ['weak', '没力或撑不住'], ['fear', '担心继续会加重']] as const).map(([value, label]) => <button type="button" key={value} className={answer.unableReason === value ? "is-selected" : ""} onClick={() => updateFunctionRetest(obligation.assessmentId, { unableReason: value })}>{label}</button>)}</div></div> : null}
-              {obligation.mode === "ordinary" && answer.completion === "complete" ? <ScoreSlider compact value={answer.score ?? 0} selected={answer.scoreConfirmed ?? false} onChange={(score) => updateFunctionRetest(obligation.assessmentId, { score, scoreConfirmed: true })} label="现在有多不舒服？" context={typeof obligation.baselineScore === "number" ? scoreBeforeContext(obligation.baselineScore) : undefined} /> : null}
-              {obligation.mode === "completion-status" ? <div className="rm-retest-mode-note"><strong>{FUNCTION_COMPLETION_RETEST_COPY.title}</strong><span>{FUNCTION_COMPLETION_RETEST_COPY.description}</span></div> : null}
-            </article>;
-          })}
-        </section> : isFunctionTarget ? <section className="rm-motion-answer-block">
+        {activeFunctionObligations.length ? functionRetestFields : isFunctionTarget ? <section className="rm-motion-answer-block">
           <h3>现在这个动作能完成了吗？</h3>
           <p className="rm-choice-hint">以「动作能从头做到尾」为准，姿势不标准、有借力也算完成。</p>
           <div className="rm-result-grid is-two">{([["complete", "能完成"], ["unable", "还是做不完"]] as const).map(([value, label]) => <button type="button" key={value} className={functionRetestCompletion === value ? "is-selected" : ""} onClick={() => { setFunctionRetestCompletion(value); if (value === "complete") setFunctionRetestUnableReason(""); }}>{label}</button>)}</div>
@@ -855,6 +871,6 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
          <section className={`rm-auto-result is-${retestReady ? automaticResult : "waiting"}`}><span>复测结果</span><strong>{activeFunctionObligations.length ? !retestReady ? "请完成每个动作的复测" : automaticResult === "worse" ? "有动作比处理前更难完成" : automaticResult === "better" ? "这些动作都比处理前更容易完成" : automaticResult === "partial" ? "部分动作有改善" : "这些动作暂时没有明显变化" : !retestReady ? (functionRetestIsCompletionOnly ? "请选择动作完成状态" : "请选择复测分数") : functionRetestState.automaticResult === "worse" ? "动作从能完成变成做不完，需要先停止" : chiefScoreRetestBlocked ? "已记录当前完成情况" : functionRetestIsCompletionOnly ? automaticResult === "partial" ? "现在已经可以完成" : "目前仍未完成" : automaticResult === "better" ? `比处理前下降 ${change.delta} 分` : automaticResult === "worse" ? `比处理前上升 ${Math.abs(change.delta)} 分` : "与处理前相同"}</strong><button type="button" data-rehabmind-test="treatment-retest-continue" className="rm-primary" disabled={!retestReady} onClick={() => finishTrial(automaticResult)}>继续</button></section>
       </section>}
       <div className="rm-treatment-back">{showingRetest ? <button type="button" className="rm-retest-return" onClick={returnFromRetestToTreatment}>返回刚才的处理</button> : null}{finishSnapshots.length ? <button type="button" onClick={undoLastFinish}>撤销上一步</button> : null}<button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" onClick={editCompletedAssessment}>修改评估答案</button></div>
-    </> : finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或增加训练难度。请重新确认刚才加重的动作和位置；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>已分别记录两侧的整体感受</strong></div> : <p>已记录本次活动和症状变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变不适</strong><p>先不要增加训练难度；今天只保留轻柔的基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看轻柔的基础活动" : "查看训练与居家方案"}</button></div></section>}
+    </> : pendingFunctionRetestPanel ?? (finalChiefRetestFragment ? finalChiefRetestFragment : treatmentWorsened ? <section className="rm-complete-panel is-referral"><span>处理已停止</span><h2>刚才的处理使症状或活动表现加重</h2><p>不要继续叠加处理或增加训练难度。请重新确认刚才加重的动作和位置；无法判断时保存记录并请专业人员协助。</p><div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => reopenAssessment("已返回本次评估；请重新确认刚才加重的动作和症状。")}>重新评估</button><button type="button" onClick={() => goToStep(0)}>补充症状信息</button><button type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section> : bilateralNeedsReferral ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>两侧处理后症状加重</h2><p>先停止本轮处理，建议由专业人员重新评估，再决定是否继续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : persistentStabbing ? <section className="rm-complete-panel is-referral"><span>处理复测结束</span><h2>刺痛仍然存在</h2><div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>已保留有效处理方向</small></div><p>相关的自助处理已经完成。原动作仍会刺痛，建议先做线下专业评估，再决定后续训练。</p><div className="rm-page-actions split"><button type="button" onClick={() => reopenAssessment()}>重新评估</button><button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button></div></section> : <section className={`rm-complete-panel ${noImmediateTreatmentResponse ? "is-caution" : ""}`}><span>本阶段成果</span><h2>{chiefComplaintLabel(intake)}</h2>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : intake.side === "双侧/中间" && hasClearChiefAction(intake) ? <div className="rm-no-score-summary"><strong>已分别记录两侧的整体感受</strong></div> : <p>已记录本次活动和症状变化。</p>}<StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />{noImmediateTreatmentResponse ? <section className="rm-no-response-note"><strong>本次试处理没有改变不适</strong><p>先不要增加训练难度；今天只保留轻柔的基础活动。症状持续不变、变重或影响承重时，建议线下重新评估。</p></section> : null}<div className="rm-page-actions split"><button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button><button type="button" className="rm-primary" onClick={() => goToStep(4)}>{noImmediateTreatmentResponse ? "查看轻柔的基础活动" : "查看训练与居家方案"}</button></div></section>) }
   </section>;
 }

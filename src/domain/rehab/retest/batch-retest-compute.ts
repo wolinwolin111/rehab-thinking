@@ -1,6 +1,7 @@
 import { type CompletedRangeRetestAnswer, type TrialResult } from "@/src/domain/rehab/treatment/trial-record-types";
 import { resultFromScore } from "@/src/domain/rehab/treatment/trial-record-builder";
 import { classifyTreatmentResponse, type TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
+import { combineRetestResults } from "@/src/domain/rehab/retest/retest-obligation-core";
 
 /**
  * 批量复测的结果计算：范围 + 主诉 → 综合结果和响应角色。
@@ -13,6 +14,8 @@ export function computeBatchResult(input: {
   rangeBeforeScore: number;
   outcomes: CompletedRangeRetestAnswer[];
   priorImprovingTreatmentCount: number;
+  functionResult?: TrialResult;
+  functionWorsened?: boolean;
 }): { result: TrialResult; responseRole: TreatmentResponseRole; activityWorsened: boolean } {
   const {
     chiefBeforeScore, recordedChiefScore, chiefWasActuallyRetested,
@@ -32,15 +35,17 @@ export function computeBatchResult(input: {
   // “有改善”的分数趋势，同时标记活动恶化，让流程停止并进入聚焦复查。
   // 不能把这组数据伪造成单纯的 worse，也不能让疼痛改善掩盖活动恶化。
   const mixedImprovementAndActivityWorsening = scoreResult === "better" && anyWorse;
-  const result: TrialResult = scoreResult === "worse" || anyWorse && !mixedImprovementAndActivityWorsening
+  const rangeResult: TrialResult = scoreResult === "worse" || anyWorse && !mixedImprovementAndActivityWorsening
     ? "worse"
     : allResolved
       ? "better"
       : hasProgress || scoreResult === "better"
         ? "partial"
         : "same";
+  const result = combineRetestResults(rangeResult, input.functionResult);
+  const activityWorsened = anyWorse || Boolean(input.functionWorsened);
 
-  const responseRole = anyWorse
+  const responseRole = activityWorsened
     ? "worsened"
     : classifyTreatmentResponse({
       beforeScore: chiefWasActuallyRetested ? chiefBeforeScore : rangeBeforeScore,
@@ -51,5 +56,5 @@ export function computeBatchResult(input: {
       priorImprovingTreatmentCount,
     });
 
-  return { result, responseRole, activityWorsened: anyWorse };
+  return { result, responseRole, activityWorsened };
 }
