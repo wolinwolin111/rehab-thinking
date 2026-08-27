@@ -53,7 +53,7 @@ import { type RangeMeasurement } from "@/src/domain/rehab/assessment/range-measu
 
 
 import { type RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
-import { type SessionLifecycleStatus } from "@/src/domain/rehab/history/session-identity-core";
+import { type ProblemThreadRecord, type SessionIndexRecord, type SessionLifecycleStatus } from "@/src/domain/rehab/history/session-identity-core";
 
 
 import { controlPlansForMotions, normalizePilotMuscleRegion, pilotMuscleRegion, pilotMotionKnowledge, primaryRetestMotionIdsForRegion, professionalAssessmentTitle, regionRelationForMotion } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
@@ -410,6 +410,9 @@ export type SavedDemoSnapshot = {
   /** 案例、问题链、会话的技术身份；不参与临床判断，只用于正确恢复和追踪。 */
   problemThreadId?: string;
   sessionId?: string;
+  /** v2：问题线程和会话索引；旧 archivedSessionHistory 只用于迁移读取。 */
+  problemThreads?: ProblemThreadRecord[];
+  sessionIndex?: SessionIndexRecord[];
   /** 本次评估/检查使用的能力配置快照；能力变更不能覆盖既有检查事实。 */
   capabilitySnapshotId?: string;
   sessionStatus?: SessionLifecycleStatus;
@@ -476,6 +479,7 @@ export type SavedDemoSnapshot = {
   hasNewSymptom: FollowupNewSymptomAnswer | boolean;
   followupTrends: Record<string, FollowupReviewAnswer>;
   sessionHistory?: RehabSessionSummary[];
+  /** @deprecated 仅保留旧快照读取兼容，新快照不再写入。 */
   archivedSessionHistory?: RehabSessionSummary[];
   assessmentRevision?: number;
   treatmentPlanRevision?: number;
@@ -500,6 +504,9 @@ export type SavedDemoRecord = {
   sessionStatus?: SessionLifecycleStatus;
   caseKey?: string;
   sessionHistory?: RehabSessionSummary[];
+  problemThreads?: ProblemThreadRecord[];
+  sessionIndex?: SessionIndexRecord[];
+  /** @deprecated 仅保留旧记录读取兼容，新记录不再写入。 */
   archivedSessionHistory?: RehabSessionSummary[];
   status: "康复中" | "等待影像" | "待医学评估" | "待复查" | "处理后加重，待重新评估" | "训练后加重，待重新评估" | "评估未完成" | "现有检查未形成明确处理方向" | "处理后主诉未明显改善" | "处理完成";
   snapshot?: SavedDemoSnapshot;

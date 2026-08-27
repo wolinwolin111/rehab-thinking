@@ -14,6 +14,8 @@ export const PILOT_CASE_EVENT_TYPES = [
   "training_feedback_saved",
   "session_saved",
   "problem_thread_started",
+  "problem_thread_archived",
+  "problem_thread_restored",
   "session_draft_saved",
   "session_completed",
   "observation_added",

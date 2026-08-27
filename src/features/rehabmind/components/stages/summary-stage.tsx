@@ -60,7 +60,6 @@ export type SummaryStageView = {
   trainingPlanSaved: boolean;
   followupMode: boolean;
   sessionHistory: RehabSessionSummary[];
-  archivedSessions: RehabSessionSummary[];
   region?: FullRegion;
   findings: Finding[];
   treatmentProblems: TreatmentProblem[];
@@ -151,7 +150,7 @@ export type SummaryStageActions = {
 export function SummaryStage({ view, actions }: { view: SummaryStageView; actions: SummaryStageActions }) {
   const {
     intake, assessmentResults, trialRecords, exerciseFeedback, trainingComplete, trainingPlanSaved,
-    followupMode, sessionHistory, archivedSessions, region, findings, treatmentProblems, treatmentWorsened,
+    followupMode, sessionHistory, region, findings, treatmentProblems, treatmentWorsened,
     chiefScoreComparable, sessionEndScore, effectiveFocusLabels, effectiveControlLabels,
     exerciseStage, exercises, homeRelaxationTargets, hasSafetySignal, hasClearance,
     structuralImagingSignal, assessmentNeedsReferral, sessionNumber, followupScore,
@@ -709,7 +708,6 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
     {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是记录者的判断或待验证假设，不等同于已确认的查体结果。</small></section> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
-    {archivedSessions.length ? <section className="rm-route-note rm-archived-sessions"><span>历史档案</span><h2>新问题开始前，已有 {archivedSessions.length} 次康复记录归档</h2><ul>{archivedSessions.map((item) => <li key={`${item.sessionNumber}:${item.completedAt ?? ""}`}>第{item.sessionNumber}次{typeof item.endingScore === "number" ? ` · 结束 ${item.endingScore}/10` : ""}{item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString("zh-CN")}` : ""}</li>)}</ul><p>这些记录仍保存在案例历史中，可随时在记录页查看。</p></section> : null}
     {firstSessionTissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{firstSessionTissueReferral.title}</h2><ul>{firstSessionTissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
     <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">
       <div className="rm-summary-column">

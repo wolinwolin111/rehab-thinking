@@ -214,6 +214,37 @@ function validateDecisionTraces(value: unknown): string | null {
   return null;
 }
 
+function validateHistoryProjection(value: SnapshotObject): string | null {
+  if (value.problemThreads !== undefined) {
+    if (!Array.isArray(value.problemThreads)) return "snapshot problemThreads is invalid";
+    for (const [index, raw] of value.problemThreads.entries()) {
+      if (!isObject(raw)) return `snapshot problemThreads[${index}] is invalid`;
+      for (const key of ["problemThreadId", "caseId", "status", "createdAt", "lastActiveAt"] as const) {
+        if (typeof raw[key] !== "string" || !raw[key]) return `snapshot problemThreads[${index}].${key} is invalid`;
+      }
+      if (!["active", "resolved", "archived", "superseded"].includes(String(raw.status))) return `snapshot problemThreads[${index}].status is invalid`;
+      for (const key of ["regionId", "location", "title", "closedAt", "supersedesProblemThreadId"] as const) {
+        if (raw[key] !== undefined && (typeof raw[key] !== "string" || !raw[key])) return `snapshot problemThreads[${index}].${key} is invalid`;
+      }
+    }
+  }
+  if (value.sessionIndex !== undefined) {
+    if (!Array.isArray(value.sessionIndex)) return "snapshot sessionIndex is invalid";
+    for (const [index, raw] of value.sessionIndex.entries()) {
+      if (!isObject(raw)) return `snapshot sessionIndex[${index}] is invalid`;
+      for (const key of ["sessionId", "problemThreadId", "caseId", "status", "startedAt"] as const) {
+        if (typeof raw[key] !== "string" || !raw[key]) return `snapshot sessionIndex[${index}].${key} is invalid`;
+      }
+      if (!Number.isInteger(raw.sessionNumber) || (raw.sessionNumber as number) < 1) return `snapshot sessionIndex[${index}].sessionNumber is invalid`;
+      if (!["draft", "completed", "abandoned"].includes(String(raw.status))) return `snapshot sessionIndex[${index}].status is invalid`;
+      for (const key of ["lastDraftSavedAt", "completedAt", "completionReason", "location"] as const) {
+        if (raw[key] !== undefined && (typeof raw[key] !== "string" || !raw[key])) return `snapshot sessionIndex[${index}].${key} is invalid`;
+      }
+    }
+  }
+  return null;
+}
+
 function validateTrialRecords(value: unknown, label: "trialRecords" | "followupTrialRecords"): string | null {
   if (!Array.isArray(value)) return `snapshot ${label} is missing`;
   for (const [index, raw] of value.entries()) {
@@ -254,6 +285,8 @@ function validateSnapshotCollections(value: SnapshotObject): string | null {
   if (noteError) return noteError;
   const traceError = validateDecisionTraces(value.decisionTraces);
   if (traceError) return traceError;
+  const historyError = validateHistoryProjection(value);
+  if (historyError) return historyError;
   if (!hasOnlyValues(value.safety, ["yes", "no"])) return "snapshot safety is invalid";
   for (const key of ["exerciseFeedback", "followupExerciseChoices", "followupTrends"] as const) {
     if (!isObject(value[key])) return `snapshot ${key} is invalid`;
@@ -342,6 +375,79 @@ const REQUIRED_NUMBERS = [
 
 const REQUIRED_BOOLEANS = ["trainingComplete", "followupMode"];
 
+function migrateHistoryProjection(value: SnapshotObject): SnapshotObject {
+  const caseId = typeof value.localCaseId === "string" && value.localCaseId.trim() ? value.localCaseId : "legacy-case";
+  const activeThreadId = typeof value.problemThreadId === "string" && value.problemThreadId.trim()
+    ? value.problemThreadId
+    : `thread-legacy-${caseId}`;
+  const threadCreatedAt = typeof value.sessionStartedAt === "string" && value.sessionStartedAt.trim()
+    ? value.sessionStartedAt
+    : new Date(0).toISOString();
+  const existingThreads = Array.isArray(value.problemThreads) ? value.problemThreads : [];
+  const problemThreads = existingThreads.length
+    ? [...existingThreads]
+    : [{
+        problemThreadId: activeThreadId,
+        caseId,
+        status: "active",
+        createdAt: threadCreatedAt,
+        lastActiveAt: typeof value.draftSavedAt === "string" && value.draftSavedAt.trim() ? value.draftSavedAt : threadCreatedAt,
+        regionId: isObject(value.intake) && typeof value.intake.regionId === "string" ? value.intake.regionId : undefined,
+        location: isObject(value.intake) && typeof value.intake.location === "string" ? value.intake.location : undefined,
+      }];
+  const archived = Array.isArray(value.archivedSessionHistory) ? value.archivedSessionHistory : [];
+  const archivedThreadId = `thread-legacy-archived-${caseId}`;
+  if (archived.length && !problemThreads.some((thread) => isObject(thread) && thread.problemThreadId === archivedThreadId)) {
+    problemThreads.push({
+      problemThreadId: archivedThreadId,
+      caseId,
+      status: "archived",
+      createdAt: typeof archived[0]?.completedAt === "string" ? archived[0].completedAt : threadCreatedAt,
+      lastActiveAt: typeof archived.at(-1)?.completedAt === "string" ? archived.at(-1).completedAt : threadCreatedAt,
+      closedAt: typeof archived.at(-1)?.completedAt === "string" ? archived.at(-1).completedAt : threadCreatedAt,
+      title: "旧版历史档案",
+    });
+  }
+  const existingIndex = Array.isArray(value.sessionIndex) ? [...value.sessionIndex] : [];
+  const sessionIndex = existingIndex.length ? existingIndex : [];
+  const addSummary = (summary: unknown, fallbackThreadId: string) => {
+    if (!isObject(summary) || !Number.isInteger(summary.sessionNumber) || (summary.sessionNumber as number) < 1) return;
+    const sessionNumber = summary.sessionNumber as number;
+    const sessionId = typeof summary.sessionId === "string" && summary.sessionId.trim()
+      ? summary.sessionId
+      : `session-legacy-${caseId}-${sessionNumber}`;
+    if (sessionIndex.some((item) => isObject(item) && item.sessionId === sessionId)) return;
+    sessionIndex.push({
+      sessionId,
+      problemThreadId: typeof summary.problemThreadId === "string" && summary.problemThreadId.trim() ? summary.problemThreadId : fallbackThreadId,
+      caseId,
+      sessionNumber,
+      status: summary.status === "abandoned" ? "abandoned" : summary.status === "draft" ? "draft" : summary.completedAt ? "completed" : "draft",
+      startedAt: typeof summary.startedAt === "string" && summary.startedAt.trim() ? summary.startedAt : typeof summary.completedAt === "string" && summary.completedAt.trim() ? summary.completedAt : threadCreatedAt,
+      lastDraftSavedAt: typeof summary.lastDraftSavedAt === "string" ? summary.lastDraftSavedAt : undefined,
+      completedAt: typeof summary.completedAt === "string" ? summary.completedAt : undefined,
+      completionReason: typeof summary.completionReason === "string" ? summary.completionReason : undefined,
+      location: typeof summary.location === "string" ? summary.location : undefined,
+    });
+  };
+  if (!existingIndex.length) {
+    (Array.isArray(value.sessionHistory) ? value.sessionHistory : []).forEach((summary) => addSummary(summary, activeThreadId));
+    archived.forEach((summary) => addSummary(summary, archivedThreadId));
+    addSummary({
+      sessionId: value.sessionId,
+      problemThreadId: activeThreadId,
+      sessionNumber: value.sessionNumber,
+      status: value.sessionStatus,
+      startedAt: value.sessionStartedAt,
+      lastDraftSavedAt: value.draftSavedAt,
+      completedAt: value.completedAt,
+      completionReason: value.completionReason,
+      location: isObject(value.intake) ? value.intake.location : undefined,
+    }, activeThreadId);
+  }
+  return { ...value, problemThreads, sessionIndex };
+}
+
 export function migratePilotSnapshot(value: unknown): SnapshotMigrationResult {
   if (!isObject(value)) return { ok: false, reason: "snapshot must be an object" };
   if (jsonDepth(value) > 24) return { ok: false, reason: "snapshot is too deeply nested or cyclic" };
@@ -384,7 +490,7 @@ export function migratePilotSnapshot(value: unknown): SnapshotMigrationResult {
   return {
     ok: true,
     snapshot: {
-      ...value,
+      ...migrateHistoryProjection(value),
       schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION,
       ...(schemaVersion === 1 ? { legacySchemaVersion: 1 } : {}),
     },

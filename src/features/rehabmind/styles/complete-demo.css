@@ -1927,6 +1927,15 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-record-case-summary > strong { font-size: 18px; line-height: 1.45; }
 .rm-record-case-summary > small { color: var(--rm-muted); font-size: 13px; line-height: 1.5; }
 .rm-record-session-rows { border-top: 1px solid var(--rm-line); }
+.rm-record-thread-rows { border-top: 1px solid var(--rm-line); display: grid; }
+.rm-record-thread { border-top: 1px solid var(--rm-line); }
+.rm-record-thread:first-child { border-top: 0; }
+.rm-record-thread > header { padding: 10px 16px 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: #fbfcfd; }
+.rm-record-thread > header > div { min-width: 0; display: grid; gap: 2px; }
+.rm-record-thread > header span { color: var(--rm-muted); font-size: 11px; font-weight: 800; }
+.rm-record-thread > header strong { overflow-wrap: anywhere; font-size: 14px; }
+.rm-record-thread > header small { flex: 0 0 auto; color: var(--rm-muted); font-size: 12px; }
+.rm-record-thread > p { margin: 0; padding: 10px 16px 14px; color: var(--rm-muted); font-size: 13px; }
 .rm-record-session-row { min-height: 50px; padding: 9px 16px; border-top: 1px solid var(--rm-line); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .rm-record-session-rows > .rm-record-session-row:first-child { border-top: 0; }
 .rm-record-session-row span { min-width: 0; font-weight: 800; }

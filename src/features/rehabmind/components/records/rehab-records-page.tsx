@@ -2,6 +2,8 @@
 
 import { OnceHint } from "@/src/features/rehabmind/components/shared/once-hint";
 import type { SavedDemoRecord } from "@/src/features/rehabmind/components/workbench/workbench-support";
+import type { ProblemThreadRecord, SessionIndexRecord } from "@/src/domain/rehab/history/session-identity-core";
+import type { RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
 
 function SessionRows({ record }: { record: SavedDemoRecord }) {
   if (!record.sessionHistory?.length) {
@@ -13,6 +15,51 @@ function SessionRows({ record }: { record: SavedDemoRecord }) {
       ? `${session.startedScore} → ${session.endingScore}`
       : typeof session.endingScore === "number" ? `${session.endingScore}/10` : "已记录"}</b>
   </div>)}</div>;
+}
+
+function threadStatusLabel(status: ProblemThreadRecord["status"]) {
+  if (status === "archived") return "已归档";
+  if (status === "resolved") return "已解决";
+  if (status === "superseded") return "已被新问题替代";
+  return "当前问题";
+}
+
+function sessionLabel(session: SessionIndexRecord, summary?: RehabSessionSummary) {
+  const endingScore = summary?.endingScore;
+  const score = typeof summary?.startedScore === "number" && typeof endingScore === "number"
+    ? `${summary.startedScore} → ${endingScore}`
+    : typeof endingScore === "number" ? `${endingScore}/10` : session.status === "draft" ? "草稿" : "已记录";
+  return `第${session.sessionNumber}次康复 · ${score}`;
+}
+
+function ThreadRows({ record }: { record: SavedDemoRecord }) {
+  const threads = record.problemThreads ?? record.snapshot?.problemThreads ?? [];
+  const index = record.sessionIndex ?? record.snapshot?.sessionIndex ?? [];
+  if (!threads.length) return <SessionRows record={record} />;
+  return <div className="rm-record-thread-rows">{threads.map((thread) => {
+    const threadSessions = index
+      .filter((session) => session.problemThreadId === thread.problemThreadId)
+      .sort((left, right) => right.sessionNumber - left.sessionNumber);
+    const summaries = (record.sessionHistory ?? []).filter((summary) => !summary.problemThreadId || summary.problemThreadId === thread.problemThreadId);
+    const rows = threadSessions.length
+      ? threadSessions
+      : summaries.map((summary) => ({
+          sessionId: summary.sessionId ?? `legacy-${summary.sessionNumber}`,
+          problemThreadId: thread.problemThreadId,
+          caseId: thread.caseId,
+          sessionNumber: summary.sessionNumber,
+          status: summary.status ?? (summary.completedAt ? "completed" : "draft"),
+          startedAt: summary.startedAt ?? summary.completedAt ?? "",
+          completedAt: summary.completedAt,
+        } satisfies SessionIndexRecord));
+    return <section className="rm-record-thread" key={thread.problemThreadId}>
+      <header><div><span>{threadStatusLabel(thread.status)}</span><strong>{thread.title ?? thread.location ?? "问题线程"}</strong></div><small>{thread.location ?? "未记录位置"}</small></header>
+      {rows.length ? <div className="rm-record-session-rows">{rows.map((session) => {
+        const summary = summaries.find((item) => item.sessionId === session.sessionId || item.sessionNumber === session.sessionNumber);
+        return <div className="rm-record-session-row" key={session.sessionId}><span>{sessionLabel(session, summary)}</span><b>{session.status === "draft" ? "草稿" : session.status === "abandoned" ? "已放弃" : session.completedAt ? "已完成" : "已记录"}</b></div>;
+      })}</div> : <p>尚未形成会话记录</p>}
+    </section>;
+  })}</div>;
 }
 
 export function RehabRecordsPage({
@@ -50,11 +97,11 @@ export function RehabRecordsPage({
           {record.pilotPublicCode ? <button type="button" onClick={() => onCopyCaseCode(record)}>复制</button> : null}
         </header>
         <section className="rm-record-case-summary">
-          <span>{record.sessionStatus === "draft" ? "草稿" : record.status} · 已记录 {record.sessionHistory?.length || record.sessionCount} 次</span>
+          <span>{record.sessionStatus === "draft" ? "草稿" : record.status} · 已记录 {(record.sessionIndex ?? record.snapshot?.sessionIndex)?.filter((session) => session.status === "completed").length || record.sessionHistory?.length || record.sessionCount} 次</span>
           <strong>{record.complaint}</strong>
           <small>{record.region} · 恢复目标：{record.goal}</small>
         </section>
-        <SessionRows record={record} />
+        <ThreadRows record={record} />
         <footer>
           <button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.sessionStatus === "draft" ? "继续草稿" : record.status === "等待影像" ? "补充影像" : "继续康复"}</button>
           <button type="button" className="rm-record-delete" onClick={() => onDelete(record)}>删除案例</button>

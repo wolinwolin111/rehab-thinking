@@ -37,7 +37,7 @@ import { createPilotCase, createPilotAccessToken, createPilotClientCreationId, d
 import { resolvePilotFirstUseOverlay } from "@/src/infrastructure/pilot/telemetry/first-use-core";
 import { recordPilotCaseOperation, recordPilotFirstUseEvent } from "@/src/infrastructure/pilot/api/trial-operations-client";
 import { createLocalCaseId, findLocalCaseRecord, savedRecordIdentity } from "@/src/infrastructure/pilot/persistence/local-case-identity";
-import { createProblemThreadId, createSessionId, legacySessionIdentity } from "@/src/domain/rehab/history/session-identity-core";
+import { archiveProblemThreadRecord, createProblemThreadId, createProblemThreadRecord, createSessionId, legacySessionIdentity, sessionIndexFromSummary, upsertProblemThreadRecord, upsertSessionIndex, type ProblemThreadRecord, type SessionIndexRecord } from "@/src/domain/rehab/history/session-identity-core";
 import { clearLocalCaseRecords, clearLocalDraft, createLocalTabId, loadLocalCaseRecords, loadLocalDraftWithDiagnostics, LOCAL_DRAFT_SIGNAL_KEY, localDraftContentFingerprint, saveLocalCaseRecords, saveLocalDraft, type LocalDraftStorageSignal } from "@/src/infrastructure/pilot/persistence/local-case-store";
 import { createPilotDraftPersistenceController, createPilotKeyedPersistenceQueue, createPilotSerialPersistenceQueue, type PilotSerialPersistenceQueue } from "@/src/infrastructure/pilot/persistence/persistence-controller";
 import { markStageEventSeen, pickStageAdvanceEvent, pilotProgressEventId } from "@/src/features/rehabmind/workflow/stage-events";
@@ -59,7 +59,7 @@ import { buildScoreRecordsFromSnapshot, mergeScoreRecords } from "@/src/domain/r
 import { buildSpecialTestRecords } from "@/src/domain/rehab/records/special-test-record-core";
 import { buildProfessionalNoteRecords, mergeProfessionalNoteRecords } from "@/src/domain/rehab/records/professional-note-record-core";
 import { buildDecisionTraces } from "@/src/domain/rehab/records/decision-trace-core";
-import { firstAssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, treatmentRelatesToChief, valueForPhysicalAction } from "@/src/domain/rehab/intake/action-identity-core";import { mergeSessionReviewResults, mergeArchivedSessions, previousSessionEndingScore, trendFromAssessmentResult, type AssessmentReviewResult, type ReviewResult } from "@/src/domain/rehab/followup/followup-review-core";
+import { firstAssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";import { actionIdFromFinding, anyMotionIdFromFinding, canonicalActionIdFromAssessmentId, dedupeAssessmentIdsByAction, dedupeRetestFindingsByAction, motionIdFromFinding, samePhysicalAction, treatmentRelatesToChief, valueForPhysicalAction } from "@/src/domain/rehab/intake/action-identity-core";import { mergeSessionReviewResults, previousSessionEndingScore, trendFromAssessmentResult, type AssessmentReviewResult, type ReviewResult } from "@/src/domain/rehab/followup/followup-review-core";
 import { buildProblemLedger, emptyTreatmentMessage, hasUnroutedImmediateProblem, unresolvedImmediateProblems } from "@/src/domain/rehab/shared/problem-ledger-core";import { needsTreatmentFinalChiefRetest, treatmentMustStop } from "@/src/domain/rehab/treatment/treatment-session-core";
 import { capturesChiefRetestScore, nextRangeCandidateType, shouldRequestChiefRetest } from "@/src/domain/rehab/retest/retest-routing-core";
 import { canExecutePlan, createAdverseResponse, focusedReassessmentIds, focusedReassessmentComplete, nextAssessmentRevision, resolveAdverseResponse, type AdverseResponseEvent, type AdverseSource, type AdverseTiming } from "@/src/domain/rehab/followup/adverse-response-core";
@@ -247,8 +247,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [hasNewSymptom, setHasNewSymptom] = useState<FollowupNewSymptomAnswer>("");
   const [followupTrends, setFollowupTrends] = useState<Record<string, FollowupReviewAnswer>>({});
   const [sessionHistory, setSessionHistory] = useState<RehabSessionSummary[]>([]);
-  // T-08：新症状路径重置会话链前，把已有康复记录归档，避免内存链断裂后不可见。
-  const [archivedSessions, setArchivedSessions] = useState<RehabSessionSummary[]>([]);
   const sessionHistoryRef = useRef<RehabSessionSummary[]>([]);
   useEffect(() => { sessionHistoryRef.current = sessionHistory; }, [sessionHistory]);
   const [assessmentRevision, setAssessmentRevision] = useState(0);
@@ -810,6 +808,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               specialTestRecords: currentSnapshot.specialTestRecords ?? [],
               professionalNoteRecords: currentSnapshot.professionalNoteRecords ?? [],
               decisionTraces: currentSnapshot.decisionTraces ?? [],
+              problemThreads: currentSnapshot.problemThreads ?? [],
+              sessionIndex: currentSnapshot.sessionIndex ?? [],
               capabilitySnapshotId: currentSnapshot.capabilitySnapshotId,
               bodyMarkIds: (currentSnapshot.bodyMarks ?? []).map((mark) => ({ id: mark.markId, status: mark.status, symptomKind: mark.symptomKind, side: mark.side, regionId: mark.regionId, areaId: mark.areaId })),
               scoreRecordIds: (currentSnapshot.scoreRecords ?? []).map((score) => ({ id: score.scoreRecordId, state: score.scoreState, value: score.value, stage: score.stage, context: score.context })),
@@ -3882,6 +3882,29 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   }
 
   function buildCurrentSnapshot(snapshotOverrides: Partial<SavedDemoSnapshot> = {}): SavedDemoSnapshot {
+    const previousSnapshot = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === localCaseId)?.snapshot;
+    const now = new Date().toISOString();
+    const previousThreads = Array.isArray(previousSnapshot?.problemThreads) ? previousSnapshot.problemThreads : [];
+    const previousCurrentThread = previousThreads.find((item) => item.problemThreadId === problemThreadId);
+    const currentThread: ProblemThreadRecord = previousCurrentThread
+      ? {
+          ...previousCurrentThread,
+          caseId: localCaseId,
+          status: "active",
+          lastActiveAt: now,
+          regionId: intake.regionId || previousCurrentThread.regionId,
+          location: intake.location || previousCurrentThread.location,
+          title: chiefComplaintLabel(intake) || previousCurrentThread.title,
+        }
+      : createProblemThreadRecord({
+          caseId: localCaseId,
+          problemThreadId,
+          regionId: intake.regionId,
+          location: intake.location,
+          title: chiefComplaintLabel(intake),
+          createdAt: sessionStartedAt,
+        });
+    const problemThreads = upsertProblemThreadRecord(previousThreads, currentThread);
     const marksCreatedAt = sessionStartedAt;
     const selectedBodyMarks = [
       ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: marksCreatedAt, symptomKind: "complaint", selections: [...intake.bodyLocationHistory, ...intake.bodyLocations], confirmed: intake.locationConfirmed }),
@@ -3889,14 +3912,16 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: marksCreatedAt, symptomKind: "tenderness", selections: intake.tendernessLocations, confirmed: intake.tendernessLocationConfirmed }),
       ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: marksCreatedAt, symptomKind: "sensory", selections: intake.sensoryLocations, confirmed: intake.sensoryLocationConfirmed }),
     ];
-    const previousBodyMarks = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === localCaseId)?.snapshot?.bodyMarks ?? [];
-    const bodyMarks = mergeBodyMarks(previousBodyMarks, selectedBodyMarks, new Date().toISOString(), sessionId);
+    const previousBodyMarks = previousSnapshot?.bodyMarks ?? [];
+    const bodyMarks = mergeBodyMarks(previousBodyMarks, selectedBodyMarks, now, sessionId);
     const snapshot: SavedDemoSnapshot = {
       schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION,
       localCaseId,
       bodyMarks,
       problemThreadId,
       sessionId,
+      problemThreads,
+      sessionIndex: previousSnapshot?.sessionIndex ?? [],
       capabilitySnapshotId: buildCapabilitySnapshotId(sessionId, assessmentRevision, workflowProfile.operationTarget, workflowProfile.capabilities),
       sessionStatus: "draft",
       sessionStartedAt,
@@ -3962,13 +3987,40 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       hasNewSymptom: hasNewSymptom === "yes",
       followupTrends,
       sessionHistory,
-      archivedSessionHistory: archivedSessions,
       assessmentRevision,
       treatmentPlanRevision,
       adverseResponse,
       adverseConfirmedAssessmentIds,
       ...snapshotOverrides,
     };
+    let sessionIndex: SessionIndexRecord[] = snapshot.sessionIndex ?? [];
+    (snapshot.sessionHistory ?? []).forEach((summary) => {
+      sessionIndex = upsertSessionIndex(sessionIndex, sessionIndexFromSummary({
+        caseId: localCaseId,
+        problemThreadId: summary.problemThreadId ?? problemThreadId,
+        sessionId: summary.sessionId,
+        sessionNumber: summary.sessionNumber,
+        status: summary.status,
+        startedAt: summary.startedAt,
+        lastDraftSavedAt: summary.lastDraftSavedAt,
+        completedAt: summary.completedAt,
+        completionReason: summary.completionReason,
+        location: summary.location,
+      }));
+    });
+    sessionIndex = upsertSessionIndex(sessionIndex, sessionIndexFromSummary({
+      caseId: localCaseId,
+      problemThreadId,
+      sessionId,
+      sessionNumber,
+      status: snapshot.sessionStatus,
+      startedAt: snapshot.sessionStartedAt ?? sessionStartedAt,
+      lastDraftSavedAt: snapshot.draftSavedAt,
+      completedAt: snapshot.completedAt,
+      completionReason: snapshot.completionReason,
+      location: snapshot.intake.location,
+    }));
+    snapshot.sessionIndex = sessionIndex;
     snapshot.specialTestRecords = buildSpecialTestRecords({
       sessionId,
       assessmentRevision,
@@ -4081,7 +4133,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     hasNewSymptom,
     followupTrends,
     sessionHistory,
-    archivedSessions,
     assessmentRevision,
     treatmentPlanRevision,
     adverseResponse,
@@ -4195,7 +4246,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       localCaseId,
       caseKey,
       sessionHistory: nextSessionHistory,
-      archivedSessionHistory: archivedSessions,
+      problemThreads: snapshot.problemThreads,
+      sessionIndex: snapshot.sessionIndex,
       status,
       snapshot,
       pilotSnapshotUpdatedAt: snapshotUpdatedAt,
@@ -4236,6 +4288,66 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   /** 顶部“保存”只保存当前草稿，不把未走完的会话伪装成已完成记录。 */
   function saveDraftRecord() {
     saveRecord("康复中", undefined, {}, "draft");
+  }
+
+  /**
+   * 新症状不会把旧会话搬到组件内存中的“历史篮子”。
+   * 先在同一案例快照里把当前 problemThread 标记为 archived，再清空工作台
+   * 的当前会话链；记录页因此仍能按线程找到旧会话，刷新也不会丢失。
+   */
+  function archiveActiveProblemThread() {
+    const currentRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === localCaseId);
+    const currentSnapshot = currentRecord?.snapshot;
+    if (!currentRecord || !currentSnapshot) return;
+    const archivedAt = new Date().toISOString();
+    const existingThread = currentSnapshot.problemThreads?.find((item) => item.problemThreadId === problemThreadId)
+      ?? createProblemThreadRecord({
+        caseId: localCaseId,
+        problemThreadId,
+        regionId: intake.regionId,
+        location: intake.location,
+        title: chiefComplaintLabel(intake),
+        createdAt: sessionStartedAt,
+      });
+    const problemThreads = upsertProblemThreadRecord(
+      currentSnapshot.problemThreads ?? [],
+      archiveProblemThreadRecord(existingThread, archivedAt),
+    );
+    let sessionIndex: SessionIndexRecord[] = currentSnapshot.sessionIndex ?? [];
+    (sessionHistoryRef.current.length ? sessionHistoryRef.current : currentSnapshot.sessionHistory ?? []).forEach((summary) => {
+      sessionIndex = upsertSessionIndex(sessionIndex, sessionIndexFromSummary({
+        caseId: localCaseId,
+        problemThreadId: summary.problemThreadId ?? problemThreadId,
+        sessionId: summary.sessionId,
+        sessionNumber: summary.sessionNumber,
+        status: summary.status,
+        startedAt: summary.startedAt,
+        lastDraftSavedAt: summary.lastDraftSavedAt,
+        completedAt: summary.completedAt,
+        completionReason: summary.completionReason,
+        location: summary.location,
+      }));
+    });
+    const nextSnapshot: SavedDemoSnapshot = {
+      ...currentSnapshot,
+      problemThreads,
+      sessionIndex,
+      sessionHistory: currentSnapshot.sessionHistory ?? sessionHistoryRef.current,
+    };
+    const nextRecord: SavedDemoRecord = {
+      ...currentRecord,
+      problemThreads,
+      sessionIndex,
+      snapshot: nextSnapshot,
+      pilotSnapshotUpdatedAt: archivedAt,
+      pilotDirty: Boolean(currentRecord.pilotCaseId) || currentRecord.pilotDirty,
+      localContentFingerprint: contentFingerprint(nextSnapshot),
+    };
+    const next = [nextRecord, ...savedRecordsRef.current.filter((item) => savedRecordIdentity(item) !== localCaseId)];
+    savedRecordsRef.current = next;
+    setSavedRecords(next);
+    void persistLocalRecords(next).catch(() => setPilotSyncState("offline"));
+    enqueuePilotRecordSync(nextRecord, { eventType: "problem_thread_archived" });
   }
 
   function reviewRestoredIntake() {
@@ -4359,6 +4471,22 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       window.setTimeout(() => setToast(""), 2400);
       return;
     }
+    // 兼容读取不是一次性的内存修补：首次恢复旧快照后，把新增的线程/会话
+    // 索引回写本机记录。旧字段仍保留，后续新快照只写 v2 投影。
+    const storedRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === nextIdentity && item.id === latestRecord.id);
+    if (storedRecord && (!storedRecord.snapshot?.problemThreads || !storedRecord.snapshot?.sessionIndex)) {
+      const migratedRecord: SavedDemoRecord = {
+        ...storedRecord,
+        snapshot,
+        problemThreads: snapshot.problemThreads,
+        sessionIndex: snapshot.sessionIndex,
+        localContentFingerprint: contentFingerprint(snapshot),
+      };
+      const migratedRecords = savedRecordsRef.current.map((item) => item.id === storedRecord.id ? migratedRecord : item);
+      savedRecordsRef.current = migratedRecords;
+      setSavedRecords(migratedRecords);
+      void persistLocalRecords(migratedRecords).catch(() => setPilotSyncState("offline"));
+    }
     const restoredIds = legacySessionIdentity(nextIdentity, snapshot.sessionNumber);
     setProblemThreadId(snapshot.problemThreadId ?? latestRecord.problemThreadId ?? restoredIds.problemThreadId);
     setSessionId(snapshot.sessionId ?? latestRecord.sessionId ?? restoredIds.sessionId);
@@ -4465,7 +4593,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setHasNewSymptom(snapshot.hasNewSymptom === true || snapshot.hasNewSymptom === "yes" ? "yes" : snapshot.hasNewSymptom === false || snapshot.hasNewSymptom === "no" ? "no" : "");
     setFollowupTrends(snapshot.followupTrends);
     setSessionHistory(snapshot.sessionHistory ?? record.sessionHistory ?? []);
-    setArchivedSessions(snapshot.archivedSessionHistory ?? record.archivedSessionHistory ?? []);
     setAssessmentRevision(snapshot.assessmentRevision ?? 0);
     setTreatmentPlanRevision(snapshot.treatmentPlanRevision ?? snapshot.assessmentRevision ?? 0);
     setAdverseResponse(snapshot.adverseResponse ?? null);
@@ -4568,8 +4695,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupFinalScoreConfirmed(false);
     setHasNewSymptom("");
     setFollowupTrends({});
-    // 新建案例必须从全新的问题链开始；旧案例的归档历史留在旧记录里。
-    setArchivedSessions([]);
     sessionHistoryRef.current = [];
     setSessionHistory([]);
     setAssessmentRevision(0);
@@ -4615,6 +4740,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   }, [localCaseId]);
 
   function invalidateAfterIntake(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
+    archiveActiveProblemThread();
     const next = typeof nextOrUpdater === "function" ? nextOrUpdater(intakeRef.current) : nextOrUpdater;
     intakeRef.current = next;
     setIntake(next);
@@ -4681,10 +4807,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupTensionLocations([]);
     setHasNewSymptom("");
     setFollowupTrends({});
-    const staleChain = sessionHistoryRef.current;
-    if (staleChain.length) {
-      setArchivedSessions((current) => mergeArchivedSessions(current, staleChain));
-    }
     sessionHistoryRef.current = [];
     setSessionHistory([]);
     setAssessmentRevision(0);
@@ -5499,7 +5621,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 trainingPlanSaved,
                 followupMode,
                 sessionHistory,
-                archivedSessions,
                 region,
                 findings,
                 treatmentProblems,
