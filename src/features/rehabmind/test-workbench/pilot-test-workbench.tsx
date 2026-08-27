@@ -17,8 +17,14 @@ import {
   saveLocalDraft,
 } from "@/src/infrastructure/pilot/persistence/local-case-store";
 import { PILOT_RELEASE_VERSIONS } from "@/src/infrastructure/pilot/release/release-version";
-import { buildPilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
-import { createPilotAccessToken, createPilotCase, createPilotClientCreationId, type PilotTestContext } from "@/src/infrastructure/pilot/api/case-client";
+import { attachPilotConsent, buildPilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
+import {
+  createPilotAccessToken,
+  createPilotCase,
+  createPilotClientCreationId,
+  savePilotCaseProgress,
+  type PilotTestContext,
+} from "@/src/infrastructure/pilot/api/case-client";
 import {
   createPilotScenarioSnapshot,
   findPilotTestScenario,
@@ -101,7 +107,8 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
   const snapshot = snapshotOverride
     ? rebindSnapshotToTestCase(snapshotOverride, localCaseId, savedAt, seed)
     : createPilotScenarioSnapshot(scenario, seed);
-  const access = await createPilotCase({
+  const consent = buildPilotConsentRecord(new Date().toISOString());
+  let access = await createPilotCase({
     clientCreationId,
     accessToken: createPilotAccessToken(),
     initialSnapshot: snapshot,
@@ -109,9 +116,36 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
     isBilateral: snapshot.intake.side === "双侧/中间",
     hasSafetyStop: Object.values(snapshot.safety).some((value) => value === "yes"),
     source: { channel: "internal_test", detail: null },
-    consent: buildPilotConsentRecord(new Date().toISOString()),
+    consent,
     testContext: context,
   });
+  // 历史场景不能只在 IndexedDB 中声称“第 2 次康复”。通过正式进度事件把
+  // 同一份 v2 会话投影写入测试案例，使反馈的 sessionNumber 服务端归属校验
+  // 与页面正在展示的 sessionIndex 保持一致；正式建案入口不经过这段接缝。
+  if (snapshot.sessionNumber > 1) {
+    const projection = await savePilotCaseProgress({
+      access,
+      requestId: `request:test-bootstrap:${clientCreationId}`,
+      sessionId: snapshot.sessionId ?? seed.sessionId,
+      problemThreadId: snapshot.problemThreadId ?? seed.problemThreadId,
+      snapshot: attachPilotConsent(snapshot as unknown as Record<string, unknown>, consent),
+      eventId: `event:test-bootstrap:${clientCreationId}`,
+      eventType: "session_draft_saved",
+      eventPayload: {
+        parsed: { localCaseId, scenarioId: scenario.id },
+        inferred: { sessionNumber: snapshot.sessionNumber, sessionStatus: snapshot.sessionStatus ?? "draft" },
+        clinical: {
+          problemThreads: snapshot.problemThreads ?? [],
+          sessionIndex: snapshot.sessionIndex ?? [],
+        },
+      },
+      currentStage: STEPS[snapshot.step] ?? scenario.target,
+      isBilateral: snapshot.intake.side === "双侧/中间",
+      hasSafetyStop: Object.values(snapshot.safety).some((value) => value === "yes"),
+      sessionCount: snapshot.sessionNumber,
+    });
+    access = { ...access, revision: projection.snapshot.revision };
+  }
   const existing = await loadLocalCaseRecords<SavedDemoRecord>("test");
   const record: SavedDemoRecord = {
     id: `test-${localCaseId}`,
