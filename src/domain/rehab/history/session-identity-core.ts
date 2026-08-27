@@ -56,6 +56,11 @@ function fallbackId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function nonEmptyString(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+}
+
 export function createProblemThreadId() {
   const id = globalThis.crypto?.randomUUID?.();
   return id ? `thread-${id}` : fallbackId("thread");
@@ -98,8 +103,8 @@ export function createProblemThreadRecord(input: {
     status: "active",
     createdAt,
     lastActiveAt: createdAt,
-    regionId: input.regionId,
-    location: input.location,
+    regionId: nonEmptyString(input.regionId),
+    location: nonEmptyString(input.location),
     title: input.title,
   };
 }
@@ -136,7 +141,7 @@ export function sessionIndexFromSummary(input: {
     lastDraftSavedAt: input.lastDraftSavedAt,
     completedAt: input.completedAt,
     completionReason: input.completionReason,
-    location: input.location,
+    location: nonEmptyString(input.location),
   };
 }
 
