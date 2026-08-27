@@ -364,7 +364,13 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     const parts: string[] = [];
     for (const [directionId, outcome] of Object.entries(record.rangeOutcomes ?? {})) {
       const title = assessments.find((item) => item.id === `motion:${directionId}`)?.title ?? directionId;
-      const label = outcome === "both-match" ? "范围恢复" : outcome === "worse" ? "范围更差" : "范围改善";
+      const label = ({
+        "both-match": "范围恢复",
+        "passive-match-active-limited": "主动范围仍偏小",
+        "better-passive-limited": "范围改善，仍受限",
+        "passive-limited": "仍受限，未明显改变",
+        worse: "范围更差",
+      } satisfies Record<CompletedRangeRetestAnswer, string>)[outcome];
       parts.push(`${title}${label}`);
     }
     if (record.chiefRetested && record.afterScore < record.beforeScore) parts.push(`不适降 ${record.beforeScore - record.afterScore} 分`);
