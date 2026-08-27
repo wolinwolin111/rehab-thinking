@@ -33,6 +33,7 @@ import { DevToolbar } from "@/src/features/rehabmind/components/onboarding/dev-t
 import { attachPilotConsent, buildPilotConsentRecord, isPilotConsentDeclined, markPilotConsentDeclined, readPilotConsent, writePilotConsent, type PilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
 import { readPilotSource, writePilotSource, type PilotSourceRecord } from "@/src/infrastructure/pilot/onboarding/source-channel";
 import { useWorkflowController } from "@/src/features/rehabmind/controllers/use-workflow-controller";
+import type { WorkflowProjectionInput } from "@/src/features/rehabmind/workflow/workflow-state";
 import { createPilotCase, createPilotAccessToken, createPilotClientCreationId, deletePilotCase, PilotCaseClientError, readPilotCase, savePilotCaseProgress, submitPilotCaseFeedback, type PilotCaseAccess, type PilotTestContext } from "@/src/infrastructure/pilot/api/case-client";
 import { resolvePilotFirstUseOverlay } from "@/src/infrastructure/pilot/telemetry/first-use-core";
 import { recordPilotCaseOperation, recordPilotFirstUseEvent } from "@/src/infrastructure/pilot/api/trial-operations-client";
@@ -716,7 +717,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     };
   }
 
-  function enqueuePilotRecordSync(record: SavedDemoRecord, options?: { eventType?: string }) {
+  function enqueuePilotRecordSync(record: SavedDemoRecord, options?: {
+    eventType?: string;
+    snapshot?: SavedDemoSnapshot;
+    workflowProjectionInput?: WorkflowProjectionInput;
+  }) {
     if (!record.snapshot) return Promise.resolve(false);
     // PRIV-01：未同意试用条款前，任何记录都只保存在本机，不创建远端案例。
     const consentRecord = pilotConsentRef.current;
@@ -729,7 +734,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     let telemetryAccess = pilotAccessFromRecord(record);
     const task = pilotSaveQueueRef.current.enqueue(identity, async () => {
         const latestRecord = savedRecordsRef.current.find((item) => savedRecordIdentity(item) === identity) ?? record;
-        const currentSnapshot = latestRecord.snapshot ?? snapshot;
+        // 阶段事件发生在页面状态推进之后，但案例列表中的持久化镜像可能
+        // 仍是上一个手动保存点。调用方显式提供事件时刻快照，保证事件、
+        // 工作流投影和服务器 snapshot 属于同一个状态版本。
+        const currentSnapshot = options?.snapshot ?? latestRecord.snapshot ?? snapshot;
         let access = pilotAccessFromRecord(latestRecord);
         if (!access) {
           dispatchPilotSync(identity, { type: "remote-create-started", caseId: identity });
@@ -796,7 +804,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
             raw: { complaint: latestRecord.complaint },
             parsed: { localCaseId: identity, legacyCaseKey: latestRecord.caseKey, status: latestRecord.status, step: currentSnapshot.step, problemThreadId: currentProblemThreadId, sessionId: currentSessionId },
             inferred: { sessionNumber: latestRecord.sessionCount, sessionStatus: currentSnapshot.sessionStatus ?? latestRecord.sessionStatus ?? "draft" },
-            workflow: { projectionInput: workflowProjection.input },
+            workflow: { projectionInput: options?.workflowProjectionInput ?? workflowProjection.input },
             clinical: {
               // 事件保留当时的临床记录快照，配合 eventSchemaVersion、sessionId
               // 和 problemThreadId 可在没有依赖页面数组的情况下重建事件发生时的状态；
@@ -847,6 +855,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           pilotRevision: progress.snapshot.revision,
           pilotLastSyncedRevision: progress.snapshot.revision,
           pilotDirty: false,
+          snapshot: currentSnapshot,
           pilotSnapshotUpdatedAt: progress.snapshot.updatedAt,
           localContentFingerprint: contentFingerprint(currentSnapshot),
           lastSyncedContentFingerprint: contentFingerprint(currentSnapshot),
@@ -920,7 +929,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     lastStageForEventsRef.current[identity] = step;
     const eventType = pickStageAdvanceEvent({ prev: cursor, next: step, seen });
     if (!eventType) return;
-    void enqueuePilotRecordSync(active, { eventType }).then((saved) => {
+    const eventSnapshot = buildCurrentSnapshot();
+    void enqueuePilotRecordSync(active, {
+      eventType,
+      snapshot: eventSnapshot,
+      workflowProjectionInput: workflowProjection.input,
+    }).then((saved) => {
       if (saved) markStageEventSeen(seen, eventType);
     });
     // The sync action intentionally reads current refs; adding its render-local identity would replay stage events.

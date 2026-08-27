@@ -1,5 +1,6 @@
 import {
   DEFAULT_INTAKE,
+  SAFETY_ITEMS,
   SHARED_TENSION_ASSESSMENT_ID,
   type AssessmentRecord,
   type IntakeState,
@@ -233,9 +234,14 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
     confirmedIntakeMulti: isFullFlow
       ? { symptoms: false, provocationTypes: false }
       : { symptoms: true, provocationTypes: true },
-    safety: {},
+    // 页面定向夹具从安全确认之后的阶段启动，必须把被跳过的正式前置
+    // 完整种入快照。否则页面能操作，但服务端工作流投影会把后续事件
+    // 判为越级。完整流程仍从空答案开始，继续验证真实安全问答。
+    safety: isFullFlow
+      ? {}
+      : Object.fromEntries(SAFETY_ITEMS.map((item) => [item.id, "no" as const])),
     boneRisk: {},
-    imaging: [],
+    imaging: isFullFlow ? [] : ["没有做影像"],
     assessmentIndex: 0,
     assessmentResults: isFullFlow ? {} : KNEE_PAGE_ASSESSMENTS,
     trialTargetIndex: 0,
