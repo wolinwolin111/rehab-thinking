@@ -22,7 +22,7 @@ import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/
 import { tissueReferralAdvice } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { HomeRelaxationTarget } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { AdverseSource, AdverseTiming } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import type { BodyMark } from "@/src/domain/rehab/records/body-mark-core";
+import type { BodyMark } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
 import type { ExerciseFeedback } from "@/src/features/rehabmind/controllers/use-training-flow";
 import {

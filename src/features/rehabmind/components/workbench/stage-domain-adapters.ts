@@ -46,3 +46,4 @@ export { formatRecommendedDateRange, recommendNextSession } from "@/src/domain/r
 export { compareFollowupScore, complaintShiftNotice, followupRedFlagSignal, trendScoreContradiction } from "@/src/domain/rehab/followup/followup-review-core";
 export { markingSideMismatchHint, removeMarksConflictingWithComplaintSide } from "@/src/domain/rehab/shared/marking-side-consistency-core";
 export { descriptionSuggestsTraumaText, traumaMechanismMismatchHint } from "@/src/domain/rehab/intake/trauma-mechanism-consistency-core";
+export type { BodyMark } from "@/src/domain/rehab/records/body-mark-core";
