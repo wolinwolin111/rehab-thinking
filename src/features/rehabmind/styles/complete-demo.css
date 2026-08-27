@@ -1940,6 +1940,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-record-session-rows > .rm-record-session-row:first-child { border-top: 0; }
 .rm-record-session-row span { min-width: 0; font-weight: 800; }
 .rm-record-session-row b { flex: 0 0 auto; color: var(--rm-blue); font-size: 15px; }
+.rm-body-mark-summary-list { display: grid; gap: 6px; margin-top: 8px; }
+.rm-body-mark-summary-list span { display: flex; align-items: baseline; gap: 7px; color: var(--rm-ink); font-size: 13px; line-height: 1.5; }
+.rm-body-mark-summary-list b { flex: 0 0 auto; color: var(--rm-blue); font-size: 11px; }
 .rm-records-page .rm-record-case > footer { padding: 12px 16px; border-top: 1px solid var(--rm-line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .rm-records-page .rm-record-case > footer button { min-height: 48px; padding: 8px 16px; border-radius: 8px; font-weight: 850; cursor: pointer; }
 .rm-records-page .rm-record-continue { border: 1px solid var(--rm-blue); color: white; background: var(--rm-blue); }

@@ -22,6 +22,7 @@ import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/
 import { tissueReferralAdvice } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { HomeRelaxationTarget } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { AdverseSource, AdverseTiming } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import type { BodyMark } from "@/src/domain/rehab/records/body-mark-core";
 import type { FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
 import type { ExerciseFeedback } from "@/src/features/rehabmind/controllers/use-training-flow";
 import {
@@ -60,6 +61,7 @@ export type SummaryStageView = {
   trainingPlanSaved: boolean;
   followupMode: boolean;
   sessionHistory: RehabSessionSummary[];
+  bodyMarks: BodyMark[];
   region?: FullRegion;
   findings: Finding[];
   treatmentProblems: TreatmentProblem[];
@@ -150,7 +152,7 @@ export type SummaryStageActions = {
 export function SummaryStage({ view, actions }: { view: SummaryStageView; actions: SummaryStageActions }) {
   const {
     intake, assessmentResults, trialRecords, exerciseFeedback, trainingComplete, trainingPlanSaved,
-    followupMode, sessionHistory, region, findings, treatmentProblems, treatmentWorsened,
+    followupMode, sessionHistory, bodyMarks, region, findings, treatmentProblems, treatmentWorsened,
     chiefScoreComparable, sessionEndScore, effectiveFocusLabels, effectiveControlLabels,
     exerciseStage, exercises, homeRelaxationTargets, hasSafetySignal, hasClearance,
     structuralImagingSignal, assessmentNeedsReferral, sessionNumber, followupScore,
@@ -703,10 +705,13 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   });
   const summaryChiefNote = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: sessionEndScore, hasRangeImprovement: false, noImmediateResponse: false });
   const firstSessionTissueReferral = tissueReferralAdvice(tissuePathway);
+  const bodyMarkKindLabels: Record<BodyMark["symptomKind"], string> = { complaint: "主诉", swelling: "肿胀", bruise: "淤青", tenderness: "按压痛", sensory: "麻电/感觉" };
+  const visibleBodyMarks = bodyMarks.filter((mark) => mark.status !== "invalidated");
     return <section className="rm-page rm-session-summary">
     <StepHeading eyebrow="第6步" title="本次康复总结" />
     <section className="rm-session-hero"><div><span>{hasClearChiefAction(intake) ? "本次主诉" : "本次症状信息"}</span><h2>{chiefComplaintLabel(intake)}</h2><p>{hasClearChiefAction(intake) ? `当前诱发动作：${chiefActionLabel(intake)}` : "本次没有确认固定诱发动作"}</p></div>{chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : <div className="rm-no-score-summary"><strong>{intake.side === "双侧/中间" ? "双侧整体感受已记录" : reportedActionSummary(intake).length > 1 ? "多个主诉动作分别复查" : hasClearChiefAction(intake) ? "尚未形成可比较动作基线" : "未生成动作评分变化"}</strong><small>{intake.side === "双侧/中间" ? "双侧场景不生成单侧式评分对比" : reportedActionSummary(intake).length > 1 ? "不把多个动作合并成一个主诉分数" : hasClearChiefAction(intake) ? "主诉动作只用于筛选线索，复测以实际完成的评估为准" : "避免把一般不适评分误当作同一动作复测"}</small></div>}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
-    {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是记录者的判断或待验证假设，不等同于已确认的查体结果。</small></section> : null}
+     {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是记录者的判断或待验证假设，不等同于已确认的查体结果。</small></section> : null}
+     {visibleBodyMarks.length ? <section className="rm-route-note rm-body-mark-summary"><span>症状位置记录</span><div className="rm-body-mark-summary-list">{visibleBodyMarks.map((mark) => <span key={mark.markId}><b>{bodyMarkKindLabels[mark.symptomKind]}</b>{mark.humanLabel}{mark.coordinateCompleteness === "zone-only" ? "（区域记录）" : ""}</span>)}</div><small>位置以结构化区域和侧别保存；没有真实点击坐标的旧记录不会补猜坐标。</small></section> : null}
     <NextSessionCard recommendation={nextSessionRecommendation} nextSessionNumber={2} completedAt={sessionHistory.find((item) => item.sessionNumber === 1)?.completedAt} formatDateRange={formatRecommendedDateRange} onStart={startSecondSession} onReportWorsening={() => beginAdverseReassessment({ source: "after-session", sourceId: "session-1", sourceLabel: "本次康复结束后的反应", timing: "later", beforeScore: sessionEndScore, afterScore: sessionEndScore, relatedAssessmentIds: findings.filter((finding) => finding.id.startsWith("motion:")).map((finding) => finding.id).slice(0, 3) })} />
     {firstSessionTissueReferral ? <section className="rm-route-note is-waiting rm-referral-advice"><span>就医提醒</span><h2>{firstSessionTissueReferral.title}</h2><ul>{firstSessionTissueReferral.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul><p>出现以上任何一种情况，先暂停训练并线下请专业人员确认。</p></section> : null}
     <details className="rm-summary-details"><summary>查看本次详细记录</summary><div className="rm-summary-dashboard">

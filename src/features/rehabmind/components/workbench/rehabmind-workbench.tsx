@@ -929,6 +929,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const canMobilizeJoint = workflowProfile.canMobilizeJoint;
   const isThinkingMode = workflowProfile.productMode === "thinking";
   const medicalGuidance = useMemo(() => deriveMedicalGuidance(intake.priorCare, imaging), [intake.priorCare, imaging]);
+  const currentBodyMarks = useMemo(() => [
+    ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: sessionStartedAt, symptomKind: "complaint", selections: [...intake.bodyLocationHistory, ...intake.bodyLocations], confirmed: intake.locationConfirmed }),
+    ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: sessionStartedAt, symptomKind: "swelling", selections: intake.swellingLocations, confirmed: intake.swellingLocationConfirmed }),
+    ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: sessionStartedAt, symptomKind: "tenderness", selections: intake.tendernessLocations, confirmed: intake.tendernessLocationConfirmed }),
+    ...bodyMarksFromSelections({ caseId: localCaseId, problemThreadId, sessionId, createdAt: sessionStartedAt, symptomKind: "sensory", selections: intake.sensoryLocations, confirmed: intake.sensoryLocationConfirmed }),
+  ], [localCaseId, problemThreadId, sessionId, sessionStartedAt, intake.bodyLocationHistory, intake.bodyLocations, intake.locationConfirmed, intake.swellingLocations, intake.swellingLocationConfirmed, intake.tendernessLocations, intake.tendernessLocationConfirmed, intake.sensoryLocations, intake.sensoryLocationConfirmed]);
 
   function notifyCapabilityChange(message: string) {
     setToast(message);
@@ -5619,8 +5625,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 exerciseFeedback,
                 trainingComplete,
                 trainingPlanSaved,
-                followupMode,
-                sessionHistory,
+                 followupMode,
+                 sessionHistory,
+                bodyMarks: currentBodyMarks,
                 region,
                 findings,
                 treatmentProblems,
