@@ -9,7 +9,7 @@
 export type ChiefActionIntake = {
   side?: string;
   onset?: string;
-  reportedActions?: Array<{ raw?: string; label?: string }>;
+  reportedActions?: Array<{ id?: string; kind?: string; raw?: string; label?: string }>;
   customAction?: string;
   reproduction?: string;
   location?: string;
@@ -26,7 +26,10 @@ export function isUnclearAction(value?: string) {
 export function reportedActionSummary(intake: ChiefActionIntake) {
   const selected = intake.reportedActions?.map((item) => item.raw || item.label) ?? [];
   const custom = intake.customAction?.trim() ? [intake.customAction.trim()] : [];
-  return [...new Set([...selected, ...custom, intake.reproduction].filter((value) => value && !isUnclearAction(value)))];
+  // reproduction 是旧的自然语言解析结果。已经存在结构化动作时不能再把
+  // 整句描述当成第三个动作，否则“下蹲、下楼”后面会重复整段主诉。
+  const legacyReproduction = selected.length ? [] : [intake.reproduction];
+  return [...new Set([...selected, ...custom, ...legacyReproduction].filter((value) => value && !isUnclearAction(value)))];
 }
 
 export function primaryReportedAction(intake: ChiefActionIntake) {

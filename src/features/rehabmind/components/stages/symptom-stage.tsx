@@ -169,11 +169,15 @@ export function SymptomStage(props: SymptomStageProps) {
     if (intake.reportedActions?.length || !intake.reproduction.trim()) return "";
     const source = `${intake.reproduction} ${intake.actionAnalysis?.task ?? ""} ${intake.actionAnalysis?.category ?? ""}`;
     const semanticMatches: Array<[RegExp, string]> = [
-      [/下?楼|台阶|楼梯/, "functional-stairs"],
-      [/下蹲|蹲起|起身/, "functional-squat"],
+      [/单腿下蹲|单脚下蹲|单腿蹲|单脚蹲/, "functional-single-leg-squat"],
+      [/下楼|下台阶/, "functional-step-down"],
+      [/上楼|上台阶/, "functional-step-up"],
+      [/坐下|起身|坐站/, "functional-sit-stand"],
+      [/下蹲|蹲起|深蹲/, "functional-squat"],
       [/走路|行走|步行/, "functional-walk"],
-      [/单腿/, "functional-single-leg"],
-      [/跑|跳|落地/, "functional-run-jump"],
+      [/单腿站|单脚站|单腿/, "functional-single-leg-stand"],
+      [/跑步|慢跑|冲刺|跑/, "functional-run"],
+      [/跳跃|跳起|落地|跳/, "functional-jump-landing"],
       [/绷直膝|膝关节伸直/, "knee-extension"],
       [/弯曲膝|膝关节屈曲/, "knee-flexion"],
       [/勾脚|踝背屈/, intake.regionId === "calf-local" ? "calf-dorsiflexion" : "ankle-dorsiflexion"],

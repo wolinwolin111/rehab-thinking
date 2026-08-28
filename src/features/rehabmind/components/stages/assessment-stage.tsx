@@ -329,7 +329,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <StepHeading eyebrow={`第3步 · 评估检查 ${assessments.length + 1}/${assessments.length + 1}`} title="肌肉紧张度对比" />
       <article className="rm-check-card rm-shared-tension-check">
         <header><i>触</i><div><strong>轻按两侧，看看哪里差别更明显</strong></div></header>
-        <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} onToggle={toggleSharedTensionLocation} />
+        <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} side={intake.side} onToggle={toggleSharedTensionLocation} />
       </article>
       <div className="rm-page-actions split"><button type="button" onClick={() => setSharedTensionOpen(false)}>返回活动检查</button><button type="button" className="rm-primary" disabled={!sharedTensionComplete} onClick={() => {
         setSharedTensionOpen(false);

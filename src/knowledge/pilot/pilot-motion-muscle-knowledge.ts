@@ -55,12 +55,12 @@ export type PilotMotionKnowledge = {
 export const PILOT_MUSCLE_REGIONS: PilotMuscleRegion[] = [
   { id: "thigh-anterior", label: "大腿前侧肌群", muscles: ["股四头肌", "股直肌"], aliases: [/大腿前/, /股四头/, /股直肌/, /quadriceps/i] },
   { id: "thigh-lateral", label: "大腿外侧链", muscles: ["股外侧肌", "阔筋膜张肌", "髂胫束周围肌肉"], aliases: [/大腿外/, /髋外.*大腿外/, /股外侧肌/, /阔筋膜张肌/, /髂胫束/, /lateral-chain/i] },
-  { id: "thigh-medial", label: "大腿内侧与鹅足周围", muscles: ["内收肌群", "缝匠肌", "股薄肌", "半腱肌", "股内侧肌"], aliases: [/大腿内/, /鹅足/, /内收肌/, /缝匠肌/, /股薄肌/, /半腱肌/] },
+  { id: "thigh-medial", label: "大腿内侧肌群", muscles: ["内收肌群"], aliases: [/^大腿内侧$/, /大腿内侧肌群/, /大腿内收肌/, /内收肌群/, /内收肌/] },
   { id: "thigh-posterior", label: "大腿后侧与膝后两侧", muscles: ["腘绳肌", "腘肌"], aliases: [/大腿后/, /腘绳肌/, /腘肌/, /膝后侧肌肉/, /膝后两侧/] },
   { id: "calf-anterior", label: "小腿前侧肌群", muscles: ["胫骨前肌", "趾伸肌群"], aliases: [/小腿前侧/, /胫骨前肌/, /趾伸肌/, /足背肌腱周围/] },
   { id: "calf-posterior", label: "小腿后侧肌群", muscles: ["腓肠肌", "比目鱼肌"], aliases: [/小腿肚/, /小腿后侧/, /小腿三头肌/, /腓肠肌/, /比目鱼肌/, /小腿上端/, /膝后.*小腿/] },
-  { id: "calf-lateral", label: "小腿外侧肌群", muscles: ["腓骨长肌", "腓骨短肌"], aliases: [/小腿外侧/, /腓骨长肌/, /腓骨短肌/, /腓骨肌/, /外踝周围/] },
-  { id: "calf-medial", label: "小腿后内侧肌群", muscles: ["胫骨后肌", "趾屈肌群"], aliases: [/小腿内侧/, /小腿后内侧/, /胫骨后肌/, /趾屈肌/, /内踝后方/] },
+  { id: "calf-lateral", label: "小腿外侧肌群", muscles: ["腓骨长肌", "腓骨短肌"], aliases: [/^小腿外侧$/, /小腿外侧肌群/, /腓骨长肌/, /腓骨短肌/, /腓骨肌/] },
+  { id: "calf-medial", label: "小腿后内侧定位区", muscles: ["胫骨后肌与趾屈肌腱表面走向"], aliases: [/^小腿内侧$/, /小腿后内侧定位区/, /小腿后内侧肌群/, /胫骨后肌/, /趾屈肌/] },
   { id: "plantar", label: "足底与足弓肌群", muscles: ["足底软组织", "足内在肌"], aliases: [/足底肌肉/, /足底与足弓/, /足弓.*肌肉/, /脚底.*肌肉/] },
 ];
 
@@ -178,6 +178,7 @@ const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   "knee-glute": "单腿支撑与骨盆稳定检查",
   "knee-calf": "小腿跖屈肌群功能检查",
   "knee-squat": "双腿闭链下蹲功能检查",
+  "knee-sit-stand": "坐下再站起检查",
   "knee-step-up": "台阶上升功能检查",
   "knee-step-down": "台阶下降控制检查",
   "knee-single-leg": "单腿静态稳定检查",
@@ -202,8 +203,9 @@ const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   "thigh-medial-strength": "髋内收肌群发力检查",
   "thigh-lateral-strength": "髋外展肌群发力检查",
   "thigh-walk": "步行功能检查",
-  "thigh-sit-stand": "坐站功能检查",
-  "thigh-jog": "慢跑回归准备检查",
+  "thigh-sit-stand": "坐下再站起检查",
+  "thigh-single-leg-squat": "扶物单腿浅蹲检查",
+  "thigh-jog": "小步慢跑检查",
   "thigh-local-palpation": "大腿局部触诊定位",
   "calf-dorsiflexion": "踝背屈：前侧缩短与后侧拉长检查",
   "calf-plantarflexion": "踝跖屈：后侧缩短与前侧拉长检查",
@@ -215,7 +217,7 @@ const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   "calf-evertor-strength": "踝外翻肌群发力检查",
   "calf-walk": "步行周期功能检查",
   "calf-heel-raise": "提踵功能检查",
-  "calf-jog": "慢跑回归准备检查",
+  "calf-jog": "小步慢跑检查",
   "calf-local-palpation": "小腿局部触诊定位",
 };
 

@@ -42,6 +42,7 @@ export const THIGH_LOCAL_REGION: FullRegion = {
     assessment("thigh-sit-stand", "坐下再站起", "function", "从稳固椅子慢慢坐下再站起3次。", "大腿哪里不舒服，左右用力是否明显不同。", ["sit-to-stand", "squat"]),
     assessment("thigh-bridge-check", "后侧链功能检查", "function", "仰卧屈膝做一次臀桥；双腿稳定且不加重时，再左右各做一次单腿臀桥。", "比较两侧抬起高度、骨盆是否歪斜，以及大腿后侧是否出现熟悉不适。", ["bridge", "posterior-chain", "single-leg"]),
     assessment("thigh-single-leg", "单腿骨盆稳定检查", "function", "扶住固定物，左右分别单腿站立10秒。", "比较骨盆是否明显下沉、身体是否侧倒，以及大腿内外侧是否出现熟悉不适。", ["single-leg", "pelvic-stability"]),
+    assessment("thigh-single-leg-squat", "扶物单腿浅蹲", "function", "单腿站稳且没有明显加重时，扶住固定物做3次小幅单腿下蹲。", "比较两侧下降控制、骨盆是否歪斜，以及大腿是否出现熟悉不适。", ["single-leg-squat", "single-leg", "pelvic-stability"], "单腿站仍明显疼、不稳或无法完成时，先不测试。"),
     assessment("thigh-jog", "慢跑准备", "function", "只有走路和坐站稳定时，原地小步慢跑10秒。", "是否再现大腿局部症状。", ["run", "sport"], "急性拉伤、走路疼痛或肿胀加重时不测试。"),
   ],
   specialTests: [assessment("thigh-local-palpation", "大腿局部轻按定位", "special-test", "沿图上标记区域轻按一次，记录熟悉痛点范围。", "是否局限，是否伴明显凹陷或快速扩大的肿胀、淤青。", ["tenderness", "local-thigh"], "急性拉伤不反复重按；明显凹陷、无力或肿胀快速扩大时先医学评估。")],

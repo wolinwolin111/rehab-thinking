@@ -873,6 +873,7 @@ const knee: FullRegion = {
   functions: [
     functional("knee-gait", "走路", "自然走10米，记录脚着地、患侧承重、身体越过支撑脚和蹬地。", "跛行阶段、步幅、膝能否伸直及0～10分。", ["gait", "daily"]),
     functional("knee-squat", "下蹲", "双脚固定位置，以相同速度下蹲到舒适深度再站起。", "深度、疼痛阶段、髋膝踝联动、左右承重及膝足方向。", ["squat", "lower-chain"]),
+    functional("knee-sit-stand", "坐下再站起", "从同一把稳固椅子慢慢坐下再站起3次；需要时可以轻扶。", "坐下和起身哪个阶段不舒服，是否明显偏向一侧用力。", ["sit-to-stand", "daily"]),
     functional("knee-heel-raise", "双脚提踵", "扶住墙面，双脚同时缓慢抬起脚跟，再慢慢落下，完成5次。", "两侧高度是否接近，身体是否晃动，患侧是否明显更难完成。", ["heel-raise", "calf", "balance"]),
     functional("knee-step-up", "上楼 / 上台阶", "用固定高度台阶，患侧先上，轻扶栏杆，完成3次。", "起身阶段、股四头与臀肌发力、疼痛和借力。", ["step-up", "stairs"]),
     functional("knee-step-down", "下楼 / 下台阶", "站在固定高度台阶上，患侧支撑，健侧脚跟慢慢点地再回起。", "患侧承重阶段、下降控制、膝内外偏移和0～10分。", ["step-down", "eccentric", "stairs"]),

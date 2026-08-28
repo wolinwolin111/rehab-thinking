@@ -1496,17 +1496,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     standaloneStrengthItems.forEach((item) => { if (!interleavedUsed.has(item.id)) interleaved.push(item); });
 
     const pilotInput = pilotInputFromIntake(intake, confirmedIntakeMulti);
-    const chiefFunctionId = chiefFunctionAssessmentId(intake, region.id);
     const rankAndLimit = (items: AssessmentItem[], preserveIds: string[] = []) => {
-      const chiefFunctionSource = chiefFunctionId
-        ? region.functions.find((item) => `function:${item.id}` === chiefFunctionId)
-        : undefined;
-      const chiefFunctionFallback = chiefFunctionSource ? makeFunctionAssessment(chiefFunctionSource) : undefined;
-      const availableItems = chiefFunctionFallback && !items.some((item) => item.id === chiefFunctionFallback.id)
-        ? [chiefFunctionFallback, ...items]
-        : items;
-      const byId = new Map(availableItems.map((item) => [item.id, item]));
-      const ranked = rankPilotAssessmentIds(pilotInput, availableItems.map((item) => item.id))
+      // 功能评估项只能由 selectFunctionAssessmentPlan 产生。这里仅排序已经
+      // 入选的项目，不能再根据主诉文字补插第二套功能检查。
+      const byId = new Map(items.map((item) => [item.id, item]));
+      const ranked = rankPilotAssessmentIds(pilotInput, items.map((item) => item.id))
         .map((id) => byId.get(id))
         .filter((item): item is AssessmentItem => Boolean(item));
       // 髌骨四方向在页面上合并成一张被动活动卡，但后台仍需要四个方向
@@ -1518,9 +1512,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           .filter((item): item is AssessmentItem => Boolean(item))
           .filter((item) => !ranked.some((entry) => entry.id === item.id))]
         : ranked;
-      const chiefFunction = chiefFunctionId ? byId.get(chiefFunctionId) : undefined;
-      if (!chiefFunction) return rankedWithPatella;
-      const ordered = [chiefFunction, ...rankedWithPatella.filter((item) => item.id !== chiefFunction.id)];
+      const preservedFirst = preserveIds
+        .map((id) => byId.get(id))
+        .filter((item): item is AssessmentItem => Boolean(item));
+      const ordered = [...preservedFirst, ...rankedWithPatella.filter((item) => !preserveIds.includes(item.id))];
       // 保持原有预算，但不截断已经打开的髌骨四方向组。
       const limit = rankedHasPatella ? Math.max(ranked.length, ordered.length) : ranked.length;
       const limited = ordered.slice(0, limit);

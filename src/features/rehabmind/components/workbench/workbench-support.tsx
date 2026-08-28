@@ -1355,7 +1355,7 @@ export function actionDerivedProvocationTypes(actions: ReportedAction[], customA
   const derived: string[] = [];
   if (actions.some((action) => action.kind === "joint-direction")) derived.push("活动到某个角度");
   if (actions.some((action) => action.kind === "functional")) derived.push("走路、站立或负重");
-  if (actions.some((action) => action.id === "functional-run-jump")) derived.push("运动过程中");
+  if (actions.some((action) => ["functional-run", "functional-jump-landing", "functional-run-jump"].includes(action.id))) derived.push("运动过程中");
   const custom = customAction.trim();
   if (/用力|发力|抗阻|对抗/.test(custom)) derived.push("用力或对抗阻力");
   if (/按压|轻按|压痛/.test(custom)) derived.push("按压");
@@ -1629,36 +1629,40 @@ export function forceDirectionOptions(regionId: string) {
  * 评估阶段仍会单独记录活动范围和主动控制，不能用这组选项替代查体。
  */
 export function reportedActionOptions(regionId: string): ReportedAction[] {
+  const action = (id: string, label: string): ReportedAction => ({ id, label, kind: "functional", raw: label });
   const common: ReportedAction[] = [
-    { id: "functional-walk", label: "走路", kind: "functional", raw: "走路" },
-    { id: "functional-squat", label: "下蹲或起身", kind: "functional", raw: "下蹲或起身" },
-    { id: "functional-stairs", label: "上下楼或下台阶", kind: "functional", raw: "上下楼或下台阶" },
-    { id: "functional-single-leg", label: "单腿站立或单腿下蹲", kind: "functional", raw: "单腿站立或单腿下蹲" },
-    { id: "functional-run-jump", label: "跑步、跳跃或落地", kind: "functional", raw: "跑步、跳跃或落地" },
+    action("functional-walk", "走路"),
+    action("functional-squat", "下蹲"),
+    action("functional-sit-stand", "坐下或起身"),
+    action("functional-step-up", "上楼或上台阶"),
+    action("functional-step-down", "下楼或下台阶"),
+    action("functional-single-leg-stand", "单腿站立"),
+    action("functional-single-leg-squat", "单腿下蹲"),
+    action("functional-run", "跑步"),
+    action("functional-jump-landing", "跳跃或落地"),
   ];
   const direction: Record<string, ReportedAction[]> = {
     "ankle-foot": [
-      { id: "ankle-dorsiflexion", label: "踝背屈｜把脚背向小腿方向勾", kind: "joint-direction", raw: "勾脚" },
-      { id: "ankle-plantarflexion", label: "踝跖屈｜把脚尖向下绷", kind: "joint-direction", raw: "绷脚或脚尖向下" },
-      { id: "ankle-inversion", label: "踝内翻｜把脚底转向身体内侧", kind: "joint-direction", raw: "脚底向内转" },
-      { id: "ankle-eversion", label: "踝外翻｜把脚底转向身体外侧", kind: "joint-direction", raw: "脚底向外转" },
-      { id: "ankle-heel-raise", label: "提踵｜踮脚或蹬地", kind: "joint-direction", raw: "踮脚或提踵" },
+      { id: "ankle-dorsiflexion", label: "勾脚", kind: "joint-direction", raw: "勾脚" },
+      { id: "ankle-plantarflexion", label: "绷脚或脚尖向下", kind: "joint-direction", raw: "绷脚或脚尖向下" },
+      { id: "ankle-inversion", label: "脚底向内转", kind: "joint-direction", raw: "脚底向内转" },
+      { id: "ankle-eversion", label: "脚底向外转", kind: "joint-direction", raw: "脚底向外转" },
+      { id: "ankle-heel-raise", label: "踮脚或提踵", kind: "joint-direction", raw: "踮脚或提踵" },
     ],
     "calf-local": [
-      { id: "calf-dorsiflexion", label: "踝背屈｜把脚背向小腿方向勾", kind: "joint-direction", raw: "勾脚" },
-      { id: "calf-plantarflexion", label: "踝跖屈｜把脚尖向下绷", kind: "joint-direction", raw: "绷脚或脚尖向下" },
-      { id: "calf-inversion", label: "踝内翻｜把脚底转向身体内侧", kind: "joint-direction", raw: "脚底向内转" },
-      { id: "calf-eversion", label: "踝外翻｜把脚底转向身体外侧", kind: "joint-direction", raw: "脚底向外转" },
+      { id: "calf-dorsiflexion", label: "勾脚", kind: "joint-direction", raw: "勾脚" },
+      { id: "calf-plantarflexion", label: "绷脚或脚尖向下", kind: "joint-direction", raw: "绷脚或脚尖向下" },
+      { id: "calf-inversion", label: "脚底向内转", kind: "joint-direction", raw: "脚底向内转" },
+      { id: "calf-eversion", label: "脚底向外转", kind: "joint-direction", raw: "脚底向外转" },
     ],
     knee: [
-      { id: "knee-extension", label: "膝关节伸直｜把膝盖绷直", kind: "joint-direction", raw: "绷直膝盖" },
-      { id: "knee-flexion", label: "膝关节屈曲｜把膝盖弯曲", kind: "joint-direction", raw: "弯曲膝盖" },
+      { id: "knee-extension", label: "绷直膝盖", kind: "joint-direction", raw: "绷直膝盖" },
+      { id: "knee-flexion", label: "弯曲膝盖", kind: "joint-direction", raw: "弯曲膝盖" },
     ],
     "thigh-local": [
-      { id: "thigh-front-length", label: "膝关节屈曲｜让大腿前侧拉长", kind: "joint-direction", raw: "弯曲膝盖" },
-      { id: "thigh-back-length", label: "膝关节伸直｜让大腿后侧拉长", kind: "joint-direction", raw: "绷直膝盖" },
-      { id: "thigh-medial-length", label: "髋关节外展｜把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
-      { id: "thigh-lateral-load", label: "单腿承重｜让大腿外侧参与稳定", kind: "functional", raw: "单腿承重" },
+      { id: "thigh-front-length", label: "弯曲膝盖", kind: "joint-direction", raw: "弯曲膝盖" },
+      { id: "thigh-back-length", label: "绷直膝盖", kind: "joint-direction", raw: "绷直膝盖" },
+      { id: "thigh-medial-length", label: "把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
     ],
     "hip-thigh": [
       { id: "hip-flexion", label: "髋关节屈曲｜把大腿向腹部方向抬", kind: "joint-direction", raw: "抬腿" },
@@ -1667,7 +1671,16 @@ export function reportedActionOptions(regionId: string): ReportedAction[] {
       { id: "hip-adduction", label: "髋关节内收｜把腿向身体中线靠拢", kind: "joint-direction", raw: "夹腿" },
     ],
   };
-  const options = [...(direction[regionId] ?? []), ...common];
+  const functionalByRegion: Record<string, Set<string>> = {
+    knee: new Set(["functional-walk", "functional-squat", "functional-sit-stand", "functional-step-up", "functional-step-down", "functional-single-leg-stand", "functional-single-leg-squat", "functional-jump-landing"]),
+    "ankle-foot": new Set(["functional-walk", "functional-squat", "functional-step-down", "functional-single-leg-stand", "functional-jump-landing"]),
+    "thigh-local": new Set(["functional-walk", "functional-sit-stand", "functional-single-leg-stand", "functional-single-leg-squat", "functional-run"]),
+    "calf-local": new Set(["functional-walk", "functional-single-leg-stand", "functional-run"]),
+  };
+  const visibleFunctionalActions = functionalByRegion[regionId]
+    ? common.filter((item) => functionalByRegion[regionId].has(item.id))
+    : common;
+  const options = [...(direction[regionId] ?? []), ...visibleFunctionalActions];
   return options.filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index);
 }
 
@@ -1818,26 +1831,33 @@ export function parseIntake(text: string, current: IntakeState): IntakeState {
   const forceDirection = deniesToeDirection && inferredForceDirection === "脚趾或足弓用力" ? current.forceDirection : inferredForceDirection || current.forceDirection;
   const actionAnalysis = analyzeChiefAction(text, regionId, forceDirection, reproduction);
   const parsedActionSource = `${reproduction} ${actionAnalysis?.task ?? ""} ${actionAnalysis?.category ?? ""}`;
-  const parsedActionId = ([
-    [/下?楼|台阶|楼梯/, "functional-stairs"],
-    [/下蹲|蹲起|起身/, "functional-squat"],
+  let parsedActionIds = ([
+    [/单腿下蹲|单脚下蹲|单腿蹲|单脚蹲/, "functional-single-leg-squat"],
+    [/下楼|下台阶/, "functional-step-down"],
+    [/上楼|上台阶/, "functional-step-up"],
+    [/坐下|起身|坐站/, "functional-sit-stand"],
+    [/下蹲|蹲起|深蹲/, "functional-squat"],
     [/走路|行走|步行/, "functional-walk"],
-    [/单腿/, "functional-single-leg"],
-    [/跑|跳|落地/, "functional-run-jump"],
+    [/单腿站|单脚站|单腿/, "functional-single-leg-stand"],
+    [/跑步|慢跑|冲刺|跑/, "functional-run"],
+    [/跳跃|跳起|落地|跳/, "functional-jump-landing"],
     [/绷直膝|膝关节伸直/, "knee-extension"],
     [/弯曲膝|膝关节屈曲/, "knee-flexion"],
     [/勾脚|踝背屈/, regionId === "calf-local" ? "calf-dorsiflexion" : "ankle-dorsiflexion"],
     [/绷脚|跖屈/, regionId === "calf-local" ? "calf-plantarflexion" : "ankle-plantarflexion"],
     [/脚底向内|内翻/, regionId === "calf-local" ? "calf-inversion" : "ankle-inversion"],
     [/脚底向外|外翻/, regionId === "calf-local" ? "calf-eversion" : "ankle-eversion"],
-  ] as Array<[RegExp, string]>).find(([pattern]) => pattern.test(parsedActionSource))?.[1];
-  const parsedReportedAction = reportedActionOptions(regionId).find((action) => action.id === parsedActionId);
+  ] as Array<[RegExp, string]>).filter(([pattern]) => pattern.test(parsedActionSource)).map(([, id]) => id);
+  if (parsedActionIds.includes("functional-single-leg-squat")) {
+    parsedActionIds = parsedActionIds.filter((id) => !["functional-squat", "functional-single-leg-stand"].includes(id));
+  }
+  const parsedReportedActions = reportedActionOptions(regionId)
+    .filter((action) => parsedActionIds.includes(action.id))
+    .filter((action, index, list) => list.findIndex((entry) => entry.id === action.id) === index);
   const reportedActions = current.reportedActions.length
     ? current.reportedActions
-    : parsedReportedAction
-      ? [parsedReportedAction]
-      : [];
-  const customAction = current.customAction || (!parsedReportedAction && actionAnalysis?.category === "其他动作" ? reproduction : "");
+    : parsedReportedActions;
+  const customAction = current.customAction || (!parsedReportedActions.length && actionAnalysis?.category === "其他动作" ? reproduction : "");
   const noFixedAction = unclearProvocation;
   const provocationTypes = effectiveProvocationTypes({ provocationContexts, reportedActions, customAction, noFixedAction });
   const priorCare = Array.from(new Set([
@@ -2012,7 +2032,7 @@ export function treatmentDisplay(candidate: FullCandidate, fallbackSite: string,
   };
 }
 
-export function TreatmentActionCard({ candidate, display, priorityLabel, controlMotionIds }: { candidate: FullCandidate; display: TreatmentDisplay; priorityLabel?: "先做" | "配合处理"; controlMotionIds?: string[] }) {
+export function TreatmentActionCard({ candidate, display, priorityLabel, controlMotionIds, side }: { candidate: FullCandidate; display: TreatmentDisplay; priorityLabel?: "先做" | "配合处理"; controlMotionIds?: string[]; side?: string }) {
   const candidateMotionIds = candidatePilotMotionIds(candidate);
   // undefined means that the caller has no assessment context and the
   // candidate's own directions may be used. An explicit empty list means
@@ -2051,7 +2071,7 @@ export function TreatmentActionCard({ candidate, display, priorityLabel, control
         <h2>{displayAction}</h2>
       </section>
     </header>
-    {normalizedRegion ? <MuscleRegionTreatmentMap locations={[normalizedRegion.label]} /> : null}
+    {normalizedRegion ? <MuscleRegionTreatmentMap locations={[normalizedRegion.label]} side={side} /> : null}
     {candidate.type === "muscle" && controlPlans.length ? <div className="rm-treatment-unit-steps">
       <section className="is-release"><header><i>1</i><span>轻柔松解</span></header><p>{candidate.do}</p></section>
       <section className="is-control"><header><i>2</i><span>主动控制</span></header>{controlPlans.map((plan) => <article key={plan.id}><strong>{plan.controlTitle}</strong><p>{plan.controlInstruction}{plan.controlRepetitions}。</p></article>)}</section>
