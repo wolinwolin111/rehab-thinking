@@ -53,6 +53,7 @@ import {
   bilateralMotionOptions,
   effectiveAssessmentRecord,
   effectiveBilateralComparison,
+  effectiveProvocationTypes,
   familiarSymptomRequired,
   functionCompensationOptions,
   functionSimpleAnswer,
@@ -307,7 +308,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
   if (!item) return <section className="rm-page"><StepHeading eyebrow="第3步 · 评估检查" title="先确认身体区域" /><button type="button" className="rm-primary" onClick={() => goToStep(0)}>返回补充信息</button></section>;
   if (sharedTensionOpen && sharedTensionRequired) {
     const tensionComparisonLabel = intake.side === "双侧/中间" ? "两侧感觉接近" : "没有明显差别";
-    const tensionContext = `${intake.location} ${intake.description} ${intake.symptomType} ${intake.provocationTypes.join(" ")}`;
+    const tensionContext = `${intake.location} ${intake.description} ${intake.symptomType} ${effectiveProvocationTypes(intake).join(" ")}`;
     const locations = [...new Set(limitedPilotMotionItems.flatMap((motionItem) => tensionLocationOptions(motionItem.id.replace(/^motion:/, ""), tensionContext)))];
     const selectedLocations = sharedTensionRecord.tensionLocations ?? [];
     const tensionExitLabels = intake.side === "双侧/中间" ? ["两侧感觉接近", "暂不判断"] : ["没有明显差别", "暂不判断"];

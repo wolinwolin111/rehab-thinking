@@ -119,7 +119,7 @@ export function TrainingStage(props: TrainingStageProps) {
       plan = planQuickFeedbackRecord(previous, mode, targetReps, { confirmed: true });
     }
     if (!plan.feedback) return;
-    const feedback = plan.feedback;
+    const feedback = { ...plan.feedback, recordedAt: new Date().toISOString() };
     setExerciseFeedback((current) => ({
       ...current,
       [exercise.id]: feedback,

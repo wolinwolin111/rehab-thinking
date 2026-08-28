@@ -6,6 +6,7 @@ import { StageOutcomeSections } from "@/src/features/rehabmind/components/stages
 import type { FunctionUnableReason, TreatmentFunctionRetestAnswer } from "@/src/features/rehabmind/controllers/use-function-retest";
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { CompletedRangeRetestAnswer, RangeRetestAnswer, TrialRecord, TrialResult, YesNo } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import type { FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
 import { summarizeTreatmentCoverage } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefChangeExplanation } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { professionalAssessmentTitle } from "@/src/knowledge/pilot/pilot-motion-muscle-knowledge";
@@ -94,7 +95,7 @@ export type TreatmentRetestStageView = {
   tissuePathway: TissuePathwayDecision;
   swellingGuidance?: FullCandidate;
   trialTargets: TrialTarget[];
-  pendingFunctionRetestItems: Array<{ assessmentId: string; label: string }>;
+  pendingFunctionRetestItems: FunctionRetestObligation[];
   activeTarget?: TrialTarget;
   activeCandidate?: FullCandidate;
   activeTargetSides: BilateralSide[];
@@ -179,6 +180,7 @@ export type TreatmentRetestStageActions = {
   onUndoLastFinish: () => void;
   onFinishTrial: (requestedResult: TrialResult, timeBased?: boolean, nextCandidateType?: FullCandidate["type"], deferredRetest?: boolean) => void;
   onFinishRangeBatch: () => void;
+  onFinishOutstandingFunctionRetests: () => void;
   onContinueWithReusedRetest: () => void;
   onSaveRecord: (status?: SavedDemoRecord["status"], latestScoreOverride?: number, snapshotOverrides?: Partial<SavedDemoSnapshot>) => void;
 };
@@ -231,6 +233,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     onBeginAdverseReassessment: beginAdverseReassessment, onOpenAssessmentItem: openAssessmentItem,
     onTargetScoreBeforeRetest: targetScoreBeforeRetest, onUndoLastFinish: undoLastFinish,
     onFinishTrial: finishTrial, onFinishRangeBatch: finishRangeBatch,
+    onFinishOutstandingFunctionRetests: finishOutstandingFunctionRetests,
     onContinueWithReusedRetest: continueWithReusedRetest, onSaveRecord: saveRecord,
   } = actions;
 
@@ -263,7 +266,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     prepareRetest();
   };
   // 功能动作 target：处理后对所有功能动作都问「能否完成」（松解/松动能改善「做不做得了」）。
-  const activeFunctionObligations = activeTarget?.functionRetestObligations ?? [];
+  const activeFunctionObligations = activeTarget?.functionRetestObligations ?? pendingFunctionRetestItems;
   const isFunctionTarget = Boolean(activeFunctionObligations.length || activeTarget?.finding.id.startsWith("function:"));
   const activeFunctionEvidence = !activeFunctionObligations.length && isFunctionTarget && activeTarget
     ? functionEvidenceFromRecord(activeTarget.finding.id, assessmentResults[activeTarget.finding.id])
@@ -556,8 +559,9 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     <h2>还有动作需要再试一次</h2>
     <ul>{pendingFunctionRetestItems.map((item) => <li key={item.assessmentId}>{item.label}</li>)}</ul>
     <p>这些动作已经在前面实际做过，不能用活动范围记录代替。</p>
+    {functionRetestFields}
     <div className="rm-page-actions split">
-      <button type="button" className="rm-primary" onClick={() => reopenAssessment("请重新确认相关动作；完成后会重新安排处理和复查。")}>返回相关评估</button>
+      <button type="button" className="rm-primary" disabled={!functionRetestSummary.ready} onClick={finishOutstandingFunctionRetests}>记录这些动作</button>
       <button type="button" onClick={() => saveRecord("康复中")}>保存，之后继续</button>
     </div>
   </section> : null;

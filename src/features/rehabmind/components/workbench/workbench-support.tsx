@@ -167,6 +167,8 @@ export type IntakeState = {
   /** 通用的“疼/不舒服”需要在位置确认时再让用户确认性质。 */
   painQualityConfirmed: boolean;
   symptoms: string[];
+  /** 用户原话中独立出现的诱发条件；具体动作的决策标签不落盘。 */
+  provocationContexts: string[];
   provocationTypes: string[];
   forceDirection: string;
   swellingLocation: string;
@@ -183,6 +185,8 @@ export type IntakeState = {
   reportedActions: ReportedAction[];
   /** 没有现成选项时保存用户原话，后续直接作为主诉复测动作。 */
   customAction: string;
+  /** 用户明确表示没有固定诱发动作；不再用 provocationTypes 中的哨兵字符串代替。 */
+  noFixedAction: boolean;
   actionSelectionConfirmed: boolean;
   /** 专业人士对患者的补充记录，不替代患者原话。 */
   professionalNotes: string;
@@ -375,6 +379,14 @@ export type FollowupStage = "review" | "treatment" | "training" | "summary";
 export type TransitionTarget = "assessment" | "treatment" | "training" | "summary";
 
 export type FollowupTreatmentRecord = {
+  treatmentRecordId?: string;
+  sessionId?: string;
+  assessmentRevision?: number;
+  recordedAt?: string;
+  /** 评估改版后保留旧事实，但不再参与当前方案或结果计算。 */
+  supersededAt?: string;
+  supersededByAssessmentRevision?: number;
+  invalidationReason?: "assessment-updated" | "adverse-reassessment";
   sessionNumber: number;
   targetId?: string;
   candidateId: string;
@@ -392,6 +404,7 @@ export type FollowupTreatmentRecord = {
   rangeOutcome?: CompletedRangeRetestAnswer;
   rangeDiscomforts?: Record<string, YesNo>;
   rangeScores?: Record<string, number>;
+  functionRetests?: Record<string, import("@/src/domain/rehab/treatment/trial-record-types").FunctionRetestRecord>;
   chiefRetested?: boolean;
   retestOnly?: boolean;
   reviewOnly?: boolean;
@@ -401,6 +414,7 @@ export type FollowupTreatmentRecord = {
 
 export type SavedDemoSnapshot = {
   schemaVersion?: number;
+  contractRevision?: typeof REHABMIND_V3_CONTRACT_REVISION;
   /** v2 内部复查闭环合同；旧总结缺省时只读展示，不强制退回处理。 */
   retestContractVersion?: 1;
   localCaseId?: string;
@@ -434,6 +448,8 @@ export type SavedDemoSnapshot = {
   imaging: string[];
   assessmentIndex: number;
   assessmentResults: Record<string, AssessmentRecord>;
+  assessmentHistory?: AssessmentSessionRecord[];
+  assessmentOwnerSessionId?: string;
   trialTargetIndex: number;
   candidateIndex: number;
   selectedOptionalCandidateIds?: string[];
@@ -442,6 +458,8 @@ export type SavedDemoSnapshot = {
   bilateralTreatmentSides?: Record<string, BilateralSide[]>;
   bilateralRetestResponses?: Record<string, "better" | "same" | "worse">;
   trialRecords: TrialRecord[];
+  /** 已被新评估替代的首诊处理事实；只读保存，不参与当前页面计算。 */
+  supersededTrialRecords?: TrialRecord[];
   postScore: number;
   postScoreConfirmed?: boolean;
   postDiscomfort?: YesNo | "";
@@ -457,9 +475,11 @@ export type SavedDemoSnapshot = {
   trainingPlanSaved?: boolean;
   treatmentFinalRetestScore?: number;
   treatmentFinalRetestConfirmed?: boolean;
+  treatmentFinalRetestRecordedAt?: string;
   trainingReadyForFinalRetest?: boolean;
   finalRetestScore?: number;
   finalRetestConfirmed?: boolean;
+  finalRetestRecordedAt?: string;
   followupMode: boolean;
   sessionNumber: number;
   followupScore: number;
@@ -471,6 +491,8 @@ export type SavedDemoSnapshot = {
   followupPostDiscomfort?: YesNo | "";
   followupCandidateId: string;
   followupTrialRecords: FollowupTreatmentRecord[];
+  /** 已被新评估替代的后续康复处理事实；只读保存，不参与当前页面计算。 */
+  supersededFollowupTrialRecords?: FollowupTreatmentRecord[];
   followupReadyToRetest?: boolean;
   followupRetestPlan?: RetestPlan | null;
   followupMovementResponses?: Record<string, CompletedRangeRetestAnswer>;
@@ -482,6 +504,7 @@ export type SavedDemoSnapshot = {
   followupTrainingReadyForRetest?: boolean;
   followupFinalScore?: number;
   followupFinalScoreConfirmed?: boolean;
+  followupFinalRetestRecordedAt?: string;
   hasNewSymptom: FollowupNewSymptomAnswer | boolean;
   followupTrends: Record<string, FollowupReviewAnswer>;
   sessionHistory?: RehabSessionSummary[];
@@ -498,6 +521,17 @@ export type SavedDemoSnapshot = {
   consent?: { version: string; confirmedAt: string };
 };
 
+export const REHABMIND_V3_CONTRACT_REVISION = 2 as const;
+
+export type AssessmentSessionRecord = {
+  assessmentSetId: string;
+  sessionId: string;
+  assessmentRevision: number;
+  recordedAt: string;
+  results: Record<string, AssessmentRecord>;
+  supersedesAssessmentSetId?: string;
+};
+
 export type PersistedTreatmentRecordV3 = {
   sessionId: string;
   sessionNumber: number;
@@ -510,6 +544,7 @@ export type PersistedTreatmentRecordV3 = {
  */
 export type PersistedDemoSnapshotV3 = {
   schemaVersion: 3;
+  contractRevision: typeof REHABMIND_V3_CONTRACT_REVISION;
   identity: {
     caseId: string;
     localCaseId: string;
@@ -538,10 +573,7 @@ export type PersistedDemoSnapshotV3 = {
       boneRisk: Record<string, "yes" | "no" | "unsure">;
       imaging: string[];
     };
-    assessments: {
-      sessionId: string;
-      results: Record<string, AssessmentRecord>;
-    };
+    assessments: AssessmentSessionRecord[];
     treatments: PersistedTreatmentRecordV3[];
     retests: {
       obligations: RetestObligation[];
@@ -559,6 +591,7 @@ export type PersistedDemoSnapshotV3 = {
     stage: Step;
     phase: "intake" | "safety" | "assessment" | "treatment" | "training" | "summary";
     assessmentRevision: number;
+    assessmentOwnerSessionId: string;
     treatmentPlanRevision: number;
     pendingRetestCount: number;
     bilateralNeedsReferral: boolean;
@@ -586,9 +619,11 @@ export type PersistedDemoSnapshotV3 = {
       movementScoreConfirmed: Record<string, boolean>;
       treatmentFinalScore: number;
       treatmentFinalConfirmed: boolean;
+      treatmentFinalRecordedAt?: string;
       trainingReadyForFinal: boolean;
       finalScore: number;
       finalConfirmed: boolean;
+      finalRecordedAt?: string;
     };
     currentSession: {
       isLaterSession: boolean;
@@ -610,6 +645,7 @@ export type PersistedDemoSnapshotV3 = {
       trainingReadyForRetest: boolean;
       finalScore: number;
       finalScoreConfirmed: boolean;
+      finalRetestRecordedAt?: string;
       hasNewSymptom: boolean;
       reviewResults: Record<string, FollowupReviewAnswer>;
     };
@@ -684,18 +720,45 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
   if (!localCaseId || !problemThreadId || !sessionId || !sessionStartedAt) {
     throw new Error("v3 snapshot identity is incomplete");
   }
-  const initialTreatments: PersistedTreatmentRecordV3[] = snapshot.trialRecords.map((record) => ({
+  const initialTreatments: PersistedTreatmentRecordV3[] = [
+    ...(snapshot.supersededTrialRecords ?? []),
+    ...snapshot.trialRecords,
+  ].map((record) => ({
     sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId ?? sessionId,
     sessionNumber: 1,
     record,
   }));
-  const laterTreatments: PersistedTreatmentRecordV3[] = snapshot.followupTrialRecords.map((record) => ({
+  const laterTreatments: PersistedTreatmentRecordV3[] = [
+    ...(snapshot.supersededFollowupTrialRecords ?? []),
+    ...snapshot.followupTrialRecords,
+  ].map((record) => ({
     sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === record.sessionNumber)?.sessionId ?? sessionId,
     sessionNumber: record.sessionNumber,
     record,
   }));
+  const assessmentOwnerSessionId = snapshot.assessmentOwnerSessionId
+    ?? snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId
+    ?? sessionId;
+  const assessmentSetId = `assessment-set:${assessmentOwnerSessionId}:r${snapshot.assessmentRevision ?? 0}`;
+  const existingAssessmentSet = snapshot.assessmentHistory?.find((item) => item.assessmentSetId === assessmentSetId);
+  const previousAssessmentSet = snapshot.assessmentHistory
+    ?.filter((item) => item.sessionId === assessmentOwnerSessionId && item.assessmentRevision < (snapshot.assessmentRevision ?? 0))
+    .sort((left, right) => right.assessmentRevision - left.assessmentRevision)[0];
+  const currentAssessmentSet: AssessmentSessionRecord = {
+    assessmentSetId,
+    sessionId: assessmentOwnerSessionId,
+    assessmentRevision: snapshot.assessmentRevision ?? 0,
+    recordedAt: existingAssessmentSet?.recordedAt ?? snapshot.draftSavedAt ?? sessionStartedAt,
+    results: snapshot.assessmentResults,
+    ...(previousAssessmentSet ? { supersedesAssessmentSetId: previousAssessmentSet.assessmentSetId } : {}),
+  };
+  const assessmentHistory = [
+    ...(snapshot.assessmentHistory ?? []).filter((item) => item.assessmentSetId !== assessmentSetId),
+    currentAssessmentSet,
+  ];
   return {
     schemaVersion: 3,
+    contractRevision: REHABMIND_V3_CONTRACT_REVISION,
     identity: {
       caseId: localCaseId,
       localCaseId,
@@ -713,14 +776,18 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
     },
     domain: {
       consent: snapshot.consent,
-      intake: snapshot.intake,
+      intake: {
+        ...snapshot.intake,
+        // 派生标签只在决策时计算；持久化只保留用户明确条件来源。
+        provocationTypes: snapshot.intake.provocationContexts,
+      },
       bodyMarks: snapshot.bodyMarks ?? [],
       scoreRecords: snapshot.scoreRecords ?? [],
       specialTestRecords: snapshot.specialTestRecords ?? [],
       professionalNoteRecords: snapshot.professionalNoteRecords ?? [],
       decisionTraces: snapshot.decisionTraces ?? [],
       safety: { answers: snapshot.safety, boneRisk: snapshot.boneRisk ?? {}, imaging: snapshot.imaging },
-      assessments: { sessionId, results: snapshot.assessmentResults },
+      assessments: assessmentHistory,
       treatments: [...initialTreatments, ...laterTreatments],
       retests: { obligations: snapshot.retestObligations ?? [], records: snapshot.retestRecords ?? [] },
       training: {
@@ -735,8 +802,9 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
       stage: snapshot.step,
       phase: phaseForSnapshot(snapshot),
       assessmentRevision: snapshot.assessmentRevision ?? 0,
+      assessmentOwnerSessionId,
       treatmentPlanRevision: snapshot.treatmentPlanRevision ?? snapshot.assessmentRevision ?? 0,
-      pendingRetestCount: (snapshot.retestObligations ?? []).filter((item) => item.required && item.status === "pending").length,
+      pendingRetestCount: (snapshot.retestObligations ?? []).filter((item) => item.sessionId === sessionId && item.required && item.status === "pending").length,
       bilateralNeedsReferral: snapshot.bilateralNeedsReferral ?? false,
       midpointDecisionDone: snapshot.midpointDecisionDone ?? false,
       adverseResponse: snapshot.adverseResponse ?? null,
@@ -762,9 +830,11 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
         movementScoreConfirmed: snapshot.movementScoreConfirmed ?? {},
         treatmentFinalScore: snapshot.treatmentFinalRetestScore ?? 0,
         treatmentFinalConfirmed: snapshot.treatmentFinalRetestConfirmed ?? false,
+        treatmentFinalRecordedAt: snapshot.treatmentFinalRetestRecordedAt,
         trainingReadyForFinal: snapshot.trainingReadyForFinalRetest ?? false,
         finalScore: snapshot.finalRetestScore ?? 0,
         finalConfirmed: snapshot.finalRetestConfirmed ?? false,
+        finalRecordedAt: snapshot.finalRetestRecordedAt,
       },
       currentSession: {
         isLaterSession: snapshot.followupMode,
@@ -786,6 +856,7 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
         trainingReadyForRetest: snapshot.followupTrainingReadyForRetest ?? false,
         finalScore: snapshot.followupFinalScore ?? 0,
         finalScoreConfirmed: snapshot.followupFinalScoreConfirmed ?? false,
+        finalRetestRecordedAt: snapshot.followupFinalRetestRecordedAt,
         hasNewSymptom: snapshot.hasNewSymptom === true || snapshot.hasNewSymptom === "yes",
         reviewResults: snapshot.followupTrends,
       },
@@ -797,7 +868,7 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
   // 工作台内存态仍按页面控制器逐步拆分；它从不直接跨持久化边界。
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const internal = value as Partial<SavedDemoSnapshot>;
-    if (internal.schemaVersion === 3 && internal.intake && internal.safety && internal.assessmentResults) {
+    if (internal.schemaVersion === 3 && internal.contractRevision === REHABMIND_V3_CONTRACT_REVISION && internal.intake && internal.safety && internal.assessmentResults) {
       return internal.intake.operationTarget === "study" ? null : internal as SavedDemoSnapshot;
     }
   }
@@ -809,6 +880,7 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
   const current = persisted.draft.currentSession;
   return {
     schemaVersion: 3,
+    contractRevision: REHABMIND_V3_CONTRACT_REVISION,
     retestContractVersion: 1,
     ...persisted.identity,
     consent: persisted.domain.consent,
@@ -821,9 +893,23 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     safety: persisted.domain.safety.answers,
     boneRisk: persisted.domain.safety.boneRisk,
     imaging: persisted.domain.safety.imaging,
-    assessmentResults: persisted.domain.assessments.results,
-    trialRecords: persisted.domain.treatments.filter((item) => item.sessionNumber === 1).map((item) => item.record as TrialRecord),
-    followupTrialRecords: persisted.domain.treatments.filter((item) => item.sessionNumber > 1).map((item) => item.record as FollowupTreatmentRecord),
+    assessmentResults: persisted.domain.assessments.find((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId && item.assessmentRevision === persisted.workflow.assessmentRevision)?.results
+      ?? persisted.domain.assessments.findLast((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId)?.results
+      ?? {},
+    assessmentHistory: persisted.domain.assessments,
+    assessmentOwnerSessionId: persisted.workflow.assessmentOwnerSessionId,
+    trialRecords: persisted.domain.treatments
+      .filter((item) => item.sessionNumber === 1 && !(item.record as TrialRecord).supersededByAssessmentRevision)
+      .map((item) => item.record as TrialRecord),
+    supersededTrialRecords: persisted.domain.treatments
+      .filter((item) => item.sessionNumber === 1 && Boolean((item.record as TrialRecord).supersededByAssessmentRevision))
+      .map((item) => item.record as TrialRecord),
+    followupTrialRecords: persisted.domain.treatments
+      .filter((item) => item.sessionNumber > 1 && !(item.record as FollowupTreatmentRecord).supersededByAssessmentRevision)
+      .map((item) => item.record as FollowupTreatmentRecord),
+    supersededFollowupTrialRecords: persisted.domain.treatments
+      .filter((item) => item.sessionNumber > 1 && Boolean((item.record as FollowupTreatmentRecord).supersededByAssessmentRevision))
+      .map((item) => item.record as FollowupTreatmentRecord),
     retestObligations: persisted.domain.retests.obligations,
     retestRecords: persisted.domain.retests.records,
     exerciseFeedback: persisted.domain.training.initialFeedback,
@@ -857,9 +943,11 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     movementScoreConfirmed: initial.movementScoreConfirmed,
     treatmentFinalRetestScore: initial.treatmentFinalScore,
     treatmentFinalRetestConfirmed: initial.treatmentFinalConfirmed,
+    treatmentFinalRetestRecordedAt: initial.treatmentFinalRecordedAt,
     trainingReadyForFinalRetest: initial.trainingReadyForFinal,
     finalRetestScore: initial.finalScore,
     finalRetestConfirmed: initial.finalConfirmed,
+    finalRetestRecordedAt: initial.finalRecordedAt,
     followupMode: current.isLaterSession,
     followupScore: current.reviewScore,
     followupScoreConfirmed: current.reviewScoreConfirmed,
@@ -879,6 +967,7 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     followupTrainingReadyForRetest: current.trainingReadyForRetest,
     followupFinalScore: current.finalScore,
     followupFinalScoreConfirmed: current.finalScoreConfirmed,
+    followupFinalRetestRecordedAt: current.finalRetestRecordedAt,
     hasNewSymptom: current.hasNewSymptom,
     followupTrends: current.reviewResults,
   };
@@ -915,14 +1004,14 @@ export function pilotInputFromIntake(intake: IntakeState, confirmed: IntakeMulti
     symptomType: intake.symptomType,
     symptoms: intake.symptoms,
     symptomsConfirmed: confirmed.symptoms,
-    provocationTypes: intake.provocationTypes,
+    provocationTypes: effectiveProvocationTypes(intake),
     provocationConfirmed: confirmed.provocationTypes,
     reportedActions: intake.reportedActions,
     customAction: intake.customAction,
     reproduction: intake.reproduction,
     actionAnalysis: intake.actionAnalysis,
     currentTask: reportedActionSummary(intake).join("、") || intake.actionAnalysis?.task || intake.forceDirection,
-    noFixedTask: intake.provocationTypes.includes("说不清 / 没有固定动作") && reportedActionSummary(intake).length === 0,
+    noFixedTask: intake.noFixedAction && reportedActionSummary(intake).length === 0,
     baselineScoreConfirmed: intake.baselineScoreConfirmed,
     swellingLocation: intake.swellingLocation,
     tendernessLocation: intake.tendernessLocation,
@@ -1135,6 +1224,7 @@ export const DEFAULT_INTAKE: IntakeState = {
   symptomType: "",
   painQualityConfirmed: false,
   symptoms: [],
+  provocationContexts: [],
   provocationTypes: [],
   forceDirection: "",
   swellingLocation: "",
@@ -1149,6 +1239,7 @@ export const DEFAULT_INTAKE: IntakeState = {
   reproduction: "",
   reportedActions: [],
   customAction: "",
+  noFixedAction: false,
   actionSelectionConfirmed: false,
   professionalNotes: "",
   actionAnalysis: null,
@@ -1162,6 +1253,28 @@ export const DEFAULT_INTAKE: IntakeState = {
 };
 
 export const EXAMPLE_DESCRIPTION = "右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。";
+
+/** 具体动作只在使用时推导决策标签；取消动作后不会留下历史标签。 */
+export function actionDerivedProvocationTypes(actions: ReportedAction[], customAction: string) {
+  const derived: string[] = [];
+  if (actions.some((action) => action.kind === "joint-direction")) derived.push("活动到某个角度");
+  if (actions.some((action) => action.kind === "functional")) derived.push("走路、站立或负重");
+  if (actions.some((action) => action.id === "functional-run-jump")) derived.push("运动过程中");
+  const custom = customAction.trim();
+  if (/用力|发力|抗阻|对抗/.test(custom)) derived.push("用力或对抗阻力");
+  if (/按压|轻按|压痛/.test(custom)) derived.push("按压");
+  if (/休息|静止|夜间|夜里|睡觉/.test(custom)) derived.push("静止或夜间");
+  if (/运动|训练|跑步|跑完|跳跃|落地/.test(custom)) derived.push("运动过程中");
+  return [...new Set(derived)];
+}
+
+export function effectiveProvocationTypes(intake: Pick<IntakeState, "provocationContexts" | "reportedActions" | "customAction" | "noFixedAction">) {
+  return [...new Set([
+    ...(intake.provocationContexts ?? []),
+    ...actionDerivedProvocationTypes(intake.reportedActions ?? [], intake.customAction ?? ""),
+    ...(intake.noFixedAction ? ["说不清 / 没有固定动作"] : []),
+  ])];
+}
 
 /**
  * T-12：恢复旧快照时 baselineScoreConfirmed 缺失不再盲猜为 true。
@@ -1202,9 +1315,18 @@ export function migrateIntakeState(raw: Partial<IntakeState> | undefined): Intak
     tendernessLocations: raw?.tendernessLocations ?? [],
     sensoryLocations: raw?.sensoryLocations ?? [],
     symptoms: raw?.symptoms ?? [],
-    provocationTypes: raw?.provocationTypes ?? [],
+    provocationContexts: raw?.provocationContexts ?? [],
+    provocationTypes: effectiveProvocationTypes({
+      ...DEFAULT_INTAKE,
+      ...raw,
+      provocationContexts: raw?.provocationContexts ?? [],
+      reportedActions: raw?.reportedActions ?? [],
+      customAction: raw?.customAction ?? "",
+      noFixedAction: raw?.noFixedAction ?? raw?.provocationTypes?.includes("说不清 / 没有固定动作") ?? false,
+    } as IntakeState),
     reportedActions: raw?.reportedActions ?? [],
     customAction: raw?.customAction ?? "",
+    noFixedAction: raw?.noFixedAction ?? raw?.provocationTypes?.includes("说不清 / 没有固定动作") ?? false,
     actionSelectionConfirmed: raw?.actionSelectionConfirmed ?? Boolean(raw?.reproduction),
     professionalNotes: raw?.professionalNotes ?? "",
     priorCare: raw?.priorCare ?? [],
@@ -1522,16 +1644,15 @@ export function parseIntake(text: string, current: IntakeState): IntakeState {
   ]));
   const actionSource = `${parsedProvokingAction} ${text}`.toLowerCase();
   const unclearProvocation = includesAny(text, ["说不清什么时候", "不知道什么时候", "没有固定动作", "没固定动作", "不一定什么时候", "随机出现"]);
-  const provocationTypes = Array.from(new Set([
-    ...(current.provocationTypes ?? []),
-    ...(includesAny(parsedProvokingAction, ["角度", "抬手", "弯曲", "伸直", "转动", "转头", "侧屈", "低头", "抬头", "弯腰", "后仰", "转身", "转体", "勾脚", "下压"] ) ? ["活动到某个角度"] : []),
+  // 只把用户原话中独立出现的条件保存为上下文。走路、下蹲、跑跳等动作
+  // 由 reportedActions 表达，决策标签在使用时推导，取消动作后不会残留。
+  const provocationContexts = Array.from(new Set([
+    ...(current.provocationContexts ?? []),
     ...(includesAny(actionSource, ["发力", "用力", "使劲", "抗阻", "一撑"] ) ? ["用力或对抗阻力"] : []),
-    ...(includesAny(actionSource, ["走", "站", "负重", "楼", "台阶", "蹲", "起身", "跑", "跳", "抬脚", "迈步", "踩地", "落脚", "一瘸一拐", "walk", "squat", "run", "jump"] ) ? ["走路、站立或负重"] : []),
     ...(includesAny(parsedProvokingAction, ["按压", "压痛", "一按"] ) ? ["按压"] : []),
-    ...(includesAny(text, ["静止", "不动", "夜间", "晚上", "睡觉"] ) ? ["静止或夜间"] : []),
-    ...(includesAny(parsedProvokingAction, ["运动时", "训练时", "跑步时", "运动过程中", "跑步", "训练"] ) ? ["运动过程中"] : []),
+    ...(includesAny(text, ["静止", "不动", "休息", "夜间", "晚上", "夜里", "睡觉"] ) ? ["静止或夜间"] : []),
+    ...(includesAny(parsedProvokingAction, ["运动时", "训练时", "运动过程中"] ) ? ["运动过程中"] : []),
     ...(includesAny(text, ["运动后", "训练后", "跑步后", "跑完", "结束后"] ) ? ["运动结束后"] : []),
-    ...(unclearProvocation ? ["说不清 / 没有固定动作"] : []),
   ]));
   const pilotLocationAliases: Partial<Record<FullRegionId, Array<[string[], string]>>> = {
     "thigh-local": [
@@ -1600,6 +1721,29 @@ export function parseIntake(text: string, current: IntakeState): IntakeState {
   const deniesToeDirection = /(?:脚趾|足趾|大脚趾)[^，。；]{0,6}(?:没有|没|不)(?:受伤|疼|痛|不适|问题)|(?:没有|没|不)[^，。；]{0,6}(?:脚趾|足趾|大脚趾)(?:受伤|疼|痛|不适|有问题)?/.test(text);
   const forceDirection = deniesToeDirection && inferredForceDirection === "脚趾或足弓用力" ? current.forceDirection : inferredForceDirection || current.forceDirection;
   const actionAnalysis = analyzeChiefAction(text, regionId, forceDirection, reproduction);
+  const parsedActionSource = `${reproduction} ${actionAnalysis?.task ?? ""} ${actionAnalysis?.category ?? ""}`;
+  const parsedActionId = ([
+    [/下?楼|台阶|楼梯/, "functional-stairs"],
+    [/下蹲|蹲起|起身/, "functional-squat"],
+    [/走路|行走|步行/, "functional-walk"],
+    [/单腿/, "functional-single-leg"],
+    [/跑|跳|落地/, "functional-run-jump"],
+    [/绷直膝|膝关节伸直/, "knee-extension"],
+    [/弯曲膝|膝关节屈曲/, "knee-flexion"],
+    [/勾脚|踝背屈/, regionId === "calf-local" ? "calf-dorsiflexion" : "ankle-dorsiflexion"],
+    [/绷脚|跖屈/, regionId === "calf-local" ? "calf-plantarflexion" : "ankle-plantarflexion"],
+    [/脚底向内|内翻/, regionId === "calf-local" ? "calf-inversion" : "ankle-inversion"],
+    [/脚底向外|外翻/, regionId === "calf-local" ? "calf-eversion" : "ankle-eversion"],
+  ] as Array<[RegExp, string]>).find(([pattern]) => pattern.test(parsedActionSource))?.[1];
+  const parsedReportedAction = reportedActionOptions(regionId).find((action) => action.id === parsedActionId);
+  const reportedActions = current.reportedActions.length
+    ? current.reportedActions
+    : parsedReportedAction
+      ? [parsedReportedAction]
+      : [];
+  const customAction = current.customAction || (!parsedReportedAction && actionAnalysis?.category === "其他动作" ? reproduction : "");
+  const noFixedAction = unclearProvocation;
+  const provocationTypes = effectiveProvocationTypes({ provocationContexts, reportedActions, customAction, noFixedAction });
   const priorCare = Array.from(new Set([
     ...(current.priorCare ?? []),
     ...(includesAny(originalText, ["看过医生", "去过医院", "医生看过"]) ? ["看过医生"] : []),
@@ -1624,6 +1768,7 @@ export function parseIntake(text: string, current: IntakeState): IntakeState {
     symptomType,
     painQualityConfirmed,
     symptoms,
+    provocationContexts,
     provocationTypes,
     forceDirection,
     swellingLocation,
@@ -1633,8 +1778,10 @@ export function parseIntake(text: string, current: IntakeState): IntakeState {
     sensoryLocation,
     sensoryLocations,
     reproduction,
-    customAction: current.customAction || (actionAnalysis?.category === "其他动作" ? reproduction : ""),
-    actionSelectionConfirmed: current.actionSelectionConfirmed || Boolean(reproduction) || provocationTypes.includes("说不清 / 没有固定动作"),
+    reportedActions,
+    customAction,
+    noFixedAction,
+    actionSelectionConfirmed: current.actionSelectionConfirmed || Boolean(reportedActions.length || customAction || noFixedAction),
     actionAnalysis,
     goal,
     priorCare,

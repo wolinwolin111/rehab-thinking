@@ -27,6 +27,7 @@ export function useRehabSession<TRetestPlan>() {
     trainingReadyForRetest: false,
     finalScore: 0,
     finalScoreConfirmed: false,
+    finalRetestRecordedAt: undefined,
     hasNewSymptom: "",
     reviewResults: {},
     history: [],

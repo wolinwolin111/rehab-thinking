@@ -2,6 +2,7 @@ import { useState } from "react";
 import { type QuickFeedbackSymptom } from "@/src/domain/rehab/training/training-feedback-core";
 
 export type ExerciseFeedback = {
+  recordedAt?: string;
   completed: number;
   formChanged: boolean;
   symptom: QuickFeedbackSymptom;

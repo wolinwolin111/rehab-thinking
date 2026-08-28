@@ -35,6 +35,15 @@ export type FunctionRetestRecord = FunctionRetestObligation & {
 };
 
 export type TrialRecord = {
+  /** 一次真实处理/复查的稳定身份；创建后不随队列排序改变。 */
+  treatmentRecordId?: string;
+  sessionId?: string;
+  assessmentRevision?: number;
+  recordedAt?: string;
+  /** 评估改版后保留旧事实，但不再参与当前方案或结果计算。 */
+  supersededAt?: string;
+  supersededByAssessmentRevision?: number;
+  invalidationReason?: "assessment-updated" | "adverse-reassessment";
   candidateId: string;
   treatmentKey?: string;
   treatmentSide?: string;

@@ -21,7 +21,7 @@ import { useTreatmentFlow } from "@/src/features/rehabmind/controllers/use-treat
 import { useDecisionEngine } from "@/src/features/rehabmind/controllers/use-decision-engine";
 import { resultFromScore } from "@/src/domain/rehab/treatment/trial-record-builder";
 import { computeBatchResult } from "@/src/domain/rehab/retest/batch-retest-compute";
-import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import { type CompletedRangeRetestAnswer, type FunctionRetestCompletion, type FunctionRetestMode, type FunctionRetestObligation, type RangeRetestAnswer, type TrialRecord, type TrialResult, type YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
 import { makeLowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegion, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { classifyPilotAssessmentEvidence, matchPilotRelations, rankPilotAssessmentIds, type PilotFindingInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
@@ -88,7 +88,7 @@ import { functionControlValue, functionDiscomfortValue } from "@/src/domain/reha
 import { chiefFunctionAssessmentIds, selectFunctionAssessmentPlan } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 import { functionEvidenceDecisionTags, functionEvidenceFromRecord } from "@/src/domain/rehab/retest/function-evidence-core";
 import { pendingFunctionRetests, summarizeFunctionRetestObligations } from "@/src/domain/rehab/retest/retest-obligation-core";
-import { buildRetestLedgerFromTrials } from "@/src/domain/rehab/retest/retest-ledger-core";
+import { buildRetestLedgerFromTrials, retestObligationId, type RetestObligation, type RetestRecord } from "@/src/domain/rehab/retest/retest-ledger-core";
 import { resolveFunctionRetestTransition } from "@/src/domain/rehab/retest/function-retest-transition-core";
 import { completedProblemIdsFromTreatmentRecords } from "@/src/domain/rehab/treatment/treatment-ledger-core";
 import { buildRangeTreatmentRecords, resolveChiefRetestCapture, resolveRangeChiefRetestCapture, resolveTreatmentRecordFlow } from "@/src/domain/rehab/treatment/treatment-record-flow-core";
@@ -97,8 +97,9 @@ import { activeMotionRecordComplete } from "@/src/domain/rehab/assessment/motion
 import { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessment-record-complete-core";
 import { hasRecordedChiefRetest, latestRecordedChiefScore } from "@/src/domain/rehab/retest/chief-retest-history-core";
 import { isTreatmentQueueCandidateEligible } from "@/src/domain/rehab/treatment/treatment-queue-eligibility-core";
-import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
+import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, effectiveProvocationTypes, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
 import { deriveMedicalGuidance, medicalGuidanceNeedsClarification } from "@/src/domain/rehab/intake/medical-guidance-core";
+import type { AssessmentSessionRecord } from "./workbench-support";
 
 type PersistedSavedDemoRecordV3 = Omit<SavedDemoRecord, "snapshot" | "pilotConflictSnapshot"> & {
   snapshot?: PersistedDemoSnapshotV3;
@@ -158,6 +159,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   useEffect(() => {
     intakeRef.current = intake;
   }, [intake]);
+  const activeProvocationTypes = useMemo(() => effectiveProvocationTypes(intake), [intake]);
   const [showAllIntakeFields, setShowAllIntakeFields] = useState(false);
   const [highlightedIntakeFields, setHighlightedIntakeFields] = useState<string[]>([]);
   const [professionalLocationTab, setProfessionalLocationTab] = useState<"swelling" | "tenderness" | "sensory">("swelling");
@@ -235,10 +237,22 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     trainingPlanSaved, setTrainingPlanSaved,
     trainingReadyForFinalRetest, setTrainingReadyForFinalRetest,
     finalRetestScore, setFinalRetestScore,
-    finalRetestConfirmed, setFinalRetestConfirmed,
+    finalRetestConfirmed, setFinalRetestConfirmed: setFinalRetestConfirmedState,
   } = useTrainingFlow();
   const [treatmentFinalRetestScore, setTreatmentFinalRetestScore] = useState(0);
-  const [treatmentFinalRetestConfirmed, setTreatmentFinalRetestConfirmed] = useState(false);
+  const [treatmentFinalRetestConfirmed, setTreatmentFinalRetestConfirmedState] = useState(false);
+  const [treatmentFinalRetestRecordedAt, setTreatmentFinalRetestRecordedAt] = useState<string | undefined>();
+  const [finalRetestRecordedAt, setFinalRetestRecordedAt] = useState<string | undefined>();
+  const setTreatmentFinalRetestConfirmed: Dispatch<SetStateAction<boolean>> = (value) => {
+    const next = typeof value === "function" ? value(treatmentFinalRetestConfirmed) : value;
+    setTreatmentFinalRetestConfirmedState(next);
+    setTreatmentFinalRetestRecordedAt(next ? new Date().toISOString() : undefined);
+  };
+  const setFinalRetestConfirmed: Dispatch<SetStateAction<boolean>> = (value) => {
+    const next = typeof value === "function" ? value(finalRetestConfirmed) : value;
+    setFinalRetestConfirmedState(next);
+    setFinalRetestRecordedAt(next ? new Date().toISOString() : undefined);
+  };
   // 方向型主诉动作的统一复测分数（与功能型主诉动作的 postScore 分开记录）。
   const [directionChiefRetestScore, setDirectionChiefRetestScore] = useState(0);
   const [directionChiefRetestConfirmed, setDirectionChiefRetestConfirmed] = useState(false);
@@ -263,6 +277,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [problemThreadId, setProblemThreadId] = useState(() => createProblemThreadId());
   const [sessionId, setSessionId] = useState(() => createSessionId());
   const [sessionStartedAt, setSessionStartedAt] = useState(() => new Date().toISOString());
+  const [assessmentOwnerSessionId, setAssessmentOwnerSessionId] = useState(sessionId);
+  const [assessmentHistory, setAssessmentHistory] = useState<AssessmentSessionRecord[]>([]);
+  const [supersededTrialRecords, setSupersededTrialRecords] = useState<TrialRecord[]>([]);
+  const [supersededFollowupTrialRecords, setSupersededFollowupTrialRecords] = useState<FollowupTreatmentRecord[]>([]);
   const activeCaseIdentityRef = useRef(localCaseId);
   const localTabIdRef = useRef(createLocalTabId());
   const currentDraftFingerprintRef = useRef<string | null>(null);
@@ -341,13 +359,20 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const followupTensionLocations = currentSession.tensionLocations;
   const setFollowupTensionLocations: Dispatch<SetStateAction<string[]>> = (value) => setCurrentSession("tensionLocations", value);
   const followupExerciseChoices = currentSession.exerciseChoices;
-  const setFollowupExerciseChoices: Dispatch<SetStateAction<Record<string, FollowupExerciseChoice>>> = (value) => setCurrentSession("exerciseChoices", value);
+  const setFollowupExerciseChoicesRaw: Dispatch<SetStateAction<Record<string, FollowupExerciseChoice>>> = (value) => setCurrentSession("exerciseChoices", value);
   const followupTrainingReadyForRetest = currentSession.trainingReadyForRetest;
   const setFollowupTrainingReadyForRetest: Dispatch<SetStateAction<boolean>> = (value) => setCurrentSession("trainingReadyForRetest", value);
   const followupFinalScore = currentSession.finalScore;
   const setFollowupFinalScore: Dispatch<SetStateAction<number>> = (value) => setCurrentSession("finalScore", value);
   const followupFinalScoreConfirmed = currentSession.finalScoreConfirmed;
-  const setFollowupFinalScoreConfirmed: Dispatch<SetStateAction<boolean>> = (value) => setCurrentSession("finalScoreConfirmed", value);
+  const setFollowupFinalScoreConfirmedState: Dispatch<SetStateAction<boolean>> = (value) => setCurrentSession("finalScoreConfirmed", value);
+  const followupFinalRetestRecordedAt = currentSession.finalRetestRecordedAt;
+  const setFollowupFinalRetestRecordedAt: Dispatch<SetStateAction<string | undefined>> = (value) => setCurrentSession("finalRetestRecordedAt", value);
+  const setFollowupFinalScoreConfirmed: Dispatch<SetStateAction<boolean>> = (value) => {
+    const next = typeof value === "function" ? value(followupFinalScoreConfirmed) : value;
+    setFollowupFinalScoreConfirmedState(next);
+    setFollowupFinalRetestRecordedAt(next ? new Date().toISOString() : undefined);
+  };
   const hasNewSymptom = currentSession.hasNewSymptom;
   const setHasNewSymptom: Dispatch<SetStateAction<FollowupNewSymptomAnswer>> = (value) => setCurrentSession("hasNewSymptom", value);
   const followupTrends = currentSession.reviewResults;
@@ -358,8 +383,90 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   useEffect(() => { sessionHistoryRef.current = sessionHistory; }, [sessionHistory]);
   const [assessmentRevision, setAssessmentRevision] = useState(0);
   const [treatmentPlanRevision, setTreatmentPlanRevision] = useState(0);
+  const [persistedRetestObligations, setPersistedRetestObligations] = useState<RetestObligation[]>([]);
+  const [persistedRetestRecords, setPersistedRetestRecords] = useState<RetestRecord[]>([]);
   const [adverseResponse, setAdverseResponse] = useState<AdverseResponseEvent | null>(null);
   const [adverseConfirmedAssessmentIds, setAdverseConfirmedAssessmentIds] = useState<string[]>([]);
+
+  function supersedeCurrentTreatmentFacts(
+    nextRevision: number,
+    reason: "assessment-updated" | "adverse-reassessment",
+  ) {
+    const supersededAt = new Date().toISOString();
+    const appendUnique = <T extends { treatmentRecordId?: string }>(current: T[], additions: T[]) => {
+      const known = new Set(current.map((item) => item.treatmentRecordId).filter(Boolean));
+      return [...current, ...additions.filter((item) => !item.treatmentRecordId || !known.has(item.treatmentRecordId))];
+    };
+    if (followupMode) {
+      const currentFacts = followupTrialRecords
+        .filter((record) => record.sessionNumber === sessionNumber)
+        .map((record) => ({
+          ...record,
+          supersededAt,
+          supersededByAssessmentRevision: nextRevision,
+          invalidationReason: reason,
+        }));
+      if (currentFacts.length) setSupersededFollowupTrialRecords((current) => appendUnique(current, currentFacts));
+      return;
+    }
+    const currentFacts = trialRecords.map((record) => ({
+      ...record,
+      supersededAt,
+      supersededByAssessmentRevision: nextRevision,
+      invalidationReason: reason,
+    }));
+    if (currentFacts.length) setSupersededTrialRecords((current) => appendUnique(current, currentFacts));
+  }
+
+  function syncFollowupTrainingSafety(previous: Record<string, FollowupExerciseChoice>, next: Record<string, FollowupExerciseChoice>) {
+    const recordedAt = new Date().toISOString();
+    const ids = new Set([...Object.keys(previous), ...Object.keys(next)]);
+    ids.forEach((exerciseId) => {
+      const wasWorse = previous[exerciseId] === "worse";
+      const isWorse = next[exerciseId] === "worse";
+      if (wasWorse === isWorse) return;
+      const obligationId = retestObligationId({ sessionId, kind: "training-safety", targetId: exerciseId, assessmentRevision });
+      const label = region?.exercises.find((exercise) => exercise.id === exerciseId)?.title ?? "训练动作";
+      setPersistedRetestObligations((current) => {
+        const existing = current.find((item) => item.obligationId === obligationId);
+        const obligation: RetestObligation = {
+          obligationId,
+          caseId: localCaseId,
+          problemThreadId,
+          sessionId,
+          kind: "training-safety",
+          targetId: exerciseId,
+          label,
+          sourceAssessmentRevision: assessmentRevision,
+          treatmentRecordIds: existing?.treatmentRecordIds ?? [],
+          required: true,
+          status: isWorse ? "pending" : "completed",
+          createdAt: existing?.createdAt ?? recordedAt,
+          ...(isWorse ? {} : { completedAt: recordedAt }),
+        };
+        return [...current.filter((item) => item.obligationId !== obligationId), obligation];
+      });
+      if (wasWorse && !isWorse) setPersistedRetestRecords((current) => {
+        const retestRecordId = `retest-result:followup-training:${sessionId}:${exerciseId}:${recordedAt}`;
+        if (current.some((item) => item.retestRecordId === retestRecordId)) return current;
+        return [...current, {
+          retestRecordId,
+          obligationId,
+          caseId: localCaseId,
+          problemThreadId,
+          sessionId,
+          sourceAssessmentRevision: assessmentRevision,
+          recordedAt,
+          result: "same",
+        }];
+      });
+    });
+  }
+  const setFollowupExerciseChoices: Dispatch<SetStateAction<Record<string, FollowupExerciseChoice>>> = (value) => {
+    const next = typeof value === "function" ? value(followupExerciseChoices) : value;
+    syncFollowupTrainingSafety(followupExerciseChoices, next);
+    setFollowupExerciseChoicesRaw(next);
+  };
 
   useEffect(() => {
     assessmentResultsRef.current = assessmentResults;
@@ -424,6 +531,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+    // dispatchPilotSync reads the latest machine from a ref; recreating this listener on every render would lose no state but add churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageScope]);
 
   useEffect(() => {
@@ -920,7 +1029,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 mechanism: currentSnapshot.intake.mechanism,
                 symptomType: currentSnapshot.intake.symptomType,
                 symptoms: currentSnapshot.intake.symptoms,
-                provocationTypes: currentSnapshot.intake.provocationTypes,
+                provocationTypes: effectiveProvocationTypes(currentSnapshot.intake),
                 medicalGuidance: currentSnapshot.intake.medicalGuidance,
               },
               assessmentResults: currentSnapshot.assessmentResults,
@@ -1278,7 +1387,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         const professionalCopy = professionalAssessmentCopy(item.id, item.how, item.observe);
         return { id: `special:${item.id}`, kind: "special", title: intake.side === "双侧/中间" ? bilateralAssessmentCopy(assessmentTitle(item.id, item.title)) : assessmentTitle(item.id, item.title), how: intake.side === "双侧/中间" ? bilateralAssessmentCopy(copy.how) : copy.how, observe: intake.side === "双侧/中间" ? bilateralAssessmentCopy(copy.observe) : copy.observe, professionalHow: professionalCopy.how, professionalObserve: professionalCopy.observe, explain: item.explain, next: item.caution, tags: item.tags, specialCategory: specialCategoryFor(item.id), trigger: item.trigger };
       });
-    const forceProvoked = intake.provocationTypes.includes("用力或对抗阻力") || includesAny(intake.description, ["发力", "用力", "使劲", "抗阻", "一撑"]);
+    const forceProvoked = activeProvocationTypes.includes("用力或对抗阻力") || includesAny(intake.description, ["发力", "用力", "使劲", "抗阻", "一撑"]);
     // 方案B：活动度检查与对应力量检查相邻排列（勾脚活动度→勾脚力量、内翻活动度→内翻力量……）
     // 配对表：活动度 item.id（不带 motion: 前缀）→ 力量 item.id（不带 strength: 前缀）
     const motionStrengthPair: Record<string, string> = {
@@ -1399,7 +1508,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 专业模式也必须保留用户明确选中的多个功能动作；通用排序预算只负责
     // 排顺序，不能把第二个主诉动作静默挤出独立评估队列。
     return rankAndLimit(order, functionItems.map((item) => item.id));
-  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile.isGuided, workflowProfile.operationTarget, workflowProfile.palpationMode, imaging]);
+  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile.isGuided, workflowProfile.operationTarget, workflowProfile.palpationMode, imaging, activeProvocationTypes]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”
   // 的异常和处理；用户界面合并为一张卡，避免同一膝盖连续翻四个几乎相同的页面。
@@ -1452,7 +1561,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       detail: [intake.side, intake.location, intake.symptomType, intake.actionAnalysis?.load].filter(Boolean).join(" · "),
       priority: "chief",
       score: hasClearChiefAction(intake) && intake.baselineScoreConfirmed ? intake.baselineScore : undefined,
-      tags: [intake.location, intake.symptomType, ...intake.provocationTypes, intake.forceDirection, intake.actionAnalysis?.category, intake.actionAnalysis?.function, intake.actionAnalysis?.direction, ...(intake.stabbingPalpation === "sharp" ? ["tender:sharp"] : [])].filter(Boolean) as string[],
+      tags: [intake.location, intake.symptomType, ...activeProvocationTypes, intake.forceDirection, intake.actionAnalysis?.category, intake.actionAnalysis?.function, intake.actionAnalysis?.direction, ...(intake.stabbingPalpation === "sharp" ? ["tender:sharp"] : [])].filter(Boolean) as string[],
     }];
     assessments.forEach((item) => {
       const rawResult = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region.id);
@@ -1710,7 +1819,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       motionFinding.tags = Array.from(new Set([...motionFinding.tags, ...(item.pairedStrengthTags ?? []), ...discomfortDecisionTags(result.discomfortType), ...discomfortDecisionTags(result.pairedStrengthType)]));
     });
     if (intake.symptoms.includes("肿胀或淤青")) items.push({ id: "track:swelling", title: `肿胀：${intake.swellingLocation || "位置待补充"}`, detail: "稍后和下次比较这一部位的范围与轮廓，不要求当场消失", priority: "track", tags: ["肿胀"] });
-    if (intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压")) items.push({ id: "track:tender", title: `按压痛：${intake.tendernessLocation || "位置待补充"}`, detail: "不反复重压，下一次在同一位置轻柔比较", priority: "track", tags: ["压痛"] });
+    if (intake.symptoms.includes("按压痛") || activeProvocationTypes.includes("按压")) items.push({ id: "track:tender", title: `按压痛：${intake.tendernessLocation || "位置待补充"}`, detail: "不反复重压，下一次在同一位置轻柔比较", priority: "track", tags: ["压痛"] });
     if (intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化")) items.push({ id: "track:sensory", title: `麻或电感：${intake.sensoryLocation || "范围待补充"}`, detail: "后续比较分布范围和肌力变化", priority: "track", tags: ["neural", "sensory"] });
     // 一个肌群可能同时影响多个方向，但处理时只应作为一个处理单元出现。
     // 将同一肌群在不同动作下产生的张力记录合并，动作方向保留在详情里供复盘参考。
@@ -1740,7 +1849,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       return chiefMatch + functionalImpact;
     };
     return [chief, ...displayItems.slice(1).sort((a, b) => rank(a) - rank(b))];
-  }, [region, intake, assessments, assessmentResults, canAssessPassive, canAssessResistance, canAssessEndFeel, workflowProfile.isGuided]);
+  }, [region, intake, assessments, assessmentResults, canAssessPassive, canAssessResistance, canAssessEndFeel, workflowProfile.isGuided, activeProvocationTypes]);
 
   const bilateralAssessmentWorseSide = useMemo<BilateralSide | undefined>(() => {
     if (intake.side !== "双侧/中间") return undefined;
@@ -1983,7 +2092,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     if (!region) return [];
     const locationSource = `${intake.location} ${intake.bodyLocations.map((item) => item.location).join(" ")}`;
     const feelingSource = `${intake.symptomType} ${intake.symptoms.join(" ")}`;
-    const actionSource = `${chiefActionSource(intake)} ${intake.provocationTypes.join(" ")} ${intake.mechanism}`;
+    const actionSource = `${chiefActionSource(intake)} ${activeProvocationTypes.join(" ")} ${intake.mechanism}`;
     const scored = region.candidateGroups.map((group, index) => {
       const locationMatch = group.match.locations.some((trigger) => locationSource.includes(trigger));
       const feelingMatch = group.match.feelings.some((trigger) => feelingSource.includes(trigger));
@@ -1997,7 +2106,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // The complaint can legitimately span two nearby patterns, but a location
     // alone must not open every generic group attached to that joint.
     return ordered.filter((entry) => entry.score >= bestScore - 2).slice(0, 2).map((entry) => entry.group);
-  }, [region, intake]);
+  }, [region, intake, activeProvocationTypes]);
 
   const pilotDecisionInput = useMemo(
     () => pilotInputFromIntake(intake, confirmedIntakeMulti),
@@ -2064,9 +2173,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     mechanism: intake.mechanism,
     symptomType: intake.symptomType,
     symptoms: intake.symptoms,
-    provocationTypes: intake.provocationTypes,
+    provocationTypes: activeProvocationTypes,
     description: intake.description,
-  }), [intake]);
+  }), [intake, activeProvocationTypes]);
   const decisionEngine = useDecisionEngine({ intake: pilotDecisionInput, findings: pilotFindingInputs, tissue: tissueDecisionInput });
   const matchedPilotRelations = decisionEngine.relations;
   const tissuePathway = decisionEngine.tissuePathway;
@@ -2148,14 +2257,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       mechanism: intake.mechanism,
       symptomType: intake.symptomType,
       symptoms: intake.symptoms,
-      provocationTypes: intake.provocationTypes,
+      provocationTypes: activeProvocationTypes,
       goal: intake.goal,
       sessionNumber,
       findings: localFindings,
       treatmentHistory,
       hasNewSymptom: hasNewSymptom === "yes",
     });
-  }, [region, intake, pilotFindingInputs, trialRecords, followupTrialRecords, sessionNumber, hasNewSymptom, followupTrends, previousSessionForReview, assessments, assessmentResults]);
+  }, [region, intake, pilotFindingInputs, trialRecords, followupTrialRecords, sessionNumber, hasNewSymptom, followupTrends, previousSessionForReview, assessments, assessmentResults, activeProvocationTypes]);
 
   const swellingGuidance = useMemo(() => {
     if (!region || !intake.symptoms.includes("肿胀或淤青")) return undefined;
@@ -2191,29 +2300,135 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     return buildTrialTargets(ctx) as unknown as TrialTarget[];
   }, [region, findings, matchedCandidateGroups, assessmentResults, intake, canAssessPassive, canMobilizeJoint, workflowProfile, swellingGuidance, assessments, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, kneeDecision, localLimbDecision, tissuePathway, trialRecords]);
 
-  const pendingFunctionRetestItems = useMemo(() => pendingFunctionRetests({
-    targets: baseTrialTargets,
-    records: trialRecords,
-  }), [baseTrialTargets, trialRecords]);
-  const pendingFunctionRetestIds = useMemo(
-    () => new Set(pendingFunctionRetestItems.map((item) => item.assessmentId)),
-    [pendingFunctionRetestItems],
-  );
   const currentSessionTrials = useMemo(
     () => followupMode
       ? followupTrialRecords.filter((record) => record.sessionNumber === sessionNumber).map(sessionTreatmentAsTrialRecord)
       : trialRecords,
     [followupMode, followupTrialRecords, sessionNumber, trialRecords],
   );
+  const queueLinkedFunctionRetests = useMemo(() => pendingFunctionRetests({
+    targets: baseTrialTargets,
+    records: currentSessionTrials,
+  }), [baseTrialTargets, currentSessionTrials]);
+  const assessmentFunctionRetestItems = useMemo(() => {
+    if (assessmentOwnerSessionId !== sessionId) return [];
+    const candidateIdsByAssessment = new Map(queueLinkedFunctionRetests.map((item) => [item.assessmentId, item.candidateIds]));
+    return assessments.flatMap((item) => {
+      if (item.kind !== "function") return [];
+      const record = assessmentResults[item.id];
+      if (currentSessionTrials.some((trial) => Boolean(trial.functionRetests?.[item.id]))) return [];
+      const evidence = functionEvidenceFromRecord(item.id, record);
+      const shouldRetest = evidence.completion === "complete"
+        ? record?.functionDiscomfort === "yes" || record?.discomfort === "yes"
+        : evidence.completion === "unable" && ["pain", "weak"].includes(record?.functionUnableReason ?? "");
+      if (!evidence.performed || !shouldRetest || evidence.retestMode === "none") return [];
+      return [{
+        assessmentId: item.id,
+        label: item.title,
+        baselineCompletion: evidence.completion as FunctionRetestCompletion,
+        mode: evidence.retestMode as FunctionRetestMode,
+        baselineScore: evidence.retestMode === "ordinary" && typeof record?.symptomScore === "number" ? record.symptomScore : undefined,
+        sides: intake.side === "双侧/中间" ? (["左侧", "右侧"] as Array<"左侧" | "右侧">) : undefined,
+        candidateIds: candidateIdsByAssessment.get(item.id) ?? [],
+        assessmentRevision,
+      }];
+    });
+  }, [assessmentOwnerSessionId, sessionId, queueLinkedFunctionRetests, assessments, assessmentResults, currentSessionTrials, intake.side, assessmentRevision]);
+  const pendingFunctionRetestItems = assessmentFunctionRetestItems;
+  const pendingFunctionRetestIds = useMemo(
+    () => new Set(pendingFunctionRetestItems.map((item) => item.assessmentId)),
+    [pendingFunctionRetestItems],
+  );
+  const retestSignals = useMemo(() => {
+    const signals: import("@/src/domain/rehab/retest/retest-ledger-core").RetestSignalInput[] = [];
+    const actualTreatments = currentSessionTrials.filter((record) => !record.reviewOnly && !record.retestOnly && !record.timeBased);
+    const chiefCanBeCompared = intake.baselineScoreConfirmed && hasClearChiefAction(intake);
+    const chiefAlreadyRecorded = currentSessionTrials.some((record) => record.chiefRetested);
+    const lastTreatmentScore = currentSessionTrials.at(-1)?.afterScore ?? (followupMode ? followupScore : intake.baselineScore);
+    const addChiefResult = (source: string, before: number, after: number, recordedAt: string | undefined) => signals.push({
+      kind: "chief",
+      targetId: "chief-action",
+      label: chiefActionLabel(intake),
+      required: true,
+      status: "completed",
+      result: resultFromScore(before, after),
+      score: after,
+      treatmentRecordId: `retest-source:${sessionId}:${source}`,
+      recordedAt: recordedAt ?? sessionStartedAt,
+      assessmentRevision,
+    });
+    if (chiefCanBeCompared) {
+      if (!followupMode && treatmentFinalRetestConfirmed) {
+        addChiefResult("treatment-final", lastTreatmentScore, treatmentFinalRetestScore, treatmentFinalRetestRecordedAt);
+      }
+      if (!followupMode && finalRetestConfirmed) {
+        addChiefResult("training-final", treatmentFinalRetestConfirmed ? treatmentFinalRetestScore : lastTreatmentScore, finalRetestScore, finalRetestRecordedAt);
+      }
+      if (followupMode && followupFinalScoreConfirmed) {
+        addChiefResult("followup-training-final", lastTreatmentScore, followupFinalScore, followupFinalRetestRecordedAt);
+      }
+      const chiefConfirmedOutsideTrials = !followupMode
+        ? treatmentFinalRetestConfirmed || finalRetestConfirmed
+        : followupFinalScoreConfirmed;
+      if (actualTreatments.length && !chiefAlreadyRecorded && !chiefConfirmedOutsideTrials) signals.push({
+        kind: "chief",
+        targetId: "chief-action",
+        label: chiefActionLabel(intake),
+        required: true,
+        status: "pending",
+        assessmentRevision,
+      });
+    }
+    if (!followupMode) Object.entries(exerciseFeedback).forEach(([exerciseId, feedback]) => {
+      const everWorse = feedback.symptom === "worse" || feedback.symptomHistory?.includes("worse");
+      if (!everWorse) return;
+      const handled = feedback.symptom !== "worse" || feedback.followUpAction === "regress-training";
+      const recordedAt = feedback.recordedAt ?? sessionStartedAt;
+      signals.push({
+        kind: "training-safety",
+        targetId: exerciseId,
+        label: region?.exercises.find((exercise) => exercise.id === exerciseId)?.title ?? "训练动作",
+        required: true,
+        status: handled ? "completed" : "pending",
+        result: handled ? "same" : undefined,
+        treatmentRecordId: handled ? `training-feedback:${sessionId}:${exerciseId}:${recordedAt}:handled` : undefined,
+        recordedAt,
+        assessmentRevision,
+      });
+    });
+    return signals;
+  }, [assessmentRevision, currentSessionTrials, exerciseFeedback, finalRetestConfirmed, finalRetestRecordedAt, finalRetestScore, followupFinalRetestRecordedAt, followupFinalScore, followupFinalScoreConfirmed, followupMode, followupScore, intake, region, sessionId, sessionStartedAt, treatmentFinalRetestConfirmed, treatmentFinalRetestRecordedAt, treatmentFinalRetestScore]);
   const activeRetestLedger = useMemo(() => buildRetestLedgerFromTrials({
     caseId: localCaseId,
     problemThreadId,
     sessionId,
     recordedAt: sessionStartedAt,
+    assessmentRevision,
     trials: currentSessionTrials,
-    pendingFunctions: followupMode ? [] : pendingFunctionRetestItems,
+    pendingFunctions: pendingFunctionRetestItems,
     pendingRangeDirectionIds: (followupMode ? followupRetestPlan : retestPlan)?.directionIds ?? [],
-  }), [localCaseId, problemThreadId, sessionId, sessionStartedAt, currentSessionTrials, pendingFunctionRetestItems, followupMode, followupRetestPlan, retestPlan]);
+    signals: retestSignals,
+    previousObligations: persistedRetestObligations,
+    previousRecords: persistedRetestRecords,
+  }), [localCaseId, problemThreadId, sessionId, sessionStartedAt, assessmentRevision, currentSessionTrials, pendingFunctionRetestItems, followupMode, followupRetestPlan, retestPlan, retestSignals, persistedRetestObligations, persistedRetestRecords]);
+  const outstandingFunctionRetests = useMemo<FunctionRetestObligation[]>(() => {
+    const grouped = new Map<string, FunctionRetestObligation>();
+    activeRetestLedger.obligations
+      .filter((item) => item.sessionId === sessionId && item.kind === "function" && item.required && item.status === "pending")
+      .forEach((item) => {
+        const existing = grouped.get(item.targetId);
+        const sides = [...new Set([...(existing?.sides ?? []), ...(item.side ? [item.side] : [])])];
+        grouped.set(item.targetId, {
+          assessmentId: item.targetId,
+          label: item.label,
+          baselineCompletion: item.baselineCompletion ?? "complete",
+          mode: item.mode ?? "ordinary",
+          baselineScore: item.baselineScore,
+          sides: sides.length ? sides : undefined,
+        });
+      });
+    return [...grouped.values()];
+  }, [activeRetestLedger.obligations, sessionId]);
 
   const trialTargets = useMemo<TrialTarget[]>(() => {
     const recordedRangeDirections = new Set(trialRecords.flatMap((record) => Object.keys(record.rangeOutcomes ?? {})));
@@ -2626,7 +2841,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     if (intake.goal <= 2 || currentScore >= 4 || unresolvedMotion) return Math.min(2, sessionCeiling);
     // 恢复目标是终点，不等于第一次康复就直接进入对应高阶训练。
     return sessionCeiling;
-  }, [intake, findings, medicalGuidance, noImmediateTreatmentResponse, imaging, followupMode, followupScoreConfirmed, followupScore, sessionEndScore, followupTrends, sessionNumber, latestOutcomeForDirection]);
+  }, [intake, findings, medicalGuidance, noImmediateTreatmentResponse, followupMode, followupScoreConfirmed, followupScore, sessionEndScore, followupTrends, sessionNumber, latestOutcomeForDirection]);
 
   const exercises = useMemo<FullExercise[]>(() => {
     if (!region) return [];
@@ -2941,7 +3156,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     : undefined;
   const selfNeuralReferral = workflowProfile.isGuided && (intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化"));
   const stabbingEarlyReferral = workflowProfile.isGuided && intake.symptomType === "刺痛" && intake.stabbingSpread === "rest";
-  const intakeHasTenderness = intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压");
+  const intakeHasTenderness = intake.symptoms.includes("按压痛") || activeProvocationTypes.includes("按压");
   const intakeHasSensorySymptoms = intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化");
   const bilateralSameProblemGuidance = "如果两侧是同一个问题，请同时保留左右标记，再选择本次优先侧；不同大部位请另建问题。";
   // 发力方向不再作为症状收集中的独立必答题；它会在对应活动动作卡片里
@@ -2953,7 +3168,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const mechanismQuestionRelevant = !intake.mechanism && (["今天或昨天", "2～7天"].includes(intake.onset) || descriptionSuggestsTrauma);
   const provocationAlreadyClear = hasClearChiefAction(intake);
   const provocationConfirmedForFlow = confirmedIntakeMulti.provocationTypes || provocationAlreadyClear;
-  const hasNoFixedProvocation = intake.provocationTypes.includes("说不清 / 没有固定动作");
+  const hasNoFixedProvocation = intake.noFixedAction;
   const needsChiefActionConfirmation = provocationConfirmedForFlow
     && !hasNoFixedProvocation
     && !reportedActionSummary(intake).length;
@@ -3423,6 +3638,20 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       returnMode: followupMode ? "followup" : "initial",
       returnFollowupStage: followupMode ? followupStage : undefined,
     });
+    const priorAssessmentSet: AssessmentSessionRecord = {
+      assessmentSetId: `assessment-set:${assessmentOwnerSessionId}:r${assessmentRevision}`,
+      sessionId: assessmentOwnerSessionId,
+      assessmentRevision,
+      recordedAt: new Date().toISOString(),
+      results: assessmentResults,
+    };
+    setAssessmentHistory((current) => [
+      ...current.filter((item) => item.assessmentSetId !== priorAssessmentSet.assessmentSetId),
+      priorAssessmentSet,
+    ]);
+    setAssessmentOwnerSessionId(sessionId);
+    assessmentResultsRef.current = {};
+    setAssessmentResults({});
     setAssessmentRevision(revision);
     // 处理方案仍属于旧评估版本；聚焦复查确认前不允许继续执行。
     setAdverseResponse({ ...event, assessmentRevision: revision });
@@ -3438,8 +3667,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const firstIndex = assessments.findIndex((item) => item.id === boundedFocusIds[0]);
     if (firstIndex >= 0) setAssessmentIndex(firstIndex);
     if (input.source !== "after-session") {
-      setTrialRecords([]);
-      setFollowupTrialRecords((current) => current.filter((record) => record.sessionNumber !== sessionNumber));
+      supersedeCurrentTreatmentFacts(revision, "adverse-reassessment");
+      if (followupMode) setFollowupTrialRecords((current) => current.filter((record) => record.sessionNumber !== sessionNumber));
+      else setTrialRecords([]);
     }
     setReadyToRetest(false);
     setFollowupReadyToRetest(false);
@@ -3546,11 +3776,32 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const nextResults = { ...current, [id]: next };
     assessmentResultsRef.current = nextResults;
     setAssessmentResults(nextResults);
-    if (!adverseResponse) setAssessmentRevision((currentRevision) => {
-      const nextRevision = nextAssessmentRevision(currentRevision);
-      setTreatmentPlanRevision(nextRevision);
-      return nextRevision;
-    });
+    const hasVersionedDownstreamFacts = reviewStepEditable
+      || step > 2
+      || trialRecords.length > 0
+      || followupTrialRecords.some((record) => record.sessionNumber === sessionNumber)
+      || persistedRetestObligations.some((item) => item.sessionId === sessionId);
+    const shouldCreateAssessmentRevision = !adverseResponse && hasVersionedDownstreamFacts;
+    const updatedAssessmentRevision = shouldCreateAssessmentRevision
+      ? nextAssessmentRevision(assessmentRevision)
+      : assessmentRevision;
+    if (shouldCreateAssessmentRevision) {
+      const priorAssessmentSetId = `assessment-set:${assessmentOwnerSessionId}:r${assessmentRevision}`;
+      const changedAt = new Date().toISOString();
+      setAssessmentHistory((history) => {
+        const existing = history.find((item) => item.assessmentSetId === priorAssessmentSetId);
+        const prior: AssessmentSessionRecord = {
+          assessmentSetId: priorAssessmentSetId,
+          sessionId: assessmentOwnerSessionId,
+          assessmentRevision,
+          recordedAt: existing?.recordedAt ?? changedAt,
+          results: current,
+        };
+        return [...history.filter((item) => item.assessmentSetId !== priorAssessmentSetId), prior];
+      });
+      setAssessmentRevision(updatedAssessmentRevision);
+      setTreatmentPlanRevision(updatedAssessmentRevision);
+    }
     if (reviewStepEditable) {
       setStep(2);
       setReviewStep(null);
@@ -3564,7 +3815,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setTrialTargetIndex(0);
     setCandidateIndex(0);
     setSelectedOptionalCandidateIds([]);
-    setTrialRecords([]);
+    if (shouldCreateAssessmentRevision) {
+      supersedeCurrentTreatmentFacts(updatedAssessmentRevision, "assessment-updated");
+      if (followupMode) setFollowupTrialRecords((records) => records.filter((record) => record.sessionNumber !== sessionNumber));
+      else setTrialRecords([]);
+    }
     setReadyToRetest(false);
     setRetestPlan(null);
     setPostScore(0);
@@ -3782,7 +4037,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         residualReviewId: RESIDUAL_REVIEW_ID,
       },
     });
-    const records = treatmentRecordFlow.records;
+    const recordedAt = new Date().toISOString();
+    const records = treatmentRecordFlow.records.map((record) => ({
+      ...record,
+      treatmentRecordId: `treatment:${sessionId}:${crypto.randomUUID()}`,
+      sessionId,
+      assessmentRevision,
+      recordedAt,
+    }));
     setFinishSnapshots((current) => [...current, { trialRecords, trialTargetIndex, candidateIndex, pendingTrialAdvance }]);
     setTrialRecords((current) => [...current, ...records]);
     const treatmentDecision = workflowController.recordTreatmentRetest({
@@ -3845,6 +4107,47 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .map((id) => assessments.find((assessment) => assessment.id === id)?.title ?? id.replace(/^function:/, ""))
     : [];
   const hasChiefFunctionAction = chiefFunctionLabels.length > 0;
+
+  function finishOutstandingFunctionRetests() {
+    const summary = summarizeFunctionRetestObligations({
+      obligations: outstandingFunctionRetests,
+      answers: treatmentFunctionRetests,
+    });
+    if (!summary.ready || !summary.records) return;
+    const recordedAt = new Date().toISOString();
+    const record: TrialRecord = {
+      treatmentRecordId: `treatment:${sessionId}:${crypto.randomUUID()}`,
+      sessionId,
+      assessmentRevision,
+      recordedAt,
+      candidateId: "outstanding-function-retest",
+      candidateTitle: "剩余动作复查",
+      treatmentName: "剩余动作复查",
+      targetId: "target:outstanding-function-retest",
+      targetTitle: outstandingFunctionRetests.map((item) => item.label).join("、"),
+      beforeScore: lastChiefScore,
+      afterScore: lastChiefScore,
+      result: summary.result,
+      movement: summary.result === "worse" ? "worse" : summary.result === "same" ? "same" : "smoother",
+      retestOnly: true,
+      functionRetests: summary.records,
+    };
+    if (followupMode) {
+      const sharedRecord = Object.fromEntries(Object.entries(record).filter(([key]) => key !== "movement")) as Omit<TrialRecord, "movement">;
+      const followupRecord: FollowupTreatmentRecord = {
+        ...sharedRecord,
+        sessionNumber,
+      };
+      setFollowupTrialRecords((current) => [...current, followupRecord]);
+    } else {
+      setTrialRecords((current) => [...current, record]);
+    }
+    setTreatmentFunctionRetests({});
+    setFunctionRetestCompletion("");
+    setFunctionRetestUnableReason("");
+    setToast("动作复查已记录");
+    window.setTimeout(() => setToast(""), 2200);
+  }
 
   function finishRangeBatch() {
     if (!activeTarget || !activeCandidate || !activeRetestFindings.length) return;
@@ -3949,6 +4252,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ];
     const batchRetestKey = canonicalRetestAction(batchRetestLabels.join("、"));
     setFinishSnapshots((current) => [...current, { trialRecords, trialTargetIndex, candidateIndex, pendingTrialAdvance }]);
+    const recordedAt = new Date().toISOString();
     const records = buildRangeTreatmentRecords({
       candidates: recordCandidates.map((candidate) => ({
         id: candidate.id,
@@ -3978,7 +4282,13 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       targetId: activeTarget.id,
       targetTitle: activeRetestFindings.map((finding) => finding.title).join("、"),
       residualReviewId: RESIDUAL_REVIEW_ID,
-    });
+    }).map((record) => ({
+      ...record,
+      treatmentRecordId: `treatment:${sessionId}:${crypto.randomUUID()}`,
+      sessionId,
+      assessmentRevision,
+      recordedAt,
+    }));
     setTrialRecords((current) => [...current, ...records]);
 
     const mergedOutcomes = { ...latestRangeOutcomes, ...rangeOutcomes };
@@ -4106,6 +4416,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const bodyMarks = mergeBodyMarks(previousBodyMarks, selectedBodyMarks, now, sessionId);
     const snapshot: SavedDemoSnapshot = {
       schemaVersion: PILOT_SNAPSHOT_SCHEMA_VERSION,
+      contractRevision: 2,
       ...(retestContractVersion === 1 ? { retestContractVersion: 1 as const } : {}),
       localCaseId,
       bodyMarks,
@@ -4127,6 +4438,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       imaging,
       assessmentIndex,
       assessmentResults,
+      assessmentHistory,
+      assessmentOwnerSessionId,
       trialTargetIndex,
       candidateIndex,
       selectedOptionalCandidateIds,
@@ -4135,6 +4448,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       bilateralTreatmentSides,
       bilateralRetestResponses,
       trialRecords,
+      supersededTrialRecords,
       postScore,
       postScoreConfirmed,
       postDiscomfort,
@@ -4150,9 +4464,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       trainingPlanSaved,
       treatmentFinalRetestScore,
       treatmentFinalRetestConfirmed,
+      treatmentFinalRetestRecordedAt,
       trainingReadyForFinalRetest,
       finalRetestScore,
       finalRetestConfirmed,
+      finalRetestRecordedAt,
       followupMode,
       sessionNumber,
       followupScore,
@@ -4164,6 +4480,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       followupPostDiscomfort,
       followupCandidateId,
       followupTrialRecords,
+      supersededFollowupTrialRecords,
       followupReadyToRetest,
       followupRetestPlan,
       followupMovementResponses,
@@ -4175,6 +4492,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       followupTrainingReadyForRetest,
       followupFinalScore,
       followupFinalScoreConfirmed,
+      followupFinalRetestRecordedAt,
       hasNewSymptom: hasNewSymptom === "yes",
       followupTrends,
       sessionHistory,
@@ -4215,7 +4533,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     }));
     snapshot.sessionIndex = sessionIndex;
     snapshot.specialTestRecords = buildSpecialTestRecords({
-      sessionId,
+      sessionId: assessmentOwnerSessionId,
       assessmentRevision,
       operationTarget: workflowProfile.operationTarget,
       capabilities: workflowProfile.capabilities,
@@ -4225,7 +4543,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       sensoryLocations: intake.sensoryLocations,
       symptomType: intake.symptomType,
       mechanism: intake.mechanism,
-      provocationTypes: intake.provocationTypes,
+      provocationTypes: activeProvocationTypes,
       forceDirection: intake.forceDirection,
       assessmentResults,
     }, assessments.filter((item) => item.kind === "special").map((item) => ({ id: item.id, trigger: item.trigger })), snapshot.draftSavedAt);
@@ -4239,7 +4557,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const currentDecisionTraces = buildDecisionTraces({
       localCaseId,
       problemThreadId,
-      sessionId,
+      sessionId: assessmentOwnerSessionId,
       trialRecords: snapshot.trialRecords,
     }, snapshot.draftSavedAt);
     snapshot.decisionTraces = currentDecisionTraces;
@@ -4284,6 +4602,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     bilateralTreatmentSides,
     bilateralRetestResponses,
     trialRecords,
+    supersededTrialRecords,
     postScore,
     postScoreConfirmed,
     postDiscomfort,
@@ -4299,9 +4618,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     trainingPlanSaved,
     treatmentFinalRetestScore,
     treatmentFinalRetestConfirmed,
+    treatmentFinalRetestRecordedAt,
     trainingReadyForFinalRetest,
     finalRetestScore,
     finalRetestConfirmed,
+    finalRetestRecordedAt,
     followupMode,
     sessionNumber,
     followupScore,
@@ -4313,6 +4634,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     followupPostDiscomfort,
     followupCandidateId,
     followupTrialRecords,
+    supersededFollowupTrialRecords,
     followupReadyToRetest,
     followupRetestPlan,
     followupMovementResponses,
@@ -4324,6 +4646,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     followupTrainingReadyForRetest,
     followupFinalScore,
     followupFinalScoreConfirmed,
+    followupFinalRetestRecordedAt,
     hasNewSymptom,
     followupTrends,
     sessionHistory,
@@ -4367,7 +4690,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 同一上下文修改分数时保留旧值，并由 mergeScoreRecords 标记 superseded。
     snapshot.scoreRecords = mergeScoreRecords(
       previousRecord?.snapshot?.scoreRecords ?? [],
-      buildScoreRecordsFromSnapshot(snapshot, savedAt),
+      buildScoreRecordsFromSnapshot({ ...snapshot, initialFactSessionId: assessmentOwnerSessionId }, savedAt),
     );
     const currentConfirmedScores = snapshot.scoreRecords.filter((score) => score.sessionId === sessionId && score.scoreState === "confirmed");
     snapshot.trialRecords = snapshot.trialRecords.map((record) => {
@@ -4736,6 +5059,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setAssessmentIndex(snapshot.assessmentIndex);
     assessmentResultsRef.current = snapshot.assessmentResults;
     setAssessmentResults(snapshot.assessmentResults);
+    setAssessmentHistory(snapshot.assessmentHistory ?? []);
+    setAssessmentOwnerSessionId(snapshot.assessmentOwnerSessionId ?? snapshot.sessionId ?? sessionId);
     assessmentFocusIdRef.current = "";
     setTrialTargetIndex(snapshot.trialTargetIndex);
     setCandidateIndex(snapshot.candidateIndex);
@@ -4745,6 +5070,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setBilateralTreatmentSides(snapshot.bilateralTreatmentSides ?? {});
     setBilateralRetestResponses(snapshot.bilateralRetestResponses ?? {});
     setTrialRecords(snapshot.trialRecords);
+    setSupersededTrialRecords(snapshot.supersededTrialRecords ?? []);
+    setPersistedRetestObligations(snapshot.retestObligations ?? []);
+    setPersistedRetestRecords(snapshot.retestRecords ?? []);
     // SAVE-02：恢复到评估阶段时，待派生队列就绪后推导落点（完成→直接进处理；部分→首个未答项）
     if (snapshot.step === 2) setRestoredAssessmentCheck({ token: Date.now() });
     setPostScore(snapshot.postScore ?? 0);
@@ -4761,9 +5089,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setTrainingComplete(snapshot.trainingComplete);
     setTrainingPlanSaved(snapshot.trainingPlanSaved ?? false);
     setTreatmentFinalRetestScore(snapshot.treatmentFinalRetestScore ?? 0);
+    setTreatmentFinalRetestRecordedAt(snapshot.treatmentFinalRetestRecordedAt);
     setTreatmentFinalRetestConfirmed(snapshot.treatmentFinalRetestConfirmed ?? false);
     setTrainingReadyForFinalRetest(snapshot.trainingReadyForFinalRetest ?? false);
     setFinalRetestScore(snapshot.finalRetestScore ?? 0);
+    setFinalRetestRecordedAt(snapshot.finalRetestRecordedAt);
     setFinalRetestConfirmed(snapshot.finalRetestConfirmed ?? false);
     setFollowupMode(snapshot.followupMode);
     setSessionNumber(snapshot.sessionNumber);
@@ -4777,6 +5107,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupPostDiscomfort(snapshot.followupPostDiscomfort ?? "");
     setFollowupCandidateId(snapshot.followupCandidateId);
     setFollowupTrialRecords(snapshot.followupTrialRecords);
+    setSupersededFollowupTrialRecords(snapshot.supersededFollowupTrialRecords ?? []);
     setFollowupReadyToRetest(snapshot.followupReadyToRetest ?? false);
     setFollowupRetestPlan(snapshot.followupRetestPlan ?? null);
     setFollowupMovementResponses(snapshot.followupMovementResponses ?? {});
@@ -4784,9 +5115,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupMovementDiscomforts(snapshot.followupMovementDiscomforts ?? {});
     setFollowupMovementScores(snapshot.followupMovementScores ?? {});
     setFollowupMovementScoreConfirmed(snapshot.followupMovementScoreConfirmed ?? {});
-    setFollowupExerciseChoices(snapshot.followupExerciseChoices);
+    setFollowupExerciseChoicesRaw(snapshot.followupExerciseChoices);
     setFollowupTrainingReadyForRetest(snapshot.followupTrainingReadyForRetest ?? false);
     setFollowupFinalScore(snapshot.followupFinalScore ?? 0);
+    setFollowupFinalRetestRecordedAt(snapshot.followupFinalRetestRecordedAt);
     setFollowupFinalScoreConfirmed(snapshot.followupFinalScoreConfirmed ?? false);
     setHasNewSymptom(snapshot.hasNewSymptom === true || snapshot.hasNewSymptom === "yes" ? "yes" : snapshot.hasNewSymptom === false || snapshot.hasNewSymptom === "no" ? "no" : "");
     setFollowupTrends(snapshot.followupTrends);
@@ -4803,6 +5135,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   }
 
   function resetDemo() {
+    const nextSessionId = createSessionId();
     draftPersistenceRef.current?.cancel();
     void clearLocalDraft(storageScope);
     setStep(0);
@@ -4816,7 +5149,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     activeCaseIdentityRef.current = nextIdentity;
     setLocalCaseId(nextIdentity);
     setProblemThreadId(createProblemThreadId());
-    setSessionId(createSessionId());
+    setSessionId(nextSessionId);
+    setAssessmentOwnerSessionId(nextSessionId);
+    setAssessmentHistory([]);
     setSessionStartedAt(new Date().toISOString());
     const nextSyncState = createPilotSyncMachineState(nextIdentity, 0, false);
     pilotSyncMachinesRef.current[nextIdentity] = nextSyncState;
@@ -4848,6 +5183,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setBilateralTreatmentSides({});
     setBilateralRetestResponses({});
     setTrialRecords([]);
+    setSupersededTrialRecords([]);
+    setSupersededFollowupTrialRecords([]);
+    setPersistedRetestObligations([]);
+    setPersistedRetestRecords([]);
     setPostScore(0);
     setPostScoreConfirmed(false);
     setPostDiscomfort("");
@@ -4888,7 +5227,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupMovementScores({});
     setFollowupMovementScoreConfirmed({});
     setFollowupTensionLocations([]);
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -4940,6 +5279,28 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   function applyIntakeChange(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
     const next = typeof nextOrUpdater === "function" ? nextOrUpdater(intakeRef.current) : nextOrUpdater;
+    const hasDownstreamFacts = Object.keys(assessmentResultsRef.current).length > 0
+      || trialRecords.length > 0
+      || followupTrialRecords.some((record) => record.sessionNumber === sessionNumber);
+    const nextRevision = hasDownstreamFacts ? nextAssessmentRevision(assessmentRevision) : assessmentRevision;
+    if (hasDownstreamFacts) {
+      const priorAssessmentSetId = `assessment-set:${assessmentOwnerSessionId}:r${assessmentRevision}`;
+      const changedAt = new Date().toISOString();
+      setAssessmentHistory((history) => {
+        const existing = history.find((item) => item.assessmentSetId === priorAssessmentSetId);
+        return [
+          ...history.filter((item) => item.assessmentSetId !== priorAssessmentSetId),
+          {
+            assessmentSetId: priorAssessmentSetId,
+            sessionId: assessmentOwnerSessionId,
+            assessmentRevision,
+            recordedAt: existing?.recordedAt ?? changedAt,
+            results: assessmentResultsRef.current,
+          },
+        ];
+      });
+      supersedeCurrentTreatmentFacts(nextRevision, "assessment-updated");
+    }
     intakeRef.current = next;
     setIntake(next);
     setReviewStep(null);
@@ -4953,7 +5314,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setAssessmentIndex(0);
     assessmentFocusIdRef.current = "";
     setAssessmentSummaryOpen(false);
-    setTrialRecords([]);
+    if (followupMode) setFollowupTrialRecords((current) => keepOtherSessionRecords(current, sessionNumber));
+    else setTrialRecords([]);
     setTrialTargetIndex(0);
     setPendingTrialAdvance(null);
     setCandidateIndex(0);
@@ -4987,7 +5349,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupScore(0);
     setFollowupScoreConfirmed(false);
     setFollowupCandidateId("");
-    setFollowupTrialRecords((current) => keepOtherSessionRecords(current, sessionNumber));
+    if (!followupMode) setFollowupTrialRecords((current) => keepOtherSessionRecords(current, sessionNumber));
     setFollowupReadyToRetest(false);
     setFollowupMovementResponses({});
     setFollowupMovementDiscomforts({});
@@ -4996,15 +5358,15 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupPostScore(0);
     setFollowupPostScoreConfirmed(false);
     setFollowupPostDiscomfort("");
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
     setFollowupTensionLocations([]);
     setHasNewSymptom("");
     setFollowupTrends({});
-    setAssessmentRevision(0);
-    setTreatmentPlanRevision(0);
+    setAssessmentRevision(nextRevision);
+    setTreatmentPlanRevision(nextRevision);
     setAdverseResponse(null);
     setAdverseConfirmedAssessmentIds([]);
   }
@@ -5012,14 +5374,24 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   /** 只有用户明确确认“出现新问题”时，才归档旧问题并建立新的身份链。 */
   function startNewProblemThread(nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState)) {
     archiveActiveProblemThread();
+    const nextSessionId = createSessionId();
     setProblemThreadId(createProblemThreadId());
-    setSessionId(createSessionId());
+    setSessionId(nextSessionId);
+    setAssessmentOwnerSessionId(nextSessionId);
+    setAssessmentHistory([]);
+    setPersistedRetestObligations([]);
+    setPersistedRetestRecords([]);
     setSessionStartedAt(new Date().toISOString());
     setSessionNumber(1);
     setRetestContractVersion(1);
     sessionHistoryRef.current = [];
     setSessionHistory([]);
     applyIntakeChange(nextOrUpdater);
+    setAssessmentRevision(0);
+    setTreatmentPlanRevision(0);
+    setTrialRecords([]);
+    setSupersededTrialRecords([]);
+    setSupersededFollowupTrialRecords([]);
     setFollowupMode(false);
     setFollowupScoreHistory([]);
     setFollowupTrialRecords([]);
@@ -5064,6 +5436,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         timeBased,
       });
     setFollowupTrialRecords((current) => [...current.filter((item) => !(item.sessionNumber === sessionNumber && item.candidateId === candidate.id)), {
+      treatmentRecordId: `treatment:${sessionId}:${crypto.randomUUID()}`,
+      sessionId,
+      assessmentRevision,
+      recordedAt: new Date().toISOString(),
       sessionNumber,
       targetId: "target:chief",
       candidateId: candidate.id,
@@ -5112,7 +5488,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupMovementDiscomforts({});
     setFollowupMovementScores({});
     setFollowupMovementScoreConfirmed({});
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -5134,6 +5510,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const currentRecords = followupTrialRecords.filter((item) => item.sessionNumber === sessionNumber);
     const beforeScore = currentRecords.at(-1)?.afterScore ?? followupScore;
     setFollowupTrialRecords((current) => [...current, {
+      treatmentRecordId: `treatment:${sessionId}:${crypto.randomUUID()}`,
+      sessionId,
+      assessmentRevision,
+      recordedAt: new Date().toISOString(),
       sessionNumber,
       targetId: "target:chief",
       candidateId: "followup-treatment-final-retest",
@@ -5247,7 +5627,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupStage("summary");
     setFollowupCandidateId("");
     setFollowupTrends({});
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -5290,7 +5670,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupMovementScoreConfirmed({});
     setFollowupTensionLocations([]);
     setFollowupTrends({});
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -5379,7 +5759,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupTensionLocations([]);
     setFollowupCandidateId("");
     setFollowupTrends({});
-    setFollowupExerciseChoices({});
+    setFollowupExerciseChoicesRaw({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -5391,7 +5771,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     { label: "时间", value: intake.onset || "待确认" },
     { label: "感觉", value: intake.symptomType || "待确认" },
     ...(intake.symptoms.includes("肿胀或淤青") ? [{ label: "肿胀位置", value: intake.swellingLocation || "待确认" }] : []),
-    ...(intake.symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? [{ label: "按压痛位置", value: intake.tendernessLocation || "待确认" }] : []),
+    ...(intake.symptoms.includes("按压痛") || activeProvocationTypes.includes("按压") ? [{ label: "按压痛位置", value: intake.tendernessLocation || "待确认" }] : []),
     ...(intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化") ? [{ label: "麻电范围", value: intake.sensoryLocation || "待确认" }] : []),
     ...((intake.priorCare ?? []).length ? [{ label: "之前处理", value: (intake.priorCare ?? []).join("、") }] : []),
     { label: "恢复目标", value: getGoalLabel(intake.goal) },
@@ -5405,7 +5785,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ...(intake.mechanism || mechanismQuestionRelevant ? [{ field: "发生方式", value: intake.mechanism || "待补充" }] : []),
     { field: "不适感觉", value: intake.symptomType || "待补充" },
     { field: "目前情况", value: confirmedIntakeMulti.symptoms ? intake.symptoms.join("、") || "没有以上情况" : "待补充" },
-    { field: "什么时候最明显", value: provocationConfirmedForFlow ? hasClearChiefAction(intake) ? chiefActionLabel(intake) : intake.provocationTypes.join("、") || "没有固定情况" : "待补充" },
+    { field: "什么动作会不舒服", value: provocationConfirmedForFlow ? hasClearChiefAction(intake) ? chiefActionLabel(intake) : activeProvocationTypes.join("、") || "没有固定动作" : "待补充" },
     ...(baselineScoreApplicable ? [{ field: "不适分数", value: intake.baselineScoreConfirmed ? `${intake.baselineScore}/10` : "待补充" }] : []),
     ...(intake.symptoms.includes("肿胀或淤青") ? [{ field: "肿胀位置", value: intake.swellingLocationConfirmed ? intake.swellingLocation || "说不清" : "待补充" }] : []),
     ...(intakeHasTenderness ? [{ field: "按压痛位置", value: intake.tendernessLocationConfirmed ? intake.tendernessLocation || "说不清" : "待补充" }] : []),
@@ -5452,6 +5832,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       completed: "已完成",
       deferred: "稍后复查",
       cancelled: "已取消",
+      superseded: "已被新评估替代",
     } as const)[item.status],
   }));
   const findingAsideMeta = (finding: Finding) => {
@@ -5712,7 +6093,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               tissuePathway,
               swellingGuidance,
               trialTargets,
-              pendingFunctionRetestItems: retestContractVersion === 1 ? pendingFunctionRetestItems : [],
+              pendingFunctionRetestItems: retestContractVersion === 1 ? outstandingFunctionRetests : [],
               activeTarget,
               activeCandidate,
               activeTargetSides,
@@ -5796,6 +6177,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               onUndoLastFinish: undoLastFinish,
               onFinishTrial: finishTrial,
               onFinishRangeBatch: finishRangeBatch,
+              onFinishOutstandingFunctionRetests: finishOutstandingFunctionRetests,
               onContinueWithReusedRetest: continueWithReusedRetest,
               onSaveRecord: saveRecord,
             }}
@@ -5844,6 +6226,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 intake,
                 assessmentResults,
                 trialRecords,
+                retestObligations: activeRetestLedger.obligations,
+                retestRecords: activeRetestLedger.records,
                 exerciseFeedback,
                 trainingComplete,
                 trainingPlanSaved,
@@ -5885,6 +6269,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 followupTrainingReadyForRetest,
                 followupFinalScore,
                 followupFinalScoreConfirmed,
+                outstandingFunctionRetests,
+                treatmentFunctionRetests,
                 hasNewSymptom,
                 followupTrends,
                 assessments,
@@ -5919,6 +6305,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                 onFollowupTrainingReadyForRetestChange: setFollowupTrainingReadyForRetest,
                 onFollowupFinalScoreChange: setFollowupFinalScore,
                 onFollowupFinalScoreConfirmedChange: setFollowupFinalScoreConfirmed,
+                onTreatmentFunctionRetestsChange: setTreatmentFunctionRetests,
+                onFinishOutstandingFunctionRetests: finishOutstandingFunctionRetests,
                 onHasNewSymptomChange: setHasNewSymptom,
                 onGoToStep: goToStep,
                 onReturnFromFollowupRetestToTreatment: returnFromFollowupRetestToTreatment,

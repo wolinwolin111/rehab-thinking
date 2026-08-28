@@ -1,14 +1,14 @@
 const DATABASE_NAME = "rehabmind-local-cases";
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 const STORE_NAME = "case-records";
 const STORE_KEY = "all";
 const DRAFT_STORE_NAME = "active-draft";
 const DRAFT_STORE_KEY = "current";
-export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records-v3";
-export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-initialized-v3";
-export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v3";
+export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records-v4";
+export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-initialized-v4";
+export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v4";
 /** Cross-tab notification contains only an identity and a fingerprint, never the draft body. */
-export const LOCAL_DRAFT_SIGNAL_KEY = "rehabmind-active-draft-signal-v3";
+export const LOCAL_DRAFT_SIGNAL_KEY = "rehabmind-active-draft-signal-v4";
 export type LocalCaseStorageScope = "user" | "test";
 
 export type LocalDraftStorageSignal = {
@@ -93,6 +93,10 @@ const OBSOLETE_LOCAL_KEYS = [
   "rehabmind-local-cases-migrated-v1",
   "rehabmind-active-draft-v1",
   "rehabmind-active-draft-signal-v1",
+  "rehabmind-complete-demo-records-v3",
+  "rehabmind-local-cases-initialized-v3",
+  "rehabmind-active-draft-v3",
+  "rehabmind-active-draft-signal-v3",
 ] as const;
 
 function clearObsoleteLocalStorage(scope: LocalCaseStorageScope) {
@@ -170,8 +174,8 @@ function openDatabase(scope: LocalCaseStorageScope): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME);
       if (!request.result.objectStoreNames.contains(DRAFT_STORE_NAME)) request.result.createObjectStore(DRAFT_STORE_NAME);
-      // v3 是干净切换，不把 v1/v2 案例或页面草稿带入新领域合同。
-      if (event.oldVersion > 0 && event.oldVersion < 3) {
+      // v3 合同修订 2 是干净切换；旧案例和草稿没有可恢复的事实归属。
+      if (event.oldVersion > 0 && event.oldVersion < 4) {
         request.transaction?.objectStore(STORE_NAME).clear();
         request.transaction?.objectStore(DRAFT_STORE_NAME).clear();
       }

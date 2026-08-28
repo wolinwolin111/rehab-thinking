@@ -36,6 +36,8 @@ export type ScoreRecordSnapshot = {
   localCaseId?: string;
   problemThreadId?: string;
   sessionId?: string;
+  /** 首诊问诊和评估事实的所属会话；后续康复不得把它们重新贴到当前会话。 */
+  initialFactSessionId?: string;
   assessmentRevision?: number;
   sessionNumber: number;
   intake: {
@@ -177,8 +179,11 @@ function mapScoreEntries(
  */
 export function buildScoreRecordsFromSnapshot(snapshot: ScoreRecordSnapshot, recordedAt = new Date().toISOString()): ScoreRecord[] {
   const output: ScoreRecord[] = [];
+  const initialFactSnapshot = snapshot.initialFactSessionId
+    ? { ...snapshot, sessionId: snapshot.initialFactSessionId }
+    : snapshot;
   const baselineConfirmed = snapshot.intake.baselineScoreConfirmed === true && validScore(snapshot.intake.baselineScore);
-  addConfirmedOrUnselected(output, snapshot, {
+  addConfirmedOrUnselected(output, initialFactSnapshot, {
     stage: "intake",
     context: "intake:baseline",
     actionId: snapshot.intake.customAction || snapshot.intake.reproduction || undefined,
@@ -188,7 +193,7 @@ export function buildScoreRecordsFromSnapshot(snapshot: ScoreRecordSnapshot, rec
   }, recordedAt);
 
   for (const [assessmentId, record] of Object.entries(snapshot.assessmentResults ?? {})) {
-    assessmentScores(output, snapshot, assessmentId, record, recordedAt);
+    assessmentScores(output, initialFactSnapshot, assessmentId, record, recordedAt);
   }
 
   if (snapshot.postScoreConfirmed || snapshot.postDiscomfort) {

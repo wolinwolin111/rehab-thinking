@@ -1,4 +1,4 @@
-import type { CompletedRangeRetestAnswer, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import type { CompletedRangeRetestAnswer, FunctionRetestRecord, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
 import type { TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 import type { RehabSessionSummary } from "./session-history";
 
@@ -8,6 +8,10 @@ export type SessionExerciseChoice = "reduce" | "hold" | "progress" | "worse";
 export type SessionPhase = "review" | "treatment" | "training" | "summary";
 
 export type SessionTreatmentRecord = {
+  treatmentRecordId?: string;
+  sessionId?: string;
+  assessmentRevision?: number;
+  recordedAt?: string;
   sessionNumber: number;
   targetId?: string;
   candidateId: string;
@@ -24,6 +28,7 @@ export type SessionTreatmentRecord = {
   rangeOutcome?: CompletedRangeRetestAnswer;
   rangeDiscomforts?: Record<string, YesNo>;
   rangeScores?: Record<string, number>;
+  functionRetests?: Record<string, FunctionRetestRecord>;
   chiefRetested?: boolean;
   retestOnly?: boolean;
   reviewOnly?: boolean;
@@ -54,6 +59,7 @@ export type SessionRuntimeState<TRetestPlan> = {
   trainingReadyForRetest: boolean;
   finalScore: number;
   finalScoreConfirmed: boolean;
+  finalRetestRecordedAt?: string;
   hasNewSymptom: SessionNewSymptomAnswer;
   reviewResults: Record<string, SessionReviewAnswer>;
   history: RehabSessionSummary[];

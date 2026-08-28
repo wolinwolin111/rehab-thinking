@@ -107,11 +107,11 @@ function validateIntake(value: SnapshotObject): string | null {
   const booleanKey = optionalFields(value, [
     "parsed", "capabilitiesConfirmed", "learningExplanation", "locationConfirmed", "painQualityConfirmed",
     "swellingLocationConfirmed", "tendernessLocationConfirmed", "sensoryLocationConfirmed",
-    "actionSelectionConfirmed", "baselineScoreConfirmed",
+    "actionSelectionConfirmed", "noFixedAction", "baselineScoreConfirmed",
   ], (item) => typeof item === "boolean");
   if (booleanKey) return `snapshot domain.intake.${booleanKey} is invalid`;
   const arrayKey = optionalFields(value, [
-    "bodyLocations", "symptoms", "provocationTypes", "swellingLocations", "tendernessLocations",
+    "bodyLocations", "symptoms", "provocationContexts", "provocationTypes", "swellingLocations", "tendernessLocations",
     "sensoryLocations", "reportedActions", "priorCare",
   ], Array.isArray);
   if (arrayKey) return `snapshot domain.intake.${arrayKey} is invalid`;
@@ -154,8 +154,17 @@ function validateTreatmentRecords(value: unknown[]): string | null {
       return `snapshot domain.treatments[${index}] is invalid`;
     }
     const record = raw.record;
-    for (const key of ["candidateId", "candidateTitle"] as const) {
+    for (const key of ["treatmentRecordId", "sessionId", "recordedAt", "candidateId", "candidateTitle"] as const) {
       if (!nonEmptyString(record[key])) return `snapshot domain.treatments[${index}].record.${key} is invalid`;
+    }
+    if (record.sessionId !== raw.sessionId) return `snapshot domain.treatments[${index}].record.sessionId does not match treatment session`;
+    if (!nonNegativeInteger(record.assessmentRevision)) return `snapshot domain.treatments[${index}].record.assessmentRevision is invalid`;
+    if (record.supersededByAssessmentRevision !== undefined) {
+      if (!nonNegativeInteger(record.supersededByAssessmentRevision)
+        || !nonEmptyString(record.supersededAt)
+        || !["assessment-updated", "adverse-reassessment"].includes(String(record.invalidationReason))) {
+        return `snapshot domain.treatments[${index}].record supersession is invalid`;
+      }
     }
     if (record.result !== undefined && !["better", "partial", "same", "worse"].includes(String(record.result))) return `snapshot domain.treatments[${index}].record.result is invalid`;
     for (const key of ["beforeScore", "afterScore"] as const) {
@@ -177,7 +186,7 @@ function validateRetests(value: SnapshotObject): string | null {
     if (obligationIds.has(raw.obligationId as string)) return `snapshot domain.retests.obligations[${index}].obligationId is duplicated`;
     obligationIds.add(raw.obligationId as string);
     if (!["range", "function", "chief", "training-safety"].includes(String(raw.kind))) return `snapshot domain.retests.obligations[${index}].kind is invalid`;
-    if (!["pending", "completed", "deferred", "cancelled"].includes(String(raw.status))) return `snapshot domain.retests.obligations[${index}].status is invalid`;
+    if (!["pending", "completed", "deferred", "cancelled", "superseded"].includes(String(raw.status))) return `snapshot domain.retests.obligations[${index}].status is invalid`;
     if (typeof raw.required !== "boolean" || !stringArray(raw.treatmentRecordIds)) return `snapshot domain.retests.obligations[${index}] is invalid`;
     if (raw.side !== undefined && !["左侧", "右侧"].includes(String(raw.side))) return `snapshot domain.retests.obligations[${index}].side is invalid`;
   }
@@ -213,10 +222,19 @@ function validateDomain(domain: SnapshotObject, requireConsent: boolean): string
   if (treatmentError) return treatmentError;
   const safety = requireObject(domain, "safety");
   if (!safety || !mapValues(safety.answers, (item) => ["yes", "no"].includes(String(item))) || !mapValues(safety.boneRisk, (item) => ["yes", "no", "unsure"].includes(String(item))) || !stringArray(safety.imaging)) return "snapshot domain.safety is invalid";
-  const assessments = requireObject(domain, "assessments");
-  if (!assessments || !nonEmptyString(assessments.sessionId) || !isObject(assessments.results)) return "snapshot domain.assessments is invalid";
-  const assessmentError = validateAssessmentResults(assessments.results as SnapshotObject);
-  if (assessmentError) return assessmentError;
+  if (!Array.isArray(domain.assessments) || !domain.assessments.length) return "snapshot domain.assessments is invalid";
+  const assessmentSetIds = new Set<string>();
+  for (const [index, raw] of domain.assessments.entries()) {
+    if (!isObject(raw)) return `snapshot domain.assessments[${index}] is invalid`;
+    for (const key of ["assessmentSetId", "sessionId", "recordedAt"] as const) {
+      if (!nonEmptyString(raw[key])) return `snapshot domain.assessments[${index}].${key} is invalid`;
+    }
+    if (!nonNegativeInteger(raw.assessmentRevision) || !isObject(raw.results)) return `snapshot domain.assessments[${index}] is invalid`;
+    if (assessmentSetIds.has(raw.assessmentSetId as string)) return `snapshot domain.assessments[${index}].assessmentSetId is duplicated`;
+    assessmentSetIds.add(raw.assessmentSetId as string);
+    const assessmentError = validateAssessmentResults(raw.results as SnapshotObject);
+    if (assessmentError) return assessmentError.replace("domain.assessments.results", `domain.assessments[${index}].results`);
+  }
   const retests = requireObject(domain, "retests");
   if (!retests) return "snapshot domain.retests is invalid";
   const retestError = validateRetests(retests);
@@ -233,6 +251,7 @@ function validateWorkflow(workflow: SnapshotObject): string | null {
   for (const key of ["assessmentRevision", "treatmentPlanRevision", "pendingRetestCount"] as const) {
     if (!nonNegativeInteger(workflow[key])) return `snapshot workflow.${key} is invalid`;
   }
+  if (!nonEmptyString(workflow.assessmentOwnerSessionId)) return "snapshot workflow.assessmentOwnerSessionId is invalid";
   for (const key of ["bilateralNeedsReferral", "midpointDecisionDone"] as const) {
     if (typeof workflow[key] !== "boolean") return `snapshot workflow.${key} is invalid`;
   }
@@ -262,12 +281,16 @@ function validateDraft(draft: SnapshotObject): string | null {
   for (const key of ["postScoreConfirmed", "ready", "treatmentFinalConfirmed", "trainingReadyForFinal", "finalConfirmed"] as const) {
     if (typeof initial[key] !== "boolean") return `snapshot draft.initialRetest.${key} is invalid`;
   }
+  const initialRecordedAtKey = optionalFields(initial, ["treatmentFinalRecordedAt", "finalRecordedAt"], nonEmptyString);
+  if (initialRecordedAtKey) return `snapshot draft.initialRetest.${initialRecordedAtKey} is invalid`;
   const current = draft.currentSession as SnapshotObject;
   if (typeof current.isLaterSession !== "boolean" || !["review", "treatment", "training", "summary"].includes(String(current.phase))) return "snapshot draft.currentSession is invalid";
   for (const key of ["reviewScore", "postScore", "finalScore"] as const) {
     if (!score(current[key])) return `snapshot draft.currentSession.${key} is invalid`;
   }
   if (!Array.isArray(current.scoreHistory) || !current.scoreHistory.every(score)) return "snapshot draft.currentSession.scoreHistory is invalid";
+  const currentRecordedAtKey = optionalFields(current, ["finalRetestRecordedAt"], nonEmptyString);
+  if (currentRecordedAtKey) return `snapshot draft.currentSession.${currentRecordedAtKey} is invalid`;
   return null;
 }
 
@@ -280,8 +303,17 @@ function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, 
   if (!sessions.some((item) => isObject(item) && item.sessionId === identity.sessionId && item.problemThreadId === identity.problemThreadId && item.caseId === identity.caseId)) {
     return "snapshot current session is missing from identity.sessionIndex";
   }
-  const assessments = domain.assessments as SnapshotObject;
-  if (assessments.sessionId !== identity.sessionId) return "snapshot domain.assessments.sessionId does not match identity.sessionId";
+  for (const [index, item] of (domain.assessments as unknown[]).entries()) {
+    const assessment = item as SnapshotObject;
+    if (!sessions.some((session) => isObject(session) && session.sessionId === assessment.sessionId && session.caseId === identity.caseId)) {
+      return `snapshot domain.assessments[${index}] session is missing from identity.sessionIndex`;
+    }
+  }
+  if (!(domain.assessments as unknown[]).some((item) => isObject(item)
+    && item.sessionId === workflow.assessmentOwnerSessionId
+    && item.assessmentRevision === workflow.assessmentRevision)) {
+    return "snapshot current assessment set is missing";
+  }
   for (const [index, item] of (domain.treatments as unknown[]).entries()) {
     const treatment = item as SnapshotObject;
     if (!sessions.some((session) => isObject(session)
@@ -294,17 +326,20 @@ function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, 
   const retests = domain.retests as SnapshotObject;
   for (const [index, item] of (retests.obligations as unknown[]).entries()) {
     const obligation = item as SnapshotObject;
-    if (obligation.caseId !== identity.caseId || obligation.problemThreadId !== identity.problemThreadId || obligation.sessionId !== identity.sessionId) {
-      return `snapshot domain.retests.obligations[${index}] identity does not match current session`;
+    if (obligation.caseId !== identity.caseId || obligation.problemThreadId !== identity.problemThreadId
+      || !sessions.some((session) => isObject(session) && session.sessionId === obligation.sessionId)) {
+      return `snapshot domain.retests.obligations[${index}] identity is invalid`;
     }
   }
   for (const [index, item] of (retests.records as unknown[]).entries()) {
     const record = item as SnapshotObject;
-    if (record.caseId !== identity.caseId || record.problemThreadId !== identity.problemThreadId || record.sessionId !== identity.sessionId) {
-      return `snapshot domain.retests.records[${index}] identity does not match current session`;
+    if (record.caseId !== identity.caseId || record.problemThreadId !== identity.problemThreadId
+      || !sessions.some((session) => isObject(session) && session.sessionId === record.sessionId)) {
+      return `snapshot domain.retests.records[${index}] identity is invalid`;
     }
   }
-  const pending = (retests.obligations as unknown[]).filter((item) => isObject(item) && item.required === true && item.status === "pending").length;
+  const pending = (retests.obligations as unknown[]).filter((item) => isObject(item)
+    && item.sessionId === identity.sessionId && item.required === true && item.status === "pending").length;
   if (workflow.pendingRetestCount !== pending) return "snapshot workflow.pendingRetestCount does not match domain.retests";
   return null;
 }
@@ -314,6 +349,7 @@ export function validatePilotSnapshotV3(value: unknown, options: SnapshotBoundar
   if (!isObject(value)) return { ok: false, reason: "snapshot must be an object" };
   if (jsonDepth(value) > 24) return { ok: false, reason: "snapshot is too deeply nested or cyclic" };
   if (value.schemaVersion !== PILOT_SNAPSHOT_SCHEMA_VERSION) return { ok: false, reason: "unsupported snapshot schema version; refresh the application" };
+  if (value.contractRevision !== 2) return { ok: false, reason: "unsupported v3 contract revision; refresh the application" };
   const identity = requireObject(value, "identity");
   const domain = requireObject(value, "domain");
   const workflow = requireObject(value, "workflow");

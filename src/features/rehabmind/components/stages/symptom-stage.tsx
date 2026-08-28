@@ -23,6 +23,8 @@ import {
   SYMPTOMS,
   SYMPTOM_TYPE_GROUPS,
   analyzeChiefAction,
+  actionDerivedProvocationTypes,
+  effectiveProvocationTypes,
   chiefComplaintLabel,
   inferPilotRegions,
   locationSelectionsLabel,
@@ -32,15 +34,6 @@ import {
   shouldCollectBaselineScore,
   sideFromLocationSelections,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
-
-const PROVOCATION_CONTEXT_CHOICES = [
-  { label: "用力时", canonical: "用力或对抗阻力", aliases: ["用力或对抗阻力"] },
-  { label: "轻按时", canonical: "按压", aliases: ["按压"] },
-  { label: "休息或夜里", canonical: "静止或夜间", aliases: ["静止或夜间"] },
-  { label: "运动时或运动后", canonical: "运动过程中", aliases: ["运动过程中", "运动结束后"] },
-] as const;
-
-const ACTION_DERIVED_PROVOCATIONS = new Set(["活动到某个角度", "走路、站立或负重"]);
 
 /** M-01 方案A：标记侧别与主诉不同侧时的非阻断温和确认提示（只提示，不拦截、不改决策）。
  * M-05：提供「清除不一致标记」入口，改侧后可一键移除与新主诉侧别矛盾的标记。 */
@@ -162,7 +155,7 @@ export function SymptomStage(props: SymptomStageProps) {
   const vascularDescriptionSignal = includesAny(intake.description, ["发凉", "发白", "冰凉", "苍白"]);
   const missingFields = intakeMissingFields;
   const nextMissingField = currentIntakeField;
-  const guidedFieldTitle = nextMissingField === "诱发动作" ? "什么时候最明显？" : nextMissingField;
+  const guidedFieldTitle = nextMissingField === "诱发动作" ? "什么动作会不舒服？" : nextMissingField;
   const showIntakeQuestion = (...labels: string[]) => showAllIntakeFields || labels.includes(nextMissingField);
   const bilateralPriorityChoice = intake.side === "双侧/中间" && (professionalIntake || showIntakeQuestion("本次优先侧"))
     ? <div id="field-本次优先侧" data-intake-field="本次优先侧" className="rm-form-block rm-bilateral-priority">
@@ -172,6 +165,7 @@ export function SymptomStage(props: SymptomStageProps) {
       <p className="rm-pilot-hint">同一问题可同时保留左右标记，并选择本次优先侧；不同大部位请另建问题。</p>
     </div> : null;
   const actionOptions = reportedActionOptions(intake.regionId);
+  const activeProvocationTypes = effectiveProvocationTypes(intake);
   const inferredActionId = (() => {
     if (intake.reportedActions?.length || !intake.reproduction.trim()) return "";
     const source = `${intake.reproduction} ${intake.actionAnalysis?.task ?? ""} ${intake.actionAnalysis?.category ?? ""}`;
@@ -191,23 +185,8 @@ export function SymptomStage(props: SymptomStageProps) {
     return semanticMatches.find(([pattern, id]) => pattern.test(source) && actionOptions.some((action) => action.id === id))?.[1] ?? "";
   })();
   const selectedReportedActionIds = new Set([...(intake.reportedActions ?? []).map((action) => action.id), inferredActionId].filter(Boolean));
-  const actionProvocationTypes = (actions: ReportedAction[], customAction: string) => {
-    const derived: string[] = [];
-    if (actions.some((action) => action.kind === "joint-direction")) derived.push("活动到某个角度");
-    if (actions.some((action) => action.kind === "functional")) derived.push("走路、站立或负重");
-    if (actions.some((action) => action.id === "functional-run-jump")) derived.push("运动过程中");
-    const custom = customAction.trim();
-    if (/用力|发力|抗阻|对抗/.test(custom)) derived.push("用力或对抗阻力");
-    if (/按压|轻按|压痛/.test(custom)) derived.push("按压");
-    if (/休息|静止|夜间|夜里|睡觉/.test(custom)) derived.push("静止或夜间");
-    if (/运动|训练|跑步|跑完|跳跃|落地/.test(custom)) derived.push("运动过程中");
-    return [...new Set(derived)];
-  };
-  const rebuildProvocationTypes = (actions: ReportedAction[], customAction: string, current = intake.provocationTypes) => [
-    ...new Set([
-      ...current.filter((value) => !ACTION_DERIVED_PROVOCATIONS.has(value) && value !== "说不清 / 没有固定动作"),
-      ...actionProvocationTypes(actions, customAction),
-    ]),
+  const rebuildProvocationTypes = (actions: ReportedAction[], customAction: string) => [
+    ...new Set([...intake.provocationContexts, ...actionDerivedProvocationTypes(actions, customAction)]),
   ];
   const updateReportedActions = (nextActions: ReportedAction[], customAction = intake.customAction) => {
     const primaryRaw = nextActions[0]?.raw || customAction.trim() || "";
@@ -217,6 +196,7 @@ export function SymptomStage(props: SymptomStageProps) {
       provocationTypes,
       reportedActions: nextActions,
       customAction,
+      noFixedAction: false,
       actionSelectionConfirmed: Boolean(nextActions.length || customAction.trim() || provocationTypes.length),
       reproduction: primaryRaw,
       actionAnalysis: analyzeChiefAction(intake.description, intake.regionId, intake.forceDirection, primaryRaw),
@@ -237,36 +217,18 @@ export function SymptomStage(props: SymptomStageProps) {
     }
     updateReportedActions(selected ? currentActions.filter((item) => item.id !== action.id) : [...currentActions, action]);
   };
-  const toggleProvocationContext = (choice: (typeof PROVOCATION_CONTEXT_CHOICES)[number]) => {
-    const selected = choice.aliases.some((value) => intake.provocationTypes.includes(value));
-    const provocationTypes = selected
-      ? intake.provocationTypes.filter((value) => !choice.aliases.some((alias) => alias === value))
-      : [...intake.provocationTypes.filter((value) => value !== "说不清 / 没有固定动作" && !choice.aliases.some((alias) => alias === value)), choice.canonical];
-    const confirmed = Boolean(provocationTypes.length || reportedActionSummary(intake).length);
-    setConfirmedIntakeMulti((current) => ({ ...current, provocationTypes: confirmed }));
-    const nextIntake = {
-      ...intake,
-      provocationTypes,
-      actionSelectionConfirmed: confirmed,
-      forceDirection: provocationTypes.includes("用力或对抗阻力") ? intake.forceDirection : "",
-      stabbingPalpation: intake.symptomType === "刺痛" || provocationTypes.includes("按压") || intake.symptoms.includes("按压痛") ? intake.stabbingPalpation : "",
-    };
-    invalidateAfterIntake({
-      ...nextIntake,
-      baselineScore: shouldCollectBaselineScore(nextIntake) ? intake.baselineScore : 0,
-      baselineScoreConfirmed: shouldCollectBaselineScore(nextIntake) ? intake.baselineScoreConfirmed : false,
-    });
-  };
   const toggleUnknownProvocation = () => {
-    const selected = intake.provocationTypes.includes("说不清 / 没有固定动作") && !reportedActionSummary(intake).length;
+    const selected = intake.noFixedAction && !reportedActionSummary(intake).length;
     const nextIntake = selected
-      ? { ...intake, provocationTypes: [], actionSelectionConfirmed: false }
+      ? { ...intake, provocationContexts: [], provocationTypes: [], noFixedAction: false, actionSelectionConfirmed: false }
       : {
         ...intake,
+        provocationContexts: [],
         provocationTypes: ["说不清 / 没有固定动作"],
         reproduction: "",
         reportedActions: [],
         customAction: "",
+        noFixedAction: true,
         actionSelectionConfirmed: true,
         forceDirection: "",
         actionAnalysis: analyzeChiefAction(intake.description, intake.regionId, "", ""),
@@ -275,18 +237,14 @@ export function SymptomStage(props: SymptomStageProps) {
     invalidateAfterIntake({ ...nextIntake, baselineScore: 0, baselineScoreConfirmed: false });
   };
   const renderUnifiedProvocation = (professional = false) => <div className={`rm-form-block rm-unified-provocation${professional ? " is-professional" : ""}`}>
-    <div {...fieldLabel("诱发动作")}><span>什么时候最明显？</span><b>可以多选</b></div>
+    <div {...fieldLabel("诱发动作")}><span>什么动作会不舒服？</span><b>可以多选</b></div>
     <div className="rm-action-picker-grid">{actionOptions.map((action) => {
       const selected = selectedReportedActionIds.has(action.id);
       const [label, detail] = action.label.split("｜");
       return <button type="button" key={action.id} className={selected ? "is-selected" : ""} onClick={() => toggleReportedAction(action)}><strong>{label}</strong>{detail ? <small>{detail}</small> : null}</button>;
     })}</div>
-    <div className="rm-trigger-grid rm-provocation-context-grid">{PROVOCATION_CONTEXT_CHOICES.map((choice) => {
-      const selected = choice.aliases.some((value) => intake.provocationTypes.includes(value));
-      return <button type="button" key={choice.label} className={selected ? "is-selected" : ""} onClick={() => toggleProvocationContext(choice)}><i>{selected ? "✓" : ""}</i><span>{choice.label}</span></button>;
-    })}</div>
-    <label className="rm-custom-action-field"><span>其他动作或情况</span><input value={intake.customAction} onChange={(event) => updateReportedActions(intake.reportedActions ?? [], event.target.value)} placeholder="例如：抱孩子起身、骑车踩踏" /></label>
-    <button type="button" className={intake.provocationTypes.includes("说不清 / 没有固定动作") && !reportedActionSummary(intake).length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={toggleUnknownProvocation}>没有固定情况</button>
+    <label className="rm-custom-action-field"><span>其他动作</span><input value={intake.customAction} onChange={(event) => updateReportedActions(intake.reportedActions ?? [], event.target.value)} placeholder="例如：抱孩子起身、骑车踩踏" /></label>
+    <button type="button" className={intake.noFixedAction && !reportedActionSummary(intake).length ? "is-selected rm-action-unknown" : "rm-action-unknown"} onClick={toggleUnknownProvocation}>没有固定动作</button>
   </div>;
   if (professionalIntake && intake.parsed) {
     const professionalSymptoms = intake.symptoms ?? [];
@@ -322,7 +280,7 @@ export function SymptomStage(props: SymptomStageProps) {
         tendernessLocation: symptoms.includes("按压痛") ? intake.tendernessLocation : "",
         tendernessLocations: symptoms.includes("按压痛") ? intake.tendernessLocations : [],
         tendernessLocationConfirmed: symptoms.includes("按压痛") ? intake.tendernessLocationConfirmed : false,
-        stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "",
+        stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || activeProvocationTypes.includes("按压") ? intake.stabbingPalpation : "",
       });
     };
     return <section className="rm-page rm-professional-intake">
@@ -588,8 +546,8 @@ export function SymptomStage(props: SymptomStageProps) {
         tendernessLocation: symptoms.includes("按压痛") ? intake.tendernessLocation : "",
         tendernessLocations: symptoms.includes("按压痛") ? intake.tendernessLocations : [],
         tendernessLocationConfirmed: symptoms.includes("按压痛") ? intake.tendernessLocationConfirmed : false,
-        stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "",
-      })); }}><i>{intake.symptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "is-selected" : ""} onClick={() => { setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true })); invalidateAfterIntake({ ...intake, symptoms: [], swellingLocation: "", swellingLocations: [], swellingLocationConfirmed: false, tendernessLocation: "", tendernessLocations: [], tendernessLocationConfirmed: false, stabbingPalpation: intake.symptomType === "刺痛" || intake.provocationTypes.includes("按压") ? intake.stabbingPalpation : "" }); }}><i>{confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "✓" : ""}</i>没有以上情况</button></div></div> : null}
+        stabbingPalpation: intake.symptomType === "刺痛" || symptoms.includes("按压痛") || activeProvocationTypes.includes("按压") ? intake.stabbingPalpation : "",
+      })); }}><i>{intake.symptoms.includes(symptom) ? "✓" : ""}</i>{symptom}</button>)}<button type="button" className={confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "is-selected" : ""} onClick={() => { setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true })); invalidateAfterIntake({ ...intake, symptoms: [], swellingLocation: "", swellingLocations: [], swellingLocationConfirmed: false, tendernessLocation: "", tendernessLocations: [], tendernessLocationConfirmed: false, stabbingPalpation: intake.symptomType === "刺痛" || activeProvocationTypes.includes("按压") ? intake.stabbingPalpation : "" }); }}><i>{confirmedIntakeMulti.symptoms && !intake.symptoms.length ? "✓" : ""}</i>没有以上情况</button></div></div> : null}
 
       {(intake.symptoms.includes("肿胀或淤青") || hasTenderness || hasSensorySymptoms) && showIntakeQuestion("肿胀位置", "按压痛位置", "麻电范围") ? <div className="rm-location-detail-atlas">
         {intake.symptoms.includes("肿胀或淤青") && (showAllIntakeFields || nextMissingField === "肿胀位置") ? <>
