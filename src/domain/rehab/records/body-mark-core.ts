@@ -93,7 +93,11 @@ export function mergeBodyMarks(previous: BodyMark[], current: BodyMark[], invali
       merged.push(mark);
     } else if (previousMark.status !== "invalidated") {
       const index = merged.findIndex((entry) => entry.markId === mark.markId);
-      if (index >= 0) merged[index] = mark;
+      if (index >= 0) merged[index] = {
+        ...mark,
+        createdAt: previousMark.createdAt,
+        confirmedAt: previousMark.confirmedAt ?? mark.confirmedAt,
+      };
     } else {
       // Re-adding a removed location is a new mark; the invalidated version remains auditable.
       merged.push({ ...mark, markId: `${mark.markId}:rev:${invalidatedAt}` });

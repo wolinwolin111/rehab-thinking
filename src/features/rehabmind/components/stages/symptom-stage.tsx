@@ -23,7 +23,6 @@ import {
   SYMPTOMS,
   SYMPTOM_TYPE_GROUPS,
   analyzeChiefAction,
-  actionDerivedProvocationTypes,
   effectiveProvocationTypes,
   chiefComplaintLabel,
   inferPilotRegions,
@@ -185,23 +184,20 @@ export function SymptomStage(props: SymptomStageProps) {
     return semanticMatches.find(([pattern, id]) => pattern.test(source) && actionOptions.some((action) => action.id === id))?.[1] ?? "";
   })();
   const selectedReportedActionIds = new Set([...(intake.reportedActions ?? []).map((action) => action.id), inferredActionId].filter(Boolean));
-  const rebuildProvocationTypes = (actions: ReportedAction[], customAction: string) => [
-    ...new Set([...intake.provocationContexts, ...actionDerivedProvocationTypes(actions, customAction)]),
-  ];
   const updateReportedActions = (nextActions: ReportedAction[], customAction = intake.customAction) => {
     const primaryRaw = nextActions[0]?.raw || customAction.trim() || "";
-    const provocationTypes = rebuildProvocationTypes(nextActions, customAction);
     const nextIntake = {
       ...intake,
-      provocationTypes,
+      // 用户动作是唯一落盘事实；决策标签由 effectiveProvocationTypes 即时推导。
+      provocationTypes: intake.provocationContexts,
       reportedActions: nextActions,
       customAction,
       noFixedAction: false,
-      actionSelectionConfirmed: Boolean(nextActions.length || customAction.trim() || provocationTypes.length),
+      actionSelectionConfirmed: Boolean(nextActions.length || customAction.trim()),
       reproduction: primaryRaw,
       actionAnalysis: analyzeChiefAction(intake.description, intake.regionId, intake.forceDirection, primaryRaw),
     };
-    setConfirmedIntakeMulti((current) => ({ ...current, provocationTypes: Boolean(nextActions.length || customAction.trim() || provocationTypes.length) }));
+    setConfirmedIntakeMulti((current) => ({ ...current, provocationTypes: Boolean(nextActions.length || customAction.trim()) }));
     invalidateAfterIntake({
       ...nextIntake,
       baselineScore: shouldCollectBaselineScore(nextIntake) ? intake.baselineScore : 0,
@@ -224,7 +220,7 @@ export function SymptomStage(props: SymptomStageProps) {
       : {
         ...intake,
         provocationContexts: [],
-        provocationTypes: ["说不清 / 没有固定动作"],
+        provocationTypes: [],
         reproduction: "",
         reportedActions: [],
         customAction: "",

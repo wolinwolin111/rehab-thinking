@@ -38,6 +38,7 @@ export type ScoreRecordSnapshot = {
   sessionId?: string;
   /** 首诊问诊和评估事实的所属会话；后续康复不得把它们重新贴到当前会话。 */
   initialFactSessionId?: string;
+  includeInitialFacts?: boolean;
   assessmentRevision?: number;
   sessionNumber: number;
   intake: {
@@ -182,18 +183,20 @@ export function buildScoreRecordsFromSnapshot(snapshot: ScoreRecordSnapshot, rec
   const initialFactSnapshot = snapshot.initialFactSessionId
     ? { ...snapshot, sessionId: snapshot.initialFactSessionId }
     : snapshot;
-  const baselineConfirmed = snapshot.intake.baselineScoreConfirmed === true && validScore(snapshot.intake.baselineScore);
-  addConfirmedOrUnselected(output, initialFactSnapshot, {
-    stage: "intake",
-    context: "intake:baseline",
-    actionId: snapshot.intake.customAction || snapshot.intake.reproduction || undefined,
-    side: assessmentSide(snapshot),
-    value: snapshot.intake.baselineScore,
-    confirmed: baselineConfirmed,
-  }, recordedAt);
+  if (snapshot.includeInitialFacts !== false) {
+    const baselineConfirmed = snapshot.intake.baselineScoreConfirmed === true && validScore(snapshot.intake.baselineScore);
+    addConfirmedOrUnselected(output, initialFactSnapshot, {
+      stage: "intake",
+      context: "intake:baseline",
+      actionId: snapshot.intake.customAction || snapshot.intake.reproduction || undefined,
+      side: assessmentSide(snapshot),
+      value: snapshot.intake.baselineScore,
+      confirmed: baselineConfirmed,
+    }, recordedAt);
 
-  for (const [assessmentId, record] of Object.entries(snapshot.assessmentResults ?? {})) {
-    assessmentScores(output, initialFactSnapshot, assessmentId, record, recordedAt);
+    for (const [assessmentId, record] of Object.entries(snapshot.assessmentResults ?? {})) {
+      assessmentScores(output, initialFactSnapshot, assessmentId, record, recordedAt);
+    }
   }
 
   if (snapshot.postScoreConfirmed || snapshot.postDiscomfort) {
@@ -226,7 +229,12 @@ export function mergeScoreRecords(previous: ScoreRecord[], current: ScoreRecord[
   for (const next of current) {
     const sameId = merged.findIndex((entry) => entry.scoreRecordId === next.scoreRecordId);
     if (sameId >= 0) {
-      merged[sameId] = next;
+      // Saving or refreshing the same confirmed fact must not pretend that the
+      // user confirmed it again. Identity and original confirmation time stay.
+      const existing = merged[sameId];
+      merged[sameId] = existing.value === next.value && existing.scoreState === next.scoreState
+        ? { ...next, recordedAt: existing.recordedAt }
+        : next;
       continue;
     }
     const priorIndex = merged.findIndex((entry) => sampleKey(entry) === sampleKey(next) && entry.scoreState === "confirmed");

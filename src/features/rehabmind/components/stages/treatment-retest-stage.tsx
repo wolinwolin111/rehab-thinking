@@ -266,7 +266,8 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     prepareRetest();
   };
   // 功能动作 target：处理后对所有功能动作都问「能否完成」（松解/松动能改善「做不做得了」）。
-  const activeFunctionObligations = activeTarget?.functionRetestObligations ?? pendingFunctionRetestItems;
+  // 页面只消费复查台账投影；动态处理候选只能决定显示时机，不能生成或关闭义务。
+  const activeFunctionObligations = pendingFunctionRetestItems;
   const isFunctionTarget = Boolean(activeFunctionObligations.length || activeTarget?.finding.id.startsWith("function:"));
   const activeFunctionEvidence = !activeFunctionObligations.length && isFunctionTarget && activeTarget
     ? functionEvidenceFromRecord(activeTarget.finding.id, assessmentResults[activeTarget.finding.id])

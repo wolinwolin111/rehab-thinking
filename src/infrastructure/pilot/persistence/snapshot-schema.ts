@@ -1,5 +1,6 @@
 import { PILOT_SNAPSHOT_SCHEMA_VERSION, PilotCaseValidationError } from "@/src/infrastructure/pilot/api/case-contracts";
 import { PILOT_CONSENT_VERSION } from "@/src/infrastructure/pilot/consent/consent-core";
+import { REHABMIND_V3_CONTRACT_REVISION } from "@/src/domain/rehab/snapshot/snapshot-contract";
 
 export { PILOT_SNAPSHOT_SCHEMA_VERSION };
 
@@ -150,14 +151,17 @@ function validateAssessmentResults(value: SnapshotObject): string | null {
 
 function validateTreatmentRecords(value: unknown[]): string | null {
   for (const [index, raw] of value.entries()) {
-    if (!isObject(raw) || !nonEmptyString(raw.sessionId) || !Number.isInteger(raw.sessionNumber) || (raw.sessionNumber as number) < 1 || !isObject(raw.record)) {
+    if (!isObject(raw) || !nonEmptyString(raw.caseId) || !nonEmptyString(raw.problemThreadId)
+      || !nonEmptyString(raw.sessionId) || !Number.isInteger(raw.sessionNumber) || (raw.sessionNumber as number) < 1 || !isObject(raw.record)) {
       return `snapshot domain.treatments[${index}] is invalid`;
     }
     const record = raw.record;
-    for (const key of ["treatmentRecordId", "sessionId", "recordedAt", "candidateId", "candidateTitle"] as const) {
+    for (const key of ["treatmentRecordId", "caseId", "problemThreadId", "sessionId", "recordedAt", "candidateId", "candidateTitle"] as const) {
       if (!nonEmptyString(record[key])) return `snapshot domain.treatments[${index}].record.${key} is invalid`;
     }
-    if (record.sessionId !== raw.sessionId) return `snapshot domain.treatments[${index}].record.sessionId does not match treatment session`;
+    if (record.caseId !== raw.caseId || record.problemThreadId !== raw.problemThreadId || record.sessionId !== raw.sessionId) {
+      return `snapshot domain.treatments[${index}].record identity does not match treatment identity`;
+    }
     if (!nonNegativeInteger(record.assessmentRevision)) return `snapshot domain.treatments[${index}].record.assessmentRevision is invalid`;
     if (record.supersededByAssessmentRevision !== undefined) {
       if (!nonNegativeInteger(record.supersededByAssessmentRevision)
@@ -199,6 +203,10 @@ function validateRetests(value: SnapshotObject): string | null {
     if (recordIds.has(raw.retestRecordId as string)) return `snapshot domain.retests.records[${index}].retestRecordId is duplicated`;
     recordIds.add(raw.retestRecordId as string);
     if (!obligationIds.has(raw.obligationId as string)) return `snapshot domain.retests.records[${index}].obligationId is missing`;
+    if (raw.status !== undefined && !["active", "superseded"].includes(String(raw.status))) return `snapshot domain.retests.records[${index}].status is invalid`;
+    if (raw.treatmentRecordId !== undefined && !nonEmptyString(raw.treatmentRecordId)) return `snapshot domain.retests.records[${index}].treatmentRecordId is invalid`;
+    if (raw.sourceEventId !== undefined && !nonEmptyString(raw.sourceEventId)) return `snapshot domain.retests.records[${index}].sourceEventId is invalid`;
+    if (!nonEmptyString(raw.treatmentRecordId) && !nonEmptyString(raw.sourceEventId)) return `snapshot domain.retests.records[${index}] has no valid source`;
     if (!["better", "partial", "same", "worse"].includes(String(raw.result))) return `snapshot domain.retests.records[${index}].result is invalid`;
     if (raw.score !== undefined && !score(raw.score)) return `snapshot domain.retests.records[${index}].score is invalid`;
   }
@@ -226,7 +234,7 @@ function validateDomain(domain: SnapshotObject, requireConsent: boolean): string
   const assessmentSetIds = new Set<string>();
   for (const [index, raw] of domain.assessments.entries()) {
     if (!isObject(raw)) return `snapshot domain.assessments[${index}] is invalid`;
-    for (const key of ["assessmentSetId", "sessionId", "recordedAt"] as const) {
+    for (const key of ["assessmentSetId", "caseId", "problemThreadId", "sessionId", "recordedAt"] as const) {
       if (!nonEmptyString(raw[key])) return `snapshot domain.assessments[${index}].${key} is invalid`;
     }
     if (!nonNegativeInteger(raw.assessmentRevision) || !isObject(raw.results)) return `snapshot domain.assessments[${index}] is invalid`;
@@ -297,6 +305,7 @@ function validateDraft(draft: SnapshotObject): string | null {
 function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, workflow: SnapshotObject): string | null {
   const threads = identity.problemThreads as unknown[];
   const sessions = identity.sessionIndex as unknown[];
+  const sessionById = new Map(sessions.filter(isObject).map((session) => [String(session.sessionId), session]));
   if (!threads.some((item) => isObject(item) && item.problemThreadId === identity.problemThreadId && item.caseId === identity.caseId)) {
     return "snapshot current problem thread is missing from identity.problemThreads";
   }
@@ -305,8 +314,18 @@ function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, 
   }
   for (const [index, item] of (domain.assessments as unknown[]).entries()) {
     const assessment = item as SnapshotObject;
-    if (!sessions.some((session) => isObject(session) && session.sessionId === assessment.sessionId && session.caseId === identity.caseId)) {
+    const owner = sessionById.get(String(assessment.sessionId));
+    if (!owner || owner.caseId !== assessment.caseId || owner.problemThreadId !== assessment.problemThreadId) {
       return `snapshot domain.assessments[${index}] session is missing from identity.sessionIndex`;
+    }
+  }
+  for (const collection of ["bodyMarks", "scoreRecords", "specialTestRecords", "professionalNoteRecords", "decisionTraces"] as const) {
+    for (const [index, item] of (domain[collection] as unknown[]).entries()) {
+      const fact = item as SnapshotObject;
+      const owner = sessionById.get(String(fact.sessionId));
+      if (!owner || fact.caseId !== owner.caseId || fact.problemThreadId !== owner.problemThreadId) {
+        return `snapshot domain.${collection}[${index}] identity is invalid`;
+      }
     }
   }
   if (!(domain.assessments as unknown[]).some((item) => isObject(item)
@@ -316,30 +335,45 @@ function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, 
   }
   for (const [index, item] of (domain.treatments as unknown[]).entries()) {
     const treatment = item as SnapshotObject;
-    if (!sessions.some((session) => isObject(session)
-      && session.sessionId === treatment.sessionId
-      && session.sessionNumber === treatment.sessionNumber
-      && session.caseId === identity.caseId)) {
+    const owner = sessionById.get(String(treatment.sessionId));
+    if (!owner || owner.sessionNumber !== treatment.sessionNumber
+      || owner.caseId !== treatment.caseId || owner.problemThreadId !== treatment.problemThreadId) {
       return `snapshot domain.treatments[${index}] session is missing from identity.sessionIndex`;
     }
   }
+  const treatmentIdentityById = new Map((domain.treatments as unknown[])
+    .filter(isObject)
+    .filter((item) => isObject(item.record))
+    .map((item) => [String((item.record as SnapshotObject).treatmentRecordId), item]));
   const retests = domain.retests as SnapshotObject;
+  const obligationById = new Map((retests.obligations as unknown[]).filter(isObject).map((item) => [String(item.obligationId), item]));
   for (const [index, item] of (retests.obligations as unknown[]).entries()) {
     const obligation = item as SnapshotObject;
-    if (obligation.caseId !== identity.caseId || obligation.problemThreadId !== identity.problemThreadId
-      || !sessions.some((session) => isObject(session) && session.sessionId === obligation.sessionId)) {
+    const owner = sessionById.get(String(obligation.sessionId));
+    if (!owner || obligation.caseId !== owner.caseId || obligation.problemThreadId !== owner.problemThreadId) {
       return `snapshot domain.retests.obligations[${index}] identity is invalid`;
     }
   }
   for (const [index, item] of (retests.records as unknown[]).entries()) {
     const record = item as SnapshotObject;
-    if (record.caseId !== identity.caseId || record.problemThreadId !== identity.problemThreadId
-      || !sessions.some((session) => isObject(session) && session.sessionId === record.sessionId)) {
+    const owner = sessionById.get(String(record.sessionId));
+    const obligation = obligationById.get(String(record.obligationId));
+    if (!owner || record.caseId !== owner.caseId || record.problemThreadId !== owner.problemThreadId
+      || !obligation || obligation.sessionId !== record.sessionId
+      || obligation.problemThreadId !== record.problemThreadId) {
       return `snapshot domain.retests.records[${index}] identity is invalid`;
+    }
+    if (nonEmptyString(record.treatmentRecordId)) {
+      const treatment = treatmentIdentityById.get(String(record.treatmentRecordId));
+      if (!treatment || treatment.sessionId !== record.sessionId || treatment.problemThreadId !== record.problemThreadId) {
+        return `snapshot domain.retests.records[${index}].treatmentRecordId is invalid`;
+      }
     }
   }
   const pending = (retests.obligations as unknown[]).filter((item) => isObject(item)
-    && item.sessionId === identity.sessionId && item.required === true && item.status === "pending").length;
+    && item.sessionId === identity.sessionId
+    && item.sourceAssessmentRevision === workflow.assessmentRevision
+    && item.required === true && item.status === "pending").length;
   if (workflow.pendingRetestCount !== pending) return "snapshot workflow.pendingRetestCount does not match domain.retests";
   return null;
 }
@@ -349,7 +383,7 @@ export function validatePilotSnapshotV3(value: unknown, options: SnapshotBoundar
   if (!isObject(value)) return { ok: false, reason: "snapshot must be an object" };
   if (jsonDepth(value) > 24) return { ok: false, reason: "snapshot is too deeply nested or cyclic" };
   if (value.schemaVersion !== PILOT_SNAPSHOT_SCHEMA_VERSION) return { ok: false, reason: "unsupported snapshot schema version; refresh the application" };
-  if (value.contractRevision !== 2) return { ok: false, reason: "unsupported v3 contract revision; refresh the application" };
+  if (value.contractRevision !== REHABMIND_V3_CONTRACT_REVISION) return { ok: false, reason: "unsupported v3 contract revision; refresh the application" };
   const identity = requireObject(value, "identity");
   const domain = requireObject(value, "domain");
   const workflow = requireObject(value, "workflow");

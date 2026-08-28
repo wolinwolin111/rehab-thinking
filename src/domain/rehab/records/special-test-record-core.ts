@@ -6,6 +6,10 @@ export type SpecialStopReason = "pain" | "fear" | "cannot-perform" | "safety-sig
 
 export type SpecialTestRecord = {
   specialTestRecordId: string;
+  caseId: string;
+  problemThreadId: string;
+  sessionId: string;
+  assessmentRevision: number;
   assessmentId: string;
   triggerSnapshot: { ruleId: string; matchedEvidenceIds: string[] };
   operationTarget: "self" | "other" | "study";
@@ -20,6 +24,8 @@ export type SpecialTestRecord = {
 export type SpecialAssessmentDescriptor = { id: string; trigger?: string };
 
 export type SpecialSnapshotInput = {
+  caseId?: string;
+  problemThreadId?: string;
   sessionId?: string;
   assessmentRevision?: number;
   operationTarget?: "self" | "other" | "study";
@@ -62,6 +68,8 @@ function resultFromAnswer(answer: string | undefined, unableReason: string | und
 
 /** Preserve why a special test existed and how it ended; skip is never negative. */
 export function buildSpecialTestRecords(input: SpecialSnapshotInput, descriptors: SpecialAssessmentDescriptor[], recordedAt = new Date().toISOString()): SpecialTestRecord[] {
+  const caseId = input.caseId ?? "legacy-case";
+  const problemThreadId = input.problemThreadId ?? "legacy-problem";
   const sessionId = input.sessionId ?? "legacy-session";
   const revision = input.assessmentRevision ?? 0;
   const operationTarget = input.operationTarget ?? "self";
@@ -73,6 +81,10 @@ export function buildSpecialTestRecords(input: SpecialSnapshotInput, descriptors
     const result = resultFromAnswer(record.simple, record.unableReason);
     return [{
       specialTestRecordId: `special:${sessionId}:${assessmentId}:${revision}:${result.result}`,
+      caseId,
+      problemThreadId,
+      sessionId,
+      assessmentRevision: revision,
       assessmentId,
       triggerSnapshot: { ruleId: descriptor.trigger ? `trigger:${descriptor.trigger}` : `trigger:${assessmentId}`, matchedEvidenceIds: matchedEvidenceIds(descriptor.trigger, input) },
       operationTarget,

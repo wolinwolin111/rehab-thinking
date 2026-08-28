@@ -45,6 +45,7 @@ import { deriveMedicalGuidance, type MedicalGuidance } from "@/src/domain/rehab/
 import { type BodyMark } from "@/src/domain/rehab/records/body-mark-core";
 import { type ScoreRecord } from "@/src/domain/rehab/records/score-record-core";
 import { type SpecialTestRecord } from "@/src/domain/rehab/records/special-test-record-core";
+import { REHABMIND_V3_CONTRACT_REVISION } from "@/src/domain/rehab/snapshot/snapshot-contract";
 import { type ProfessionalNoteRecord } from "@/src/domain/rehab/records/professional-note-record-core";
 import { type DecisionTrace } from "@/src/domain/rehab/records/decision-trace-core";
 import { type RangeMeasurement } from "@/src/domain/rehab/assessment/range-measurement-core";
@@ -379,6 +380,8 @@ export type FollowupStage = "review" | "treatment" | "training" | "summary";
 export type TransitionTarget = "assessment" | "treatment" | "training" | "summary";
 
 export type FollowupTreatmentRecord = {
+  caseId?: string;
+  problemThreadId?: string;
   treatmentRecordId?: string;
   sessionId?: string;
   assessmentRevision?: number;
@@ -410,6 +413,7 @@ export type FollowupTreatmentRecord = {
   reviewOnly?: boolean;
   supportingOnly?: boolean;
   responseRole?: TreatmentResponseRole;
+  decisionTraceId?: string;
 };
 
 export type SavedDemoSnapshot = {
@@ -493,6 +497,8 @@ export type SavedDemoSnapshot = {
   followupTrialRecords: FollowupTreatmentRecord[];
   /** 已被新评估替代的后续康复处理事实；只读保存，不参与当前页面计算。 */
   supersededFollowupTrialRecords?: FollowupTreatmentRecord[];
+  /** 其他问题线程的只读处理事实；恢复当前问题时不得混入当前处理队列。 */
+  historicalTreatments?: PersistedTreatmentRecordV3[];
   followupReadyToRetest?: boolean;
   followupRetestPlan?: RetestPlan | null;
   followupMovementResponses?: Record<string, CompletedRangeRetestAnswer>;
@@ -521,18 +527,24 @@ export type SavedDemoSnapshot = {
   consent?: { version: string; confirmedAt: string };
 };
 
-export const REHABMIND_V3_CONTRACT_REVISION = 2 as const;
+export { REHABMIND_V3_CONTRACT_REVISION };
 
 export type AssessmentSessionRecord = {
   assessmentSetId: string;
+  caseId: string;
+  problemThreadId: string;
   sessionId: string;
   assessmentRevision: number;
   recordedAt: string;
   results: Record<string, AssessmentRecord>;
+  /** 后续康复的本次逐项复核事实；不复制首诊 AssessmentRecord。 */
+  reviewResults?: Record<string, FollowupReviewAnswer>;
   supersedesAssessmentSetId?: string;
 };
 
 export type PersistedTreatmentRecordV3 = {
+  caseId: string;
+  problemThreadId: string;
   sessionId: string;
   sessionNumber: number;
   record: TrialRecord | FollowupTreatmentRecord;
@@ -720,22 +732,37 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
   if (!localCaseId || !problemThreadId || !sessionId || !sessionStartedAt) {
     throw new Error("v3 snapshot identity is incomplete");
   }
+  const sessionIdentity = (targetSessionId: string) => {
+    const indexed = snapshot.sessionIndex?.find((item) => item.sessionId === targetSessionId);
+    return {
+      caseId: indexed?.caseId ?? localCaseId,
+      problemThreadId: indexed?.problemThreadId ?? problemThreadId,
+    };
+  };
   const initialTreatments: PersistedTreatmentRecordV3[] = [
     ...(snapshot.supersededTrialRecords ?? []),
     ...snapshot.trialRecords,
-  ].map((record) => ({
-    sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId ?? sessionId,
+  ].map((record) => {
+    const recordSessionId = record.sessionId ?? snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId ?? sessionId;
+    const recordIdentity = sessionIdentity(recordSessionId);
+    return ({
+    ...recordIdentity,
+    sessionId: recordSessionId,
     sessionNumber: 1,
-    record,
-  }));
+    record: { ...record, ...recordIdentity, sessionId: recordSessionId },
+  }); });
   const laterTreatments: PersistedTreatmentRecordV3[] = [
     ...(snapshot.supersededFollowupTrialRecords ?? []),
     ...snapshot.followupTrialRecords,
-  ].map((record) => ({
-    sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === record.sessionNumber)?.sessionId ?? sessionId,
+  ].map((record) => {
+    const recordSessionId = record.sessionId ?? snapshot.sessionIndex?.find((item) => item.sessionNumber === record.sessionNumber)?.sessionId ?? sessionId;
+    const recordIdentity = sessionIdentity(recordSessionId);
+    return ({
+    ...recordIdentity,
+    sessionId: recordSessionId,
     sessionNumber: record.sessionNumber,
-    record,
-  }));
+    record: { ...record, ...recordIdentity, sessionId: recordSessionId },
+  }); });
   const assessmentOwnerSessionId = snapshot.assessmentOwnerSessionId
     ?? snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId
     ?? sessionId;
@@ -746,10 +773,13 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
     .sort((left, right) => right.assessmentRevision - left.assessmentRevision)[0];
   const currentAssessmentSet: AssessmentSessionRecord = {
     assessmentSetId,
+    ...sessionIdentity(assessmentOwnerSessionId),
     sessionId: assessmentOwnerSessionId,
     assessmentRevision: snapshot.assessmentRevision ?? 0,
     recordedAt: existingAssessmentSet?.recordedAt ?? snapshot.draftSavedAt ?? sessionStartedAt,
-    results: snapshot.assessmentResults,
+    // 后续康复不把首诊结果重新标成当前会话事实；本次复核单独保存。
+    results: snapshot.followupMode ? (existingAssessmentSet?.results ?? {}) : snapshot.assessmentResults,
+    ...(snapshot.followupMode ? { reviewResults: snapshot.followupTrends } : {}),
     ...(previousAssessmentSet ? { supersedesAssessmentSetId: previousAssessmentSet.assessmentSetId } : {}),
   };
   const assessmentHistory = [
@@ -788,7 +818,11 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
       decisionTraces: snapshot.decisionTraces ?? [],
       safety: { answers: snapshot.safety, boneRisk: snapshot.boneRisk ?? {}, imaging: snapshot.imaging },
       assessments: assessmentHistory,
-      treatments: [...initialTreatments, ...laterTreatments],
+      treatments: [...new Map([
+        ...(snapshot.historicalTreatments ?? []),
+        ...initialTreatments,
+        ...laterTreatments,
+      ].map((item) => [item.record.treatmentRecordId, item])).values()],
       retests: { obligations: snapshot.retestObligations ?? [], records: snapshot.retestRecords ?? [] },
       training: {
         initialFeedback: snapshot.exerciseFeedback,
@@ -804,7 +838,9 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
       assessmentRevision: snapshot.assessmentRevision ?? 0,
       assessmentOwnerSessionId,
       treatmentPlanRevision: snapshot.treatmentPlanRevision ?? snapshot.assessmentRevision ?? 0,
-      pendingRetestCount: (snapshot.retestObligations ?? []).filter((item) => item.sessionId === sessionId && item.required && item.status === "pending").length,
+      pendingRetestCount: (snapshot.retestObligations ?? []).filter((item) => item.sessionId === sessionId
+        && (item.sourceAssessmentRevision ?? 0) === (snapshot.assessmentRevision ?? 0)
+        && item.required && item.status === "pending").length,
       bilateralNeedsReferral: snapshot.bilateralNeedsReferral ?? false,
       midpointDecisionDone: snapshot.midpointDecisionDone ?? false,
       adverseResponse: snapshot.adverseResponse ?? null,
@@ -878,6 +914,13 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
   if (persisted.domain.intake.operationTarget === "study") return null;
   const initial = persisted.draft.initialRetest;
   const current = persisted.draft.currentSession;
+  const ownedAssessment = persisted.domain.assessments.find((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId
+    && item.assessmentRevision === persisted.workflow.assessmentRevision)
+    ?? persisted.domain.assessments.findLast((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId);
+  const priorAssessmentForDisplay = current.isLaterSession
+    ? persisted.domain.assessments.findLast((item) => item.sessionId !== persisted.workflow.assessmentOwnerSessionId
+      && Object.keys(item.results).length > 0)
+    : undefined;
   return {
     schemaVersion: 3,
     contractRevision: REHABMIND_V3_CONTRACT_REVISION,
@@ -893,23 +936,26 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     safety: persisted.domain.safety.answers,
     boneRisk: persisted.domain.safety.boneRisk,
     imaging: persisted.domain.safety.imaging,
-    assessmentResults: persisted.domain.assessments.find((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId && item.assessmentRevision === persisted.workflow.assessmentRevision)?.results
-      ?? persisted.domain.assessments.findLast((item) => item.sessionId === persisted.workflow.assessmentOwnerSessionId)?.results
-      ?? {},
+    // 后续页面可以读取上一会话作为只读比较基线，但当前 assessment set
+    // 仍保持独立、为空，保存时不会把这份显示基线复制成新事实。
+    assessmentResults: ownedAssessment && Object.keys(ownedAssessment.results).length
+      ? ownedAssessment.results
+      : priorAssessmentForDisplay?.results ?? {},
     assessmentHistory: persisted.domain.assessments,
     assessmentOwnerSessionId: persisted.workflow.assessmentOwnerSessionId,
     trialRecords: persisted.domain.treatments
-      .filter((item) => item.sessionNumber === 1 && !(item.record as TrialRecord).supersededByAssessmentRevision)
+      .filter((item) => item.problemThreadId === persisted.identity.problemThreadId && item.sessionNumber === 1 && !(item.record as TrialRecord).supersededByAssessmentRevision)
       .map((item) => item.record as TrialRecord),
     supersededTrialRecords: persisted.domain.treatments
-      .filter((item) => item.sessionNumber === 1 && Boolean((item.record as TrialRecord).supersededByAssessmentRevision))
+      .filter((item) => item.problemThreadId === persisted.identity.problemThreadId && item.sessionNumber === 1 && Boolean((item.record as TrialRecord).supersededByAssessmentRevision))
       .map((item) => item.record as TrialRecord),
     followupTrialRecords: persisted.domain.treatments
-      .filter((item) => item.sessionNumber > 1 && !(item.record as FollowupTreatmentRecord).supersededByAssessmentRevision)
+      .filter((item) => item.problemThreadId === persisted.identity.problemThreadId && item.sessionNumber > 1 && !(item.record as FollowupTreatmentRecord).supersededByAssessmentRevision)
       .map((item) => item.record as FollowupTreatmentRecord),
     supersededFollowupTrialRecords: persisted.domain.treatments
-      .filter((item) => item.sessionNumber > 1 && Boolean((item.record as FollowupTreatmentRecord).supersededByAssessmentRevision))
+      .filter((item) => item.problemThreadId === persisted.identity.problemThreadId && item.sessionNumber > 1 && Boolean((item.record as FollowupTreatmentRecord).supersededByAssessmentRevision))
       .map((item) => item.record as FollowupTreatmentRecord),
+    historicalTreatments: persisted.domain.treatments.filter((item) => item.problemThreadId !== persisted.identity.problemThreadId),
     retestObligations: persisted.domain.retests.obligations,
     retestRecords: persisted.domain.retests.records,
     exerciseFeedback: persisted.domain.training.initialFeedback,
@@ -969,7 +1015,7 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     followupFinalScoreConfirmed: current.finalScoreConfirmed,
     followupFinalRetestRecordedAt: current.finalRetestRecordedAt,
     hasNewSymptom: current.hasNewSymptom,
-    followupTrends: current.reviewResults,
+    followupTrends: ownedAssessment?.reviewResults ?? current.reviewResults,
   };
 }
 

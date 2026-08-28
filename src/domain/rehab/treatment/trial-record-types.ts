@@ -21,6 +21,8 @@ export type FunctionRetestObligation = {
   baselineScore?: number;
   /** 双侧问题必须分别回答；缺省表示单侧或整体动作。 */
   sides?: Array<"左侧" | "右侧">;
+  /** 台账投影提供的展示时机提示；不参与义务身份与完成判断。 */
+  candidateIds?: string[];
 };
 
 export type FunctionRetestRecord = FunctionRetestObligation & {
@@ -35,6 +37,8 @@ export type FunctionRetestRecord = FunctionRetestObligation & {
 };
 
 export type TrialRecord = {
+  caseId?: string;
+  problemThreadId?: string;
   /** 一次真实处理/复查的稳定身份；创建后不随队列排序改变。 */
   treatmentRecordId?: string;
   sessionId?: string;

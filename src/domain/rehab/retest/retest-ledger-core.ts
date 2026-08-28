@@ -25,6 +25,10 @@ export type RetestObligation = {
   mode?: FunctionRetestMode;
   baselineScore?: number;
   treatmentRecordIds: string[];
+  /** 只用于安排在哪项处理后展示；不能作为义务身份或完成条件。 */
+  scheduledCandidateIds?: string[];
+  /** 同一训练动作可以多次加重；每次加重必须使用独立 episode。 */
+  episodeId?: string;
   side?: RetestSide;
   required: boolean;
   status: RetestObligationStatus;
@@ -40,8 +44,14 @@ export type RetestRecord = {
   problemThreadId: string;
   sessionId: string;
   treatmentRecordId?: string;
+  /** 非处理型复查（例如训练加重处理）引用真实事件，不伪造处理记录。 */
+  sourceEventId?: string;
   sourceAssessmentRevision?: number;
   recordedAt: string;
+  status?: "active" | "superseded";
+  supersedesRetestRecordId?: string;
+  supersededAt?: string;
+  invalidationReason?: "assessment-updated" | "answer-corrected" | "adverse-reassessment";
   result: TrialResult;
   completion?: "complete" | "unable";
   unableReason?: "pain" | "weak" | "fear" | "instruction";
@@ -72,6 +82,8 @@ export type RetestSignalInput = {
   result?: TrialResult;
   score?: number;
   treatmentRecordId?: string;
+  sourceEventId?: string;
+  episodeId?: string;
   recordedAt?: string;
   assessmentRevision?: number;
 };
@@ -81,9 +93,10 @@ export function retestObligationId(input: {
   kind: RetestObligationKind;
   targetId: string;
   side?: RetestSide;
+  episodeId?: string;
   assessmentRevision?: number;
 }) {
-  return ["retest", input.sessionId, `r${input.assessmentRevision ?? 0}`, input.kind, input.targetId, input.side ?? "overall"]
+  return ["retest", input.sessionId, `r${input.assessmentRevision ?? 0}`, input.kind, input.targetId, input.side ?? "overall", input.episodeId ?? "base"]
     .map((part) => encodeURIComponent(part)).join(":");
 }
 
@@ -92,10 +105,16 @@ export function pendingRequiredRetests(obligations: RetestObligation[]) {
 }
 
 export function projectRetestLedger(input: { obligations: RetestObligation[]; records: RetestRecord[] }) {
-  const completedIds = new Set(input.records.map((record) => record.obligationId));
-  const obligations = input.obligations.map((obligation) => completedIds.has(obligation.obligationId)
-    ? { ...obligation, status: "completed" as const }
-    : obligation);
+  const activeRecords = input.records.filter((record) => (record.status ?? "active") === "active");
+  const completedIds = new Set(activeRecords.map((record) => record.obligationId));
+  const obligations = input.obligations.map((obligation) => {
+    if (["cancelled", "superseded"].includes(obligation.status)) return obligation;
+    return completedIds.has(obligation.obligationId)
+      ? { ...obligation, status: "completed" as const }
+      : obligation.status === "completed"
+        ? { ...obligation, status: "pending" as const, completedAt: undefined }
+        : obligation;
+  });
   return { obligations, records: input.records, pendingRequiredCount: pendingRequiredRetests(obligations).length };
 }
 
@@ -167,6 +186,7 @@ export function buildRetestLedgerFromTrials(input: {
       sessionId: input.sessionId,
       treatmentRecordId,
       recordedAt,
+      status: "active",
       ...record,
     });
   };
@@ -236,6 +256,7 @@ export function buildRetestLedgerFromTrials(input: {
       sourceAssessmentRevision: itemRevision, baselineCompletion: item.baselineCompletion,
       mode: item.mode, baselineScore: item.baselineScore,
       treatmentRecordIds: unique(item.treatmentRecordIds ?? []), side,
+      scheduledCandidateIds: unique(item.candidateIds ?? []),
       required: true, status: "pending", createdAt: existing?.createdAt ?? input.recordedAt,
     });
   };
@@ -258,18 +279,21 @@ export function buildRetestLedgerFromTrials(input: {
       kind: signal.kind,
       targetId: signal.targetId,
       assessmentRevision: signalRevision,
+      episodeId: signal.episodeId,
     });
     const existing = obligations.get(obligationId);
     if (signal.status === "completed" && signal.result) {
-      const sourceId = signal.treatmentRecordId ?? `retest-source:${input.sessionId}:${signal.kind}:${signal.targetId}:${signal.recordedAt ?? input.recordedAt}`;
+      const sourceId = signal.treatmentRecordId ?? signal.sourceEventId ?? `retest-source:${input.sessionId}:${signal.kind}:${signal.targetId}:${signal.recordedAt ?? input.recordedAt}`;
       addCompleted({
         obligationId, caseId: input.caseId, problemThreadId: input.problemThreadId, sessionId: input.sessionId,
         kind: signal.kind, targetId: signal.targetId, label: signal.label,
         sourceAssessmentRevision: signalRevision, baselineScore: existing?.baselineScore,
+        episodeId: signal.episodeId,
         treatmentRecordIds: [sourceId], required: signal.required, status: "completed",
         createdAt: existing?.createdAt ?? signal.recordedAt ?? input.recordedAt,
       }, sourceId, signal.recordedAt ?? input.recordedAt, {
         sourceAssessmentRevision: signalRevision,
+        ...(signal.treatmentRecordId ? {} : { treatmentRecordId: undefined, sourceEventId: sourceId }),
         result: signal.result,
         score: signal.score,
       });
@@ -279,6 +303,7 @@ export function buildRetestLedgerFromTrials(input: {
     obligations.set(obligationId, {
       obligationId, caseId: input.caseId, problemThreadId: input.problemThreadId, sessionId: input.sessionId,
       kind: signal.kind, targetId: signal.targetId, label: signal.label,
+      episodeId: signal.episodeId,
       sourceAssessmentRevision: signalRevision, treatmentRecordIds: existing?.treatmentRecordIds ?? [],
       required: signal.required, status: signal.status,
       createdAt: existing?.createdAt ?? signal.recordedAt ?? input.recordedAt,
