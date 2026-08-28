@@ -248,7 +248,15 @@ function validateDomain(domain: SnapshotObject, requireConsent: boolean): string
   const retestError = validateRetests(retests);
   if (retestError) return retestError;
   const training = requireObject(domain, "training");
-  if (!training || !isObject(training.initialFeedback) || !isObject(training.currentSessionChoices) || typeof training.complete !== "boolean" || typeof training.planSaved !== "boolean") return "snapshot domain.training is invalid";
+  if (!training || !isObject(training.initialFeedback) || !isObject(training.currentSessionChoices)
+    || !Array.isArray(training.records) || typeof training.complete !== "boolean" || typeof training.planSaved !== "boolean") return "snapshot domain.training is invalid";
+  for (const [index, raw] of training.records.entries()) {
+    if (!isObject(raw)) return `snapshot domain.training.records[${index}] is invalid`;
+    for (const key of ["trainingFeedbackRecordId", "caseId", "problemThreadId", "sessionId", "exerciseId", "source", "recordedAt"] as const) {
+      if (!nonEmptyString(raw[key])) return `snapshot domain.training.records[${index}].${key} is invalid`;
+    }
+    if (!["initial", "followup"].includes(String(raw.source)) || raw.feedback === undefined) return `snapshot domain.training.records[${index}] is invalid`;
+  }
   if ((domain.history as unknown[]).some((item) => !Number.isInteger((item as SnapshotObject).sessionNumber) || ((item as SnapshotObject).sessionNumber as number) < 1)) return "snapshot domain.history item is invalid";
   return null;
 }
@@ -326,6 +334,14 @@ function validateCrossSection(identity: SnapshotObject, domain: SnapshotObject, 
       if (!owner || fact.caseId !== owner.caseId || fact.problemThreadId !== owner.problemThreadId) {
         return `snapshot domain.${collection}[${index}] identity is invalid`;
       }
+    }
+  }
+  const training = domain.training as SnapshotObject;
+  for (const [index, item] of (training.records as unknown[]).entries()) {
+    const fact = item as SnapshotObject;
+    const owner = sessionById.get(String(fact.sessionId));
+    if (!owner || fact.caseId !== owner.caseId || fact.problemThreadId !== owner.problemThreadId) {
+      return `snapshot domain.training.records[${index}] identity is invalid`;
     }
   }
   if (!(domain.assessments as unknown[]).some((item) => isObject(item)

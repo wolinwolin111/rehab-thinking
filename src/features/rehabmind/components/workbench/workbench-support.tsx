@@ -507,6 +507,8 @@ export type SavedDemoSnapshot = {
   followupMovementScoreConfirmed?: Record<string, boolean>;
   followupTensionLocations?: string[];
   followupExerciseChoices: Record<string, FollowupExerciseChoice>;
+  followupExerciseChoiceRecordedAt?: Record<string, string>;
+  trainingFeedbackRecords?: TrainingFeedbackRecordV3[];
   followupTrainingReadyForRetest?: boolean;
   followupFinalScore?: number;
   followupFinalScoreConfirmed?: boolean;
@@ -548,6 +550,17 @@ export type PersistedTreatmentRecordV3 = {
   sessionId: string;
   sessionNumber: number;
   record: TrialRecord | FollowupTreatmentRecord;
+};
+
+export type TrainingFeedbackRecordV3 = {
+  trainingFeedbackRecordId: string;
+  caseId: string;
+  problemThreadId: string;
+  sessionId: string;
+  exerciseId: string;
+  source: "initial" | "followup";
+  recordedAt: string;
+  feedback: ExerciseFeedback | FollowupExerciseChoice;
 };
 
 /**
@@ -594,6 +607,7 @@ export type PersistedDemoSnapshotV3 = {
     training: {
       initialFeedback: Record<string, ExerciseFeedback>;
       currentSessionChoices: Record<string, FollowupExerciseChoice>;
+      records: TrainingFeedbackRecordV3[];
       complete: boolean;
       planSaved: boolean;
     };
@@ -786,6 +800,37 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
     ...(snapshot.assessmentHistory ?? []).filter((item) => item.assessmentSetId !== assessmentSetId),
     currentAssessmentSet,
   ];
+  const initialTrainingSessionId = snapshot.sessionIndex?.find((item) => item.sessionNumber === 1
+    && item.problemThreadId === problemThreadId)?.sessionId ?? sessionId;
+  const initialTrainingIdentity = sessionIdentity(initialTrainingSessionId);
+  const currentTrainingIdentity = sessionIdentity(sessionId);
+  const projectedTrainingRecords: TrainingFeedbackRecordV3[] = [
+    ...Object.entries(snapshot.exerciseFeedback).map(([exerciseId, feedback]) => ({
+      trainingFeedbackRecordId: `training:${initialTrainingSessionId}:initial:${exerciseId}:${feedback.recordedAt ?? sessionStartedAt}`,
+      ...initialTrainingIdentity,
+      sessionId: initialTrainingSessionId,
+      exerciseId,
+      source: "initial" as const,
+      recordedAt: feedback.recordedAt ?? sessionStartedAt,
+      feedback,
+    })),
+    ...Object.entries(snapshot.followupExerciseChoices).map(([exerciseId, feedback]) => {
+      const recordedAt = snapshot.followupExerciseChoiceRecordedAt?.[exerciseId] ?? sessionStartedAt;
+      return {
+        trainingFeedbackRecordId: `training:${sessionId}:followup:${exerciseId}:${recordedAt}`,
+        ...currentTrainingIdentity,
+        sessionId,
+        exerciseId,
+        source: "followup" as const,
+        recordedAt,
+        feedback,
+      };
+    }),
+  ];
+  const trainingFeedbackRecords = [...new Map([
+    ...(snapshot.trainingFeedbackRecords ?? []),
+    ...projectedTrainingRecords,
+  ].map((item) => [item.trainingFeedbackRecordId, item])).values()];
   return {
     schemaVersion: 3,
     contractRevision: REHABMIND_V3_CONTRACT_REVISION,
@@ -827,6 +872,7 @@ export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): Persisted
       training: {
         initialFeedback: snapshot.exerciseFeedback,
         currentSessionChoices: snapshot.followupExerciseChoices,
+        records: trainingFeedbackRecords,
         complete: snapshot.trainingComplete,
         planSaved: snapshot.trainingPlanSaved ?? false,
       },
@@ -962,6 +1008,10 @@ export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | 
     trainingComplete: persisted.domain.training.complete,
     trainingPlanSaved: persisted.domain.training.planSaved,
     followupExerciseChoices: persisted.domain.training.currentSessionChoices,
+    followupExerciseChoiceRecordedAt: Object.fromEntries(persisted.domain.training.records
+      .filter((item) => item.sessionId === persisted.identity.sessionId && item.source === "followup")
+      .map((item) => [item.exerciseId, item.recordedAt])),
+    trainingFeedbackRecords: persisted.domain.training.records,
     sessionHistory: persisted.domain.history,
     step: persisted.workflow.stage,
     assessmentRevision: persisted.workflow.assessmentRevision,

@@ -283,6 +283,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [supersededTrialRecords, setSupersededTrialRecords] = useState<TrialRecord[]>([]);
   const [supersededFollowupTrialRecords, setSupersededFollowupTrialRecords] = useState<FollowupTreatmentRecord[]>([]);
   const [historicalTreatments, setHistoricalTreatments] = useState<PersistedDemoSnapshotV3["domain"]["treatments"]>([]);
+  const [trainingFeedbackRecords, setTrainingFeedbackRecords] = useState<PersistedDemoSnapshotV3["domain"]["training"]["records"]>([]);
+  const [followupExerciseChoiceRecordedAt, setFollowupExerciseChoiceRecordedAt] = useState<Record<string, string>>({});
   const activeCaseIdentityRef = useRef(localCaseId);
   const localTabIdRef = useRef(createLocalTabId());
   const currentDraftFingerprintRef = useRef<string | null>(null);
@@ -507,6 +509,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const setFollowupExerciseChoices: Dispatch<SetStateAction<Record<string, FollowupExerciseChoice>>> = (value) => {
     const next = typeof value === "function" ? value(followupExerciseChoices) : value;
     syncFollowupTrainingSafety(followupExerciseChoices, next);
+    const recordedAt = new Date().toISOString();
+    setFollowupExerciseChoiceRecordedAt((current) => {
+      const updated = { ...current };
+      for (const exerciseId of new Set([...Object.keys(followupExerciseChoices), ...Object.keys(next)])) {
+        if (followupExerciseChoices[exerciseId] !== next[exerciseId] && next[exerciseId]) updated[exerciseId] = recordedAt;
+      }
+      return updated;
+    });
     setFollowupExerciseChoicesRaw(next);
   };
 
@@ -4552,6 +4562,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       followupMovementScoreConfirmed,
       followupTensionLocations,
       followupExerciseChoices,
+      followupExerciseChoiceRecordedAt,
+      trainingFeedbackRecords,
       followupTrainingReadyForRetest,
       followupFinalScore,
       followupFinalScoreConfirmed,
@@ -5180,6 +5192,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setReadyToRetest(snapshot.readyToRetest ?? false);
     setRetestPlan(snapshot.retestPlan ?? null);
     setExerciseFeedback(snapshot.exerciseFeedback);
+    setTrainingFeedbackRecords(snapshot.trainingFeedbackRecords ?? []);
+    setFollowupExerciseChoiceRecordedAt(snapshot.followupExerciseChoiceRecordedAt ?? {});
     setTrainingComplete(snapshot.trainingComplete);
     setTrainingPlanSaved(snapshot.trainingPlanSaved ?? false);
     setTreatmentFinalRetestScore(snapshot.treatmentFinalRetestScore ?? 0);
@@ -5294,6 +5308,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMovementScores({});
     setMovementScoreConfirmed({});
     setExerciseFeedback({});
+    setTrainingFeedbackRecords([]);
+    setFollowupExerciseChoiceRecordedAt({});
     setTrainingComplete(false);
     setTrainingPlanSaved(false);
     setTreatmentFinalRetestScore(0);
@@ -5501,6 +5517,34 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     })));
     setHistoricalTreatments((current) => [...new Map([...current, ...archivedTreatments]
       .map((item) => [item.record.treatmentRecordId, item])).values()]);
+    const initialTrainingSessionId = sessionHistory.find((item) => item.sessionNumber === 1)?.sessionId ?? sessionId;
+    const archivedTrainingFacts: PersistedDemoSnapshotV3["domain"]["training"]["records"] = [
+      ...Object.entries(exerciseFeedback).map(([exerciseId, feedback]) => ({
+        trainingFeedbackRecordId: `training:${initialTrainingSessionId}:initial:${exerciseId}:${feedback.recordedAt ?? sessionStartedAt}`,
+        caseId: localCaseId,
+        problemThreadId,
+        sessionId: initialTrainingSessionId,
+        exerciseId,
+        source: "initial" as const,
+        recordedAt: feedback.recordedAt ?? sessionStartedAt,
+        feedback,
+      })),
+      ...Object.entries(followupExerciseChoices).map(([exerciseId, feedback]) => {
+        const recordedAt = followupExerciseChoiceRecordedAt[exerciseId] ?? sessionStartedAt;
+        return {
+          trainingFeedbackRecordId: `training:${sessionId}:followup:${exerciseId}:${recordedAt}`,
+          caseId: localCaseId,
+          problemThreadId,
+          sessionId,
+          exerciseId,
+          source: "followup" as const,
+          recordedAt,
+          feedback,
+        };
+      }),
+    ];
+    setTrainingFeedbackRecords((current) => [...new Map([...current, ...archivedTrainingFacts]
+      .map((item) => [item.trainingFeedbackRecordId, item])).values()]);
     // 先按旧身份封存旧问题事实，再一次性建立新身份；不能让 React 批量更新
     // 把旧评估误标为新线程，也不能把普通问诊编辑当成新问题命令。
     applyIntakeChange(nextIntake, { preservePriorProblem: true });
@@ -5532,6 +5576,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupMode(false);
     setFollowupScoreHistory([]);
     setFollowupTrialRecords([]);
+    setFollowupExerciseChoiceRecordedAt({});
   }
 
   function followupRetestIds(candidate: FullCandidate) {
@@ -5796,6 +5841,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupCandidateId("");
     setFollowupTrends({});
     setFollowupExerciseChoicesRaw({});
+    setFollowupExerciseChoiceRecordedAt({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
@@ -5875,6 +5921,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupTensionLocations([]);
     setFollowupTrends({});
     setFollowupExerciseChoicesRaw({});
+    setFollowupExerciseChoiceRecordedAt({});
     setFollowupTrainingReadyForRetest(false);
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
