@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import RehabMindCompleteDemo from "@/src/features/rehabmind/components/workbench/rehabmind-workbench";
 import type {
   PilotDraftEnvelope,
+  PersistedDemoSnapshotV3,
   SavedDemoRecord,
   SavedDemoSnapshot,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
-import { getGoalLabel, STEPS } from "@/src/features/rehabmind/components/workbench/workbench-support";
+import { getGoalLabel, normalizeSavedDemoSnapshot, persistSavedDemoSnapshot, STEPS } from "@/src/features/rehabmind/components/workbench/workbench-support";
 import { createLocalCaseId } from "@/src/infrastructure/pilot/persistence/local-case-identity";
 import {
   clearLocalDraft,
@@ -17,7 +18,7 @@ import {
   saveLocalDraft,
 } from "@/src/infrastructure/pilot/persistence/local-case-store";
 import { PILOT_RELEASE_VERSIONS } from "@/src/infrastructure/pilot/release/release-version";
-import { attachPilotConsent, buildPilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
+import { buildPilotConsentRecord } from "@/src/infrastructure/pilot/consent/consent-core";
 import {
   createPilotAccessToken,
   createPilotCase,
@@ -38,6 +39,27 @@ import "@/src/features/rehabmind/styles/test-workbench.css";
 const RUN_STORAGE_KEY = "rehabmind-test-run-v1";
 
 type AccessState = "checking" | "allowed" | "denied" | "error";
+type PersistedTestRecordV3 = Omit<SavedDemoRecord, "snapshot" | "pilotConflictSnapshot"> & {
+  snapshot?: PersistedDemoSnapshotV3;
+  pilotConflictSnapshot?: PersistedDemoSnapshotV3;
+};
+type PersistedTestDraftV3 = Omit<PilotDraftEnvelope, "snapshot"> & { snapshot: PersistedDemoSnapshotV3 };
+
+function normalizeTestRecord(record: PersistedTestRecordV3): SavedDemoRecord | null {
+  const snapshot = record.snapshot ? normalizeSavedDemoSnapshot(record.snapshot) : null;
+  if (record.snapshot && !snapshot) return null;
+  const conflict = record.pilotConflictSnapshot ? normalizeSavedDemoSnapshot(record.pilotConflictSnapshot) : null;
+  return { ...record, snapshot: snapshot ?? undefined, pilotConflictSnapshot: conflict ?? undefined };
+}
+
+function persistTestRecord(record: SavedDemoRecord): PersistedTestRecordV3 {
+  const { snapshot, pilotConflictSnapshot, ...metadata } = record;
+  return {
+    ...metadata,
+    snapshot: snapshot ? persistSavedDemoSnapshot(snapshot) : undefined,
+    pilotConflictSnapshot: pilotConflictSnapshot ? persistSavedDemoSnapshot(pilotConflictSnapshot) : undefined,
+  };
+}
 
 const REPRODUCTION_FREE_TEXT_KEYS = new Set(["professionalNotes", "text", "note", "detail", "customAction"]);
 
@@ -111,7 +133,7 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
   let access = await createPilotCase({
     clientCreationId,
     accessToken: createPilotAccessToken(),
-    initialSnapshot: snapshot,
+    initialSnapshot: persistSavedDemoSnapshot(snapshot),
     currentStage: STEPS[snapshot.step] ?? scenario.target,
     isBilateral: snapshot.intake.side === "双侧/中间",
     hasSafetyStop: Object.values(snapshot.safety).some((value) => value === "yes"),
@@ -120,7 +142,7 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
     testContext: context,
   });
   // 历史场景不能只在 IndexedDB 中声称“第 2 次康复”。通过正式进度事件把
-  // 同一份 v2 会话投影写入测试案例，使反馈的 sessionNumber 服务端归属校验
+  // 同一份 v3 会话投影写入测试案例，使反馈的 sessionNumber 服务端归属校验
   // 与页面正在展示的 sessionIndex 保持一致；正式建案入口不经过这段接缝。
   if (snapshot.sessionNumber > 1) {
     const projection = await savePilotCaseProgress({
@@ -128,7 +150,7 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
       requestId: `request:test-bootstrap:${clientCreationId}`,
       sessionId: snapshot.sessionId ?? seed.sessionId,
       problemThreadId: snapshot.problemThreadId ?? seed.problemThreadId,
-      snapshot: attachPilotConsent(snapshot as unknown as Record<string, unknown>, consent),
+      snapshot: persistSavedDemoSnapshot({ ...snapshot, consent }),
       eventId: `event:test-bootstrap:${clientCreationId}`,
       eventType: "session_draft_saved",
       eventPayload: {
@@ -146,7 +168,7 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
     });
     access = { ...access, revision: projection.snapshot.revision };
   }
-  const existing = await loadLocalCaseRecords<SavedDemoRecord>("test");
+  const existing = await loadLocalCaseRecords<PersistedTestRecordV3>("test");
   const record: SavedDemoRecord = {
     id: `test-${localCaseId}`,
     localCaseId,
@@ -178,15 +200,16 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
     testRunId,
     scenarioId: scenario.id,
   };
-  await saveLocalCaseRecords([record, ...existing.records.filter((item) => item.localCaseId !== localCaseId)], "test");
-  const draft: PilotDraftEnvelope = {
-    schemaVersion: 2,
+  const persistedRecord = persistTestRecord(record);
+  await saveLocalCaseRecords([persistedRecord, ...existing.records.filter((item) => item.localCaseId !== localCaseId)], "test");
+  const draft: PersistedTestDraftV3 = {
+    schemaVersion: 3,
     localCaseId,
     savedAt,
-    snapshot,
+    snapshot: persistSavedDemoSnapshot(snapshot),
   };
   await saveLocalDraft(draft, "test");
-  return { draft, record, context };
+  return { draft: { ...draft, snapshot }, record, context };
 }
 
 export default function PilotTestWorkbench() {
@@ -222,8 +245,9 @@ export default function PilotTestWorkbench() {
 
   const refreshLatestRecord = useCallback(async () => {
     if (!active) return null;
-    const result = await loadLocalCaseRecords<SavedDemoRecord>("test");
-    const matching = result.records.find((record) => record.localCaseId === active.localCaseId) ?? null;
+    const result = await loadLocalCaseRecords<PersistedTestRecordV3>("test");
+    const rawMatching = result.records.find((record) => record.localCaseId === active.localCaseId);
+    const matching = rawMatching ? normalizeTestRecord(rawMatching) : null;
     setLatestRecord(matching);
     return matching;
   }, [active]);
@@ -272,8 +296,8 @@ export default function PilotTestWorkbench() {
 
   async function cloneScenario() {
     if (!active) return;
-    const draft = await loadLocalDraft<PilotDraftEnvelope>("test");
-    await launch(active.scenario, draft?.snapshot);
+    const draft = await loadLocalDraft<PersistedTestDraftV3>("test");
+    await launch(active.scenario, draft ? normalizeSavedDemoSnapshot(draft.snapshot) ?? undefined : undefined);
   }
 
   async function clearDraft() {
@@ -298,7 +322,7 @@ export default function PilotTestWorkbench() {
       setMessage("当前还没有可导出的测试快照，请先在流程中保存一次。");
       return;
     }
-    const reproductionSnapshot = redactReproductionValue(record.snapshot) as SavedDemoSnapshot;
+    const reproductionSnapshot = redactReproductionValue(persistSavedDemoSnapshot(record.snapshot)) as PersistedDemoSnapshotV3;
     const payload = {
       packageSchemaVersion: 1,
       exportedAt: new Date().toISOString(),
@@ -347,7 +371,7 @@ export default function PilotTestWorkbench() {
       if (!response.ok) throw new Error("delete failed");
       const body = await response.json() as { deleted?: number };
       await clearLocalDraft("test");
-      const local = await loadLocalCaseRecords<SavedDemoRecord>("test");
+      const local = await loadLocalCaseRecords<PersistedTestRecordV3>("test");
       await saveLocalCaseRecords(local.records.filter((record) => record.testRunId !== active.context.testRunId), "test");
       const nextRunId = newRunId();
       window.sessionStorage.setItem(RUN_STORAGE_KEY, nextRunId);

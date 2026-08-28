@@ -1,0 +1,60 @@
+import type { CompletedRangeRetestAnswer, TrialResult, YesNo } from "@/src/domain/rehab/treatment/trial-record-types";
+import type { TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
+import type { RehabSessionSummary } from "./session-history";
+
+export type SessionReviewAnswer = "better" | "same" | "worse" | "unknown" | "unable";
+export type SessionNewSymptomAnswer = "" | "no" | "yes";
+export type SessionExerciseChoice = "reduce" | "hold" | "progress" | "worse";
+export type SessionPhase = "review" | "treatment" | "training" | "summary";
+
+export type SessionTreatmentRecord = {
+  sessionNumber: number;
+  targetId?: string;
+  candidateId: string;
+  treatmentKey?: string;
+  candidateTitle: string;
+  treatmentName?: string;
+  action?: string;
+  beforeScore: number;
+  afterScore: number;
+  result: TrialResult;
+  activityWorsened?: boolean;
+  timeBased?: boolean;
+  rangeOutcomes?: Record<string, CompletedRangeRetestAnswer>;
+  rangeOutcome?: CompletedRangeRetestAnswer;
+  rangeDiscomforts?: Record<string, YesNo>;
+  rangeScores?: Record<string, number>;
+  chiefRetested?: boolean;
+  retestOnly?: boolean;
+  reviewOnly?: boolean;
+  supportingOnly?: boolean;
+  responseRole?: TreatmentResponseRole;
+};
+
+export type SessionRuntimeState<TRetestPlan> = {
+  sessionNumber: number;
+  isLaterSession: boolean;
+  reviewScore: number;
+  reviewScoreConfirmed: boolean;
+  scoreHistory: number[];
+  phase: SessionPhase;
+  postScore: number;
+  postScoreConfirmed: boolean;
+  postDiscomfort: YesNo | "";
+  candidateId: string;
+  treatmentRecords: SessionTreatmentRecord[];
+  readyToRetest: boolean;
+  retestPlan: TRetestPlan | null;
+  movementResponses: Record<string, CompletedRangeRetestAnswer>;
+  movementDiscomforts: Record<string, YesNo>;
+  movementScores: Record<string, number>;
+  movementScoreConfirmed: Record<string, boolean>;
+  tensionLocations: string[];
+  exerciseChoices: Record<string, SessionExerciseChoice>;
+  trainingReadyForRetest: boolean;
+  finalScore: number;
+  finalScoreConfirmed: boolean;
+  hasNewSymptom: SessionNewSymptomAnswer;
+  reviewResults: Record<string, SessionReviewAnswer>;
+  history: RehabSessionSummary[];
+};

@@ -19,6 +19,8 @@
     "test:security": "node --test tests/unit/infrastructure/security-headers.test.mjs tests/unit/infrastructure/pilot-api-redaction.test.mjs tests/unit/infrastructure/pilot-admin-session.test.mjs tests/unit/infrastructure/rate-limit-core.test.mjs tests/unit/infrastructure/pilot-source-consent.test.mjs",
     "test:dependencies": "node scripts/quality/check-production-dependencies.mjs",
     "test:sqlite:health": "node scripts/data/check-sqlite-health.mjs",
+    "data:v3:reset": "node scripts/data/reset-v3-runtime-data.mjs",
+    "data:v3:reset:apply": "node scripts/data/reset-v3-runtime-data.mjs --apply",
     "test:migrations:compat": "node scripts/data/check-migration-compatibility.mjs",
     "test:performance": "node scripts/quality/check-build-budget.mjs",
     "test:integration": "node --test tests/integration/sqlite-api/*.integration.mjs",

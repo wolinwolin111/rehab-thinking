@@ -40,7 +40,7 @@ import { type PilotCaseAccess } from "@/src/infrastructure/pilot/api/case-client
 
 
 
-import { migratePilotSnapshot } from "@/src/infrastructure/pilot/persistence/snapshot-schema";
+import { validatePilotSnapshotV3 } from "@/src/infrastructure/pilot/persistence/snapshot-schema";
 import { deriveMedicalGuidance, type MedicalGuidance } from "@/src/domain/rehab/intake/medical-guidance-core";
 import { type BodyMark } from "@/src/domain/rehab/records/body-mark-core";
 import { type ScoreRecord } from "@/src/domain/rehab/records/score-record-core";
@@ -67,6 +67,7 @@ import { canonicalActionKey, samePhysicalAction } from "@/src/domain/rehab/intak
 
 import { currentComplaintText } from "@/src/domain/rehab/intake/intake-complaint-core";
 import { type AdverseResponseEvent } from "@/src/domain/rehab/followup/adverse-response-core";
+import { type RetestObligation, type RetestRecord } from "@/src/domain/rehab/retest/retest-ledger-core";
 
 import { emptyCapabilities, normalizeWorkflowProfile, workflowProfileFromLegacy, type CapabilitySet, type OperationTarget, type ProductMode } from "@/src/domain/rehab/intake/workflow-profile-core";
 
@@ -490,6 +491,129 @@ export type SavedDemoSnapshot = {
   treatmentPlanRevision?: number;
   adverseResponse?: AdverseResponseEvent | null;
   adverseConfirmedAssessmentIds?: string[];
+  /** v3 唯一复查事实源；页面任务从这里投影，不以候选队列代替。 */
+  retestObligations?: RetestObligation[];
+  retestRecords?: RetestRecord[];
+  /** 服务端在领域段保存的知情同意记录。 */
+  consent?: { version: string; confirmedAt: string };
+};
+
+export type PersistedTreatmentRecordV3 = {
+  sessionId: string;
+  sessionNumber: number;
+  record: TrialRecord | FollowupTreatmentRecord;
+};
+
+/**
+ * v3 落盘合同。工作台内部可以分步迁移，但服务器、IndexedDB 和导出文件
+ * 只允许保存这个四段结构，避免页面游标再次成为业务事实源。
+ */
+export type PersistedDemoSnapshotV3 = {
+  schemaVersion: 3;
+  identity: {
+    caseId: string;
+    localCaseId: string;
+    problemThreadId: string;
+    sessionId: string;
+    sessionNumber: number;
+    sessionStatus: SessionLifecycleStatus;
+    sessionStartedAt: string;
+    draftSavedAt?: string;
+    completedAt?: string;
+    completionReason?: string;
+    capabilitySnapshotId?: string;
+    problemThreads: ProblemThreadRecord[];
+    sessionIndex: SessionIndexRecord[];
+  };
+  domain: {
+    consent?: { version: string; confirmedAt: string };
+    intake: IntakeState;
+    bodyMarks: BodyMark[];
+    scoreRecords: ScoreRecord[];
+    specialTestRecords: SpecialTestRecord[];
+    professionalNoteRecords: ProfessionalNoteRecord[];
+    decisionTraces: DecisionTrace[];
+    safety: {
+      answers: Record<string, YesNo>;
+      boneRisk: Record<string, "yes" | "no" | "unsure">;
+      imaging: string[];
+    };
+    assessments: {
+      sessionId: string;
+      results: Record<string, AssessmentRecord>;
+    };
+    treatments: PersistedTreatmentRecordV3[];
+    retests: {
+      obligations: RetestObligation[];
+      records: RetestRecord[];
+    };
+    training: {
+      initialFeedback: Record<string, ExerciseFeedback>;
+      currentSessionChoices: Record<string, FollowupExerciseChoice>;
+      complete: boolean;
+      planSaved: boolean;
+    };
+    history: RehabSessionSummary[];
+  };
+  workflow: {
+    stage: Step;
+    phase: "intake" | "safety" | "assessment" | "treatment" | "training" | "summary";
+    assessmentRevision: number;
+    treatmentPlanRevision: number;
+    pendingRetestCount: number;
+    bilateralNeedsReferral: boolean;
+    midpointDecisionDone: boolean;
+    adverseResponse: AdverseResponseEvent | null;
+    adverseConfirmedAssessmentIds: string[];
+  };
+  draft: {
+    confirmedIntakeMulti: IntakeMultiConfirmation;
+    assessmentCursor: number;
+    treatmentCursor: { target: number; candidate: number };
+    selectedOptionalCandidateIds: string[];
+    bilateralTreatmentSides: Record<string, BilateralSide[]>;
+    bilateralRetestResponses: Record<string, "better" | "same" | "worse">;
+    initialRetest: {
+      postScore: number;
+      postScoreConfirmed: boolean;
+      postDiscomfort: YesNo | "";
+      ready: boolean;
+      plan: RetestPlan | null;
+      movementResponse: SavedDemoSnapshot["movementResponse"];
+      movementResponses: Record<string, CompletedRangeRetestAnswer>;
+      movementDiscomforts: Record<string, YesNo>;
+      movementScores: Record<string, number>;
+      movementScoreConfirmed: Record<string, boolean>;
+      treatmentFinalScore: number;
+      treatmentFinalConfirmed: boolean;
+      trainingReadyForFinal: boolean;
+      finalScore: number;
+      finalConfirmed: boolean;
+    };
+    currentSession: {
+      isLaterSession: boolean;
+      reviewScore: number;
+      reviewScoreConfirmed: boolean;
+      scoreHistory: number[];
+      phase: FollowupStage;
+      postScore: number;
+      postScoreConfirmed: boolean;
+      postDiscomfort: YesNo | "";
+      candidateId: string;
+      readyToRetest: boolean;
+      retestPlan: RetestPlan | null;
+      movementResponses: Record<string, CompletedRangeRetestAnswer>;
+      movementDiscomforts: Record<string, YesNo>;
+      movementScores: Record<string, number>;
+      movementScoreConfirmed: Record<string, boolean>;
+      tensionLocations: string[];
+      trainingReadyForRetest: boolean;
+      finalScore: number;
+      finalScoreConfirmed: boolean;
+      hasNewSymptom: boolean;
+      reviewResults: Record<string, FollowupReviewAnswer>;
+    };
+  };
 };
 
 export type SavedDemoRecord = {
@@ -547,13 +671,217 @@ export type PilotDraftEnvelope = {
   snapshot: SavedDemoSnapshot;
 };
 
+function phaseForSnapshot(snapshot: SavedDemoSnapshot): PersistedDemoSnapshotV3["workflow"]["phase"] {
+  if (snapshot.followupMode) return snapshot.followupStage === "review" ? "assessment" : snapshot.followupStage;
+  return (["intake", "safety", "assessment", "treatment", "training", "summary"] as const)[snapshot.step] ?? "intake";
+}
+
+export function persistSavedDemoSnapshot(snapshot: SavedDemoSnapshot): PersistedDemoSnapshotV3 {
+  const localCaseId = snapshot.localCaseId?.trim();
+  const problemThreadId = snapshot.problemThreadId?.trim();
+  const sessionId = snapshot.sessionId?.trim();
+  const sessionStartedAt = snapshot.sessionStartedAt?.trim();
+  if (!localCaseId || !problemThreadId || !sessionId || !sessionStartedAt) {
+    throw new Error("v3 snapshot identity is incomplete");
+  }
+  const initialTreatments: PersistedTreatmentRecordV3[] = snapshot.trialRecords.map((record) => ({
+    sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === 1)?.sessionId ?? sessionId,
+    sessionNumber: 1,
+    record,
+  }));
+  const laterTreatments: PersistedTreatmentRecordV3[] = snapshot.followupTrialRecords.map((record) => ({
+    sessionId: snapshot.sessionIndex?.find((item) => item.sessionNumber === record.sessionNumber)?.sessionId ?? sessionId,
+    sessionNumber: record.sessionNumber,
+    record,
+  }));
+  return {
+    schemaVersion: 3,
+    identity: {
+      caseId: localCaseId,
+      localCaseId,
+      problemThreadId,
+      sessionId,
+      sessionNumber: snapshot.sessionNumber,
+      sessionStatus: snapshot.sessionStatus ?? "draft",
+      sessionStartedAt,
+      draftSavedAt: snapshot.draftSavedAt,
+      completedAt: snapshot.completedAt,
+      completionReason: snapshot.completionReason,
+      capabilitySnapshotId: snapshot.capabilitySnapshotId,
+      problemThreads: snapshot.problemThreads ?? [],
+      sessionIndex: snapshot.sessionIndex ?? [],
+    },
+    domain: {
+      consent: snapshot.consent,
+      intake: snapshot.intake,
+      bodyMarks: snapshot.bodyMarks ?? [],
+      scoreRecords: snapshot.scoreRecords ?? [],
+      specialTestRecords: snapshot.specialTestRecords ?? [],
+      professionalNoteRecords: snapshot.professionalNoteRecords ?? [],
+      decisionTraces: snapshot.decisionTraces ?? [],
+      safety: { answers: snapshot.safety, boneRisk: snapshot.boneRisk ?? {}, imaging: snapshot.imaging },
+      assessments: { sessionId, results: snapshot.assessmentResults },
+      treatments: [...initialTreatments, ...laterTreatments],
+      retests: { obligations: snapshot.retestObligations ?? [], records: snapshot.retestRecords ?? [] },
+      training: {
+        initialFeedback: snapshot.exerciseFeedback,
+        currentSessionChoices: snapshot.followupExerciseChoices,
+        complete: snapshot.trainingComplete,
+        planSaved: snapshot.trainingPlanSaved ?? false,
+      },
+      history: snapshot.sessionHistory ?? [],
+    },
+    workflow: {
+      stage: snapshot.step,
+      phase: phaseForSnapshot(snapshot),
+      assessmentRevision: snapshot.assessmentRevision ?? 0,
+      treatmentPlanRevision: snapshot.treatmentPlanRevision ?? snapshot.assessmentRevision ?? 0,
+      pendingRetestCount: (snapshot.retestObligations ?? []).filter((item) => item.required && item.status === "pending").length,
+      bilateralNeedsReferral: snapshot.bilateralNeedsReferral ?? false,
+      midpointDecisionDone: snapshot.midpointDecisionDone ?? false,
+      adverseResponse: snapshot.adverseResponse ?? null,
+      adverseConfirmedAssessmentIds: snapshot.adverseConfirmedAssessmentIds ?? [],
+    },
+    draft: {
+      confirmedIntakeMulti: snapshot.confirmedIntakeMulti ?? { symptoms: true, provocationTypes: true },
+      assessmentCursor: snapshot.assessmentIndex,
+      treatmentCursor: { target: snapshot.trialTargetIndex, candidate: snapshot.candidateIndex },
+      selectedOptionalCandidateIds: snapshot.selectedOptionalCandidateIds ?? [],
+      bilateralTreatmentSides: snapshot.bilateralTreatmentSides ?? {},
+      bilateralRetestResponses: snapshot.bilateralRetestResponses ?? {},
+      initialRetest: {
+        postScore: snapshot.postScore,
+        postScoreConfirmed: snapshot.postScoreConfirmed ?? false,
+        postDiscomfort: snapshot.postDiscomfort ?? "",
+        ready: snapshot.readyToRetest ?? false,
+        plan: snapshot.retestPlan ?? null,
+        movementResponse: snapshot.movementResponse,
+        movementResponses: snapshot.movementResponses ?? {},
+        movementDiscomforts: snapshot.movementDiscomforts ?? {},
+        movementScores: snapshot.movementScores ?? {},
+        movementScoreConfirmed: snapshot.movementScoreConfirmed ?? {},
+        treatmentFinalScore: snapshot.treatmentFinalRetestScore ?? 0,
+        treatmentFinalConfirmed: snapshot.treatmentFinalRetestConfirmed ?? false,
+        trainingReadyForFinal: snapshot.trainingReadyForFinalRetest ?? false,
+        finalScore: snapshot.finalRetestScore ?? 0,
+        finalConfirmed: snapshot.finalRetestConfirmed ?? false,
+      },
+      currentSession: {
+        isLaterSession: snapshot.followupMode,
+        reviewScore: snapshot.followupScore,
+        reviewScoreConfirmed: snapshot.followupScoreConfirmed ?? false,
+        scoreHistory: snapshot.followupScoreHistory,
+        phase: snapshot.followupStage,
+        postScore: snapshot.followupPostScore,
+        postScoreConfirmed: snapshot.followupPostScoreConfirmed ?? false,
+        postDiscomfort: snapshot.followupPostDiscomfort ?? "",
+        candidateId: snapshot.followupCandidateId,
+        readyToRetest: snapshot.followupReadyToRetest ?? false,
+        retestPlan: snapshot.followupRetestPlan ?? null,
+        movementResponses: snapshot.followupMovementResponses ?? {},
+        movementDiscomforts: snapshot.followupMovementDiscomforts ?? {},
+        movementScores: snapshot.followupMovementScores ?? {},
+        movementScoreConfirmed: snapshot.followupMovementScoreConfirmed ?? {},
+        tensionLocations: snapshot.followupTensionLocations ?? [],
+        trainingReadyForRetest: snapshot.followupTrainingReadyForRetest ?? false,
+        finalScore: snapshot.followupFinalScore ?? 0,
+        finalScoreConfirmed: snapshot.followupFinalScoreConfirmed ?? false,
+        hasNewSymptom: snapshot.hasNewSymptom === true || snapshot.hasNewSymptom === "yes",
+        reviewResults: snapshot.followupTrends,
+      },
+    },
+  };
+}
+
 export function normalizeSavedDemoSnapshot(value: unknown): SavedDemoSnapshot | null {
-  const result = migratePilotSnapshot(value);
+  // 工作台内存态仍按页面控制器逐步拆分；它从不直接跨持久化边界。
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const internal = value as Partial<SavedDemoSnapshot>;
+    if (internal.schemaVersion === 3 && internal.intake && internal.safety && internal.assessmentResults) {
+      return internal.intake.operationTarget === "study" ? null : internal as SavedDemoSnapshot;
+    }
+  }
+  const result = validatePilotSnapshotV3(value);
   if (!result.ok) return null;
-  const snapshot = result.snapshot as SavedDemoSnapshot;
-  // 案例学习模式本阶段关闭：旧记录不再进入生产工作流，也不允许被恢复后继续写入。
-  if (snapshot.intake?.operationTarget === "study") return null;
-  return snapshot;
+  const persisted = result.snapshot as unknown as PersistedDemoSnapshotV3;
+  if (persisted.domain.intake.operationTarget === "study") return null;
+  const initial = persisted.draft.initialRetest;
+  const current = persisted.draft.currentSession;
+  return {
+    schemaVersion: 3,
+    retestContractVersion: 1,
+    ...persisted.identity,
+    consent: persisted.domain.consent,
+    bodyMarks: persisted.domain.bodyMarks,
+    scoreRecords: persisted.domain.scoreRecords,
+    specialTestRecords: persisted.domain.specialTestRecords,
+    professionalNoteRecords: persisted.domain.professionalNoteRecords,
+    decisionTraces: persisted.domain.decisionTraces,
+    intake: persisted.domain.intake,
+    safety: persisted.domain.safety.answers,
+    boneRisk: persisted.domain.safety.boneRisk,
+    imaging: persisted.domain.safety.imaging,
+    assessmentResults: persisted.domain.assessments.results,
+    trialRecords: persisted.domain.treatments.filter((item) => item.sessionNumber === 1).map((item) => item.record as TrialRecord),
+    followupTrialRecords: persisted.domain.treatments.filter((item) => item.sessionNumber > 1).map((item) => item.record as FollowupTreatmentRecord),
+    retestObligations: persisted.domain.retests.obligations,
+    retestRecords: persisted.domain.retests.records,
+    exerciseFeedback: persisted.domain.training.initialFeedback,
+    trainingComplete: persisted.domain.training.complete,
+    trainingPlanSaved: persisted.domain.training.planSaved,
+    followupExerciseChoices: persisted.domain.training.currentSessionChoices,
+    sessionHistory: persisted.domain.history,
+    step: persisted.workflow.stage,
+    assessmentRevision: persisted.workflow.assessmentRevision,
+    treatmentPlanRevision: persisted.workflow.treatmentPlanRevision,
+    bilateralNeedsReferral: persisted.workflow.bilateralNeedsReferral,
+    midpointDecisionDone: persisted.workflow.midpointDecisionDone,
+    adverseResponse: persisted.workflow.adverseResponse,
+    adverseConfirmedAssessmentIds: persisted.workflow.adverseConfirmedAssessmentIds,
+    confirmedIntakeMulti: persisted.draft.confirmedIntakeMulti,
+    assessmentIndex: persisted.draft.assessmentCursor,
+    trialTargetIndex: persisted.draft.treatmentCursor.target,
+    candidateIndex: persisted.draft.treatmentCursor.candidate,
+    selectedOptionalCandidateIds: persisted.draft.selectedOptionalCandidateIds,
+    bilateralTreatmentSides: persisted.draft.bilateralTreatmentSides,
+    bilateralRetestResponses: persisted.draft.bilateralRetestResponses,
+    postScore: initial.postScore,
+    postScoreConfirmed: initial.postScoreConfirmed,
+    postDiscomfort: initial.postDiscomfort,
+    readyToRetest: initial.ready,
+    retestPlan: initial.plan,
+    movementResponse: initial.movementResponse,
+    movementResponses: initial.movementResponses,
+    movementDiscomforts: initial.movementDiscomforts,
+    movementScores: initial.movementScores,
+    movementScoreConfirmed: initial.movementScoreConfirmed,
+    treatmentFinalRetestScore: initial.treatmentFinalScore,
+    treatmentFinalRetestConfirmed: initial.treatmentFinalConfirmed,
+    trainingReadyForFinalRetest: initial.trainingReadyForFinal,
+    finalRetestScore: initial.finalScore,
+    finalRetestConfirmed: initial.finalConfirmed,
+    followupMode: current.isLaterSession,
+    followupScore: current.reviewScore,
+    followupScoreConfirmed: current.reviewScoreConfirmed,
+    followupScoreHistory: current.scoreHistory,
+    followupStage: current.phase,
+    followupPostScore: current.postScore,
+    followupPostScoreConfirmed: current.postScoreConfirmed,
+    followupPostDiscomfort: current.postDiscomfort,
+    followupCandidateId: current.candidateId,
+    followupReadyToRetest: current.readyToRetest,
+    followupRetestPlan: current.retestPlan,
+    followupMovementResponses: current.movementResponses,
+    followupMovementDiscomforts: current.movementDiscomforts,
+    followupMovementScores: current.movementScores,
+    followupMovementScoreConfirmed: current.movementScoreConfirmed,
+    followupTensionLocations: current.tensionLocations,
+    followupTrainingReadyForRetest: current.trainingReadyForRetest,
+    followupFinalScore: current.finalScore,
+    followupFinalScoreConfirmed: current.finalScoreConfirmed,
+    hasNewSymptom: current.hasNewSymptom,
+    followupTrends: current.reviewResults,
+  };
 }
 
 export const SHARED_TENSION_ASSESSMENT_ID = "shared:pilot-muscle-tension";

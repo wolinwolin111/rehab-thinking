@@ -999,6 +999,26 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-aside-finding-groups article > div { display: grid; gap: 2px; }
 .rm-aside-finding-groups article strong { color: #344258; font-size: 12px; line-height: 1.4; }
 .rm-aside-finding-groups article span { color: #7a8698; font-size: 10px; line-height: 1.35; }
+.rm-aside-retest-ledger { margin: 10px 0; border: 1px solid #cfdce4; border-radius: 14px; background: #f8fbfc; overflow: hidden; }
+.rm-aside-retest-ledger > header { padding: 12px 13px; border-bottom: 1px solid #dbe5ea; background: #edf5f5; display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.rm-aside-retest-ledger > header > div { display: grid; gap: 3px; }
+.rm-aside-retest-ledger > header span { color: #236966; font-size: 11px; font-weight: 900; letter-spacing: .05em; }
+.rm-aside-retest-ledger > header strong { color: #344b55; font-size: 12px; line-height: 1.35; }
+.rm-aside-retest-ledger > header > b { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; color: #fff; background: #287b76; font-size: 10px; }
+.rm-aside-retest-ledger > div { display: grid; }
+.rm-aside-retest-ledger article { min-height: 53px; padding: 9px 11px; border-top: 1px solid #e5ecef; display: grid; grid-template-columns: 7px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.rm-aside-retest-ledger article:first-child { border-top: 0; }
+.rm-aside-retest-ledger article > i { width: 7px; height: 7px; border-radius: 50%; background: #d18b31; box-shadow: 0 0 0 4px #fff1dc; }
+.rm-aside-retest-ledger article[data-status="completed"] > i { background: #287b76; box-shadow: 0 0 0 4px #e1f2ef; }
+.rm-aside-retest-ledger article[data-status="deferred"] > i,
+.rm-aside-retest-ledger article[data-status="cancelled"] > i { background: #81909a; box-shadow: 0 0 0 4px #edf0f2; }
+.rm-aside-retest-ledger article > div { min-width: 0; display: grid; gap: 2px; }
+.rm-aside-retest-ledger article > div strong { color: #2e414b; font-size: 12px; line-height: 1.35; }
+.rm-aside-retest-ledger article > div span { color: #74848c; font-size: 10px; }
+.rm-aside-retest-ledger article > b { color: #8b5a19; font-size: 10px; white-space: nowrap; }
+.rm-aside-retest-ledger article[data-status="completed"] > b { color: #287b76; }
+.rm-aside-retest-ledger article[data-status="deferred"] > b,
+.rm-aside-retest-ledger article[data-status="cancelled"] > b { color: #66747c; }
 .rm-aside-empty { padding: 16px; color: var(--rm-muted); border: 1px solid var(--rm-line); border-top: 0; background: white; font-size: 12px; line-height: 1.5; }
 .rm-aside-edit { width: 100%; min-height: 45px; margin-top: 8px; border: 1px solid var(--rm-line); color: var(--rm-blue); background: white; font-size: 12px; font-weight: 800; cursor: pointer; }
 .rm-intake-progress { border: 1px solid var(--rm-line); border-top: 0; background: white; }

@@ -125,7 +125,11 @@ function assertRevision(revision: number) {
 
 function assertOpenProductMode(snapshot: unknown) {
   if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return;
-  const intake = (snapshot as Record<string, unknown>).intake;
+  const root = snapshot as Record<string, unknown>;
+  const domain = root.domain && typeof root.domain === "object" && !Array.isArray(root.domain)
+    ? root.domain as Record<string, unknown>
+    : null;
+  const intake = domain?.intake;
   if (!intake || typeof intake !== "object" || Array.isArray(intake)) return;
   if ((intake as Record<string, unknown>).operationTarget === "study") {
     throw new PilotCaseValidationError("案例学习模式已关闭，不能创建或更新真实康复案例");
@@ -230,17 +234,23 @@ export class PilotCaseService {
     const rawInitialSnapshot = input.initialSnapshot && typeof input.initialSnapshot === "object"
       ? input.initialSnapshot as Record<string, unknown>
       : {};
-    const problemThreadId = typeof rawInitialSnapshot.problemThreadId === "string" && rawInitialSnapshot.problemThreadId.trim()
-      ? rawInitialSnapshot.problemThreadId
+    const rawIdentity = rawInitialSnapshot.identity && typeof rawInitialSnapshot.identity === "object" && !Array.isArray(rawInitialSnapshot.identity)
+      ? rawInitialSnapshot.identity as Record<string, unknown>
+      : {};
+    const problemThreadId = typeof rawIdentity.problemThreadId === "string" && rawIdentity.problemThreadId.trim()
+      ? rawIdentity.problemThreadId
       : `thread-${caseId}`;
-    const sessionId = typeof rawInitialSnapshot.sessionId === "string" && rawInitialSnapshot.sessionId.trim()
-      ? rawInitialSnapshot.sessionId
+    const sessionId = typeof rawIdentity.sessionId === "string" && rawIdentity.sessionId.trim()
+      ? rawIdentity.sessionId
       : `session-${caseId}-1`;
     const initialSnapshot = {
       ...rawInitialSnapshot,
-      problemThreadId,
-      sessionId,
-      sessionStatus: rawInitialSnapshot.sessionStatus ?? "draft",
+      identity: {
+        ...rawIdentity,
+        problemThreadId,
+        sessionId,
+        sessionStatus: rawIdentity.sessionStatus ?? "draft",
+      },
     };
     assertOpenProductMode(initialSnapshot);
     const snapshotPayload = serializePilotPayload(
@@ -339,13 +349,16 @@ export class PilotCaseService {
     const rawSnapshot = input.snapshot && typeof input.snapshot === "object" && !Array.isArray(input.snapshot)
       ? input.snapshot as Record<string, unknown>
       : {};
+    const rawIdentity = rawSnapshot.identity && typeof rawSnapshot.identity === "object" && !Array.isArray(rawSnapshot.identity)
+      ? rawSnapshot.identity as Record<string, unknown>
+      : {};
     const requestedProblemThreadId = input.problemThreadId
-      ?? (typeof rawSnapshot.problemThreadId === "string" ? rawSnapshot.problemThreadId : "");
+      ?? (typeof rawIdentity.problemThreadId === "string" ? rawIdentity.problemThreadId : "");
     const problemThreadId = requestedProblemThreadId.trim() || `thread-${caseRecord.id}`;
     const requestedSessionId = input.sessionId
-      ?? (typeof rawSnapshot.sessionId === "string" ? rawSnapshot.sessionId : "");
+      ?? (typeof rawIdentity.sessionId === "string" ? rawIdentity.sessionId : "");
     const sessionId = requestedSessionId.trim() || `session-${caseRecord.id}-${Math.max(1, input.sessionCount ?? 1)}`;
-    const normalizedSnapshot = { ...rawSnapshot, problemThreadId, sessionId };
+    const normalizedSnapshot = { ...rawSnapshot, identity: { ...rawIdentity, problemThreadId, sessionId } };
     assertOpenProductMode(normalizedSnapshot);
     const validatedSnapshot = assertAndStampPilotSnapshotSchemaVersion(normalizedSnapshot, "snapshot", { requireConsent: true });
     const snapshotPayload = serializePilotPayload(validatedSnapshot, "snapshot");
@@ -362,7 +375,7 @@ export class PilotCaseService {
     );
     const invariantCodes = workflowInput
       ? inspectWorkflowProjectionInvariants({
-          snapshotStep: Number((validatedSnapshot as Record<string, unknown>).step ?? 0),
+          snapshotStep: Number(((validatedSnapshot.workflow as Record<string, unknown> | undefined)?.stage) ?? 0),
           projection: projectWorkflowState(workflowInput),
         })
       : [];

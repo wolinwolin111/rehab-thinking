@@ -149,20 +149,29 @@ export function contentFingerprint(value: unknown) {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-const CONFLICT_SECTION_KEYS = [
-  { label: "症状信息", keys: ["intake"] },
-  { label: "安全确认", keys: ["safety", "boneRisk", "imaging"] },
-  { label: "评估检查", keys: ["assessmentIndex", "assessmentResults"] },
-  { label: "处理复测", keys: ["trialTargetIndex", "candidateIndex", "trialRecords", "postScore", "movementResponse"] },
-  { label: "训练居家", keys: ["exerciseFeedback", "trainingComplete", "trainingPlanSaved"] },
-  { label: "后续康复", keys: ["followupMode", "sessionNumber", "followupStage", "followupTrialRecords", "sessionHistory"] },
+const CONFLICT_SECTIONS = [
+  { label: "症状信息", paths: [["domain", "intake"]] },
+  { label: "安全确认", paths: [["domain", "safety"]] },
+  { label: "评估检查", paths: [["domain", "assessments"], ["draft", "assessmentCursor"]] },
+  { label: "处理复测", paths: [["domain", "treatments"], ["domain", "retests"], ["draft", "initialRetest"], ["draft", "currentSession"]] },
+  { label: "训练居家", paths: [["domain", "training"]] },
+  { label: "康复记录", paths: [["identity", "sessionNumber"], ["identity", "sessionIndex"], ["domain", "history"]] },
 ] as const;
+
+function valueAtPath(value: Record<string, unknown>, path: readonly string[]) {
+  let current: unknown = value;
+  for (const key of path) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
 
 export function summarizePilotSnapshotConflict(local: unknown, remote: unknown) {
   const localObject = local && typeof local === "object" ? local as Record<string, unknown> : {};
   const remoteObject = remote && typeof remote === "object" ? remote as Record<string, unknown> : {};
-  return CONFLICT_SECTION_KEYS
-    .filter((section) => section.keys.some((key) => contentFingerprint(localObject[key]) !== contentFingerprint(remoteObject[key])))
+  return CONFLICT_SECTIONS
+    .filter((section) => section.paths.some((path) => contentFingerprint(valueAtPath(localObject, path)) !== contentFingerprint(valueAtPath(remoteObject, path))))
     .map((section) => section.label);
 }
 

@@ -1,14 +1,14 @@
 const DATABASE_NAME = "rehabmind-local-cases";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 const STORE_NAME = "case-records";
 const STORE_KEY = "all";
 const DRAFT_STORE_NAME = "active-draft";
 const DRAFT_STORE_KEY = "current";
-export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records";
-export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-migrated-v1";
-export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v1";
+export const LEGACY_LOCAL_CASES_KEY = "rehabmind-complete-demo-records-v3";
+export const LOCAL_CASES_MIGRATION_KEY = "rehabmind-local-cases-initialized-v3";
+export const LOCAL_DRAFT_KEY = "rehabmind-active-draft-v3";
 /** Cross-tab notification contains only an identity and a fingerprint, never the draft body. */
-export const LOCAL_DRAFT_SIGNAL_KEY = "rehabmind-active-draft-signal-v1";
+export const LOCAL_DRAFT_SIGNAL_KEY = "rehabmind-active-draft-signal-v3";
 export type LocalCaseStorageScope = "user" | "test";
 
 export type LocalDraftStorageSignal = {
@@ -88,6 +88,17 @@ function scopedKey(key: string, scope: LocalCaseStorageScope) {
   return scope === "user" ? key : `${key}-${scope}`;
 }
 
+const OBSOLETE_LOCAL_KEYS = [
+  "rehabmind-complete-demo-records",
+  "rehabmind-local-cases-migrated-v1",
+  "rehabmind-active-draft-v1",
+  "rehabmind-active-draft-signal-v1",
+] as const;
+
+function clearObsoleteLocalStorage(scope: LocalCaseStorageScope) {
+  for (const key of OBSOLETE_LOCAL_KEYS) window.localStorage.removeItem(scopedKey(key, scope));
+}
+
 let cachedTabId: string | null = null;
 
 /** One identifier per browser tab; sessionStorage keeps reloads in the same tab identifiable. */
@@ -156,9 +167,14 @@ function openDatabase(scope: LocalCaseStorageScope): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error ?? new Error("IndexedDB is unavailable"));
     // blocked 态（旧版本连接未释放）若不处理会让 open 的 Promise 永不落定。
     request.onblocked = () => reject(new Error("IndexedDB open is blocked by another connection"));
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME);
       if (!request.result.objectStoreNames.contains(DRAFT_STORE_NAME)) request.result.createObjectStore(DRAFT_STORE_NAME);
+      // v3 是干净切换，不把 v1/v2 案例或页面草稿带入新领域合同。
+      if (event.oldVersion > 0 && event.oldVersion < 3) {
+        request.transaction?.objectStore(STORE_NAME).clear();
+        request.transaction?.objectStore(DRAFT_STORE_NAME).clear();
+      }
     };
     request.onsuccess = () => {
       request.result.onversionchange = () => request.result.close();
@@ -226,6 +242,7 @@ function deleteAll(database: IDBDatabase): Promise<void> {
 }
 
 export async function loadLocalCaseRecords<T>(scope: LocalCaseStorageScope = "user"): Promise<LocalCaseLoadResult<T>> {
+  clearObsoleteLocalStorage(scope);
   if (!canUseIndexedDb()) {
     const legacy = readLegacyRecords<T>(scope);
     return { ...legacy, backend: "localStorage", migrated: false };
@@ -254,6 +271,7 @@ export async function loadLocalCaseRecords<T>(scope: LocalCaseStorageScope = "us
 }
 
 export async function saveLocalCaseRecords<T>(records: T[], scope: LocalCaseStorageScope = "user"): Promise<LocalCaseStorageBackend> {
+  clearObsoleteLocalStorage(scope);
   if (canUseIndexedDb()) {
     let database: IDBDatabase | undefined;
     try {
@@ -289,6 +307,7 @@ export async function clearLocalCaseRecords(scope: LocalCaseStorageScope = "user
 }
 
 export async function loadLocalDraftWithDiagnostics<T>(scope: LocalCaseStorageScope = "user"): Promise<LocalDraftLoadResult<T>> {
+  clearObsoleteLocalStorage(scope);
   const draftKey = scopedKey(LOCAL_DRAFT_KEY, scope);
   if (!canUseIndexedDb()) {
     const raw = window.localStorage.getItem(draftKey);

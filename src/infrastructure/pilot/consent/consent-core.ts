@@ -68,6 +68,12 @@ export function isPilotConsentDeclined(storage: { getItem(key: string): string |
 export function attachPilotConsent<T extends Record<string, unknown>>(
   snapshot: T,
   record: PilotConsentRecord,
-): T & { consent: PilotConsentRecord } {
+): T & { consent?: PilotConsentRecord } {
+  if (snapshot.schemaVersion === 3 && snapshot.domain && typeof snapshot.domain === "object" && !Array.isArray(snapshot.domain)) {
+    return {
+      ...snapshot,
+      domain: { ...(snapshot.domain as Record<string, unknown>), consent: record },
+    };
+  }
   return { ...snapshot, consent: record };
 }
