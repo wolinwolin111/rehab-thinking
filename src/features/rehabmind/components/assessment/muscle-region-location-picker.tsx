@@ -45,8 +45,8 @@ const REGION_ALIASES: Array<[PilotMuscleRegionId, RegExp]> = [
   ["thigh-posterior", /大腿后|膝后|腘绳|腘肌/],
   ["calf-anterior", /小腿前|胫骨前|趾伸/],
   ["calf-posterior", /小腿后|小腿肚|腓肠|比目鱼/],
-  ["calf-lateral", /小腿外|腓骨肌|外踝/],
-  ["calf-medial", /小腿内|胫骨后|内踝/],
+  ["calf-lateral", /小腿外|腓骨长肌|腓骨短肌|腓骨肌群/],
+  ["calf-medial", /小腿内|胫骨后肌|后内侧深层/],
   ["plantar", /足底|足弓|脚底/],
 ];
 
@@ -73,6 +73,8 @@ type MuscleMapSpec = {
   imageWidth: number;
   imageHeight: number;
   path: string;
+  anatomyLandmarks?: string[];
+  anatomyReviewStatus?: "reviewed" | "pending";
 };
 
 /* 足底示意图是纯 SVG 手绘（无照片素材），高亮区为足弓范围。 */
@@ -87,7 +89,7 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "150 350 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M302 458 C333 440 418 439 457 458 C476 492 479 541 471 590 C464 631 454 665 449 688 C432 705 407 713 379 712 C349 711 324 702 309 684 C303 646 294 608 288 566 C282 520 285 482 302 458 Z",
+    path: "M305 466 C335 448 417 447 450 464 C465 500 466 540 458 575 C451 604 440 628 425 642 C399 654 360 653 334 641 C317 620 305 594 299 561 C292 523 293 489 305 466 Z",
   },
   "thigh-posterior": {
     view: "back",
@@ -95,23 +97,27 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "410 350 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M563 472 C597 451 682 451 715 470 C730 505 729 548 721 591 C713 631 704 664 699 688 C682 707 659 716 631 715 C603 714 580 705 564 685 C558 649 549 608 545 568 C541 524 546 492 563 472 Z",
+    path: "M566 480 C598 458 681 458 712 478 C725 511 724 548 717 582 C710 611 700 635 687 650 C661 663 624 663 598 650 C581 630 569 604 560 570 C550 532 551 501 566 480 Z",
   },
   "thigh-lateral": {
     view: "lateral",
-    asset: "/rehabmind-lower-limb-lateral-v1.png",
-    viewBox: "270 350 480 640",
+    asset: "/rehabmind-lower-limb-lateral-v2.png",
+    viewBox: "270 350 500 650",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M425 468 C455 445 535 446 570 469 C586 504 588 548 579 590 C570 629 555 663 545 686 C526 704 501 710 474 706 C450 702 431 691 419 675 C415 632 407 590 405 550 C403 514 408 486 425 468 Z",
+    path: "M430 491 C466 465 575 466 616 493 C632 529 632 568 623 603 C615 632 603 657 588 675 C558 690 514 689 484 673 C462 646 446 614 435 578 C424 542 422 514 430 491 Z",
+    anatomyLandmarks: ["右腿外侧", "外侧膝线", "外踝", "第五跖骨侧"],
+    anatomyReviewStatus: "reviewed",
   },
   "thigh-medial": {
     view: "medial",
-    asset: "/rehabmind-lower-limb-medial-v1.png",
-    viewBox: "250 350 480 640",
+    asset: "/rehabmind-lower-limb-medial-v2.png",
+    viewBox: "250 350 500 650",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M382 489 C412 463 491 458 526 480 C542 512 544 553 537 594 C530 631 520 662 511 684 C493 701 470 709 443 706 C418 703 399 692 386 675 C380 636 371 596 369 558 C367 527 372 503 382 489 Z",
+    path: "M377 498 C407 472 492 467 527 488 C540 521 539 558 532 592 C525 623 514 650 500 670 C478 685 446 687 420 673 C402 647 389 615 380 580 C371 545 369 518 377 498 Z",
+    anatomyLandmarks: ["右腿内侧", "内侧膝线", "内踝", "足弓与拇趾侧"],
+    anatomyReviewStatus: "reviewed",
   },
   "calf-anterior": {
     view: "front",
@@ -119,7 +125,7 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "150 650 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M320 760 C342 741 372 742 391 764 C403 812 399 866 394 919 C389 974 386 1035 382 1090 C378 1132 369 1161 356 1172 C342 1163 336 1137 335 1101 C334 1046 337 987 333 930 C329 873 315 810 320 760 Z",
+    path: "M326 758 C344 744 366 746 379 765 C386 812 383 864 378 919 C373 974 370 1030 365 1082 C361 1121 354 1147 344 1158 C334 1146 330 1122 330 1088 C330 1038 332 985 329 933 C326 878 318 808 326 758 Z",
   },
   "calf-posterior": {
     view: "back",
@@ -133,19 +139,23 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
   },
   "calf-lateral": {
     view: "lateral",
-    asset: "/rehabmind-lower-limb-lateral-v1.png",
-    viewBox: "270 650 480 640",
+    asset: "/rehabmind-lower-limb-lateral-v2.png",
+    viewBox: "270 650 500 700",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M500 756 C526 739 558 748 574 776 C584 825 580 878 572 932 C564 988 554 1045 548 1098 C543 1139 534 1168 520 1180 C505 1169 498 1141 497 1103 C497 1053 501 999 497 947 C493 890 482 812 500 756 Z",
+    path: "M500 770 C526 746 568 753 590 786 C603 832 601 883 592 934 C583 988 570 1041 561 1090 C554 1131 548 1170 533 1198 C516 1187 507 1154 506 1112 C505 1062 510 1008 506 955 C502 899 486 819 500 770 Z",
+    anatomyLandmarks: ["外侧腓骨头下方", "腓骨长短肌肌腹", "外踝上方", "第五跖骨侧"],
+    anatomyReviewStatus: "reviewed",
   },
   "calf-medial": {
     view: "medial",
-    asset: "/rehabmind-lower-limb-medial-v1.png",
-    viewBox: "250 650 480 640",
+    asset: "/rehabmind-lower-limb-medial-v2.png",
+    viewBox: "250 650 500 700",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M402 760 C426 740 455 746 472 774 C482 823 479 877 472 930 C464 986 454 1040 449 1093 C445 1135 437 1164 424 1177 C409 1167 401 1139 400 1102 C399 1051 402 998 398 945 C394 888 385 813 402 760 Z",
+    path: "M350 778 C374 752 413 754 436 782 C447 826 444 875 437 923 C430 971 420 1017 413 1058 C407 1094 403 1128 398 1160 C394 1191 389 1218 378 1236 C365 1221 361 1193 364 1158 C368 1116 374 1071 373 1029 C371 978 352 930 343 881 C335 839 337 803 350 778 Z",
+    anatomyLandmarks: ["小腿后内侧可触及区", "胫骨内侧缘后方", "内踝后上方", "足弓与拇趾侧"],
+    anatomyReviewStatus: "reviewed",
   },
   plantar: {
     view: "sole",
@@ -196,7 +206,7 @@ function MuscleRegionFigure({ label }: { label: string }) {
     <div className="rm-muscle-location-figure__text-fallback"><span>定位范围</span><strong>{display.label}</strong></div>
     <figcaption>暂未提供匹配图</figcaption>
   </figure>;
-  return <figure className={`rm-muscle-location-figure is-${spec.view}`} aria-label={`${display.label}定位范围图`} data-region-id={regionId} data-anatomy-view={spec.view}>
+  return <figure className={`rm-muscle-location-figure is-${spec.view}`} aria-label={`${display.label}定位范围图`} data-region-id={regionId} data-anatomy-view={spec.view} data-anatomy-review={spec.anatomyReviewStatus} data-anatomy-landmarks={spec.anatomyLandmarks?.join("|")}>
     <div className="rm-muscle-location-figure__canvas">
       {regionId ? <MuscleAnatomyMap regionId={regionId} /> : null}
     </div>
