@@ -117,7 +117,6 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     imageHeight: 1536,
     path: "M377 498 C407 472 492 467 527 488 C540 521 539 558 532 592 C525 623 514 650 500 670 C478 685 446 687 420 673 C402 647 389 615 380 580 C371 545 369 518 377 498 Z",
     anatomyLandmarks: ["右腿内侧", "内侧膝线", "内踝", "足弓与拇趾侧"],
-    anatomyReviewStatus: "reviewed",
   },
   "calf-anterior": {
     view: "front",
@@ -155,7 +154,6 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     imageHeight: 1536,
     path: "M350 778 C374 752 413 754 436 782 C447 826 444 875 437 923 C430 971 420 1017 413 1058 C407 1094 403 1128 398 1160 C394 1191 389 1218 378 1236 C365 1221 361 1193 364 1158 C368 1116 374 1071 373 1029 C371 978 352 930 343 881 C335 839 337 803 350 778 Z",
     anatomyLandmarks: ["小腿后内侧可触及区", "胫骨内侧缘后方", "内踝后上方", "足弓与拇趾侧"],
-    anatomyReviewStatus: "reviewed",
   },
   plantar: {
     view: "sole",
