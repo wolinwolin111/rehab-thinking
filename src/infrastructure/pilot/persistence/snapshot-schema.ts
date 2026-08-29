@@ -175,6 +175,18 @@ function validateTreatmentRecords(value: unknown[]): string | null {
       if (!score(record[key])) return `snapshot domain.treatments[${index}].record.${key} is invalid`;
     }
     if (record.functionRetests !== undefined && !isObject(record.functionRetests)) return `snapshot domain.treatments[${index}].record.functionRetests is invalid`;
+    for (const key of ["relationIds", "findingIds"] as const) {
+      if (record[key] !== undefined && (!Array.isArray(record[key]) || (record[key] as unknown[]).some((value) => !nonEmptyString(value)))) {
+        return `snapshot domain.treatments[${index}].record.${key} is invalid`;
+      }
+    }
+    if (record.knowledgeBranchId !== undefined) {
+      if (!nonEmptyString(record.knowledgeBranchId)
+        || !Array.isArray(record.relationIds) || record.relationIds.length === 0
+        || !Array.isArray(record.findingIds) || record.findingIds.length === 0) {
+        return `snapshot domain.treatments[${index}].record knowledge evidence is invalid`;
+      }
+    }
   }
   return null;
 }

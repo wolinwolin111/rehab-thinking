@@ -24,6 +24,7 @@ export type FullCandidateType = "muscle" | "joint" | "control" | "neural" | "swe
 export type FullExerciseStage = 1 | 2 | 3 | 4 | 5;
 
 import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "@/src/knowledge/pilot/local-limb-regions";
+import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type FullAssessment = {
   id: string;
@@ -108,6 +109,8 @@ export type FullCandidate = {
   siteLabel?: string;
   targetLabel?: string;
   actionLabel?: string;
+  /** Internal owner-reviewed relation/finding lineage; never rendered to users. */
+  knowledgeEvidence?: KnowledgeEvidenceLineage;
 };
 
 export type FullCandidateGroup = {

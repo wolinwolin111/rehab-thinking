@@ -15,12 +15,14 @@ import { type KneeDecisionOutput } from "@/src/domain/rehab/shared/knee-decision
 import { type LocalLimbDecision } from "@/src/domain/rehab/shared/local-limb-decision-core";
 import { type WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 import { type FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
+import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type FullCandidateInput = CandidateTreatmentInput & {
   access: string;
   observe: string;
   retest: string;
   retestIds?: string[];
+  knowledgeEvidence?: KnowledgeEvidenceLineage;
 };
 
 export type FindingInput = {

@@ -1,6 +1,7 @@
 import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTreatmentCandidate } from "@/src/knowledge/pilot/pilot-knowledge";
 import type { WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 import { chiefFunctionAssessmentIds } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
+import { kneeP0BaseAssessmentPlan } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type PilotRole = "general" | "coach" | "rehab";
 
@@ -336,10 +337,7 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
   }
 
   if (input.regionIds.includes("knee")) {
-    const kneeMotionIds = [
-      "motion:knee-extension",
-      "motion:knee-flexion",
-    ].filter((id) => availableIds.includes(id));
+    const kneeMotionIds = kneeP0BaseAssessmentPlan(availableIds);
     const explicitFunctionIds = chiefFunctionAssessmentIds(input, "knee");
     const explicitFunctions = [
       ...explicitFunctionIds.filter((id) => rankedIds.includes(id)),

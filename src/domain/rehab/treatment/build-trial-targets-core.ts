@@ -55,6 +55,7 @@ import {
   kneeTreatmentInstruction,
 } from "@/src/domain/rehab/shared/knee-workflow-adapter";
 import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
+import { kneeP0LineageFromAssessmentRecord } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
@@ -106,14 +107,24 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         const currentUnit = region.id === "knee" ? kneeDecision?.currentTreatment : undefined;
         const mappedIds = kneeLegacyCandidateIdsForUnit(currentUnit?.id);
         if (!currentUnit || !mappedIds.includes(candidate.id)) return candidate;
+        const knowledgeEvidence = kneeP0LineageFromAssessmentRecord(
+          currentUnit.id,
+          assessmentResults["motion:knee-extension"],
+        );
         return {
           ...candidate,
           id: currentUnit.id,
           tags: [...candidate.tags, `knee-core:${currentUnit.id}`, `legacy-candidate:${candidate.id}`],
-          retestIds: Array.from(new Set([
-            ...(candidate.retestIds ?? []),
-            ...currentUnit.relatedActionIds.filter((actionId) => ["knee-extension", "knee-flexion"].includes(actionId)),
-          ])),
+          // Released P0 branches own their exact retest contract.  Legacy
+          // candidate metadata must not broaden an extension treatment into
+          // unrelated knee directions.
+          retestIds: knowledgeEvidence
+            ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+            : Array.from(new Set([
+                ...(candidate.retestIds ?? []),
+                ...currentUnit.relatedActionIds.filter((actionId) => ["knee-extension", "knee-flexion"].includes(actionId)),
+              ])),
+          knowledgeEvidence,
           siteLabel: currentUnit.site,
           targetLabel: "",
           actionLabel: currentUnit.action,

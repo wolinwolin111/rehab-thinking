@@ -12,7 +12,7 @@ export type DecisionTrace = {
   recordedAt: string;
 };
 
-type TraceTrial = { treatmentRecordId?: string; sessionId?: string; recordedAt?: string; candidateId: string; targetId?: string; sourceCaseIds?: string[]; treatmentKey?: string };
+type TraceTrial = { treatmentRecordId?: string; sessionId?: string; recordedAt?: string; candidateId: string; targetId?: string; sourceCaseIds?: string[]; relationIds?: string[]; findingIds?: string[]; knowledgeBranchId?: string; treatmentKey?: string };
 type TraceSnapshotInput = { localCaseId?: string; problemThreadId?: string; sessionId?: string; trialRecords?: TraceTrial[] };
 
 /** Keep evidence lineage attached to an executed treatment without exposing IDs in normal UI. */
@@ -25,12 +25,19 @@ export function buildDecisionTraces(input: TraceSnapshotInput, recordedAt = new 
     caseId,
     problemThreadId,
     sessionId: trial.sessionId ?? sessionId,
-    findingIds: trial.targetId ? [trial.targetId] : [],
-    relationIds: [],
-    ruleIds: trial.treatmentKey ? [trial.treatmentKey] : [trial.candidateId],
+    findingIds: trial.findingIds?.length ? [...new Set(trial.findingIds)] : trial.targetId ? [trial.targetId] : [],
+    relationIds: [...new Set(trial.relationIds ?? [])],
+    ruleIds: [...new Set([
+      ...(trial.knowledgeBranchId ? [trial.knowledgeBranchId] : []),
+      trial.treatmentKey ?? trial.candidateId,
+    ])],
     sourceCaseIds: [...new Set(trial.sourceCaseIds ?? [])],
-    knowledgeVersion: "rehabmind-pilot-knowledge-0.1.0",
-    decisionVersion: "rehabmind-pilot-decision-0.1.0",
+    knowledgeVersion: trial.relationIds?.length
+      ? "REHABMIND-KNEE-ANKLE-KNOWLEDGE-V1:2026-08-29.owner-reviewed"
+      : "rehabmind-pilot-knowledge-0.1.0",
+    decisionVersion: trial.relationIds?.length
+      ? "rehabmind-p0-runtime-1"
+      : "rehabmind-pilot-decision-0.1.0",
     recordedAt: trial.recordedAt ?? recordedAt,
   }));
 }

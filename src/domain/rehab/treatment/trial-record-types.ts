@@ -93,6 +93,10 @@ export type TrialRecord = {
   responseRole?: TreatmentResponseRole;
   /** 处理发生时的知识来源快照；旧记录缺失时保持 undefined。 */
   sourceCaseIds?: string[];
+  /** Owner-reviewed runtime relation and exact assessment evidence used here. */
+  relationIds?: string[];
+  findingIds?: string[];
+  knowledgeBranchId?: string;
   /** 处理对应的只读决策追踪；不参与当前排序。 */
   decisionTraceId?: string;
   /** 可回指同一上下文的前后评分；找不到严格可比记录时保持为空。 */
@@ -108,6 +112,9 @@ export type TrialRecordCandidateInput = {
   treatmentKey: string;
   action: string;
   sourceCaseIds?: string[];
+  relationIds?: string[];
+  findingIds?: string[];
+  knowledgeBranchId?: string;
 };
 
 /** buildTrialRecords 的完整输入。 */

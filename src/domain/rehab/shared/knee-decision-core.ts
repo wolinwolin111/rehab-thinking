@@ -395,6 +395,9 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
   const motionFlexion = byAction("knee-flexion").length
     ? input.findings.find((finding) => finding.kind === "motion-range" && finding.direction === "flexion" && finding.result === "limited")
     : undefined;
+  const extensionPassiveRange = motionExtension
+    ? latestObservedMetric(input, "knee-extension", "passive-range") ?? motionExtension.passiveRange
+    : undefined;
   const posteriorEvidence = input.findings.some((finding) => hasLocation(finding, /膝后|小腿上端|腘肌|腘绳|腓肠肌/));
   const stepDownProblems = byAction("step-down");
   const squatProblems = byAction("squat");
@@ -453,7 +456,7 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
 
   const extensionLateralEvidence = Boolean(motionExtension && input.findings.some((finding) => hasLocation(finding, /大腿外侧|阔筋膜张肌|髂胫束/)));
   const anteriorThighEvidence = input.findings.some((finding) => hasLocation(finding, /大腿前侧|股直肌|股四头肌/));
-  if (motionExtension && (extensionLateralEvidence || anteriorThighEvidence)) {
+  if (motionExtension && extensionPassiveRange !== "matches" && (extensionLateralEvidence || anteriorThighEvidence)) {
     push({
       id: "knee-extension-anterior-lateral",
       dedupKey: `${motionExtension.side}:muscle:extension-anterior-lateral`,
@@ -508,7 +511,7 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
   }
 
   const posteriorActions = unique([
-    ...(motionExtension ? ["knee-extension" as const] : []),
+    ...(motionExtension && extensionPassiveRange !== "matches" ? ["knee-extension" as const] : []),
     ...(motionFlexion ? ["knee-flexion" as const] : []),
   ]);
   if (posteriorEvidence && posteriorActions.length) {
@@ -528,10 +531,11 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
   }
 
   if (motionExtension) {
-    const currentPassiveRange = latestObservedMetric(input, "knee-extension", "passive-range") ?? motionExtension.passiveRange;
-    if (currentPassiveRange === "matches" || currentPassiveRange === "not-checked") {
+    // Owner-reviewed P0 contract: terminal control is only valid after passive
+    // extension is known to be available.  An unchecked PROM is not evidence.
+    if (extensionPassiveRange === "matches") {
       push({ id: "knee-extension-control", dedupKey: `${motionExtension.side}:control:knee-extension`, kind: "control", site: "大腿前侧", action: "练习膝后轻轻下压，找回末端伸膝控制", primaryProblemId: problems.find((problem) => problem.direction === "extension")?.id ?? primary.id, affectedProblemIds: byAction("knee-extension").map((problem) => problem.id), relatedActionIds: ["knee-extension"], attribution: "primary-supported", permission: "all", sourceCaseIds: ["KNEE-001", "MULTI-002"] });
-    } else if (currentPassiveRange === "limited" && input.role === "rehab" && hasPostTreatmentPassiveLimitation(input, "knee-extension") && (input.completedTreatments ?? []).some((record) =>
+    } else if (extensionPassiveRange === "limited" && input.role === "rehab" && hasPostTreatmentPassiveLimitation(input, "knee-extension") && (input.completedTreatments ?? []).some((record) =>
       record.relatedActionIds?.includes("knee-extension")
       || [
         `${motionExtension.side}:muscle:extension-anterior-lateral`,
@@ -539,6 +543,28 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
         `${motionExtension.side}:muscle:anterior-thigh-rectus-femoris`,
       ].includes(record.dedupKey))) {
       push({ id: "knee-extension-joint", dedupKey: `${motionExtension.side}:joint:knee-extension`, kind: "joint", site: "膝关节", action: "根据伸直受限方向完成低刺激关节松动", primaryProblemId: problems.find((problem) => problem.direction === "extension")?.id ?? primary.id, affectedProblemIds: byAction("knee-extension").map((problem) => problem.id), relatedActionIds: ["knee-extension"], attribution: "primary-supported", permission: "rehab-only", sourceCaseIds: ["MULTI-002"] });
+    }
+    const extensionMuscleTrialCompleted = (input.completedTreatments ?? []).some((record) =>
+      record.relatedActionIds?.includes("knee-extension")
+      && record.dedupKey.includes(":muscle:"));
+    if (extensionPassiveRange === "limited"
+      && input.role === "rehab"
+      && posteriorEvidence
+      && extensionMuscleTrialCompleted
+      && hasPostTreatmentPassiveLimitation(input, "knee-extension")) {
+      push({
+        id: "knee-proximal-fibula",
+        dedupKey: `${motionExtension.side}:joint:proximal-fibula`,
+        kind: "joint",
+        site: "腓骨近端",
+        action: "轻柔辅助近端胫腓活动，并立即复查膝伸直",
+        primaryProblemId: problems.find((problem) => problem.direction === "extension")?.id ?? primary.id,
+        affectedProblemIds: byAction("knee-extension").map((problem) => problem.id),
+        relatedActionIds: ["knee-extension"],
+        attribution: "primary-supported",
+        permission: "rehab-only",
+        sourceCaseIds: ["KNEE-002", "KNEE-003", "KNEE-005"],
+      });
     }
   }
 
@@ -560,8 +586,6 @@ export function buildKneeTreatmentUnits(input: KneeDecisionInput, problems: Knee
         sourceCaseIds: ["KDC-05"],
       });
     }
-    if (currentPassiveRange === "limited" && input.role === "rehab" && hasPostTreatmentPassiveLimitation(input, "knee-flexion") && (input.completedTreatments ?? []).some((record) =>
-      record.relatedActionIds?.includes("knee-flexion") || record.dedupKey === `${motionFlexion.side}:muscle:knee-posterior-calf`)) push({ id: "knee-proximal-fibula", dedupKey: `${motionFlexion.side}:joint:proximal-fibula`, kind: "joint", site: "腓骨近端", action: "低刺激检查并改善腓骨近端活动", primaryProblemId: problems.find((problem) => problem.direction === "flexion")?.id ?? primary.id, affectedProblemIds: byAction("knee-flexion").map((problem) => problem.id), relatedActionIds: ["knee-flexion"], attribution: "primary-supported", permission: "rehab-only", sourceCaseIds: ["KNEE-002", "KNEE-003"] });
   }
 
   const controlFindings = input.findings.filter((finding) => finding.kind === "function-control" && finding.result === "unstable");
