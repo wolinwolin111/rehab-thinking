@@ -2,6 +2,7 @@ import { PILOT_RELATIONS, type PilotRegionId, type PilotRelation, type PilotTrea
 import type { WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 import { chiefFunctionAssessmentIds } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 import { kneeP0BaseAssessmentPlan } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { matchKneeComplaintBranches } from "@/src/knowledge/rehab/complaint-branch-matching";
 
 export type PilotRole = "general" | "coach" | "rehab";
 
@@ -115,8 +116,7 @@ function relationScore(relation: PilotRelation, input: PilotIntakeInput) {
   if (locationMatch) score += 5;
   if (symptomMatch) score += 3;
   if (taskMatch) score += 4;
-  if (relation.evidence === "P3") score += 2;
-  else if (relation.evidence === "P2") score += 1;
+  // P0～P3 证据等级不再参与排序（owner 裁定）；关系只按主诉匹配度排序。
   return score;
 }
 
@@ -227,6 +227,13 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
   relationEntries.forEach(({ relation, score }) => relation.assessmentIds.forEach((id) => {
     relationScores.set(id, Math.max(relationScores.get(id) ?? 0, score * 10));
   }));
+  // 膝部主诉分支（已审核知识）映射的评估项作为主信号；散落正则只作兜底。
+  const branchAssessmentScores = new Map<string, number>();
+  if (input.regionIds.includes("knee")) {
+    matchKneeComplaintBranches(input).forEach(({ score, assessmentIds }) => assessmentIds.forEach((id) => {
+      branchAssessmentScores.set(id, Math.max(branchAssessmentScores.get(id) ?? 0, score * 4));
+    }));
+  }
 
   if (input.regionIds.includes("thigh-local") || input.regionIds.includes("calf-local")) {
     const thigh = input.regionIds.includes("thigh-local");
@@ -276,6 +283,7 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
       id,
       taskScore,
       score: (relationScores.get(id) ?? 0)
+        + (branchAssessmentScores.get(id) ?? 0)
         + taskScore
         + locationPriority(id, input)
         - (acuteAnkle && id.startsWith("strength:") ? 55 : 0)
