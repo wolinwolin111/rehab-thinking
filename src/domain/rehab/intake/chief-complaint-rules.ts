@@ -1,4 +1,12 @@
-import type { ModuleId, TreatmentCandidate } from "@/src/knowledge/pilot/first-batch-modules";
+export type ModuleId = "knee" | "ankle-foot" | "lumbar-hip";
+
+export type TreatmentCandidate = {
+  id: string;
+  type: "muscle" | "joint" | "control" | "neural" | "irritability";
+  title: string;
+  do: string;
+  watch: string;
+};
 
 export type ChiefComplaintPlan = {
   title: string;
