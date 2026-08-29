@@ -58,6 +58,12 @@ import { type DecisionContext, type FindingInput, type FullCandidateInput, type 
 import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
 import { ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { p0AssessmentEvidenceForDecision, p0JointCheckAllowed } from "@/src/knowledge/rehab/p0-assessment-access";
+import {
+  isKneeP1StandaloneTreatmentCandidateId,
+  KNEE_P1_SCAR_TREATMENT_ID,
+  kneeP1LineageForTreatment,
+  kneeP1PatellaLineage,
+} from "@/src/knowledge/rehab/p1-runtime";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const { region, findings, assessmentResults: storedAssessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
@@ -196,6 +202,18 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
         }] : [];
       })
+      .flatMap((candidate) => {
+        if (region.id !== "knee") return [candidate];
+        const knowledgeEvidence = kneeP1LineageForTreatment(candidate.id, assessmentResults, candidate.knowledgeEvidence);
+        if (candidate.id === KNEE_P1_SCAR_TREATMENT_ID && !knowledgeEvidence) return [];
+        return [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence
+            ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+            : candidate.retestIds,
+        }];
+      })
       .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => candidate.id !== "knee-proximal-fibula"
         || !workflowProfile
@@ -213,7 +231,9 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       .filter((candidate) => canMobilizeJoint || (candidate.type !== "joint" && candidate.type !== "neural"))
       .filter((candidate) => !(["thigh-local", "calf-local"].includes(region.id) && isAcuteTrauma(intake) && candidate.type === "muscle"))
       .filter((candidate) => candidateAllowedInSharpPath(candidate, conservativeSharpPath))
-      .filter((candidate) => region.id !== "knee" || kneeCandidateBelongsToCurrentDecision(candidate.id, kneeDecision))
+      .filter((candidate) => region.id !== "knee"
+        || isKneeP1StandaloneTreatmentCandidateId(candidate.id)
+        || kneeCandidateBelongsToCurrentDecision(candidate.id, kneeDecision))
       .filter((candidate, index, list) => list.findIndex((item) => item.id === candidate.id) === index);
 
     // 大腿/小腿局部模块使用独立决策结果，不再继续进入膝踝通用的
@@ -489,7 +509,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         "ankle-toe-flexion",
       ].includes(directionId);
       const releasedP0Direction = ankleP0Direction
-        || region.id === "knee" && directionId === "knee-extension";
+        || region.id === "knee" && ["knee-extension", "knee-scar-mobility"].includes(directionId);
       const directionCandidates = allCandidates
         .filter((candidate) => (candidate.retestIds ?? []).some((candidateDirection) => samePhysicalAction(candidateDirection, directionId)) || candidate.tags.some((tag) => finding.tags.includes(tag)))
         .filter((candidate) => !ankleP0Direction || !ankleP0RuntimeLoaded || isReleasedAnkleCandidate(candidate.id))
@@ -630,6 +650,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         siteLabel: "髌骨",
         targetLabel: "",
         actionLabel: title,
+        knowledgeEvidence: kneeP1PatellaLineage(limitedPatellaIds),
       };
       return {
         id: "target:patella-mobility-unit",

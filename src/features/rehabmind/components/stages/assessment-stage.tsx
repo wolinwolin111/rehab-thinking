@@ -524,6 +524,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       : [];
   const pairedCheckUsesResistance = canAssessResistance;
   const isSelfKneeExtension = item.id === "motion:knee-extension" && !pairedCheckUsesResistance && intake.side !== "双侧/中间";
+  const isSelfAnklePlantarflexion = item.id === "motion:ankle-plantarflexion" && !pairedCheckUsesResistance;
   const acuteMotionGuidance = isAcuteTrauma(intake)
     && (intake.symptoms.includes("肿胀或淤青") || (intake.baselineScoreConfirmed && intake.baselineScore >= 6))
     || record.active === "unable";
@@ -633,16 +634,20 @@ export function AssessmentStage(props: AssessmentStageProps) {
         </section> : null}
 
         {item.pairedStrengthId && shouldAskPairedStrength(record.active) ? <section className="rm-motion-answer-block is-strength">
-          <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : "停住不动，看稳不稳"}</h3>
+          <h3>{pairedCheckUsesResistance ? "同一个动作：检查抗阻力量" : isSelfKneeExtension ? "再看一次：绷直后能不能保持" : isSelfAnklePlantarflexion ? "双脚提踵，看看高度是否稳定" : "停住不动，看稳不稳"}</h3>
           <p className="rm-choice-hint">{pairedCheckUsesResistance
             ? "由检查者沿刚才动作的反方向逐渐施加轻阻力，保持3～5秒并比较两侧；不要突然用力。"
             : isSelfKneeExtension
               ? "先把膝盖绷直，再将整条腿抬离床面约10厘米，保持3秒后放下；左右各做一次，不需要别人按压。"
-              : "在能不疼的最大范围处停住，看会不会发抖或往下掉。"}</p>
+              : isSelfAnklePlantarflexion
+                ? "扶住墙面，双脚同时缓慢抬起脚跟再落下。双脚不能稳定完成时，不做单脚提踵。"
+                : "在能不疼的最大范围处停住，看会不会发抖或往下掉。"}</p>
           {record.active === "unable" && !pairedCheckUsesResistance ? <p className="rm-passive-reminder">刚才没有完成主动活动，这一步可以跳过，不要为了测试强行完成。</p> : null}
           <AnswerChoiceGrid options={isSelfKneeExtension
             ? [["normal", "保持稳定｜抬起后膝盖仍笔直"], ["weak", "控制偏弱｜膝盖弯曲、抖动或下落"], ["painful", "发力不适｜抬腿时出现症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]] as Array<[SimpleAnswer, string]>
-            : pairedCheckOptions} value={record.pairedStrength} onChange={(value) => updateAssessment(item.id, {
+            : isSelfAnklePlantarflexion
+              ? [["normal", "完成稳定｜双脚高度和节奏接近"], ["weak", "控制偏弱｜一侧高度较低或容易掉下"], ["painful", "提踵不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]] as Array<[SimpleAnswer, string]>
+              : pairedCheckOptions} value={record.pairedStrength} onChange={(value) => updateAssessment(item.id, {
               pairedStrength: value,
               pairedStrengthUnableReason: value === "unable" ? record.pairedStrengthUnableReason : undefined,
               pairedStrengthLocation: undefined,

@@ -86,6 +86,7 @@ import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-cor
 import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
 import { p0AssessmentAccess } from "@/src/knowledge/rehab/p0-assessment-access";
+import { ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS, ankleP1EligiblePlantarflexionExerciseIds, KNEE_P1_SCAR_TREATMENT_ID, kneeP1LineageForTreatment } from "@/src/knowledge/rehab/p1-runtime";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
 import { classifySnapshotFreshness, formatSnapshotAge, isTimeSensitiveOnset, type SnapshotFreshness } from "@/src/domain/rehab/followup/snapshot-freshness-core";
 import { functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
@@ -1487,7 +1488,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       const pairIsClinicallySelected = ["thigh-local", "calf-local"].includes(region.id)
         ? motion.id === `motion:${localPrimaryMotionId}`
         : region.id !== "ankle-foot" || !isAcuteTrauma(intake) || acuteAnkleStrengthPairIds.has(pairId);
-      return pair && pairIsClinicallySelected ? {
+      const pairAllowed = !(motion.id === "motion:knee-extension" && workflowProfile.operationTarget !== "other");
+      return pair && pairIsClinicallySelected && pairAllowed ? {
         ...motion,
         pairedStrengthId: pair.id,
         pairedStrengthTitle: pair.title,
@@ -1553,7 +1555,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         : strengthComplaint || !(region.id === "ankle-foot" && special.length)
           ? strengthItems.slice(0, 1)
           : [];
-      return rankAndLimit([...combinedMotionItems, ...special, ...selectedStrengths.filter((item) => !pairedStrengthIds.has(item.id.replace(/^strength:/, ""))), ...functionItems], functionItems.map((item) => item.id));
+      const guidedStrengths = selectedStrengths
+        .filter((item) => !(region.id === "knee" && workflowProfile.operationTarget !== "other" && item.id === "strength:knee-quadriceps"))
+        .filter((item) => !pairedStrengthIds.has(item.id.replace(/^strength:/, "")));
+      return rankAndLimit([...combinedMotionItems, ...special, ...guidedStrengths, ...functionItems], functionItems.map((item) => item.id));
     }
     // 先把所有与当前区域相关的候选交给规则库排序，再由角色预算截取。
     // 不能在排序前按原始数组位置截断，否则病例规则点名的鹅足、腓骨肌等检查会被通用项目挤掉。
@@ -1564,7 +1569,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         : [...interleaved, ...specialItems, ...functionItems];
     // 专业模式也必须保留用户明确选中的多个功能动作；通用排序预算只负责
     // 排顺序，不能把第二个主诉动作静默挤出独立评估队列。
-    return rankAndLimit(order, functionItems.map((item) => item.id));
+    const preservedAssessmentIds = [
+      ...functionItems.map((item) => item.id),
+      ...motionItems.filter((item) => item.id === "motion:knee-scar-mobility").map((item) => item.id),
+    ];
+    return rankAndLimit(order, preservedAssessmentIds);
   }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile, imaging, activeProvocationTypes]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”
@@ -2950,6 +2959,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const ankleP0EligibleControls = region.id === "ankle-foot"
       ? ankleP0EligibleControlExerciseIds(ankleP0RecordsAfterRangeOutcomes(assessmentResults, trialRecords.map((trial) => trial.rangeOutcomes)))
       : new Set<string>();
+    const ankleP1EligiblePlantarflexion = region.id === "ankle-foot"
+      ? ankleP1EligiblePlantarflexionExerciseIds(assessmentResults)
+      : new Set<string>();
     const weakStrengthFindings = findings.filter((finding) => finding.id.startsWith("strength:") && (
       assessmentResults[finding.id]?.simple === "weak"
       || finding.title.includes("发力偏弱")
@@ -3032,6 +3044,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index)
       .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
+      .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS.has(exercise.id) || ankleP1EligiblePlantarflexion.has(exercise.id))
       .filter((exercise) => !assessmentRequiredExerciseIds.has(exercise.id) || exercise.tags.some((tag) => weakStrengthTags.has(tag)))
       .sort((a, b) => exercisePriority(b) - exercisePriority(a) || a.stage - b.stage);
     const selected = hasWeakStrength && exerciseStage <= 2
@@ -3059,6 +3072,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .filter((exercise, index, list) => list.findIndex((item) => item.id === exercise.id) === index)
       .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
+      .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS.has(exercise.id) || ankleP1EligiblePlantarflexion.has(exercise.id))
       .slice(0, targetCount);
     return sessionSelected.map((exercise) => {
       const adapted = adaptExerciseForCurrentStage(exercise, exerciseStage);
@@ -3166,6 +3180,18 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           knowledgeEvidence,
           retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
         }] : [];
+      })
+      .flatMap((candidate) => {
+        if (region.id !== "knee") return [candidate];
+        const knowledgeEvidence = kneeP1LineageForTreatment(candidate.id, assessmentResults, candidate.knowledgeEvidence);
+        if (candidate.id === KNEE_P1_SCAR_TREATMENT_ID && !knowledgeEvidence) return [];
+        return [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence
+            ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+            : candidate.retestIds,
+        }];
       })
       .flatMap((candidate) => {
         if (region.id !== "ankle-foot" || !isAnkleP0CandidateId(candidate.id)) return [candidate];

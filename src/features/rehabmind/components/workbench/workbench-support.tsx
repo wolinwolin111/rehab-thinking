@@ -2690,6 +2690,13 @@ export function directionIsRelevant(regionId: string, itemId: string, intake: In
     if (profile.operationTarget !== "other") return false;
     return includesAny(source, ["膝前", "髌骨", "下楼", "上楼", "蹲", "伸不直", "弯不了", "活动受限"]);
   }
+  if (regionId === "knee" && itemId === "knee-scar-mobility") {
+    const profile = intake.productMode
+      ? normalizeWorkflowProfile({ productMode: intake.productMode, operationTarget: intake.operationTarget, capabilities: intake.capabilities })
+      : workflowProfileFromLegacy(intake.userRole, intake.examSetup);
+    if (profile.operationTarget !== "other") return false;
+    return includesAny(`${source} ${intake.description} ${intake.mechanism}`, ["术后", "手术", "瘢痕", "疤痕", "伤口"]);
+  }
   if (regionId === "thigh-local") {
     // 局部模块的“主方向＋条件式协同/相反方向”由统一排序器决定。
     // 这里不再提前按点击位置删掉候选，否则排序器无法补查高价值方向。

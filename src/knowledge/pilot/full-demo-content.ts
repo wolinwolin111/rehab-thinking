@@ -863,6 +863,7 @@ const knee: FullRegion = {
     { ...direction("knee-patella-inferior", "髌骨向下活动", "仰卧放松膝盖，轻柔比较髌骨向下移动。", "与健侧差异，以及是否与屈膝受限同时出现。", ["patella", "inferior-glide"], "不熟悉可跳过；术后按医嘱。"), testMode: "passive" },
     { ...direction("knee-patella-medial", "髌骨向内活动", "仰卧放松膝盖，轻柔比较髌骨向内侧移动。", "左右差异、疼痛和末端弹性。", ["patella", "medial-glide"], "只做轻柔比较，不做压磨。"), testMode: "passive" },
     { ...direction("knee-patella-lateral", "髌骨向外活动", "仰卧放松膝盖，轻柔比较髌骨向外侧移动。", "左右差异、疼痛和末端弹性。", ["patella", "lateral-glide"], "只做轻柔比较，不做压磨。"), testMode: "passive" },
+    { ...direction("knee-scar-mobility", "术后瘢痕活动", "由专业人员轻柔比较瘢痕各方向活动，并观察它是否随膝屈伸或髌骨活动受限。", "记录瘢痕活动较少的方向，以及与膝屈伸或髌骨受限是否同步。", ["postoperative", "scar", "knee-rom"], "伤口未愈合、红热渗液或异常肿胀时不检查。"), access: "therapist", testMode: "passive" },
   ],
   strengths: [
     strength("knee-quadriceps", "把膝盖伸直的力量", "先仰卧，把膝后侧向床面压住5秒；再坐好，把小腿慢慢抬到能到的位置并保持5秒。", "和健侧比较下压和抬腿的力量；留意不舒服的一侧是否明显抖动，或因为疼痛不敢用力。", ["quadriceps", "terminal-extension"]),
@@ -949,6 +950,7 @@ const knee: FullRegion = {
       candidates: [
         candidate("knee-swelling-care", "肿胀管理", "swelling", "self", "休息时垫高小腿；在疼痛允许范围缓慢滑动脚跟、伸屈膝盖10～20次。", "肿胀不会在一次处理后立刻消失，不反复按压检查。", "当天晚些时候或第二天再观察肿胀边界和轮廓。", ["swelling", "acute"]),
         candidate("knee-irritability-cause", "检查持续刺激来源", "control", "coach", "先调整负重、关节活动或肌肉牵拉中的一项，再做原动作。", "刺痛减轻也不能排除结构性问题。", "复测安全的问题动作；压痛不当场反复验证。", ["irritability", "load-management"]),
+        candidate("knee-scar-mobility-treatment", "术后瘢痕活动处理", "joint", "therapist", "仅处理检查中确认活动较少、并与膝屈伸或髌骨活动受限同步的瘢痕方向。", "伤口未愈合、红热渗液、异常肿胀或处理时锐痛应停止。", "复查瘢痕活动和刚才同步受限的膝屈伸或髌骨方向。", ["postoperative", "scar", "joint-mobility"], { retestIds: ["knee-scar-mobility"], siteLabel: "膝部术后瘢痕", targetLabel: "活动受限的瘢痕方向", actionLabel: "瘢痕活动处理" }),
       ],
     },
   ],
