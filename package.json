@@ -47,6 +47,8 @@
     "check:structure": "node scripts/quality/check-repository-structure.mjs",
     "check:docs": "node scripts/docs/check-markdown-links.mjs",
     "check:assets": "node scripts/docs/check-asset-manifest.mjs",
+    "check:knowledge": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/knowledge/check-rehab-knowledge.ts",
+    "knowledge:inventory": "node scripts/knowledge/inventory-raw-rehab-corpus.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
