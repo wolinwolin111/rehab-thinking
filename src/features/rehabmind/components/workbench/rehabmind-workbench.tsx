@@ -84,6 +84,7 @@ import { candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-saf
 import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
 import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
+import { p0AssessmentAccess } from "@/src/knowledge/rehab/p0-assessment-access";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
 import { classifySnapshotFreshness, formatSnapshotAge, isTimeSensitiveOnset, type SnapshotFreshness } from "@/src/domain/rehab/followup/snapshot-freshness-core";
 import { functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
@@ -99,7 +100,7 @@ import { activeMotionRecordComplete } from "@/src/domain/rehab/assessment/motion
 import { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessment-record-complete-core";
 import { hasRecordedChiefRetest, latestRecordedChiefScore } from "@/src/domain/rehab/retest/chief-retest-history-core";
 import { isTreatmentQueueCandidateEligible } from "@/src/domain/rehab/treatment/treatment-queue-eligibility-core";
-import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, effectiveProvocationTypes, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
+import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentAllowsEndFeel, assessmentAllowsMuscleComparison, assessmentAllowsPassive, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, effectiveProvocationTypes, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
 import { deriveMedicalGuidance, medicalGuidanceNeedsClarification } from "@/src/domain/rehab/intake/medical-guidance-core";
 import type { AssessmentSessionRecord } from "./workbench-support";
 
@@ -1344,12 +1345,16 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .filter((item) => directionIsRelevant(region.id, item.id, intake))
       // 纯被动项目（例如髌骨滑动）必须由资料显式声明；不能靠页面标题猜测。
       // 自助模式或没有被动检查能力时不展示，避免把被动检查误解成主动发力。
-      .filter((item) => item.testMode !== "passive" || canAssessPassive)
+      .filter((item) => {
+        const reviewedAccess = p0AssessmentAccess(`motion:${item.id}`, workflowProfile);
+        return reviewedAccess ? reviewedAccess.visible : item.testMode !== "passive" || canAssessPassive;
+      })
       .sort((a, b) => motionPriority(b.id) - motionPriority(a.id))
       .map((item) => {
       const comparison = motionComparisonMode(region.id, item.id);
       const copy = assessmentCopy(item.id, item.how, item.observe);
       const professionalCopy = professionalAssessmentCopy(item.id, item.how, item.observe);
+      const reviewedAccess = p0AssessmentAccess(`motion:${item.id}`, workflowProfile);
       return {
         id: `motion:${item.id}`,
         kind: "motion",
@@ -1364,6 +1369,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         comparison,
         spinal: isSpinalRegion(region.id),
         testMode: item.testMode ?? "combined",
+        allowsPassiveAssessment: reviewedAccess?.passive,
+        allowsEndFeelAssessment: reviewedAccess?.endFeel,
+        allowsMuscleComparison: reviewedAccess?.muscleComparison,
       };
     });
     const strengthItems: AssessmentItem[] = region.strengths
@@ -1556,7 +1564,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 专业模式也必须保留用户明确选中的多个功能动作；通用排序预算只负责
     // 排顺序，不能把第二个主诉动作静默挤出独立评估队列。
     return rankAndLimit(order, functionItems.map((item) => item.id));
-  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile.isGuided, workflowProfile.operationTarget, workflowProfile.palpationMode, imaging, activeProvocationTypes]);
+  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile, imaging, activeProvocationTypes]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”
   // 的异常和处理；用户界面合并为一张卡，避免同一膝盖连续翻四个几乎相同的页面。
@@ -1576,20 +1584,20 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         return entry && assessmentRecordComplete(
           entry,
           effectiveAssessmentRecord(entry, assessmentResults[id], intake, region?.id ?? ""),
-          canAssessPassive,
+          assessmentAllowsPassive(entry, canAssessPassive),
           intake.side === "双侧/中间",
           !hasClearChiefAction(intake),
-          canAssessEndFeel,
+          assessmentAllowsEndFeel(entry, canAssessEndFeel),
         );
       });
     }
     return assessmentRecordComplete(
       item,
       effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? ""),
-      canAssessPassive,
+      assessmentAllowsPassive(item, canAssessPassive),
       intake.side === "双侧/中间",
       !hasClearChiefAction(intake),
-      canAssessEndFeel,
+      assessmentAllowsEndFeel(item, canAssessEndFeel),
     );
   };
 
@@ -1613,11 +1621,18 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     }];
     assessments.forEach((item) => {
       const rawResult = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region.id);
-      if (!rawResult || !assessmentRecordComplete(item, rawResult, canAssessPassive, intake.side === "双侧/中间", !hasClearChiefAction(intake), canAssessEndFeel)) return;
+      const itemCanAssessPassive = assessmentAllowsPassive(item, canAssessPassive);
+      const itemCanAssessEndFeel = assessmentAllowsEndFeel(item, canAssessEndFeel);
+      if (!rawResult || !assessmentRecordComplete(item, rawResult, itemCanAssessPassive, intake.side === "双侧/中间", !hasClearChiefAction(intake), itemCanAssessEndFeel)) return;
       const result = item.kind === "motion" ? {
         ...rawResult,
-        tensionChecked: Boolean(rawResult.tensionChecked || assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionChecked),
-        tensionLocations: sharedTensionLocationsForMotion(item.id, rawResult, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]),
+        passive: itemCanAssessPassive ? rawResult.passive : undefined,
+        passiveEndFeel: itemCanAssessEndFeel ? rawResult.passiveEndFeel : undefined,
+        passiveDiscomfort: itemCanAssessPassive ? rawResult.passiveDiscomfort : undefined,
+        passiveDiscomfortType: itemCanAssessPassive ? rawResult.passiveDiscomfortType : undefined,
+        passiveSymptomScore: itemCanAssessPassive ? rawResult.passiveSymptomScore : undefined,
+        tensionChecked: assessmentAllowsMuscleComparison(item) && Boolean(rawResult.tensionChecked || assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionChecked),
+        tensionLocations: assessmentAllowsMuscleComparison(item) ? sharedTensionLocationsForMotion(item.id, rawResult, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]) : [],
       } : rawResult;
       if (item.kind === "motion" && item.testMode === "passive" && result.passive && result.passive !== "skip") {
         const passiveLimited = result.passive !== "same";
@@ -1666,7 +1681,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               ? `主动和被动都小于${target}`
               : result.passive === "skip"
                 ? `主动小于${target}，本次未完成被动检查`
-                : canAssessPassive
+                : itemCanAssessPassive
                   ? `主动小于${target}，被动范围待确认`
                   : `主动小于${target}，先尝试相关肌肉处理和主动控制`;
           items.push({
@@ -1738,7 +1753,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
             tags: item.tags ?? [],
           });
         }
-        const confirmedTension = sharedTensionLocationsForMotion(item.id, result, assessmentResults[SHARED_TENSION_ASSESSMENT_ID])
+        const confirmedTension = (assessmentAllowsMuscleComparison(item) ? sharedTensionLocationsForMotion(item.id, result, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]) : [])
           .filter((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location));
         const tensionFindings = buildMuscleTensionFindings({ assessmentId: item.id, assessmentTitle: professionalAssessmentTitle(item.id, item.title), locations: confirmedTension, professional: !workflowProfile.isGuided });
         for (const tensionFinding of tensionFindings) {
@@ -1914,21 +1929,24 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     return assessments.flatMap((item) => {
       const record = effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region.id);
       if (!record) return [];
+      const itemCanAssessPassive = assessmentAllowsPassive(item, canAssessPassive);
+      const itemCanAssessEndFeel = assessmentAllowsEndFeel(item, canAssessEndFeel);
+      const itemCanCompareMuscle = assessmentAllowsMuscleComparison(item);
       const workflowItems = [{
         id: item.id,
         kind: item.kind,
         title: item.title,
         active: record.active,
-        passive: record.passive,
+        passive: itemCanAssessPassive ? record.passive : undefined,
         simple: item.kind === "function" ? functionSimpleAnswer(record) : item.kind === "strength" ? strengthAnswerForWorkflow(record.simple, record.strengthUnableReason) : record.simple,
         discomfort: item.kind === "function" ? functionDiscomfortValue(record) : record.discomfort,
         discomfortType: record.discomfortType,
         symptomScore: record.symptomScore,
-        passiveEndFeel: item.kind === "motion" ? record.passiveEndFeel : undefined,
-        passiveDiscomfort: item.kind === "motion" ? record.passiveDiscomfort : undefined,
-        passiveSymptomScore: item.kind === "motion" ? record.passiveSymptomScore : undefined,
-        tensionLocations: item.kind === "motion" ? sharedTensionLocationsForMotion(item.id, record, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]) : record.tensionLocations,
-        tensionChecked: item.kind === "motion" ? Boolean(record.tensionChecked || assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionChecked) : record.tensionChecked,
+        passiveEndFeel: item.kind === "motion" && itemCanAssessEndFeel ? record.passiveEndFeel : undefined,
+        passiveDiscomfort: item.kind === "motion" && itemCanAssessPassive ? record.passiveDiscomfort : undefined,
+        passiveSymptomScore: item.kind === "motion" && itemCanAssessPassive ? record.passiveSymptomScore : undefined,
+        tensionLocations: item.kind === "motion" && itemCanCompareMuscle ? sharedTensionLocationsForMotion(item.id, record, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]) : item.kind === "motion" ? [] : record.tensionLocations,
+        tensionChecked: item.kind === "motion" && itemCanCompareMuscle ? Boolean(record.tensionChecked || assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionChecked) : item.kind === "motion" ? false : record.tensionChecked,
         discomfortLocations: (record.discomfortLocations ?? []).map((location) => location.location),
         control: item.kind === "function" ? functionControlValue(record) : undefined,
         // S-01：双侧场景下逐项携带该检查自身侧别，供膝决策按真实侧归属。
@@ -1956,7 +1974,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
        });
       return workflowItems;
     });
-  }, [region, assessments, assessmentResults, intake]);
+  }, [region, assessments, assessmentResults, intake, canAssessPassive, canAssessEndFeel]);
 
   const kneeDecision = useMemo(() => {
     if (region?.id !== "knee") return null;
@@ -2718,10 +2736,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       if (!item || !assessmentRecordComplete(
         item,
         record,
-        canAssessPassive,
+        assessmentAllowsPassive(item, canAssessPassive),
         intake.side === "双侧/中间",
         false,
-        canAssessEndFeel,
+        assessmentAllowsEndFeel(item, canAssessEndFeel),
       )) return [];
       const evidence = functionEvidenceFromRecord(id, record);
       return evidence.retestMode === "none" ? [] : [{ mode: evidence.retestMode }];
@@ -2751,7 +2769,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   function directionAllowsPassive(directionId: string) {
     const item = assessments.find((assessment) => assessment.id === `motion:${directionId}`);
-    return canAssessPassive && !(item?.spinal && !item.id.includes("rotation"));
+    return (item ? assessmentAllowsPassive(item, canAssessPassive) : canAssessPassive)
+      && !(item?.spinal && !item.id.includes("rotation"));
   }
 
   function directionNeedsCandidate(candidate: FullCandidate, directionId: string, outcomes = latestRangeOutcomes) {
@@ -3055,12 +3074,16 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 训练后自主放松合并四类来源：紧张检查（共享 + 逐项）、有效/部分有效处理肌肉、
     // 当前训练动作主要肌肉；只按标准区域去重，不设置位置数量硬上限。肿胀、清楚
     // 刺痛、麻电或非标准组织路径按风险追加选择性避开提示，规则见 home-relaxation-core。
-    const tensionLabels = followupMode
-      ? followupTensionLocations
-      : [
-          ...(assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionLocations ?? []),
-          ...Object.values(assessmentResults).flatMap((record) => record.tensionLocations ?? []),
-        ];
+    const tensionLabels = workflowProfile.palpationMode === "none"
+      ? []
+      : followupMode
+        ? followupTensionLocations
+        : [
+            ...(assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionLocations ?? []),
+            ...assessments
+              .filter(assessmentAllowsMuscleComparison)
+              .flatMap((item) => assessmentResults[item.id]?.tensionLocations ?? []),
+          ];
     const effectiveMuscleLabels = effectiveTreatmentCandidates
       .filter((candidate) => candidate.type === "muscle")
       .map((candidate) => candidateMuscleFocus(candidate).label)
@@ -3074,7 +3097,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       effectiveMuscleLabels,
       trainingMuscleLabels: exercises.flatMap((exercise) => exerciseMuscleLabels(exercise.tags, exercise.title)),
     });
-  }, [assessmentResults, followupMode, followupTensionLocations, intake, tissuePathway.id, effectiveTreatmentCandidates, exercises]);
+  }, [assessmentResults, assessments, followupMode, followupTensionLocations, intake, tissuePathway.id, effectiveTreatmentCandidates, exercises, workflowProfile.palpationMode]);
 
   const followupCandidates = useMemo<FullCandidate[]>(() => {
     if (!region) return [];
@@ -3317,13 +3340,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const assessmentComplete = assessments.length > 0 && assessments.every((item) => assessmentRecordComplete(
     item,
     effectiveAssessmentRecord(item, assessmentResults[item.id], intake, region?.id ?? ""),
-    canAssessPassive,
+    assessmentAllowsPassive(item, canAssessPassive),
     intake.side === "双侧/中间",
     !hasClearChiefAction(intake),
-    canAssessEndFeel,
+    assessmentAllowsEndFeel(item, canAssessEndFeel),
   ));
   const limitedPilotMotionItems = assessments.filter((item) => {
     if (item.kind !== "motion" || item.testMode === "passive") return false;
+    if (!assessmentAllowsMuscleComparison(item) || workflowProfile.palpationMode === "none") return false;
     return needsMuscleTensionCheck({
       spinal: Boolean(item.spinal),
       tissuePathwayId: tissuePathway.id,
@@ -4188,10 +4212,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         if (!item || !assessmentRecordComplete(
           item,
           assessmentResults[id],
-          canAssessPassive,
+          assessmentAllowsPassive(item, canAssessPassive),
           intake.side === "双侧/中间",
           false,
-          canAssessEndFeel,
+          assessmentAllowsEndFeel(item, canAssessEndFeel),
         )) return false;
         return item.kind !== "function" || functionEvidenceFromRecord(id, assessmentResults[id]).channels.retest;
       })

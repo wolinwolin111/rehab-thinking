@@ -57,12 +57,26 @@ import {
 import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
 import { kneeP0LineageFromAssessmentRecord } from "@/src/knowledge/rehab/knee-p0-runtime";
 import { ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
+import { p0AssessmentEvidenceForDecision, p0JointCheckAllowed } from "@/src/knowledge/rehab/p0-assessment-access";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
-  const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
+  const { region, findings, assessmentResults: storedAssessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
   const candidateAccess = workflowProfile ?? intake.userRole;
   const canRunProfessionalUnit = workflowProfile ? workflowProfile.operationTarget === "other" : intake.userRole === "rehab";
   const SHARED_TENSION_ASSESSMENT_ID = ctx.sharedTensionId;
+  const assessmentResults = workflowProfile
+    ? Object.fromEntries(Object.entries(storedAssessmentResults).map(([id, record]) => [
+      id,
+      p0AssessmentEvidenceForDecision(id, record, workflowProfile),
+    ])) as typeof storedAssessmentResults
+    : storedAssessmentResults;
+  if (workflowProfile?.palpationMode === "none" && assessmentResults[SHARED_TENSION_ASSESSMENT_ID]) {
+    assessmentResults[SHARED_TENSION_ASSESSMENT_ID] = {
+      ...assessmentResults[SHARED_TENSION_ASSESSMENT_ID],
+      tensionLocations: [],
+      tensionChecked: false,
+    };
+  }
   const assessmentTitle = ctx.assessmentTitle;
   const sharedTensionLocationsForMotion = ctx.sharedTensionLocationsForMotion;
   const chiefFunctionAssessmentId = ctx.chiefFunctionAssessmentId;
@@ -169,6 +183,9 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         }];
       })
       .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
+      .filter((candidate) => candidate.id !== "knee-proximal-fibula"
+        || !workflowProfile
+        || p0JointCheckAllowed("K-P0-07", workflowProfile))
       .filter((candidate) => !pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)
         && unit.requiresProfessional && !canRunProfessionalUnit))
       .filter((candidate) => !pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)

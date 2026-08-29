@@ -46,6 +46,8 @@ import {
   SYMPTOM_TYPES,
   activeMotionRangeOptions,
   activeMotionRangeQuestion,
+  assessmentAllowsEndFeel,
+  assessmentAllowsPassive,
   assessmentLocationAreas,
   assessmentObservationSentence,
   bilateralComparisonOptions,
@@ -375,7 +377,9 @@ export function AssessmentStage(props: AssessmentStageProps) {
   const relatedMotionRecord = item.kind === "strength" ? assessmentResults[strengthRelatedMotionId(item.id)] : undefined;
   const reuseRelatedMotionSymptom = Boolean(relatedMotionRecord?.discomfort === "yes" && relatedMotionRecord.discomfortLocation && relatedMotionRecord.discomfortType);
   const passiveOnly = item.kind === "motion" && item.testMode === "passive";
-  const needsPassive = item.kind === "motion" && motionNeedsPassive(item, record, canAssessPassive);
+  const itemCanAssessPassive = assessmentAllowsPassive(item, canAssessPassive);
+  const itemCanAssessEndFeel = assessmentAllowsEndFeel(item, canAssessEndFeel);
+  const needsPassive = item.kind === "motion" && motionNeedsPassive(item, record, itemCanAssessPassive);
   const itemComplete = displayAssessmentComplete(item);
   const functionCompletion = item.kind === "function" ? functionCompletionValue(effectiveRecord) : undefined;
   const functionControl = item.kind === "function" ? functionControlValue(effectiveRecord) : undefined;
@@ -483,14 +487,16 @@ export function AssessmentStage(props: AssessmentStageProps) {
       .filter((entry): entry is AssessmentItem => Boolean(entry));
     const renderPatellaDirection = (subItem: AssessmentItem) => {
       const subRecord = assessmentResults[subItem.id] ?? {};
-      const complete = assessmentRecordComplete(subItem, subRecord, canAssessPassive, intake.side === "双侧/中间", !hasClearChiefAction(intake), canAssessEndFeel);
+      const subItemCanAssessPassive = assessmentAllowsPassive(subItem, canAssessPassive);
+      const subItemCanAssessEndFeel = assessmentAllowsEndFeel(subItem, canAssessEndFeel);
+      const complete = assessmentRecordComplete(subItem, subRecord, subItemCanAssessPassive, intake.side === "双侧/中间", !hasClearChiefAction(intake), subItemCanAssessEndFeel);
       return <article className={`rm-check-card rm-patella-direction ${complete ? "is-done" : ""}`} key={subItem.id}>
         <header><i>{PATELLA_DIRECTION_LABELS[subItem.id]}</i><div><span>髌骨被动滑动</span><strong>{PATELLA_DIRECTION_TITLES[subItem.id]}</strong></div>{complete ? <b>已记录</b> : null}</header>
         <section><b>检查方法</b><p>{subItem.professionalHow ?? subItem.how}</p></section>
         <section className="rm-motion-answer-block"><h3>{intake.side === "双侧/中间" ? "左右两侧比较，活动范围如何？" : "与对侧相比，活动范围如何？"}</h3><AnswerChoiceGrid options={passiveMotionOptions("contralateral", false, intake.side === "双侧/中间")} value={subRecord.passive} onChange={(value) => updateAssessment(subItem.id, value === "skip"
           ? { passive: value, passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined }
           : { passive: value, ...(subRecord.passive !== value ? { passiveEndFeel: undefined, passiveDiscomfort: undefined, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined } : {}) })} /></section>
-        {canAssessEndFeel && subRecord.passive && subRecord.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel"><h3>记录被动活动的终末感</h3><AnswerChoiceGrid options={PASSIVE_END_FEEL_OPTIONS} value={subRecord.passiveEndFeel} onChange={(passiveEndFeel) => updateAssessment(subItem.id, { passiveEndFeel })} /></section> : null}
+        {subItemCanAssessEndFeel && subRecord.passive && subRecord.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel"><h3>记录被动活动的终末感</h3><AnswerChoiceGrid options={PASSIVE_END_FEEL_OPTIONS} value={subRecord.passiveEndFeel} onChange={(passiveEndFeel) => updateAssessment(subItem.id, { passiveEndFeel })} /></section> : null}
         {subRecord.passive && subRecord.passive !== "skip" ? <section className="rm-motion-answer-block is-symptom"><h3>被动滑动时有不适吗？</h3><div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={subRecord.passiveDiscomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(subItem.id, value === "yes" ? { passiveDiscomfort: value } : { passiveDiscomfort: value, passiveDiscomfortLocation: undefined, passiveDiscomfortLocations: undefined, passiveDiscomfortType: undefined, passiveSymptomScore: undefined })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>{subRecord.passiveDiscomfort === "yes" ? <div className="rm-motion-symptom-detail"><LowerLimbLocationPicker compact mode="assessment" allowedAreaIds={assessmentLocationAreas(subItem.id)} value={subRecord.passiveDiscomfortLocations ?? []} initialRegionId={region?.id} initialSide={(subRecord.worseSide === "左侧" || subRecord.worseSide === "右侧") ? subRecord.worseSide : intake.side} initialLocation={subRecord.passiveDiscomfortLocation || intake.location} onChange={(passiveDiscomfortLocations) => updateAssessment(subItem.id, { passiveDiscomfortLocations, passiveDiscomfortLocation: locationSelectionsLabel(passiveDiscomfortLocations) })} />{(subRecord.passiveDiscomfortLocations?.length ?? 0) > 0 ? <><label className="rm-assessment-feeling"><span>不适是什么感觉？</span><select value={subRecord.passiveDiscomfortType ?? ""} onChange={(event) => updateAssessment(subItem.id, { passiveDiscomfortType: event.target.value })}><option value="">请选择</option>{SYMPTOM_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label><ScoreSlider compact value={subRecord.passiveSymptomScore ?? 0} selected={typeof subRecord.passiveSymptomScore === "number"} onChange={(passiveSymptomScore) => updateAssessment(subItem.id, { passiveSymptomScore })} label="被动滑动时有多不舒服？" /></> : null}</div> : null}</section> : null}
       </article>;
     };
@@ -674,7 +680,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           </section> : null}
         </section> : null}
 
-        {!canAssessPassive && ["limited", "excessive", "unable"].includes(record.active ?? "") ? <p className="rm-passive-reminder">有专业人员协助时，可以补充被动活动检查；现在先记录主动活动，后续安排相关肌肉处理和主动控制。</p> : null}
+        {!itemCanAssessPassive && ["limited", "excessive", "unable"].includes(record.active ?? "") ? <p className="rm-passive-reminder">本次不做被动活动检查，先按已经记录的主动表现继续。</p> : null}
       </article> : null}
       {needsPassive ? <article className="rm-check-card is-secondary">
         <header><i>{passiveOnly ? "P" : "2"}</i><div><span>{passiveOnly ? "被动活动度（PROM）" : "专业检查 · 被动活动"}</span><strong>{passiveOnly ? professionalAssessmentTitle(item.id, item.title) : "不强压疼痛末端"}</strong></div></header>
@@ -687,7 +693,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
             : { passive: value, ...(record.passive !== value ? { passiveEndFeel: undefined } : {}) })}>{label}</button>)}</div>
           {record.passive && record.passive !== "skip" ? <label className="rm-optional-angle"><span>记录被动角度</span><small>选填 · 仅供同动作、同侧、同方式后续参考</small><input inputMode="decimal" value={record.passiveMeasuredAngle ?? ""} onChange={(event) => { const raw = event.target.value; const valueDeg = parseRangeAngle(raw); updateAssessment(item.id, { passiveMeasuredAngle: raw, passiveMeasuredAngleDeg: valueDeg, passiveRangeMeasurement: valueDeg === undefined ? undefined : { measurementId: `${item.id}:passive:${Date.now()}`, actionId: item.id.replace(/^motion:/, ""), side: intake.side, valueDeg, mode: "passive", method: "estimated", recordedAt: new Date().toISOString() } }); }} placeholder="例如：50°" /></label> : null}
         </section>
-        {canAssessEndFeel && record.passive && record.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel">
+        {itemCanAssessEndFeel && record.passive && record.passive !== "skip" ? <section className="rm-motion-answer-block is-passive-end-feel">
           <h3>记录被动活动的终末感</h3>
           <p className="rm-choice-hint">在不强压疼痛末端的前提下，记录最后的阻力感觉；无法判断可选“无法判断”。</p>
           <AnswerChoiceGrid options={PASSIVE_END_FEEL_OPTIONS} value={record.passiveEndFeel} onChange={(passiveEndFeel) => updateAssessment(item.id, { passiveEndFeel })} />

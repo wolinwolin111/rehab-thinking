@@ -231,7 +231,23 @@ export type AssessmentItem = {
   specialCategory?: "localization" | "response" | "safety" | "professional-special";
   /** 专项检查触发规则的原始快照；用于记录而不是重新推理旧结果。 */
   trigger?: string;
+  /** Reviewed P0 access overrides. Undefined keeps the existing non-P0 behavior. */
+  allowsPassiveAssessment?: boolean;
+  allowsEndFeelAssessment?: boolean;
+  allowsMuscleComparison?: boolean;
 };
+
+export function assessmentAllowsPassive(item: AssessmentItem, fallback: boolean) {
+  return item.allowsPassiveAssessment ?? fallback;
+}
+
+export function assessmentAllowsEndFeel(item: AssessmentItem, fallback: boolean) {
+  return item.allowsEndFeelAssessment ?? fallback;
+}
+
+export function assessmentAllowsMuscleComparison(item: AssessmentItem) {
+  return item.allowsMuscleComparison ?? true;
+}
 
 /** 髌骨四个方向属于同一项被动筛查；后台仍保留方向级结果，页面只展示一张卡。 */
 export const PATELLA_DIRECTION_IDS = [

@@ -16,6 +16,7 @@ import { type LocalLimbDecision } from "@/src/domain/rehab/shared/local-limb-dec
 import { type WorkflowProfile } from "@/src/domain/rehab/intake/workflow-profile-core";
 import { type FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
 import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { type P0AccessProfile } from "@/src/knowledge/rehab/p0-assessment-access";
 
 export type FullCandidateInput = CandidateTreatmentInput & {
   access: string;
@@ -134,7 +135,7 @@ export type DecisionContext = {
   canAssessPassive: boolean;
   canMobilizeJoint: boolean;
   /** 新版权限来源；缺失时只为 v1 core 调用保留 userRole 兼容。 */
-  workflowProfile?: Pick<WorkflowProfile, "operationTarget" | "isStudy" | "canRecord">;
+  workflowProfile?: Pick<WorkflowProfile, "operationTarget" | "isStudy" | "canRecord"> & P0AccessProfile;
   swellingGuidance: FullCandidateInput | undefined;
   assessments: AssessmentItemInput[];
   sharedTensionId: string;
