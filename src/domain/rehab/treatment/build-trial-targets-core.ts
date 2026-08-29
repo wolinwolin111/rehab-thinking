@@ -508,11 +508,20 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         "ankle-cuboid-mobility",
         "ankle-toe-flexion",
       ].includes(directionId);
+      // 膝伸直方向已由 P0 证据流程接管：只允许带证据链的合同单元、
+      // 统一触诊选出的紧张区域和肿胀管理；旧候选组不再重复生成。
+      const kneeP0Direction = region.id === "knee" && directionId === "knee-extension";
+      const kneeP0EvidenceGate = (candidate: FullCandidateInput) => !kneeP0Direction
+        || candidate.type === "swelling"
+        || candidate.id.startsWith("tension-muscle:")
+        || Boolean(candidate.knowledgeEvidence)
+        || isKneeP1StandaloneTreatmentCandidateId(candidate.id);
       const releasedP0Direction = ankleP0Direction
         || region.id === "knee" && ["knee-extension", "knee-scar-mobility"].includes(directionId);
       const directionCandidates = allCandidates
         .filter((candidate) => (candidate.retestIds ?? []).some((candidateDirection) => samePhysicalAction(candidateDirection, directionId)) || candidate.tags.some((tag) => finding.tags.includes(tag)))
         .filter((candidate) => !ankleP0Direction || !ankleP0RuntimeLoaded || isReleasedAnkleCandidate(candidate.id))
+        .filter(kneeP0EvidenceGate)
         // 髌骨方向只使用明确的髌骨处理候选；不能把“膝关节伸直方向松动”
         // 这种泛化候选因为带有 patella 标签，误合并成髌骨处理单元。
         .filter((candidate) => !patellaDirection || isPatellaSpecificCandidate(candidate));
@@ -685,9 +694,19 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       // 首条发现原值（不清空、也不用评估更差侧覆写）——与 bilateral-flow-core
       // 「评估更差侧只能提醒、不得静默替换主诉」的承诺一致。
       const chiefComplaintSide = intake.prioritySide;
+      // 主诉方向是膝伸直时，主诉路由与活动方向路由使用同一证据门槛，
+      // 避免未审核旧候选绕过 P0 合同单元重新进入处理队列。
+      const chiefP0Direction = region.id === "knee" && chiefDirection === "knee-extension";
+      const chiefP0EvidenceGate = (candidate: FullCandidateInput) => !chiefP0Direction
+        || candidate.type === "swelling"
+        || candidate.id.startsWith("tension-muscle:")
+        || Boolean(candidate.knowledgeEvidence)
+        || isKneeP1StandaloneTreatmentCandidateId(candidate.id);
       const combinedChiefCandidates = [...(sameDirectionMotionTarget?.candidates ?? []), ...chiefCandidates]
+        .filter(chiefP0EvidenceGate)
         .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
       const combinedOptional = [...(sameDirectionMotionTarget?.optionalCandidates ?? []), ...chiefOptionalCandidates]
+        .filter(chiefP0EvidenceGate)
         .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index)
         .filter((candidate) => !combinedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate)));
       // The chief route may start with several highly related muscles, but it
