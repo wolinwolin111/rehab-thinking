@@ -91,6 +91,7 @@ import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigge
 import { classifySnapshotFreshness, formatSnapshotAge, isTimeSensitiveOnset, type SnapshotFreshness } from "@/src/domain/rehab/followup/snapshot-freshness-core";
 import { functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
 import { chiefFunctionAssessmentIds, selectFunctionAssessmentPlan } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
+import { planContinuationAssessments } from "@/src/domain/rehab/assessment/continuation-planner-core";
 import { functionEvidenceDecisionTags, functionEvidenceFromRecord } from "@/src/domain/rehab/retest/function-evidence-core";
 import { pendingFunctionRetests, summarizeFunctionRetestObligations } from "@/src/domain/rehab/retest/retest-obligation-core";
 import { buildRetestLedgerFromTrials, retestObligationId, type RetestObligation, type RetestRecord } from "@/src/domain/rehab/retest/retest-ledger-core";
@@ -178,6 +179,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const [safetyStage, setSafetyStage] = useState<0 | 1 | 2>(0);
   const [boneRisk, setBoneRisk] = useState<Record<string, "yes" | "no" | "unsure">>({});
   const [imaging, setImaging] = useState<string[]>([]);
+  // 继续排查：用户显式接受的建议评估项。这是流程意图，不是临床事实，
+  // 不进快照；补查的答案会走既有评估修订链。
+  const [continuationRoundIds, setContinuationRoundIds] = useState<string[]>([]);
   const { state: assessmentFlow, actions: assessmentActions } = useAssessmentFlow<AssessmentRecord>();
   const assessmentIndex = assessmentFlow.cursor;
   const setAssessmentIndex = assessmentActions.setCursor;
@@ -1558,10 +1562,17 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       const guidedStrengths = selectedStrengths
         .filter((item) => !(region.id === "knee" && workflowProfile.operationTarget !== "other" && item.id === "strength:knee-quadriceps"))
         .filter((item) => !pairedStrengthIds.has(item.id.replace(/^strength:/, "")));
-      return rankAndLimit([...combinedMotionItems, ...special, ...guidedStrengths, ...functionItems], functionItems.map((item) => item.id));
+      // 继续排查补查项：用户显式接受的方向/力量项必须出现在清单里，
+      // 不能被首轮预算挤掉。
+      const guidedContinuationItems = [...motionItems, ...strengthItems].filter((item) => continuationRoundIds.includes(item.id));
+      return rankAndLimit(
+        [...combinedMotionItems, ...special, ...guidedStrengths, ...functionItems, ...guidedContinuationItems],
+        [...functionItems.map((item) => item.id), ...guidedContinuationItems.map((item) => item.id)],
+      );
     }
     // 先把所有与当前区域相关的候选交给规则库排序，再由角色预算截取。
     // 不能在排序前按原始数组位置截断，否则病例规则点名的鹅足、腓骨肌等检查会被通用项目挤掉。
+    const continuationAssessmentItems = [...motionItems, ...strengthItems].filter((item) => continuationRoundIds.includes(item.id));
     const order = forceProvoked || intake.symptoms.includes("力量不足") || includesAny(intake.symptomType, ["无力", "不稳"])
       ? [...interleaved, ...functionItems, ...specialItems]
       : includesAny(intake.symptomType, ["刺", "胀"])
@@ -1572,9 +1583,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const preservedAssessmentIds = [
       ...functionItems.map((item) => item.id),
       ...motionItems.filter((item) => item.id === "motion:knee-scar-mobility").map((item) => item.id),
+      ...continuationAssessmentItems.map((item) => item.id),
     ];
-    return rankAndLimit(order, preservedAssessmentIds);
-  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile, imaging, activeProvocationTypes]);
+    return rankAndLimit([...order, ...continuationAssessmentItems], preservedAssessmentIds);
+  }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile, imaging, activeProvocationTypes, continuationRoundIds]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”
   // 的异常和处理；用户界面合并为一张卡，避免同一膝盖连续翻四个几乎相同的页面。
@@ -3468,6 +3480,42 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const trainingStageClosed = workflowProjection.trainingStageClosed;
   const maxUnlocked: Step = workflowProjection.maxUnlocked;
   const snapshotRequiresReconfirmation = Boolean(snapshotFreshness?.requiresReconfirmation && !snapshotReconfirmed);
+  // 继续排查（owner 确认的决策链）：处理与复查都完成后，主诉仍未解决时
+  // 给出下一组值得检查的方向；只作为建议投影，不阻断进入训练。
+  const chiefFunctionIdForContinuation = region ? chiefFunctionAssessmentId(intake, region.id) : "";
+  const chiefFunctionSimple = chiefFunctionIdForContinuation ? assessmentResults[chiefFunctionIdForContinuation]?.simple : undefined;
+  const chiefStillSymptomatic = hasClearChiefAction(intake)
+    && !chiefImprovedDuringTreatment
+    && (chiefScoreComparable
+      ? (sessionEndScore ?? intake.baselineScore) >= intake.baselineScore
+      : chiefFunctionSimple !== "normal");
+  const continuationCandidatePool = useMemo(() => {
+    if (!region) return [];
+    // 功能评估项只能由 selectFunctionAssessmentPlan 产生（见评估清单注释），
+    // 继续排查建议池与评估清单保持同一口径，只含方向和力量项。
+    return [
+      ...region.directions.map((item) => ({ id: `motion:${item.id}`, title: item.title })),
+      ...region.strengths.map((item) => ({ id: `strength:${item.id}`, title: item.title })),
+    ];
+  }, [region]);
+  const continuationPlan = useMemo(
+    () => planContinuationAssessments({
+      pilotInput: pilotInputFromIntake(intake, confirmedIntakeMulti),
+      hasChiefAction: hasClearChiefAction(intake),
+      chiefStillSymptomatic,
+      treatmentComplete,
+      completedAssessmentIds: Object.keys(assessmentResults),
+      candidatePool: continuationCandidatePool,
+    }),
+    [intake, confirmedIntakeMulti, chiefStillSymptomatic, treatmentComplete, assessmentResults, continuationCandidatePool],
+  );
+  const continuationSuggestions = continuationPlan.suggested.filter((item) => !continuationRoundIds.includes(item.id));
+  function acceptContinuationSuggestions(ids: string[]) {
+    setContinuationRoundIds((current) => Array.from(new Set([...current, ...ids])));
+    setStep(2);
+    setToast("已加入继续检查的方向；补查结果会按新评估生成后续处理");
+    window.setTimeout(() => setToast(""), 2400);
+  }
 
   function toggleArray(value: string, current: string[], setter: (next: string[]) => void) {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
@@ -6480,6 +6528,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               treatmentQueueIsRefreshing,
               pendingKneeAssessmentCheck,
               treatmentComplete,
+              continuationSuggestions,
+              onAcceptContinuationSuggestions: acceptContinuationSuggestions,
               bilateralTrainingGateState,
               chiefFunctionLabels,
               hasChiefFunctionAction,

@@ -134,6 +134,9 @@ export type TreatmentRetestStageView = {
   treatmentQueueIsRefreshing: boolean;
   pendingKneeAssessmentCheck?: KneeAssessmentCheck;
   treatmentComplete: boolean;
+  /** 继续排查建议：处理与复查完成后主诉仍未解决时的下一组检查方向。 */
+  continuationSuggestions: Array<{ id: string; title: string }>;
+  onAcceptContinuationSuggestions: (ids: string[]) => void;
   bilateralTrainingGateState: BilateralTrainingGate;
   chiefFunctionLabels: string[];
   hasChiefFunctionAction: boolean;
@@ -205,6 +208,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     effectiveFocusLabels, effectiveControlLabels, recoveredRangeLabels, improvedRangeLabels,
     trackObservationLabels, noImmediateTreatmentResponse, intakeMissingFields, bilateralAssessmentComplete,
     treatmentQueueIsRefreshing, pendingKneeAssessmentCheck, treatmentComplete, bilateralTrainingGateState,
+    continuationSuggestions, onAcceptContinuationSuggestions: acceptContinuationSuggestions,
     chiefFunctionLabels, hasChiefFunctionAction,
   } = view;
   const {
@@ -689,6 +693,16 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           {(() => { const note = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: lastChiefScore, hasRangeImprovement: treatmentCoverage.hasRangeImprovement, noImmediateResponse: noImmediateTreatmentResponse }); return note ? <p className="rm-chief-change-note">{note}</p> : null; })()}
           <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
           {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><strong>仍有待处理</strong><span>{unresolvedImmediateLabels.join("、")}</span><small>可重新确认或先进入训练巩固。</small></section> : null}
+          {continuationSuggestions.length ? (
+            <section className="rm-stage-outcome-track">
+              <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
+              <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
+              <div className="rm-page-actions">
+                <button type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
+                <small>也可以先进入训练；这些方向以后仍然可以补查。</small>
+              </div>
+            </section>
+          ) : null}
           <div className="rm-page-actions three">
             <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
             <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认剩余问题"}</button>
