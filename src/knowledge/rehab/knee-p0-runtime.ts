@@ -56,6 +56,29 @@ type KneeP0UnitId =
   | "knee-proximal-fibula"
   | "knee-extension-control";
 
+const KNEE_P0_UNIT_IDS = new Set<KneeP0UnitId>([
+  "knee-extension-anterior-lateral",
+  "knee-posterior-calf-muscle",
+  "knee-extension-joint",
+  "knee-proximal-fibula",
+  "knee-extension-control",
+]);
+
+export function isKneeP0TreatmentUnitId(unitId: string): unitId is KneeP0UnitId {
+  return KNEE_P0_UNIT_IDS.has(unitId as KneeP0UnitId);
+}
+
+export function kneeP0UnitIdForTreatmentCandidate(candidateId: string): KneeP0UnitId | undefined {
+  if (isKneeP0TreatmentUnitId(candidateId)) return candidateId;
+  if (["tension-muscle:thigh-anterior", "tension-muscle:thigh-lateral"].includes(candidateId)) {
+    return "knee-extension-anterior-lateral";
+  }
+  if (["tension-muscle:thigh-posterior", "tension-muscle:calf-posterior"].includes(candidateId)) {
+    return "knee-posterior-calf-muscle";
+  }
+  return undefined;
+}
+
 /**
  * Attach only evidence that has actually been recorded.  Returning undefined
  * means the unit is not part of the released knee P0 route.

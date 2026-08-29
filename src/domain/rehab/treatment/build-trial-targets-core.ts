@@ -55,7 +55,7 @@ import {
   kneeTreatmentInstruction,
 } from "@/src/domain/rehab/shared/knee-workflow-adapter";
 import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
-import { kneeP0LineageFromAssessmentRecord } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
 import { ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { p0AssessmentEvidenceForDecision, p0JointCheckAllowed } from "@/src/knowledge/rehab/p0-assessment-access";
 
@@ -80,6 +80,10 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const assessmentTitle = ctx.assessmentTitle;
   const sharedTensionLocationsForMotion = ctx.sharedTensionLocationsForMotion;
   const chiefFunctionAssessmentId = ctx.chiefFunctionAssessmentId;
+    const kneeLineage = (candidateId: string) => {
+      const unitId = kneeP0UnitIdForTreatmentCandidate(candidateId);
+      return unitId ? kneeP0LineageFromAssessmentRecord(unitId, assessmentResults["motion:knee-extension"]) : undefined;
+    };
     // Several legacy pure-core harnesses concatenate this file without its
     // imported knowledge modules. Production always loads the runtime; the
     // guard keeps those harnesses on their legacy branch instead of throwing.
@@ -181,6 +185,16 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           knowledgeEvidence,
           retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
         }];
+      })
+      .flatMap((candidate) => {
+        const p0UnitId = region.id === "knee" ? kneeP0UnitIdForTreatmentCandidate(candidate.id) : undefined;
+        if (!p0UnitId) return [candidate];
+        const knowledgeEvidence = candidate.knowledgeEvidence ?? kneeLineage(candidate.id);
+        return knowledgeEvidence ? [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
+        }] : [];
       })
       .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => candidate.id !== "knee-proximal-fibula"
@@ -333,18 +347,20 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     // 同一区域只出现一次，并只携带该区域直接影响的异常活动平面。
     const directTensionCandidates: FullCandidateInput[] = selectedTensionLocations.flatMap((location) => {
       const normalizedRegion = normalizePilotMuscleRegion(location);
+      const candidateId = `tension-muscle:${normalizedRegion?.id ?? location}`;
       const relatedMotionIds = normalizedRegion
         ? abnormalMotionIds.filter((directionId) => primaryRetestMotionIdsForRegion(normalizedRegion.id).some((motionId) => samePhysicalAction(motionId, directionId)))
         : [];
       const knowledgeEvidence = region.id === "ankle-foot"
-        ? ankleLineage(`tension-muscle:${normalizedRegion?.id ?? location}`)
-        : undefined;
+        ? ankleLineage(candidateId)
+        : region.id === "knee" ? kneeLineage(candidateId) : undefined;
       if (region.id === "ankle-foot" && normalizedRegion?.id.startsWith("calf-") && !knowledgeEvidence) return [];
+      if (region.id === "knee" && kneeP0UnitIdForTreatmentCandidate(candidateId) && !knowledgeEvidence) return [];
       const exactMotionIds = knowledgeEvidence
         ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
         : relatedMotionIds;
       return exactMotionIds.length ? [{
-          id: `tension-muscle:${normalizedRegion?.id ?? location}`,
+          id: candidateId,
           title: `${location}轻柔松解`,
           type: "muscle",
           access: "self",
@@ -472,6 +488,8 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         "ankle-cuboid-mobility",
         "ankle-toe-flexion",
       ].includes(directionId);
+      const releasedP0Direction = ankleP0Direction
+        || region.id === "knee" && directionId === "knee-extension";
       const directionCandidates = allCandidates
         .filter((candidate) => (candidate.retestIds ?? []).some((candidateDirection) => samePhysicalAction(candidateDirection, directionId)) || candidate.tags.some((tag) => finding.tags.includes(tag)))
         .filter((candidate) => !ankleP0Direction || !ankleP0RuntimeLoaded || isReleasedAnkleCandidate(candidate.id))
@@ -501,7 +519,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       // Some older library entries describe a joint by structure tags only and
       // therefore do not match a direction-specific finding (notably ankle
       // eversion). The fallback is never available to self-guided users.
-      const jointCandidates = jointEvidence && canMobilizeJoint && !declaredJointCandidates.length
+      const jointCandidates = jointEvidence && canMobilizeJoint && !declaredJointCandidates.length && !releasedP0Direction
         ? [{
           id: `joint-mobilization:${directionId}`,
           title: `${professionalAssessmentTitle(`motion:${directionId}`, "受限方向")}关节松动`,
@@ -519,18 +537,20 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       if (selectedTension.length) {
         const explicitTensionCandidates: FullCandidateInput[] = selectedTension.flatMap((location) => {
           const normalizedRegion = normalizePilotMuscleRegion(location);
+          const candidateId = `tension-muscle:${normalizedRegion?.id ?? location}`;
           const relatedMotionIds = normalizedRegion
             ? abnormalMotionIds.filter((motionId) => primaryRetestMotionIdsForRegion(normalizedRegion.id).some((primaryMotionId) => samePhysicalAction(primaryMotionId, motionId)))
             : [directionId];
           const knowledgeEvidence = region.id === "ankle-foot"
-            ? ankleLineage(`tension-muscle:${normalizedRegion?.id ?? location}`)
-            : undefined;
+            ? ankleLineage(candidateId)
+            : region.id === "knee" ? kneeLineage(candidateId) : undefined;
           const exactMotionIds = knowledgeEvidence
             ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
             : relatedMotionIds;
           if (region.id === "ankle-foot" && normalizedRegion?.id.startsWith("calf-") && !knowledgeEvidence) return [];
+          if (region.id === "knee" && kneeP0UnitIdForTreatmentCandidate(candidateId) && !knowledgeEvidence) return [];
           return [({
-          id: `tension-muscle:${normalizedRegion?.id ?? location}`,
+          id: candidateId,
           title: `${location}轻柔松解`,
           type: "muscle",
           access: "self",
@@ -550,13 +570,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         const localMuscleCheck = ["thigh-local", "calf-local"].includes(region.id) && !isAcuteTrauma(intake);
         pool = [...(localMuscleCheck ? muscleCandidates : []), ...controlCandidates, ...jointCandidates];
       }
-      if (!pool.length && region.id === "ankle-foot" && [
-        "ankle-dorsiflexion",
-        "ankle-dorsiflexion-knee-flexed",
-        "ankle-eversion",
-        "ankle-cuboid-mobility",
-        "ankle-toe-flexion",
-      ].includes(directionId)) return null;
+      if (!pool.length && releasedP0Direction) return null;
       if (!pool.length) pool = [{
           id: `gentle-motion:${directionId}`,
           title: `${assessmentTitle(directionId, finding.title)}温和活动`,

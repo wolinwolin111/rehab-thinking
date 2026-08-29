@@ -84,6 +84,7 @@ import { candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-saf
 import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
 import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
+import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
 import { p0AssessmentAccess } from "@/src/knowledge/rehab/p0-assessment-access";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
 import { classifySnapshotFreshness, formatSnapshotAge, isTimeSensitiveOnset, type SnapshotFreshness } from "@/src/domain/rehab/followup/snapshot-freshness-core";
@@ -2944,15 +2945,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         .sort((a, b) => (localTrainingOrder.get(a.id) ?? 99) - (localTrainingOrder.get(b.id) ?? 99))
         .map((exercise) => adaptExerciseForCurrentStage(exercise, Math.min(exerciseStage, exercise.stage)));
     }
-    if (noChiefActionAndNoAssessmentProblem) {
-      const basicIds: Partial<Record<FullRegionId, string[]>> = {
-        knee: ["knee-heel-slide-quad-set", "knee-bridge"],
-        "ankle-foot": ["ankle-four-way-motion"],
-      };
-      return region.exercises
-        .filter((exercise) => basicIds[region.id]?.includes(exercise.id))
-        .map((exercise) => adaptExerciseForCurrentStage(exercise, 1));
-    }
+    if (noChiefActionAndNoAssessmentProblem) return [];
     const findingTags = new Set(findings.flatMap((finding) => finding.tags));
     const ankleP0EligibleControls = region.id === "ankle-foot"
       ? ankleP0EligibleControlExerciseIds(ankleP0RecordsAfterRangeOutcomes(assessmentResults, trialRecords.map((trial) => trial.rangeOutcomes)))
@@ -2970,6 +2963,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const activeKneeDecision = followupMode ? followupKneeDecision : kneeDecision;
     const kneeCoreTrainingIds = new Set(kneeExerciseIdsForDecision(activeKneeDecision));
     const kneeCoreRelated = region.id === "knee" ? region.exercises.filter((exercise) => kneeCoreTrainingIds.has(exercise.id)) : [];
+    const kneeSharedControlAllowed = region.id !== "knee"
+      || Boolean(kneeP0LineageFromAssessmentRecord("knee-extension-control", assessmentResults["motion:knee-extension"]))
+      || Boolean(activeKneeDecision?.treatmentUnits.some((unit) => ["knee-extension-control", "knee-flexion-control", "knee-quadriceps-strength"].includes(unit.id)));
     const ankleDirectionExerciseIds = new Set(findings
       .filter((finding) => finding.id.startsWith("motion:ankle-"))
       .map((finding) => `${motionIdFromFinding(finding)}-control`));
@@ -3034,6 +3030,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ]);
     const orderedExercises = [...kneeCoreRelated, ...pilotRelated, ...directionSpecific, ...foundationPatterns, ...recordPatterns, ...effectiveRelated, ...relevant, ...current, ...foundation, ...region.exercises]
       .filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index)
+      .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .filter((exercise) => !assessmentRequiredExerciseIds.has(exercise.id) || exercise.tags.some((tag) => weakStrengthTags.has(tag)))
       .sort((a, b) => exercisePriority(b) - exercisePriority(a) || a.stage - b.stage);
@@ -3060,6 +3057,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ]
       .filter((exercise): exercise is FullExercise => Boolean(exercise))
       .filter((exercise, index, list) => list.findIndex((item) => item.id === exercise.id) === index)
+      .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .slice(0, targetCount);
     return sessionSelected.map((exercise) => {
@@ -3122,14 +3120,21 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         const currentUnit = region.id === "knee" ? followupKneeDecision?.currentTreatment : undefined;
         const mappedIds = kneeLegacyCandidateIdsForUnit(currentUnit?.id);
         if (!currentUnit || !mappedIds.includes(candidate.id)) return candidate;
+        const knowledgeEvidence = kneeP0LineageFromAssessmentRecord(
+          currentUnit.id,
+          assessmentResults["motion:knee-extension"],
+        );
         return {
           ...candidate,
           id: currentUnit.id,
           tags: [...candidate.tags, `knee-core:${currentUnit.id}`, `legacy-candidate:${candidate.id}`],
-          retestIds: Array.from(new Set([
-            ...(candidate.retestIds ?? []),
-            ...currentUnit.relatedActionIds.filter((actionId) => ["knee-extension", "knee-flexion"].includes(actionId)),
-          ])),
+          retestIds: knowledgeEvidence
+            ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+            : Array.from(new Set([
+                ...(candidate.retestIds ?? []),
+                ...currentUnit.relatedActionIds.filter((actionId) => ["knee-extension", "knee-flexion"].includes(actionId)),
+              ])),
+          knowledgeEvidence,
           siteLabel: currentUnit.site,
           targetLabel: "",
           actionLabel: currentUnit.action,
@@ -3148,6 +3153,19 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         return motionIds.length
           ? { ...candidate, retestIds: Array.from(new Set([...(candidate.retestIds ?? []), ...motionIds])) }
           : candidate;
+      })
+      .flatMap((candidate) => {
+        const p0UnitId = region.id === "knee" ? kneeP0UnitIdForTreatmentCandidate(candidate.id) : undefined;
+        if (!p0UnitId) return [candidate];
+        const knowledgeEvidence = candidate.knowledgeEvidence ?? kneeP0LineageFromAssessmentRecord(
+          p0UnitId,
+          assessmentResults["motion:knee-extension"],
+        );
+        return knowledgeEvidence ? [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
+        }] : [];
       })
       .flatMap((candidate) => {
         if (region.id !== "ankle-foot" || !isAnkleP0CandidateId(candidate.id)) return [candidate];
