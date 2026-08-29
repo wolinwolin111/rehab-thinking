@@ -218,8 +218,6 @@ const KNEE_PAGE_ASSESSMENTS: Record<string, AssessmentRecord> = {
   "function:knee-single-leg": NORMAL_FUNCTION,
   "function:knee-single-leg-squat": NORMAL_FUNCTION,
   "function:knee-hop-landing": NORMAL_FUNCTION,
-  "special:knee-patella-tenderness-self": { simple: "normal" },
-  "special:knee-joint-line-tenderness": { simple: "normal" },
   [SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked: true, tensionLocations: ["thigh-anterior"] },
 };
 

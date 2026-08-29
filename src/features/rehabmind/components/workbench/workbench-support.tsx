@@ -2231,7 +2231,11 @@ export function assessmentTitle(id: string, title: string) {
     "ankle-weight-bearing": "不舒服这边承重和走路",
     "ankle-anterior-drawer": "脚踝外侧稳定性检查（专业人员操作）",
     "ankle-thompson": "跟腱连续性检查（小腿挤压）",
-    "ankle-windlass": "大脚趾抬起时的足底反应",
+    "ankle-syndesmosis-screen": "下胫腓联合损伤筛查（专业人员操作）",
+    "knee-acute-fracture-screen": "急性膝外伤骨折风险判断（专业人员操作）",
+    "knee-acl-stability": "前交叉韧带稳定性检查（专业人员操作）",
+    "knee-pcl-stability": "后交叉韧带稳定性检查（专业人员操作）",
+    "knee-collateral-stability": "内外侧副韧带稳定性检查（专业人员操作）",
   };
   return FRIENDLY_ASSESSMENT_COPY[id]?.title ?? friendly[id] ?? title;
 }

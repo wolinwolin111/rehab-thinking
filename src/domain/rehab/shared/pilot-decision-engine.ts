@@ -362,11 +362,7 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     ];
     const primaryExplicitFunction = explicitFunctions[0];
     const secondaryExplicitFunctions = explicitFunctions.slice(1);
-    const localKneeCheck = /膝前|髌骨|髌骨下|髌腱/.test(locationSource)
-      ? ["special:knee-patella-tenderness-self"].find((id) => availableIds.includes(id))
-      : /膝内侧|膝外侧|关节线/.test(locationSource)
-        ? ["special:knee-joint-line-tenderness"].find((id) => availableIds.includes(id))
-        : undefined;
+    // 髌骨/关节线轻按定位属于常规专业触诊，不再作为特殊检查进入评估预算。
     const localKneeStrength = /膝内侧|鹅足|内侧关节线/.test(locationSource)
       ? ["strength:knee-adductor-pes"].find((id) => availableIds.includes(id))
       : /膝外侧|外侧关节线/.test(locationSource)
@@ -383,12 +379,11 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     return [
       ...(primaryExplicitFunction ? [primaryExplicitFunction] : []),
       ...kneeMotionIds,
-      ...(localKneeCheck ? [localKneeCheck] : []),
       ...secondaryExplicitFunctions,
       ...(localKneeStrength ? [localKneeStrength] : []),
       ...(hamstringStrength ? [hamstringStrength] : []),
-      ...rankedIds.filter((id) => !kneeMotionIds.includes(id) && !explicitFunctions.includes(id) && id !== localKneeCheck && id !== localKneeStrength && id !== hamstringStrength),
-    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], kneeMotionIds.length + explicitFunctions.length + Number(Boolean(localKneeCheck)) + Number(Boolean(localKneeStrength)) + Number(Boolean(hamstringStrength))));
+      ...rankedIds.filter((id) => !kneeMotionIds.includes(id) && !explicitFunctions.includes(id) && id !== localKneeStrength && id !== hamstringStrength),
+    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], kneeMotionIds.length + explicitFunctions.length + Number(Boolean(localKneeStrength)) + Number(Boolean(hamstringStrength))));
   }
 
   return rankedIds.slice(0, PILOT_ASSESSMENT_BUDGET[role]);

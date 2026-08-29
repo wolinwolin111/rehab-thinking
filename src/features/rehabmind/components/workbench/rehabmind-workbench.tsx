@@ -1432,12 +1432,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const canUsePalpation = workflowProfile.palpationMode !== "none";
     const structureConfirmedByImaging = imaging.some((entry) => ["有骨折或骨裂异常", "韧带损伤或撕裂", "肌腱损伤或撕裂"].includes(entry));
     const specialCategoryFor = (id: string): AssessmentItem["specialCategory"] => {
-      if (/bone|tendon|achilles|risk|continuity|fracture/i.test(id)) return "safety";
+      if (/bone|tendon|achilles|continuity|fracture|thompson/i.test(id)) return "safety";
       if (/palp|joint-line|tender|patella-pressure/i.test(id)) return "localization";
       if (/assist|response|support|adjust|fibula/i.test(id)) return "response";
       return "professional-special";
     };
-    const structureOnlySpecial = (id: string) => /bone|tendon|achilles|continuity|fracture/i.test(id);
+    const structureOnlySpecial = (id: string) => /bone|tendon|achilles|continuity|fracture|thompson/i.test(id);
     const specialItems: AssessmentItem[] = region.specialTests
       .filter((item) => item.id !== "ankle-bone-weight-screen" && allowedSpecialAccess.includes(item.access) && specialIsRelevant(item.trigger, intake))
       .filter((item) => !/palpation/i.test(item.id) || canUsePalpation)
@@ -3422,6 +3422,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     .map((id) => assessments.find((item) => item.id === id))
     .filter(Boolean) as AssessmentItem[];
   const hasSpecialPositive = specialPositiveFindings.length > 0;
+  // 安全分流类（骨折筛查、跟腱连续性）阳性必然转介；稳定性、定位和反应类
+  // 阳性只保留排查线索，不再自动阻断普通处理流程。
+  const specialSafetyReferral = specialPositiveFindings.some((item) => item.specialCategory === "safety");
   const severeAssessmentRecords = assessments.filter((item) => {
     const result = assessmentResults[item.id];
     if (!result) return false;
@@ -3438,7 +3441,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const treatmentQueueIsRefreshing = pendingTrialAdvance !== null;
   const pendingKneeAssessmentCheck = region?.id === "knee" ? kneeDecision?.assessmentChecks[0] : undefined;
   // 膝核心仍要求补查时，空处理队列不能被解释为“本次已结束”。
-  const assessmentNeedsReferral = highIrritabilityReferral || assessmentNeuralReferral || sharpSpecialReferral;
+  const assessmentNeedsReferral = highIrritabilityReferral || assessmentNeuralReferral || sharpSpecialReferral || specialSafetyReferral;
   const workflowProjection = workflowController.project({
     intakeComplete,
     safetyComplete: canContinueSafety,
