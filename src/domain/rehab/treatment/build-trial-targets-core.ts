@@ -56,6 +56,7 @@ import {
 } from "@/src/domain/rehab/shared/knee-workflow-adapter";
 import { type DecisionContext, type FindingInput, type FullCandidateInput, type TrialTargetOutput } from "@/src/domain/rehab/treatment/trial-target-types";
 import { kneeP0LineageFromAssessmentRecord } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 
 export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const { region, findings, assessmentResults, intake, trialRecords, tissuePathway, kneeDecision, localLimbDecision, matchedPilotRelations, pilotRelationsByAssessmentId, pilotTreatmentUnits, matchedCandidateGroups, canAssessPassive, canMobilizeJoint, swellingGuidance, assessments, workflowProfile } = ctx;
@@ -65,12 +66,25 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
   const assessmentTitle = ctx.assessmentTitle;
   const sharedTensionLocationsForMotion = ctx.sharedTensionLocationsForMotion;
   const chiefFunctionAssessmentId = ctx.chiefFunctionAssessmentId;
+    // Several legacy pure-core harnesses concatenate this file without its
+    // imported knowledge modules. Production always loads the runtime; the
+    // guard keeps those harnesses on their legacy branch instead of throwing.
+    const ankleP0RuntimeLoaded = typeof ankleP0RecordsAfterRangeOutcomes === "function"
+      && typeof ankleP0LineageForTreatment === "function"
+      && typeof isAnkleP0CandidateId === "function";
+    const isReleasedAnkleCandidate = (candidateId: string) => ankleP0RuntimeLoaded && isAnkleP0CandidateId(candidateId);
+    const ankleLineage = (candidateId: string) => ankleP0RuntimeLoaded
+      ? ankleP0LineageForTreatment(candidateId, ankleP0AssessmentRecords)
+      : undefined;
     if (!region || !findings.length) return [];
     const conservativeSharpPath = intake.stabbingPalpation === "sharp" || findings.some((finding) => finding.tags.includes("assessment-sharp"));
     const abnormalPilotMotionIds = findings
       .filter((finding) => finding.priority === "support" && finding.id.startsWith("motion:"))
       .map(motionIdFromFinding)
       .filter((directionId) => Boolean(pilotMotionKnowledge(directionId)));
+    const ankleP0AssessmentRecords = region.id === "ankle-foot" && ankleP0RuntimeLoaded
+      ? ankleP0RecordsAfterRangeOutcomes(assessmentResults, trialRecords.map((trial) => trial.rangeOutcomes))
+      : assessmentResults;
     const sourceCandidatePool = [...(region.mobilityInterventions ?? []), ...region.candidateGroups.flatMap((group) => group.candidates)];
     const completedMuscleTrialDirections = new Set(trialRecords.flatMap((record) => {
       if (record.reviewOnly || record.retestOnly) return [];
@@ -143,6 +157,16 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         return motionIds.length
           ? { ...candidate, retestIds: Array.from(new Set([...(candidate.retestIds ?? []), ...motionIds])) }
           : candidate;
+      })
+      .flatMap((candidate) => {
+        if (region.id !== "ankle-foot" || !isReleasedAnkleCandidate(candidate.id)) return [candidate];
+        const knowledgeEvidence = ankleLineage(candidate.id);
+        if (!knowledgeEvidence) return [];
+        return [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
+        }];
       })
       .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => !pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)
@@ -295,7 +319,14 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const relatedMotionIds = normalizedRegion
         ? abnormalMotionIds.filter((directionId) => primaryRetestMotionIdsForRegion(normalizedRegion.id).some((motionId) => samePhysicalAction(motionId, directionId)))
         : [];
-      return relatedMotionIds.length ? [{
+      const knowledgeEvidence = region.id === "ankle-foot"
+        ? ankleLineage(`tension-muscle:${normalizedRegion?.id ?? location}`)
+        : undefined;
+      if (region.id === "ankle-foot" && normalizedRegion?.id.startsWith("calf-") && !knowledgeEvidence) return [];
+      const exactMotionIds = knowledgeEvidence
+        ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+        : relatedMotionIds;
+      return exactMotionIds.length ? [{
           id: `tension-muscle:${normalizedRegion?.id ?? location}`,
           title: `${location}轻柔松解`,
           type: "muscle",
@@ -303,8 +334,9 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           do: `按图示在${location}两侧轻按一次，以按压时更酸或更胀的一侧为重点，轻柔处理30～60秒。`,
           observe: "只做轻柔按压；出现明显刺痛、麻或电感就停止。",
           retest: "处理后只比较该区域直接影响的活动方向和原来的不适动作。",
-          tags: [...new Set(relatedMotionIds.flatMap((directionId) => abnormalMotionFindings.find((finding) => samePhysicalAction(motionIdFromFinding(finding), directionId))?.tags ?? [])), `tension:${location}`],
-          retestIds: relatedMotionIds,
+          tags: [...new Set(exactMotionIds.flatMap((directionId) => abnormalMotionFindings.find((finding) => samePhysicalAction(motionIdFromFinding(finding), directionId))?.tags ?? [])), `tension:${location}`],
+          retestIds: exactMotionIds,
+          knowledgeEvidence,
           siteLabel: location,
           targetLabel: `${location}紧张区域`,
           actionLabel: "轻柔肌肉松解",
@@ -320,6 +352,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           : ["muscle", "control", "joint", "neural", "swelling"];
     const sourceBackedCandidates = allCandidates.filter((candidate) => pilotTreatmentUnits.some((unit) => pilotTreatmentMatchesCandidate(unit.id, candidate.id)));
     const orderedChiefCandidates = [...directTensionCandidates, ...sourceBackedCandidates, ...matchedCandidateGroups.flatMap((group) => group.candidates), ...allCandidates.filter((candidate) => candidate.tags.some((tag) => supportTags.has(tag)))]
+      .filter((candidate) => region.id !== "ankle-foot" || !isReleasedAnkleCandidate(candidate.id) || allCandidates.some((eligible) => eligible.id === candidate.id))
       .filter((candidate) => region.id !== "knee" || kneeCandidateAllowedInTreatmentQueue(candidate.id, kneeDecision))
       .filter((candidate) => candidateIsAvailable(candidate, candidateAccess))
       .filter((candidate) => canMobilizeJoint || (candidate.type !== "joint" && candidate.type !== "neural"))
@@ -415,8 +448,16 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const directionId = motionIdFromFinding(finding);
       const selectedTension = sharedTensionLocationsForMotion(finding.id, record ?? {}, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]).filter((location) => location !== "没有明显差别");
       const patellaDirection = isPatellaDirectionId(`motion:${directionId}`);
+      const ankleP0Direction = region.id === "ankle-foot" && [
+        "ankle-dorsiflexion",
+        "ankle-dorsiflexion-knee-flexed",
+        "ankle-eversion",
+        "ankle-cuboid-mobility",
+        "ankle-toe-flexion",
+      ].includes(directionId);
       const directionCandidates = allCandidates
         .filter((candidate) => (candidate.retestIds ?? []).some((candidateDirection) => samePhysicalAction(candidateDirection, directionId)) || candidate.tags.some((tag) => finding.tags.includes(tag)))
+        .filter((candidate) => !ankleP0Direction || !ankleP0RuntimeLoaded || isReleasedAnkleCandidate(candidate.id))
         // 髌骨方向只使用明确的髌骨处理候选；不能把“膝关节伸直方向松动”
         // 这种泛化候选因为带有 patella 标签，误合并成髌骨处理单元。
         .filter((candidate) => !patellaDirection || isPatellaSpecificCandidate(candidate));
@@ -459,12 +500,19 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       const controlCandidates = directionCandidates.filter((candidate) => candidate.type === "control");
       let pool: FullCandidateInput[] = [];
       if (selectedTension.length) {
-        const explicitTensionCandidates: FullCandidateInput[] = selectedTension.map((location) => {
+        const explicitTensionCandidates: FullCandidateInput[] = selectedTension.flatMap((location) => {
           const normalizedRegion = normalizePilotMuscleRegion(location);
           const relatedMotionIds = normalizedRegion
             ? abnormalMotionIds.filter((motionId) => primaryRetestMotionIdsForRegion(normalizedRegion.id).some((primaryMotionId) => samePhysicalAction(primaryMotionId, motionId)))
             : [directionId];
-          return ({
+          const knowledgeEvidence = region.id === "ankle-foot"
+            ? ankleLineage(`tension-muscle:${normalizedRegion?.id ?? location}`)
+            : undefined;
+          const exactMotionIds = knowledgeEvidence
+            ? knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+            : relatedMotionIds;
+          if (region.id === "ankle-foot" && normalizedRegion?.id.startsWith("calf-") && !knowledgeEvidence) return [];
+          return [({
           id: `tension-muscle:${normalizedRegion?.id ?? location}`,
           title: `${location}轻柔松解`,
           type: "muscle",
@@ -473,17 +521,25 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           observe: "只做轻柔按压；出现明显刺痛、麻或电感就停止。",
           retest: `重新比较${assessmentTitle(directionId, finding.title)}的活动范围和不适。`,
           tags: [...finding.tags, `tension:${location}`],
-          retestIds: relatedMotionIds.length ? relatedMotionIds : [directionId],
+          retestIds: exactMotionIds.length ? exactMotionIds : [directionId],
+          knowledgeEvidence,
           siteLabel: location,
           targetLabel: `${location}紧张区域`,
           actionLabel: "轻柔肌肉松解",
-        }); });
+        })]; });
         pool = [...explicitTensionCandidates, ...muscleCandidates, ...jointCandidates, ...controlCandidates];
       }
       else {
         const localMuscleCheck = ["thigh-local", "calf-local"].includes(region.id) && !isAcuteTrauma(intake);
         pool = [...(localMuscleCheck ? muscleCandidates : []), ...controlCandidates, ...jointCandidates];
       }
+      if (!pool.length && region.id === "ankle-foot" && [
+        "ankle-dorsiflexion",
+        "ankle-dorsiflexion-knee-flexed",
+        "ankle-eversion",
+        "ankle-cuboid-mobility",
+        "ankle-toe-flexion",
+      ].includes(directionId)) return null;
       if (!pool.length) pool = [{
           id: `gentle-motion:${directionId}`,
           title: `${assessmentTitle(directionId, finding.title)}温和活动`,
@@ -508,7 +564,9 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         ...candidate,
         // 该处理候选既然是为当前异常方向生成，就必须把当前方向保留
         // 到复测计划中。候选知识条目遗漏 retestIds 时也不能丢掉它。
-        retestIds: Array.from(new Set([...(candidate.retestIds ?? []), directionId])),
+        retestIds: candidate.knowledgeEvidence
+          ? candidate.knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, ""))
+          : Array.from(new Set([...(candidate.retestIds ?? []), directionId])),
       }));
       const selectedRetestIds = new Set(selected.flatMap((candidate) => candidate.retestIds ?? []));
       const retestFindings = motionFindings.filter((motionFinding) => [...selectedRetestIds].some((id) => samePhysicalAction(id, motionIdFromFinding(motionFinding))));

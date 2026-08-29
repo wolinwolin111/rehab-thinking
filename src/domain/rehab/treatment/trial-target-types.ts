@@ -45,6 +45,7 @@ export type AssessmentRecordInput = {
   tensionLocations?: string[];
   tensionChecked?: boolean;
   symptomScore?: number;
+  pairedStrength?: string;
 };
 
 export type TrialRecordInput = {

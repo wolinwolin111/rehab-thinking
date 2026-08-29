@@ -167,6 +167,8 @@ export const PILOT_MOTION_KNOWLEDGE: Record<PilotMotionId, PilotMotionKnowledge>
 
 const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   ...Object.fromEntries(Object.values(PILOT_MOTION_KNOWLEDGE).map((motion) => [motion.id, motion.professionalTitle])),
+  "ankle-dorsiflexion-knee-flexed": "屈膝位踝关节背屈（AROM/PROM）",
+  "ankle-cuboid-mobility": "骰骨与足外侧柱被动活动检查",
   "knee-patella-superior": "髌骨向上滑动",
   "knee-patella-inferior": "髌骨向下滑动",
   "knee-patella-medial": "髌骨向内滑动",
@@ -266,11 +268,11 @@ export function primaryRetestMotionIdsForRegion(regionId: PilotMuscleRegionId): 
     "thigh-lateral": ["knee-extension", "knee-flexion"],
     "thigh-medial": ["knee-extension", "knee-flexion"],
     "thigh-posterior": ["knee-extension", "knee-flexion"],
-    "calf-anterior": ["ankle-dorsiflexion", "ankle-plantarflexion"],
-    "calf-posterior": ["knee-extension", "ankle-dorsiflexion", "ankle-plantarflexion"],
-    "calf-lateral": ["ankle-inversion", "ankle-eversion"],
-    "calf-medial": ["ankle-inversion", "ankle-eversion"],
-    plantar: ["ankle-inversion", "ankle-eversion"],
+    "calf-anterior": ["ankle-dorsiflexion"],
+    "calf-posterior": ["knee-extension", "ankle-dorsiflexion"],
+    "calf-lateral": ["ankle-eversion"],
+    "calf-medial": ["ankle-inversion"],
+    plantar: [],
   };
   return map[regionId];
 }

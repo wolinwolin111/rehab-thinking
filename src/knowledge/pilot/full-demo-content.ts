@@ -980,11 +980,13 @@ const ankleFoot: FullRegion = {
   locations: ["外踝 / 前外侧", "内踝 / 足弓内侧", "踝前方", "足背", "足底 / 足跟", "跟腱 / 踝后方", "足趾根部"],
   directions: [
     direction("ankle-dorsiflexion", "踝背屈", "坐姿脚跟着地，把脚背向小腿靠近；能稳定负重后再做膝碰墙比较。", "主动角度、踝前卡痛、小腿后侧牵扯和两侧膝碰墙距离。", ["dorsiflexion", "ankle-rom"]),
+    direction("ankle-dorsiflexion-knee-flexed", "屈膝位踝背屈", "坐姿屈膝、脚跟着地，把脚背向小腿靠近；保持脚跟和膝盖方向不变。", "与伸膝位分别记录主动、被动范围，比较屈膝后是否仍受限。", ["dorsiflexion", "ankle-rom", "knee-flexed"]),
     direction("ankle-plantarflexion", "踝跖屈", "坐稳并放松小腿，把脚背缓慢向下压；先做健侧，再做不舒服的一侧。", "跖屈角度、踝前后症状和脚趾是否过度卷曲。", ["plantarflexion", "ankle-rom"]),
     direction("ankle-inversion", "足踝内翻", "坐姿小腿固定，把脚掌缓慢转向内侧，不动膝盖。", "两侧角度、外踝牵扯或内侧疼痛，以及小腿是否跟着转。", ["inversion", "ankle-rom"]),
     direction("ankle-eversion", "足踝外翻", "坐姿小腿固定，把脚掌缓慢转向外侧，不动膝盖。", "两侧角度、外侧肌肉发力、内外踝疼痛及小腿代偿。", ["eversion", "ankle-rom"]),
     direction("ankle-great-toe-extension", "第一跖趾背伸", "脚掌放松，用手轻抬大脚趾；先做健侧，再比较患侧。", "大脚趾角度、足底牵扯和足弓是否随之变化。", ["great-toe", "toe-extension"]),
     direction("ankle-toe-flexion", "足趾屈曲与伸展", "脚跟着地，脚趾全部抬起再放下，然后轻轻屈曲，不抓地用力。", "足趾独立控制、疼痛和是否只有大脚趾或小趾侧受限。", ["toe-control", "foot"]),
+    { ...direction("ankle-cuboid-mobility", "骰骨与足外侧柱活动", "由专业人员固定足跟，轻柔比较两侧骰骨及足外侧柱活动。", "只记录足外侧柱活动是否小于对侧，以及是否复现原来的外侧症状。", ["cuboid", "lateral-column", "joint-mobility"], "急性肿胀、骨性风险或明显不稳时不检查。"), access: "therapist", testMode: "passive" },
   ],
   strengths: [
     strength("ankle-dorsiflexor", "勾脚力量", "坐着主动勾脚，用另一只脚或手在脚背轻轻向下压，保持5秒。", "和健侧比较力量，留意脚趾有没有使劲代替脚踝发力。", ["tibialis-anterior", "dorsiflexion"]),
@@ -1118,6 +1120,17 @@ const ankleFoot: FullRegion = {
       ["control", "peroneal", "eversion"],
       { retestIds: ["ankle-eversion"], siteLabel: "踝足外侧", targetLabel: "腓骨肌群", actionLabel: "外翻主动控制训练" },
     ),
+    candidate(
+      "ankle-p0-cuboid-mobility",
+      "骰骨与足外侧柱活动",
+      "joint",
+      "therapist",
+      "只有骰骨与足外侧柱活动检查明确受限时，才进行对应的低刺激处理。",
+      "急性肿胀、骨性风险或明显不稳时停止；不能用外踝位置或外侧不适代替检查结果。",
+      "只复查骰骨与足外侧柱活动，不把背屈、外翻或足趾结果合并代替。",
+      ["cuboid", "lateral-column", "joint-mobility"],
+      { retestIds: ["ankle-cuboid-mobility"], siteLabel: "足外侧柱", targetLabel: "骰骨", actionLabel: "骰骨与足外侧柱低刺激处理" },
+    ),
   ],
   candidateGroups: [
     {
@@ -1198,6 +1211,7 @@ const ankleFoot: FullRegion = {
     exercise("ankle-plantarflexion-control", "跖屈控制（下压脚背）", 2, "3组", "每组10～15个", "仰卧或半躺，脚掌轻推弹力带做向下压脚背；能稳定完成后再进阶坐姿提踵。", "动作来自脚踝，脚趾不过度抓地。", "去掉弹力带，只做主动下压。", "进阶到坐姿、扶墙双脚提踵，再到单脚提踵。", ["calf", "plantarflexion", "heel-raise", "ankle-calf"]),
     exercise("ankle-inversion-control", "内翻与足弓控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做小幅脚掌向内转；能稳定完成后再加入轻弹力带。", "小腿不跟着旋转，内踝后方不过度刺痛。", "去掉弹力带，只做小幅主动内翻。", "进阶到坐位弹力带，再在站立中保持足弓。", ["tibialis-posterior", "tibialis-anterior", "inversion", "arch", "ankle-invertor"]),
     exercise("ankle-eversion-control", "外翻控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做脚掌向外转；能稳定完成后再加入轻弹力带。", "动作来自脚踝，不用膝盖或整条小腿向外转。", "去掉弹力带，只做小幅主动外翻。", "进阶到坐位弹力带，再进入单腿站和侧向控制。", ["peroneal", "eversion", "ankle-evertor"]),
+    exercise("ankle-toe-control", "足趾主动控制", 2, "3组", "每组8～10个", "坐稳、脚跟着地，分别抬起和放下脚趾；只练检查中仍然控制不足的动作。", "脚趾分别活动，脚踝和膝盖保持稳定，不用抓地代偿。", "减小幅度，每组5个。", "能够稳定完成后再增加保持时间。", ["toe-control", "toe-extensor", "foot"]),
     exercise("ankle-band-heelraise", "四方向抗阻与双脚提踵", 2, "3组", "每项每组12个", "按力量缺口选1～2个弹力带方向，再做双脚提踵。", "动作来自踝足，膝和脚趾不过度代偿。", "改为等长或扶墙小幅提踵。", "单脚提踵或加轻负重。", ["ankle-strength", "calf", "peroneal"]),
     exercise("ankle-gait-weightshift", "重心转移与步态滚动", 3, "3组", "每组10次重心转移 + 10米步行", "从双脚前后重心转移，练到脚跟着地—胫骨前移—前足蹬地。", "步幅自然，骨盆、髋、膝、踝连续协同。", "扶桌原地转移。", "增加连续步数或不同速度。", ["gait", "weight-shift", "hip-knee-ankle"]),
     exercise("ankle-single-leg-step", "单腿站、提踵与台阶", 4, "3组", "每项每侧8个", "先单腿站，再单脚提踵和低台阶上下。", "足弓、踝、膝和骨盆稳定，台阶下降可控。", "扶墙、双脚提踵或降低台阶。", "增加高度、连续次数或轻负重。", ["single-leg", "heel-raise", "step"]),

@@ -2652,8 +2652,16 @@ export function canonicalRetestAction(label: string) {
 
 export function directionIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
   const source = chiefActionSource(intake);
+  if (regionId === "ankle-foot" && itemId === "ankle-cuboid-mobility") {
+    return includesAny(`${source} ${intake.location} ${intake.description}`, ["外踝", "踝外", "足外侧", "前外侧", "骰骨"]);
+  }
   if (regionId === "ankle-foot" && ["ankle-great-toe-extension", "ankle-toe-flexion"].includes(itemId)) {
     const explicitFootSource = `${intake.description} ${intake.location} ${intake.reproduction}`;
+    const profile = intake.productMode
+      ? normalizeWorkflowProfile({ productMode: intake.productMode, operationTarget: intake.operationTarget, capabilities: intake.capabilities })
+      : workflowProfileFromLegacy(intake.userRole, intake.examSetup);
+    if (itemId === "ankle-toe-flexion" && profile.operationTarget === "other"
+      && includesAny(`${source} ${explicitFootSource}`, ["外踝", "踝外", "足外侧", "前外侧", "骰骨"])) return true;
     const deniesToeProblem = /(?:脚趾|足趾|大脚趾)[^，。；]{0,6}(?:没有|没|不)(?:受伤|疼|痛|不适|问题)|(?:没有|没|不)[^，。；]{0,6}(?:脚趾|足趾|大脚趾)(?:受伤|疼|痛|不适|有问题)?/.test(explicitFootSource);
     const toeOnlyMention = includesAny(explicitFootSource, ["脚趾", "足趾", "大脚趾"]);
     if (toeOnlyMention && deniesToeProblem && !includesAny(explicitFootSource, ["前脚掌", "足底", "脚底", "足跟", "脚跟", "足弓"])) return false;

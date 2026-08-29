@@ -83,6 +83,7 @@ import { type DecisionContext } from "@/src/domain/rehab/treatment/trial-target-
 import { candidateIsAvailable } from "@/src/domain/rehab/treatment/candidate-safety-core";
 import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
+import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
 import { classifySnapshotFreshness, formatSnapshotAge, isTimeSensitiveOnset, type SnapshotFreshness } from "@/src/domain/rehab/followup/snapshot-freshness-core";
 import { functionControlValue, functionDiscomfortValue } from "@/src/domain/rehab/assessment/function-assessment-core";
@@ -2934,6 +2935,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         .map((exercise) => adaptExerciseForCurrentStage(exercise, 1));
     }
     const findingTags = new Set(findings.flatMap((finding) => finding.tags));
+    const ankleP0EligibleControls = region.id === "ankle-foot"
+      ? ankleP0EligibleControlExerciseIds(ankleP0RecordsAfterRangeOutcomes(assessmentResults, trialRecords.map((trial) => trial.rangeOutcomes)))
+      : new Set<string>();
     const weakStrengthFindings = findings.filter((finding) => finding.id.startsWith("strength:") && (
       assessmentResults[finding.id]?.simple === "weak"
       || finding.title.includes("发力偏弱")
@@ -3011,6 +3015,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ]);
     const orderedExercises = [...kneeCoreRelated, ...pilotRelated, ...directionSpecific, ...foundationPatterns, ...recordPatterns, ...effectiveRelated, ...relevant, ...current, ...foundation, ...region.exercises]
       .filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index)
+      .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .filter((exercise) => !assessmentRequiredExerciseIds.has(exercise.id) || exercise.tags.some((tag) => weakStrengthTags.has(tag)))
       .sort((a, b) => exercisePriority(b) - exercisePriority(a) || a.stage - b.stage);
     const selected = hasWeakStrength && exerciseStage <= 2
@@ -3036,6 +3041,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ]
       .filter((exercise): exercise is FullExercise => Boolean(exercise))
       .filter((exercise, index, list) => list.findIndex((item) => item.id === exercise.id) === index)
+      .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .slice(0, targetCount);
     return sessionSelected.map((exercise) => {
       const adapted = adaptExerciseForCurrentStage(exercise, exerciseStage);
@@ -3043,7 +3049,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       if (startStageSymptom) return { ...adapted, how: `慢速启动，控制回程。${adapted.how}` };
       return adapted;
     });
-  }, [region, findings, exerciseStage, intake, effectiveTreatmentCandidates, assessmentResults, noChiefActionAndNoAssessmentProblem, pilotTrainingIds, kneeDecision, followupMode, followupKneeDecision, localLimbDecision, tissuePathway, sessionHistory, sessionNumber]);
+  }, [region, findings, exerciseStage, intake, effectiveTreatmentCandidates, assessmentResults, trialRecords, noChiefActionAndNoAssessmentProblem, pilotTrainingIds, kneeDecision, followupMode, followupKneeDecision, localLimbDecision, tissuePathway, sessionHistory, sessionNumber]);
 
   const homeRelaxationTargets = useMemo(() => {
     // 训练后自主放松合并四类来源：紧张检查（共享 + 逐项）、有效/部分有效处理肌肉、
@@ -3082,6 +3088,12 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const dynamicHistoryCandidates = [...trialRecords, ...followupTrialRecords.filter((record) => record.sessionNumber < sessionNumber)]
       .map(dynamicMuscleCandidateFromRecord)
       .filter((candidate): candidate is FullCandidate => Boolean(candidate));
+    const ankleP0AssessmentRecords = region.id === "ankle-foot"
+      ? ankleP0RecordsAfterRangeOutcomes(assessmentResults, [
+          ...trialRecords.map((record) => record.rangeOutcomes),
+          ...followupTrialRecords.filter((record) => record.sessionNumber <= sessionNumber).map((record) => record.rangeOutcomes),
+        ])
+      : assessmentResults;
     const all = [...(region.mobilityInterventions ?? []), ...region.candidateGroups.flatMap((group) => group.candidates), ...dynamicHistoryCandidates]
       .map((candidate) => {
         const currentUnit = region.id === "knee" ? followupKneeDecision?.currentTreatment : undefined;
@@ -3113,6 +3125,15 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         return motionIds.length
           ? { ...candidate, retestIds: Array.from(new Set([...(candidate.retestIds ?? []), ...motionIds])) }
           : candidate;
+      })
+      .flatMap((candidate) => {
+        if (region.id !== "ankle-foot" || !isAnkleP0CandidateId(candidate.id)) return [candidate];
+        const knowledgeEvidence = ankleP0LineageForTreatment(candidate.id, ankleP0AssessmentRecords);
+        return knowledgeEvidence ? [{
+          ...candidate,
+          knowledgeEvidence,
+          retestIds: knowledgeEvidence.retestAssessmentIds.map((id) => id.replace(/^motion:/, "")),
+        }] : [];
       })
       .filter((candidate) => candidateIsAvailable(candidate, workflowProfile))
       .filter((candidate) => canMobilizeJoint || candidate.type !== "joint")
@@ -3197,7 +3218,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       ...eligible.filter((candidate) => candidate.type === "neural"),
     ];
     return ordered.filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
-  }, [region, trialRecords, followupTrialRecords, sessionNumber, intake, findings, followupTrends, followupTensionLocations, canMobilizeJoint, followupKneeDecision, localLimbDecision, tissuePathway, workflowProfile]);
+  }, [region, trialRecords, followupTrialRecords, sessionNumber, intake, findings, assessmentResults, followupTrends, followupTensionLocations, canMobilizeJoint, followupKneeDecision, localLimbDecision, tissuePathway, workflowProfile]);
 
   const legacyThinkingMode = !intake.productMode && ["coach", "rehab"].includes(intake.userRole);
   const effectiveOperationTarget = intake.productMode ? intake.operationTarget : workflowProfile.operationTarget;

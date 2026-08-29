@@ -164,6 +164,7 @@ function taskPriority(id: string, input: PilotIntakeInput) {
   if (/提踵|蹬地/.test(task) && id === "function:ankle-heel-raise") return 75;
   if (/脚背向下|踩油门|跖屈|向下压/.test(task) && id === "motion:ankle-plantarflexion") return 85;
   if (/勾脚|脚背向上|背屈/.test(task) && id === "motion:ankle-dorsiflexion") return 85;
+  if (/勾脚|脚背向上|背屈/.test(task) && id === "motion:ankle-dorsiflexion-knee-flexed") return 84;
   if (/脚(?:掌|底)向外|外翻/.test(task) && id === "motion:ankle-eversion") return 85;
   if (/脚(?:掌|底)向内|内翻/.test(task) && id === "motion:ankle-inversion") return 85;
   if (/跑|冲刺|迈步|弯腰/.test(task) && id === "motion:thigh-back-length") return 85;
@@ -194,6 +195,7 @@ function locationPriority(id: string, input: PilotIntakeInput) {
   if (/膝外侧/.test(location) && id === "strength:knee-glute") return 28;
   if (/膝后|腘窝/.test(location) && id === "strength:knee-hamstring") return 28;
   if (/外踝|小腿外侧/.test(location) && ["motion:ankle-inversion", "motion:ankle-eversion", "strength:ankle-evertor"].includes(id)) return 34;
+  if (/外踝|小腿外侧|足外侧/.test(location) && id === "motion:ankle-cuboid-mobility") return 33;
   if (/内踝|足弓内侧|小腿内侧/.test(location) && ["motion:ankle-inversion", "strength:ankle-invertor"].includes(id)) return 34;
   if (/踝前|脚背/.test(location) && id === "motion:ankle-dorsiflexion") return 34;
   if (/跟腱|脚跟|小腿后侧/.test(location) && ["motion:ankle-dorsiflexion", "strength:ankle-calf"].includes(id)) return 32;
@@ -246,7 +248,7 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     } else {
       if (area === "front") supportMotions.push("motion:calf-plantarflexion");
       if (area === "back") supportMotions.push("motion:calf-dorsiflexion");
-      if (area === "medial") supportMotions.push("motion:calf-eversion");
+      // 小腿内侧位置只能打开内侧方向评估，不能自动生成外翻问题。
       if (area === "lateral") supportMotions.push("motion:calf-inversion");
       if (area === "lateral" && /前外|崴|扭|勾脚|抬脚/.test(`${location} ${task}`)) supportMotions.push("motion:calf-dorsiflexion");
     }
@@ -291,18 +293,25 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
       "motion:ankle-plantarflexion",
       "motion:ankle-inversion",
     ].filter((id) => availableIds.includes(id));
+    const dorsiflexionPositionIds = ["motion:ankle-dorsiflexion", "motion:ankle-dorsiflexion-knee-flexed"]
+      .filter((id) => availableIds.includes(id));
+    const lateralColumnIds = /外踝|踝外|足外侧|前外侧/.test(locationSource)
+      ? ["motion:ankle-cuboid-mobility", "motion:ankle-toe-flexion"].filter((id) => availableIds.includes(id))
+      : [];
     const explicitDirection = rankedIds.find((id) => ankleMotionIds.includes(id) && taskPriority(id, input) > 0);
     const explicitFunction = rankedIds.find((id) => id.startsWith("function:") && taskPriority(id, input) > 0);
     const orderedMotions = [
       ...(explicitDirection ? [explicitDirection] : []),
-      ...ankleMotionIds.filter((id) => id !== explicitDirection),
+      ...dorsiflexionPositionIds.filter((id) => id !== explicitDirection),
+      ...ankleMotionIds.filter((id) => id !== explicitDirection && !dorsiflexionPositionIds.includes(id)),
+      ...lateralColumnIds,
     ];
     // 急性崴脚的四方向是完整基础检查组；背屈和外翻控制会嵌入对应
     // 活动卡内，不额外增加两张检查卡。跖屈/内翻力量只按功能线索追加。
     return [
       ...orderedMotions,
       ...(explicitFunction ? [explicitFunction] : []),
-      ...rankedIds.filter((id) => !ankleMotionIds.includes(id) && id !== explicitFunction),
+      ...rankedIds.filter((id) => !orderedMotions.includes(id) && !ankleMotionIds.includes(id) && id !== explicitFunction),
     ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], orderedMotions.length + Number(Boolean(explicitFunction))));
   }
 
@@ -316,7 +325,7 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     const explicitDirections = rankedIds.filter((id) => ankleMotionIds.includes(id) && taskPriority(id, input) > 0);
     const ankleContext = `${locationSource} ${input.symptomType ?? ""} ${input.symptoms.join(" ")} ${input.currentTask ?? ""} ${input.provocationTypes.join(" ")}`;
     const locationMotions = /内踝|足弓内|内侧足弓|踝内/.test(locationSource)
-      ? ["motion:ankle-inversion", "motion:ankle-eversion", ...(/走|承重|下蹲|台阶|楼梯/.test(ankleContext) ? ["motion:ankle-dorsiflexion"] : [])]
+      ? ["motion:ankle-inversion", ...(/走|承重|下蹲|台阶|楼梯/.test(ankleContext) ? ["motion:ankle-dorsiflexion"] : [])]
       : /跟腱|踝正后方|脚跟后|足跟后/.test(locationSource)
         ? ["motion:ankle-plantarflexion", "motion:ankle-dorsiflexion"]
         : /踝前|脚背|足背/.test(locationSource)
@@ -327,13 +336,21 @@ export function rankPilotAssessmentIds(input: PilotIntakeInput, availableIds: st
     const selectedMotions = [...explicitDirections, ...locationMotions]
       .filter((id) => ankleMotionIds.includes(id))
       .filter((id, index, list) => list.indexOf(id) === index);
+    const dorsiflexionPositionIds = selectedMotions.includes("motion:ankle-dorsiflexion")
+      ? ["motion:ankle-dorsiflexion-knee-flexed"].filter((id) => availableIds.includes(id))
+      : [];
+    const lateralColumnIds = /外踝|踝外|足外侧|前外侧/.test(ankleContext)
+      ? ["motion:ankle-cuboid-mobility", "motion:ankle-toe-flexion"].filter((id) => availableIds.includes(id))
+      : [];
     const explicitFunction = rankedIds.find((id) => id.startsWith("function:") && taskPriority(id, input) > 0);
     return [
       ...selectedMotions,
+      ...dorsiflexionPositionIds,
+      ...lateralColumnIds,
       ...(explicitFunction ? [explicitFunction] : []),
       // 未被位置或当前动作选中的踝方向不再为了填满题量预算而出现。
-      ...rankedIds.filter((id) => !ankleMotionIds.includes(id) && id !== explicitFunction),
-    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], selectedMotions.length + Number(Boolean(explicitFunction))));
+      ...rankedIds.filter((id) => !selectedMotions.includes(id) && !dorsiflexionPositionIds.includes(id) && !lateralColumnIds.includes(id) && !ankleMotionIds.includes(id) && id !== explicitFunction),
+    ].slice(0, Math.max(PILOT_ASSESSMENT_BUDGET[role], selectedMotions.length + dorsiflexionPositionIds.length + lateralColumnIds.length + Number(Boolean(explicitFunction))));
   }
 
   if (input.regionIds.includes("knee")) {
