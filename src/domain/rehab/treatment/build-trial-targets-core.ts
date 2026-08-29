@@ -100,6 +100,12 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     const ankleLineage = (candidateId: string) => ankleP0RuntimeLoaded
       ? ankleP0LineageForTreatment(candidateId, ankleP0AssessmentRecords)
       : undefined;
+    // 膝伸直方向的统一证据门槛：只有带证据链的合同单元、统一触诊选出的
+    // 紧张区域和肿胀管理可以进入处理候选；活动方向路由和主诉路由共用。
+    const kneeP0EvidenceAllowed = (p0Direction: boolean, candidate: FullCandidateInput) => !p0Direction
+      || candidate.type === "swelling"
+      || candidate.id.startsWith("tension-muscle:")
+      || Boolean(candidate.knowledgeEvidence);
     if (!region || !findings.length) return [];
     const conservativeSharpPath = intake.stabbingPalpation === "sharp" || findings.some((finding) => finding.tags.includes("assessment-sharp"));
     const abnormalPilotMotionIds = findings
@@ -508,20 +514,14 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
         "ankle-cuboid-mobility",
         "ankle-toe-flexion",
       ].includes(directionId);
-      // 膝伸直方向已由 P0 证据流程接管：只允许带证据链的合同单元、
-      // 统一触诊选出的紧张区域和肿胀管理；旧候选组不再重复生成。
+      // 膝伸直方向已由 P0 证据流程接管：旧候选组不再重复生成。
       const kneeP0Direction = region.id === "knee" && directionId === "knee-extension";
-      const kneeP0EvidenceGate = (candidate: FullCandidateInput) => !kneeP0Direction
-        || candidate.type === "swelling"
-        || candidate.id.startsWith("tension-muscle:")
-        || Boolean(candidate.knowledgeEvidence)
-        || isKneeP1StandaloneTreatmentCandidateId(candidate.id);
       const releasedP0Direction = ankleP0Direction
         || region.id === "knee" && ["knee-extension", "knee-scar-mobility"].includes(directionId);
       const directionCandidates = allCandidates
         .filter((candidate) => (candidate.retestIds ?? []).some((candidateDirection) => samePhysicalAction(candidateDirection, directionId)) || candidate.tags.some((tag) => finding.tags.includes(tag)))
         .filter((candidate) => !ankleP0Direction || !ankleP0RuntimeLoaded || isReleasedAnkleCandidate(candidate.id))
-        .filter(kneeP0EvidenceGate)
+        .filter((candidate) => kneeP0EvidenceAllowed(kneeP0Direction, candidate))
         // 髌骨方向只使用明确的髌骨处理候选；不能把“膝关节伸直方向松动”
         // 这种泛化候选因为带有 patella 标签，误合并成髌骨处理单元。
         .filter((candidate) => !patellaDirection || isPatellaSpecificCandidate(candidate));
@@ -697,16 +697,11 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       // 主诉方向是膝伸直时，主诉路由与活动方向路由使用同一证据门槛，
       // 避免未审核旧候选绕过 P0 合同单元重新进入处理队列。
       const chiefP0Direction = region.id === "knee" && chiefDirection === "knee-extension";
-      const chiefP0EvidenceGate = (candidate: FullCandidateInput) => !chiefP0Direction
-        || candidate.type === "swelling"
-        || candidate.id.startsWith("tension-muscle:")
-        || Boolean(candidate.knowledgeEvidence)
-        || isKneeP1StandaloneTreatmentCandidateId(candidate.id);
       const combinedChiefCandidates = [...(sameDirectionMotionTarget?.candidates ?? []), ...chiefCandidates]
-        .filter(chiefP0EvidenceGate)
+        .filter((candidate) => kneeP0EvidenceAllowed(chiefP0Direction, candidate))
         .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index);
       const combinedOptional = [...(sameDirectionMotionTarget?.optionalCandidates ?? []), ...chiefOptionalCandidates]
-        .filter(chiefP0EvidenceGate)
+        .filter((candidate) => kneeP0EvidenceAllowed(chiefP0Direction, candidate))
         .filter((candidate, index, list) => list.findIndex((item) => candidateDedupKey(item) === candidateDedupKey(candidate)) === index)
         .filter((candidate) => !combinedChiefCandidates.some((chosen) => candidateDedupKey(chosen) === candidateDedupKey(candidate)));
       // The chief route may start with several highly related muscles, but it
