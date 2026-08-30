@@ -1294,5 +1294,69 @@
       "professional-batch2",
       "contract"
     ]
+  },
+  {
+    "scenarioId": "RE-1-pro-panel-last-episode",
+    "ruleIds": [
+      "R-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
+    "titlePattern": "R-1 专业面板：反复出现触发最近一次字段、切离清除、清单含字段名",
+    "status": "passed",
+    "notes": "onset=反复出现→lastEpisode select 出现；切离反复出现→字段隐藏+值清除；footer 还需补充含「最近一次出现」",
+    "tags": [
+      "scenario",
+      "recurrent-flare"
+    ]
+  },
+  {
+    "scenarioId": "RE-2-acute-flare-ottawa",
+    "ruleIds": [
+      "R-2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
+    "titlePattern": "R-2 急性再发踝：反复+今天内+崴伤→骨性风险问答",
+    "status": "blocked",
+    "notes": "fixme：依赖 guided 描述解析 onset=反复出现（dev 已注明属既有行为边界），需 /test 定向场景（onset+lastEpisodeOnset+mechanism 快照）",
+    "tags": [
+      "scenario",
+      "recurrent-flare"
+    ]
+  },
+  {
+    "scenarioId": "RE-3-chronic-flare-no-ottawa",
+    "ruleIds": [
+      "R-3"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
+    "titlePattern": "R-3 对照：反复+一周以上+崴伤→无骨性问答",
+    "status": "blocked",
+    "notes": "fixme：同 R-2，待 /test 定向（lastEpisodeOnset=一周以上）",
+    "tags": [
+      "scenario",
+      "recurrent-flare"
+    ]
+  },
+  {
+    "scenarioId": "RE-4-no-trauma-no-ottawa",
+    "ruleIds": [
+      "R-4"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
+    "titlePattern": "R-4 对照：反复+今天内+没有明确受伤→无骨性问答",
+    "status": "blocked",
+    "notes": "fixme：同 R-2，待 /test 定向（lastEpisodeOnset=今天内 + mechanism=没有明确受伤）",
+    "tags": [
+      "scenario",
+      "recurrent-flare"
+    ]
   }
 ]
