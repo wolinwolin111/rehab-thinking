@@ -998,5 +998,150 @@
       "p0"
     ],
     "status": "passed-with-defect"
+  },
+  {
+    "scenarioId": "KR-B1-extension-contract-loop",
+    "ruleIds": [
+      "KR-B1"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-evidence-loop.spec.ts",
+    "titlePattern": "B-1 主动被动都受限：伸直方向进入处理，复查仅伸直",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-B2-terminal-extension-control",
+    "ruleIds": [
+      "KR-B2"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-evidence-loop.spec.ts",
+    "titlePattern": "B-2 被动恢复主动不足：复测后转入末端伸膝控制路径",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-D2-bone-risk-imaging",
+    "ruleIds": [
+      "KR-D2"
+    ],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/safety-blocking.spec.ts",
+    "titlePattern": "D-2 骨性风险阳性：建议优先结合影像确认并安排影像",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-D3-acl-referral-browser",
+    "ruleIds": [
+      "KR-D3"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/safety-blocking.spec.ts",
+    "titlePattern": "D-3 前交叉韧带稳定性阳性：转医学评估出口",
+    "tags": [
+      "scenario"
+    ],
+    "status": "blocked",
+    "note": "DEF-SPECIAL-QUEUE：专项检查无法进入专业膝部首轮队列，fixme"
+  },
+  {
+    "scenarioId": "KR-F3a-storage-failure-copy",
+    "ruleIds": [
+      "KR-F3"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/save-failure-copy.spec.ts",
+    "titlePattern": "F-3a 本机存储不可用显示本机保存失败",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-F3b-offline-copy",
+    "ruleIds": [
+      "KR-F3"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/save-failure-copy.spec.ts",
+    "titlePattern": "F-3b 网络断开显示网络断开且本机保存",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-C1-continuation-full-chain",
+    "ruleIds": [
+      "KR-C1"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/continuation-chain.spec.ts",
+    "titlePattern": "C-1 继续排查完整链路：主诉未解决→卡片→接受→回评估→补查→计划刷新",
+    "tags": [
+      "scenario"
+    ],
+    "status": "blocked",
+    "note": "DEF-CONTINUATION-CARD：卡片在已文档化流程中不可达，fixme"
+  },
+  {
+    "scenarioId": "KR-C2-continuation-skip",
+    "ruleIds": [
+      "KR-C2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/continuation-chain.spec.ts",
+    "titlePattern": "C-2 跳过路径：点进入训练不阻断，同会话卡片不重复",
+    "tags": [
+      "scenario"
+    ],
+    "status": "blocked",
+    "note": "依赖 C-1 修复，fixme"
+  },
+  {
+    "scenarioId": "KR-C3-continuation-converge",
+    "ruleIds": [
+      "KR-C3"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/continuation-chain.spec.ts",
+    "titlePattern": "C-3 收敛：接受并查完所有可查项后卡片不再出现",
+    "tags": [
+      "scenario"
+    ],
+    "status": "blocked",
+    "note": "依赖 C-1 修复，fixme"
+  },
+  {
+    "scenarioId": "KR-C4-continuation-session-reset",
+    "ruleIds": [
+      "KR-C4"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/continuation-chain.spec.ts",
+    "titlePattern": "C-4 会话隔离：接受建议未查完，开始第二次康复后清单不残留",
+    "tags": [
+      "scenario"
+    ],
+    "status": "blocked",
+    "note": "依赖 C-1 修复 + 8150b06 会话重置，fixme"
   }
 ]

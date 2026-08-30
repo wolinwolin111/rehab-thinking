@@ -80,24 +80,25 @@ runner 显示 EXITCODE 0 但**一个测试都没跑**（runner 不传播失败�
 | id | 级别 | 摘要 | 证据 |
 |---|---|---|---|
 | DEF-RETEST-01 | 中 | 复测结果行显示「仍偏小」而非对照表 #7 的「仍受限，未明显改变」；复查台账泄漏原始 id `knee-extension` | `docs/quality/defect-retest-copy-2026-08-30.md`；RET-02 error-context |
-| runner 缺陷 | 低 | `run-browser-tests.mjs` 不传播 playwright 退出码，webServer 失败时仍 EXITCODE 0（假绿） | `.tmp/browser-full-1.txt`（webServer 起不来，EXITCODE 0） |
+| DEF-CONTINUATION-CARD | 中 | 继续排查卡在已文档化流程中不可达（三种口径均未渲染），C-1~C-4 浏览器证据无法建立 | `docs/quality/defect-continuation-card-2026-08-30.md` |
+| DEF-SPECIAL-QUEUE | 中 | 专项检查无法进入专业膝部首轮评估队列（排序预算结构性挤出），D-3 浏览器证据无法建立 | `docs/quality/defect-special-queue-2026-08-30.md` |
+| ~~runner 缺陷~~ | — | **已撤回（第二轮复核）**：`run-browser-tests.mjs` 与 npm 包装层均正确传播退出码（用必失败参数实测 EXITCODE 1）。首轮记录的 EXITCODE 0 为当次测量方式误读；判绿仍以 passed/failed 行为准 | 本轮 probe 实测（probe-exit → EXITCODE:1） |
 
 已排除：DEF-CONSENT-01 复发（环境问题，见 §2.1）。
 
 ## 5. 剩余缺口（按优先级）
 
-1. **C-1 完整链路浏览器化**（继续排查：主诉未解决 → 继续排查卡 → 接受 → 回评估 →
-   补查 → 计划刷新）：本轮未覆盖（逻辑层无现成 oracle，浏览器流程长）。
-   C-2（跳过路径）、C-3（收敛）、C-4（会话隔离）同样待做；C-4 的「reset per session」
-   已由 dev 提交 8150b06 实装，但无浏览器证据。
-2. **B-1/B-2 证据闭环**：被动+主动证据 → 合同处理单元的专业模式完整闭环，需
-   professional + canAssessPassive 流程（PERM-04 已覆盖能力边界，未覆盖证据链正路径）。
-3. **F-3 保存失败文案区分**（本机保存失败 vs 网络断开）无浏览器证据；
-   F-1 的「未完成侧限制训练」断言未在 overall 双侧用例中显式出现。
-4. **D-2/D-3 浏览器层**：安全阻断（骨折筛查阳性 → 转影像/医学评估）目前只有
-   触发逻辑单测 + SAFE-04 麻电出口，稳定性检查分级阻断无专测。
-5. **runner 退出码**修复（一行：非零时 process.exitCode = child 的码）。
-6. RET-02 内 DEF-RETEST-01 相关断言在开发修复后收紧（文件内有注释标记）。
+> 第二轮测试（同日）已补齐：B-1、B-2、D-2（改走安全阶段骨性风险链路）、F-3a/F-3b
+> （经 /test 工作台故障注入场景），并新增缺陷 DEF-CONTINUATION-CARD 与
+> DEF-SPECIAL-QUEUE。剩余缺口更新如下。
+
+1. **C-1~C-4 浏览器层**：继续排查卡在三种已文档化口径下均未渲染（见
+   DEF-CONTINUATION-CARD），四条场景已写好断言骨架标记 fixme；开发确认可达性后恢复。
+2. **D-3 浏览器层**：稳定性检查阳性 → 转医学评估；受 DEF-SPECIAL-QUEUE 阻塞
+   （专项检查无法入队），场景骨架已标记 fixme。D-2 已改走安全阶段骨性风险问题
+   （Ottawa 口径）链路覆盖并通过。
+3. **F-1 的「未完成侧限制训练」断言**未在 overall 双侧用例中显式出现。
+4. RET-02 内 DEF-RETEST-01 相关断言在开发修复后收紧（文件内有注释标记）。
 
 ## 6. 快速上手命令
 

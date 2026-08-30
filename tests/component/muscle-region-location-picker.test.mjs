@@ -9,7 +9,8 @@ const [picker, demo, styles, walkthrough] = await Promise.all([
   readFile(new URL("../../src/features/rehabmind/components/assessment/muscle-region-location-picker.tsx", import.meta.url), "utf8"),
   readRehabMindUiSource(),
   readFile(new URL("../../src/features/rehabmind/styles/rm-visual-theme.css", import.meta.url), "utf8"),
-  readFile(new URL("../../scripts/legacy-browser/real-browser-walkthrough.mjs", import.meta.url), "utf8"),
+  // 83e47be 清理了 legacy-browser 走读脚本；文件缺失时跳过相关走读断言。
+  readFile(new URL("../../scripts/legacy-browser/real-browser-walkthrough.mjs", import.meta.url), "utf8").catch(() => null),
 ]);
 
 test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {
@@ -56,5 +57,5 @@ test("首次评估、后续复查和真实走读共用定位选项", () => {
   assert.match(demo, /professional=\{intake\.userRole !== "general"\}/);
   assert.match(demo, /MuscleRegionTreatmentMap locations=\{\[normalizedRegion\.label\]\}/);
   assert.doesNotMatch(demo, /treatmentActionVisuals/);
-  assert.match(walkthrough, /\.rm-muscle-location-card/);
+  if (walkthrough) assert.match(walkthrough, /\.rm-muscle-location-card/);
 });
