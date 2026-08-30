@@ -1213,5 +1213,69 @@
       "scenario",
       "professional-batch1"
     ]
+  },
+  {
+    "scenarioId": "B2-1-treatment-workbench",
+    "ruleIds": [
+      "B2-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
+    "titlePattern": "B2-1 入口按钮仅专业模式出现 + 三列与导航",
+    "status": "passed",
+    "notes": "阶段工作台按钮仅 isThinkingMode；处理队列 0/2、待复查 2 项（下蹲/下台阶功能义务）、继续排查空态；返回处理回流程",
+    "tags": [
+      "scenario",
+      "professional-batch2"
+    ]
+  },
+  {
+    "scenarioId": "B2-2-continue-assessment-nav",
+    "ruleIds": [
+      "B2-2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
+    "titlePattern": "B2-2 继续评估导航",
+    "status": "passed",
+    "notes": "工作台「继续评估」回评估段（评估完成态落汇总「先看清问题」）",
+    "tags": [
+      "scenario",
+      "professional-batch2"
+    ]
+  },
+  {
+    "scenarioId": "B2-3-safety-first",
+    "ruleIds": [
+      "B2-3"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
+    "titlePattern": "B2-3 安全页优先负断言",
+    "status": "blocked",
+    "notes": "fixme：构造 treatmentWorsened 需走完复测面板多段触发 result=worse，浏览器构造不稳定；依据 treatment-session-core treatmentMustStop + treatment-retest-stage L639/L667 early return",
+    "tags": [
+      "scenario",
+      "professional-batch2"
+    ]
+  },
+  {
+    "scenarioId": "B2-4-queue-empty",
+    "ruleIds": [
+      "B2-4"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
+    "titlePattern": "B2-4 处理队列空态",
+    "status": "blocked",
+    "notes": "fixme：处理队列空需主诉无处理候选（评估完成即产候选，正常口径必有），构造口径待定",
+    "tags": [
+      "scenario",
+      "professional-batch2"
+    ]
   }
 ]
