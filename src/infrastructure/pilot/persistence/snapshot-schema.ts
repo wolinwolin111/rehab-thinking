@@ -100,7 +100,7 @@ function validateIntake(value: SnapshotObject): string | null {
   if (typeof value.regionId !== "string") return "snapshot domain.intake.regionId is invalid";
   const stringKey = optionalFields(value, [
     "description", "userRole", "examSetup", "productMode", "operationTarget", "spineAssessmentMode", "side",
-    "prioritySide", "location", "onset", "mechanism", "symptomType", "forceDirection", "swellingLocation",
+    "prioritySide", "location", "onset", "lastEpisodeOnset", "mechanism", "symptomType", "forceDirection", "swellingLocation",
     "tendernessLocation", "sensoryLocation", "reproduction", "customAction", "professionalNotes",
     "stabbingSpread", "stabbingPalpation",
   ], (item) => typeof item === "string");

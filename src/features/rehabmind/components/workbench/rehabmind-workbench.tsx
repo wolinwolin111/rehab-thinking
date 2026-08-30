@@ -3351,6 +3351,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     [!intake.locationConfirmed || !intake.bodyLocations.length, "不舒服的位置"],
     [intake.side === "双侧/中间" && !intake.prioritySide, "本次优先侧"],
     [!intake.onset, "出现多久"],
+    [intake.onset === "反复出现" && !intake.lastEpisodeOnset, "最近一次出现"],
     [mechanismQuestionRelevant, "发生方式"],
     [!intake.symptomType, "不适感觉"],
     [!confirmedIntakeMulti.symptoms, "目前情况"],
@@ -3374,7 +3375,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     || currentIntakeField === "按压痛位置" && intake.tendernessLocations.length > 0
     || currentIntakeField === "麻电范围" && intake.sensoryLocations.length > 0;
   const guidedQuestionReady = Boolean(currentIntakeField && (!intakeMissingFields.includes(currentIntakeField) || guidedLocationSelectionReady));
-  const intakeComplete = Boolean(intake.parsed && intake.productMode && (!needsExamSetupChoice || effectiveOperationTarget) && (!needsCapabilitiesChoice || intake.capabilitiesConfirmed) && (!needsSpineModeChoice || intake.spineAssessmentMode) && isPilotRegion(intake.regionId) && intake.side && (!intake.side || intake.side !== "双侧/中间" || intake.prioritySide) && intake.location && intake.locationConfirmed && intake.bodyLocations.length && intake.onset && (!mechanismQuestionRelevant || intake.mechanism) && intake.symptomType && !needsPainQuality && confirmedIntakeMulti.symptoms && provocationConfirmedForFlow && (!needsChiefActionConfirmation || intake.actionSelectionConfirmed || reportedActionSummary(intake).length > 0) && intake.goal && (!baselineScoreApplicable || intake.baselineScoreConfirmed)
+  const intakeComplete = Boolean(intake.parsed && intake.productMode && (!needsExamSetupChoice || effectiveOperationTarget) && (!needsCapabilitiesChoice || intake.capabilitiesConfirmed) && (!needsSpineModeChoice || intake.spineAssessmentMode) && isPilotRegion(intake.regionId) && intake.side && (!intake.side || intake.side !== "双侧/中间" || intake.prioritySide) && intake.location && intake.locationConfirmed && intake.bodyLocations.length && intake.onset && (intake.onset !== "反复出现" || Boolean(intake.lastEpisodeOnset)) && (!mechanismQuestionRelevant || intake.mechanism) && intake.symptomType && !needsPainQuality && confirmedIntakeMulti.symptoms && provocationConfirmedForFlow && (!needsChiefActionConfirmation || intake.actionSelectionConfirmed || reportedActionSummary(intake).length > 0) && intake.goal && (!baselineScoreApplicable || intake.baselineScoreConfirmed)
     && (!intake.symptoms.includes("肿胀或淤青") || (intake.swellingLocationConfirmed && intake.swellingLocation?.trim()))
     && (!intakeHasTenderness || (intake.tendernessLocationConfirmed && intake.tendernessLocation?.trim()))
     && (!intakeHasSensorySymptoms || (intake.sensoryLocationConfirmed && intake.sensoryLocation?.trim()))

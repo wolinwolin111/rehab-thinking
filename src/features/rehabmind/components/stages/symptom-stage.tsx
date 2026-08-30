@@ -19,6 +19,7 @@ import {
   GOALS_PRO,
   MECHANISMS,
   ONSETS,
+  LAST_EPISODE_ONSETS,
   PRIOR_CARE_OPTIONS,
   SYMPTOMS,
   SYMPTOM_TYPE_GROUPS,
@@ -337,7 +338,8 @@ export function SymptomStage(props: SymptomStageProps) {
       <section className="rm-professional-section">
         <header><span>02</span><div><h2>病程与发生机制</h2><p>记录时间和出现方式，供后续判断急性、反复或代偿线索。</p></div></header>
         <div className="rm-professional-fields">
-          <label><b>病程</b><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value })}><option value="">请选择</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label><b>病程</b><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value, lastEpisodeOnset: event.target.value === "反复出现" ? intake.lastEpisodeOnset : undefined })}><option value="">请选择</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></label>
+          {intake.onset === "反复出现" ? <label><b>最近一次出现</b><select value={intake.lastEpisodeOnset ?? ""} onChange={(event) => invalidateAfterIntake({ ...intake, lastEpisodeOnset: event.target.value })}><option value="">请选择</option>{LAST_EPISODE_ONSETS.map((item) => <option key={item}>{item}</option>)}</select></label> : null}
           <label><b>发生机制</b><select value={intake.mechanism} onChange={(event) => invalidateAfterIntake({ ...intake, mechanism: event.target.value })}><option value="">请选择</option>{MECHANISMS.map((item) => <option key={item}>{item}</option>)}</select></label>
         </div>
         <TraumaMechanismHint description={intake.description} mechanism={intake.mechanism} />
@@ -533,9 +535,11 @@ export function SymptomStage(props: SymptomStageProps) {
       {baselineScoreApplicable && showIntakeQuestion("不适分数") ? <ScoreSlider value={intake.baselineScore} selected={intake.baselineScoreConfirmed} onChange={(baselineScore) => invalidateAfterIntake({ ...intake, baselineScore, baselineScoreConfirmed: true })} label="现在的疼痛或不适有多重？" /> : null}
 
       {showIntakeQuestion("出现多久", "发生方式") ? <div className={`rm-two-columns ${!showAllIntakeFields ? "is-guided-single" : ""}`}>
-        {showAllIntakeFields || nextMissingField === "出现多久" ? <div className="rm-form-block"><div {...fieldLabel("出现多久")}><span>这个问题出现多久了？</span></div><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value })}><option value="">请选择时间</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
+        {showAllIntakeFields || nextMissingField === "出现多久" ? <div className="rm-form-block"><div {...fieldLabel("出现多久")}><span>这个问题出现多久了？</span></div><select value={intake.onset} onChange={(event) => invalidateAfterIntake({ ...intake, onset: event.target.value, lastEpisodeOnset: event.target.value === "反复出现" ? intake.lastEpisodeOnset : undefined })}><option value="">请选择时间</option>{ONSETS.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
         {showAllIntakeFields || nextMissingField === "发生方式" ? <div className="rm-form-block"><div {...fieldLabel("发生方式")}><span>它是怎么出现的？</span></div><select value={intake.mechanism} onChange={(event) => invalidateAfterIntake({ ...intake, mechanism: event.target.value })}><option value="">请选择发生方式</option>{MECHANISMS.map((item) => <option key={item}>{item}</option>)}</select><TraumaMechanismHint description={intake.description} mechanism={intake.mechanism} /></div> : null}
       </div> : null}
+
+      {intake.onset === "反复出现" && showIntakeQuestion("最近一次出现") ? <div className="rm-form-block"><div {...fieldLabel("最近一次出现")}><span>最近一次出现是什么时候？</span></div><select value={intake.lastEpisodeOnset ?? ""} onChange={(event) => invalidateAfterIntake({ ...intake, lastEpisodeOnset: event.target.value })}><option value="">请选择时间</option>{LAST_EPISODE_ONSETS.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
 
       {showIntakeQuestion("目前情况") ? <div className="rm-form-block"><div {...fieldLabel("目前情况")}><span>{professionalIntake ? "主要症状和伴随表现" : "目前有哪些情况"}</span><b>可多选</b></div><div className="rm-check-grid">{SYMPTOMS.map((symptom) => <button type="button" key={symptom} className={intake.symptoms.includes(symptom) ? "is-selected" : ""} onClick={() => { setConfirmedIntakeMulti((current) => ({ ...current, symptoms: true })); toggleArray(symptom, intake.symptoms, (symptoms) => invalidateAfterIntake({
         ...intake,

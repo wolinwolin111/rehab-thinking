@@ -163,6 +163,8 @@ export type IntakeState = {
   bodyLocationHistory: LowerLimbLocationSelection[];
   locationConfirmed: boolean;
   onset: string;
+  /** 仅当病程为“反复出现”时记录最近一次发作的时相；只影响排查入口优先级，不生成处理。 */
+  lastEpisodeOnset?: string;
   mechanism: string;
   symptomType: string;
   /** 通用的“疼/不舒服”需要在位置确认时再让用户确认性质。 */
@@ -1164,6 +1166,7 @@ export const STAGE_TRANSITIONS: Record<TransitionTarget, { step: Step; number: s
   summary: { step: 5, number: "06", title: "本次康复完成", message: "接下来开始复盘。", button: "查看本次康复总结" },
 };
 export const ONSETS = ["今天或昨天", "2～7天", "1～6周", "超过6周", "反复出现"];
+export const LAST_EPISODE_ONSETS = ["今天内", "1～3天前", "4～7天前", "一周以上", "说不清"];
 export const MECHANISMS = ["没有明确受伤", "扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤", "逐渐出现", "其他"];
 export const SYMPTOM_TYPES = ["疼痛，性质说不清", "酸痛", "胀痛", "刺痛", "烧灼或火辣", "牵扯或紧绷", "挤、卡或弹响", "麻或电感", "无力或不稳", "说不清的不适"];
 export const SYMPTOM_TYPE_GROUPS = [
@@ -1357,6 +1360,7 @@ export const DEFAULT_INTAKE: IntakeState = {
   bodyLocationHistory: [],
   locationConfirmed: false,
   onset: "",
+  lastEpisodeOnset: undefined,
   mechanism: "",
   symptomType: "",
   painQualityConfirmed: false,
