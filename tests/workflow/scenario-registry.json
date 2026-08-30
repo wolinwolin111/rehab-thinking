@@ -998,7 +998,7 @@
       "p0"
     ],
     "status": "passed",
-    "notes": "DEF-RETEST-01 已由 5db4aca 修复复测通过：文案统一「仍受限，未明显改变」+ 台账 label 映射无 id 泄漏；RET-02 断言已收紧（含 knee-extension 负断言）"
+    "notes": "DEF-RETEST-01 已由 5db4aca 修复复测通过；126c7f5 口径变更抽查通过（RET-02 三断言仍成立）；已完成 range 项显示处理目标 title（trial.targetTitle），与 owner「处理名」示例的口径差异已回报待确认"
   },
   {
     "scenarioId": "KR-B1-extension-contract-loop",
