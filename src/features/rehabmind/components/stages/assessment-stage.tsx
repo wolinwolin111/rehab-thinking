@@ -17,12 +17,14 @@ import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbenc
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
+import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { TissuePathwayDecision } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
 import {
   type AssessmentItem,
   type AssessmentRecord,
+  type BilateralMotionAnswer,
   type FamiliarSymptomAnswer,
   type Finding,
   type FollowupExerciseChoice,
@@ -62,6 +64,7 @@ import {
   isPilotRegion,
   localLimbMotionRangeOptions,
   locationSelectionsLabel,
+  motionActiveAnswerPatch,
   motionUnableGuidance,
   passiveMotionInstruction,
   passiveMotionOptions,
@@ -139,6 +142,7 @@ export type AssessmentStageProps = {
   onConfirmFocusedAssessment: (id: string) => void;
   onUpdateAssessment: (id: string, patch: AssessmentRecord | ((previous: AssessmentRecord) => AssessmentRecord), keepSharedTensionOpen?: boolean) => void;
   onSaveRecord: (status?: SavedDemoRecord["status"], latestScoreOverride?: number, snapshotOverrides?: Partial<SavedDemoSnapshot>) => void;
+  retestLedgerItems: Array<{ obligationId: string; label: string; kindLabel: string; status: string; statusLabel: string; side?: string }>;
 };
 
 export function AssessmentStage(props: AssessmentStageProps) {
@@ -208,10 +212,12 @@ export function AssessmentStage(props: AssessmentStageProps) {
     onConfirmFocusedAssessment: confirmFocusedAssessment,
     onUpdateAssessment: updateAssessment,
     onSaveRecord: saveRecord,
+    retestLedgerItems,
   } = props;
 
   // T-04：存在未确认的专项检查阳性时，进入评估结果前需要一次显式确认（会话内每处一次）。
   const [acknowledgedSpecialPositiveIds, setAcknowledgedSpecialPositiveIds] = useState<string[]>([]);
+  const [batchRecordOpen, setBatchRecordOpen] = useState(false);
   const openAssessmentSummary = () => {
     const unacknowledged = specialPositiveFindings.filter((entry) => !acknowledgedSpecialPositiveIds.includes(entry.id));
     if (unacknowledged.length && !window.confirm(`有 ${unacknowledged.length} 项特殊检查结果阳性，建议线下评估确认。确定继续吗？`)) return;
@@ -230,6 +236,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     { key: "professional-special", label: "专项检查" },
   ] as const;
   const unresolved = findings.filter((finding) => !finding.internal && !["track:swelling", "track:tender"].includes(finding.id));
+  const pendingRetestItems = retestLedgerItems.filter((item) => item.status === "pending");
   const stageStates = workbenchStageStates({
     canContinueSafety,
     assessmentFlowComplete: assessmentReadyForTreatment,
@@ -250,14 +257,43 @@ export function AssessmentStage(props: AssessmentStageProps) {
     { label: "训练", state: stageStates[4], detail: "按力量、控制和功能目标安排进阶", onClick: () => { if (treatmentComplete) { setTransitionTarget("training"); setThinkingWorkbenchOpen(false); } } },
     { label: "总结", state: stageStates[5], detail: "保留有效方向、未解决问题和下次重点", onClick: () => { if (trainingStageClosed) { setTransitionTarget("summary"); setThinkingWorkbenchOpen(false); } } },
   ];
+  const openAssessmentItem = (id: string) => { setThinkingWorkbenchOpen(false); setAssessmentIndex(assessmentDisplayItems.findIndex((entry) => entry.id === id)); };
+  const renderAssessmentRow = (item: AssessmentItem) => <button type="button" key={item.id} className={displayAssessmentComplete(item) ? "is-done" : ""} onClick={() => openAssessmentItem(item.id)}><i>{displayAssessmentComplete(item) ? "✓" : "·"}</i><span>{item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)}</span><b>{displayAssessmentComplete(item) ? "已记录" : "待记录"}</b></button>;
+  const batchItems = assessmentDisplayItems.filter((item) => item.kind === "motion"
+    && item.id !== PATELLA_GROUP_PRIMARY_ID
+    && !item.spinal
+    && item.testMode !== "passive"
+    && !(item.id === "motion:knee-extension" && !canAssessResistance && intake.side !== "双侧/中间")
+    && !(item.id === "motion:ankle-plantarflexion" && !canAssessResistance));
+  const batchOptionsFor = (item: AssessmentItem): Array<[MotionAnswer | BilateralMotionAnswer, string]> => intake.side === "双侧/中间" ? bilateralMotionOptions
+    : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(canAssessResistance)
+    : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, canAssessResistance);
+  const renderBatchRecordPanel = () => <section className="rm-batch-record">
+    <header><div><span>集中记录</span><strong>活动度检查一屏录入主动范围</strong></div><button type="button" onClick={() => setBatchRecordOpen(false)}>返回工作台</button></header>
+    {batchItems.length ? <div className="rm-batch-record-rows">{batchItems.map((item) => {
+      const record = assessmentResults[item.id] ?? {};
+      return <article key={item.id}>
+        <div><strong>{professionalAssessmentTitle(item.id, item.title)}</strong><span>{displayAssessmentComplete(item) ? "已记录" : record.active ? "需逐项补充" : "未记录"}</span></div>
+        <div className="rm-batch-record-options">{batchOptionsFor(item).map(([value, label]) => <button type="button" key={value} className={record.active === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, motionActiveAnswerPatch(record, value))}>{label}</button>)}</div>
+      </article>;
+    })}</div> : <p className="rm-workbench-empty">本次没有可批量录入的活动度检查。</p>}
+    <footer>这里只记主动范围；需要追问不适或力量的项目，回到逐项检查补全。</footer>
+  </section>;
+  const pendingAssessmentItems = assessmentDisplayItems.filter((item) => !displayAssessmentComplete(item));
+  const doneAssessmentItems = assessmentDisplayItems.filter((item) => displayAssessmentComplete(item));
   return <section className="rm-page rm-thinking-workbench">
+    <CaseSummaryBar intake={intake} needsOfflineReview={!canContinueSafety || assessmentNeedsReferral} onEditComplaint={() => goToStep(0)} />
     <StepHeading eyebrow="康复思路模式 · 阶段工作台" title="按阶段查看这次康复" note="先完成当前阶段，再进入下一阶段；可直接打开需要记录的项目。" />
-    <section className="rm-workbench-stage-grid">{stageItems.map((stage, index) => <button type="button" key={stage.label} className={`rm-workbench-stage ${stage.state === "已完成" ? "is-done" : index === 1 ? "is-current" : ""}`} disabled={index > 1 && stage.state === "待开始"} onClick={stage.onClick}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage.label}</strong><b>{stage.state}</b><small>{stage.detail}</small></button>)}</section>
-    <section className="rm-workbench-columns">
-      <article className="rm-workbench-module"><header><div><span>评估项目</span><strong>{completedAssessmentIds.size}/{assessmentDisplayItems.length}</strong></div><button type="button" onClick={() => { setThinkingWorkbenchOpen(false); const next = assessmentDisplayItems.findIndex((item) => !displayAssessmentComplete(item)); setAssessmentIndex(next >= 0 ? next : 0); }}>打开检查</button></header><div className="rm-workbench-list">{assessmentDisplayItems.map((item) => <button type="button" key={item.id} className={displayAssessmentComplete(item) ? "is-done" : ""} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentIndex(assessmentDisplayItems.findIndex((entry) => entry.id === item.id)); }}><i>{displayAssessmentComplete(item) ? "✓" : "·"}</i><span>{item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)}</span><b>{displayAssessmentComplete(item) ? "已记录" : "待记录"}</b></button>)}</div></article>
-       <article className="rm-workbench-module"><header><div><span>问题台账</span><strong>{unresolved.length}项</strong></div><button type="button" disabled={!assessmentFlowComplete} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentSummaryOpen(true); }}>查看</button></header>{unresolved.length ? <div className="rm-workbench-ledger">{buildFindingGroups(unresolved).map((group) => <section key={group.key}><b>{group.label}</b><ul>{group.items.slice(0, 6).map((finding) => <li key={finding.id}>{professionalFindingLabel(finding)}</li>)}</ul></section>)}</div> : <p className="rm-workbench-empty">完成评估后，这里会按类别显示需要处理的问题。</p>}</article>
-      <article className="rm-workbench-module"><header><div><span>专项检查</span><strong>{assessments.filter((item) => item.kind === "special").length}项</strong></div><span className="rm-workbench-capability">{canRunSpecialTest ? "已开放" : canAssessEndFeel ? "按权限" : "未开放"}</span></header>{groupedSpecials.map((group) => { const items = assessments.filter((item) => item.kind === "special" && item.specialCategory === group.key); return items.length ? <section className="rm-workbench-special-group" key={group.key}><b>{group.label}</b><span>{items.map((item) => professionalAssessmentTitle(item.id, item.title)).join("、")}</span></section> : null; })}</article>
-    </section>
+    <section className="rm-workbench-stage-rail">{stageItems.map((stage, index) => <button type="button" key={stage.label} className={`rm-workbench-stage ${stage.state === "已完成" ? "is-done" : index === 1 ? "is-current" : ""}`} disabled={index > 1 && stage.state === "待开始"} onClick={stage.onClick}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage.label}</strong><b>{stage.state}</b></button>)}</section>
+    {batchRecordOpen ? renderBatchRecordPanel() : <section className="rm-workbench-columns">
+      <article className="rm-workbench-module is-assessment"><header><div><span>本次评估</span><strong>{completedAssessmentIds.size}/{assessmentDisplayItems.length}</strong></div><div className="rm-workbench-header-actions"><button type="button" onClick={() => setBatchRecordOpen(true)}>集中记录</button><button type="button" onClick={() => { const next = assessmentDisplayItems.findIndex((item) => !displayAssessmentComplete(item)); setThinkingWorkbenchOpen(false); setAssessmentIndex(next >= 0 ? next : 0); }}>打开检查</button></div></header>
+        <div className="rm-workbench-list">{pendingAssessmentItems.map(renderAssessmentRow)}</div>
+        {doneAssessmentItems.length ? <details className="rm-workbench-done"><summary>已完成 {doneAssessmentItems.length} 项</summary><div className="rm-workbench-list">{doneAssessmentItems.map(renderAssessmentRow)}</div></details> : null}
+        <section className="rm-workbench-appendable"><header><b>可追加检查</b><span className={`rm-workbench-capability ${canRunSpecialTest ? "" : "is-limited"}`}>{canRunSpecialTest ? "已开放" : canAssessEndFeel ? "按权限" : "未开放"}</span></header>{groupedSpecials.map((group) => { const items = assessments.filter((item) => item.kind === "special" && item.specialCategory === group.key); return items.length ? <section className="rm-workbench-special-group" key={group.key}><b>{group.label}</b><span>{items.map((item) => professionalAssessmentTitle(item.id, item.title)).join("、")}</span></section> : null; })}{!assessments.some((item) => item.kind === "special") ? <p className="rm-workbench-empty">当前主诉没有需要追加的专项检查。</p> : null}</section>
+      </article>
+      <article className="rm-workbench-module"><header><div><span>当前异常</span><strong>{unresolved.length}项</strong></div><button type="button" disabled={!assessmentFlowComplete} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentSummaryOpen(true); }}>查看</button></header>{unresolved.length ? <div className="rm-workbench-ledger">{buildFindingGroups(unresolved).map((group) => <section key={group.key}><b>{group.label}</b><ul>{group.items.slice(0, 6).map((finding) => <li key={finding.id}>{professionalFindingLabel(finding)}</li>)}</ul></section>)}</div> : <p className="rm-workbench-empty">完成评估后，这里会按类别显示需要处理的问题。</p>}</article>
+      <article className="rm-workbench-module"><header><div><span>待复查项目</span><strong>{pendingRetestItems.length}项</strong></div></header>{pendingRetestItems.length ? <div className="rm-workbench-list">{pendingRetestItems.map((item) => <div className="rm-workbench-retest-row" key={item.obligationId}><i>·</i><span>{item.label}</span><b>{item.kindLabel}{item.side ? ` · ${item.side}` : ""}</b></div>)}</div> : <p className="rm-workbench-empty">处理后，这里会列出需要复查的项目。</p>}</article>
+    </section>}
     <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(1)}>返回安全确认</button><button type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={() => { setTransitionTarget("treatment"); setThinkingWorkbenchOpen(false); }}>评估完成，进入处理</button></div>
   </section>;
   }
@@ -578,27 +614,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           {isSelfKneeExtension ? <p className="rm-choice-hint">看不清时，把同一条薄毛巾先后放在两侧膝后。绷紧大腿后轻轻抽动，明显更容易抽出的一侧，下压表现较差。</p> : null}
           <AnswerChoiceGrid options={(isSelfKneeExtension
             ? [["same", "接近健侧｜两侧膝后压平程度相近"], ["limited", "患侧偏小｜膝后仍明显悬空"], ["unable", "无法完成｜疼痛或担心继续"], ["unsure", "暂不判断｜看不清差异"]] as Array<[MotionAnswer, string]>
-            : intake.side === "双侧/中间" && !item.spinal ? bilateralMotionOptions : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(canAssessResistance) : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, canAssessResistance))} value={record.active} onChange={(value) => updateAssessment(item.id, {
-            active: value,
-            passive: undefined,
-            pairedStrength: undefined,
-            pairedStrengthLocation: undefined,
-            pairedStrengthLocations: undefined,
-            pairedStrengthType: undefined,
-            pairedStrengthScore: undefined,
-            passiveDiscomfort: undefined,
-            passiveDiscomfortLocation: undefined,
-            passiveDiscomfortLocations: undefined,
-            passiveDiscomfortType: undefined,
-            passiveMeasuredAngle: undefined,
-            passiveMeasuredAngleDeg: undefined,
-            passiveRangeMeasurement: undefined,
-            passiveSymptomScore: undefined,
-            unableReason: value === "unable" ? record.unableReason : undefined,
-            tensionChecked: false,
-            tensionLocations: [],
-            familiarSymptom: undefined,
-          })} />
+            : intake.side === "双侧/中间" && !item.spinal ? bilateralMotionOptions : ["thigh-local", "calf-local"].includes(region?.id ?? "") ? localLimbMotionRangeOptions(canAssessResistance) : activeMotionRangeOptions(item.comparison, item.spinal, intake.spineAssessmentMode, canAssessResistance))} value={record.active} onChange={(value) => updateAssessment(item.id, motionActiveAnswerPatch(record, value))} />
           {intake.spineAssessmentMode === "reference" ? <label className="rm-optional-angle"><span>记录主动角度</span><small>选填 · 仅供对比参考</small><input inputMode="decimal" value={record.measuredAngle ?? ""} onChange={(event) => updateAssessment(item.id, { measuredAngle: event.target.value })} placeholder="例如：45°" /></label> : null}
         </section>
 

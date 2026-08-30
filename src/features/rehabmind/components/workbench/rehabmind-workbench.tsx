@@ -6461,6 +6461,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           onConfirmFocusedAssessment={confirmFocusedAssessment}
           onUpdateAssessment={updateAssessment}
           onSaveRecord={saveRecord}
+          retestLedgerItems={professionalRetestItems}
         />
         : targetStep === 3
           ? <TreatmentRetestStage

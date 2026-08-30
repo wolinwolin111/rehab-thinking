@@ -330,6 +330,31 @@ export type AssessmentRecord = {
   pairedStrengthScore?: number;
 };
 
+/** 主动答案变化必须连带清除被动、力量和不适等依赖答案；逐项卡与集中记录面板共用同一清除链。 */
+export function motionActiveAnswerPatch(previous: AssessmentRecord, value: MotionAnswer | BilateralMotionAnswer): Partial<AssessmentRecord> {
+  return {
+    active: value,
+    passive: undefined,
+    pairedStrength: undefined,
+    pairedStrengthLocation: undefined,
+    pairedStrengthLocations: undefined,
+    pairedStrengthType: undefined,
+    pairedStrengthScore: undefined,
+    passiveDiscomfort: undefined,
+    passiveDiscomfortLocation: undefined,
+    passiveDiscomfortLocations: undefined,
+    passiveDiscomfortType: undefined,
+    passiveMeasuredAngle: undefined,
+    passiveMeasuredAngleDeg: undefined,
+    passiveRangeMeasurement: undefined,
+    passiveSymptomScore: undefined,
+    unableReason: value === "unable" ? previous.unableReason : undefined,
+    tensionChecked: false,
+    tensionLocations: [],
+    familiarSymptom: undefined,
+  };
+}
+
 export type Finding = {
   id: string;
   title: string;
