@@ -145,6 +145,8 @@ test.describe("发散决策组合：肿胀与队列", () => {
     await expect(result).toContainText(/先看清问题，再开始处理/);
     await expect(result).toContainText(/肿胀|观察|没有固定主诉动作/);
     await expect(result).not.toContainText(/本次没有找到需要现场处理的明确问题/);
+    // v3 C-5：无固定主诉动作场景不出现「继续排查」卡片（交接文档第三部分 C-5）。
+    await expect(result).not.toContainText(/还没有得到解释|继续检查这些方向/);
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);
   });

@@ -909,5 +909,94 @@
     ],
     "status": "blocked",
     "releaseRequired": true
+  },
+  {
+    "scenarioId": "KR-B5-permission-boundary",
+    "ruleIds": [
+      "KR-B5"
+    ],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/knowledge-invariants.spec.ts",
+    "titlePattern": "B-5/D-4/B-6 普通模式评估队列不出现被动、专项与封存规则",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-D1-acute-trigger",
+    "ruleIds": [
+      "KR-D1"
+    ],
+    "priority": "P0",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/special-test-trigger.test.mjs",
+    "titlePattern": "D-1: acute trauma mechanisms trigger the fracture-screen class",
+    "tags": [
+      "scenario",
+      "logic-lane"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-D1-non-trauma-negative",
+    "ruleIds": [
+      "KR-D1",
+      "KR-D3"
+    ],
+    "priority": "P0",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/special-test-trigger.test.mjs",
+    "titlePattern": "D-1: non-trauma mechanisms must not trigger the fracture-screen class",
+    "tags": [
+      "scenario",
+      "logic-lane"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-D3-instability-trigger",
+    "ruleIds": [
+      "KR-D3"
+    ],
+    "priority": "P1",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/special-test-trigger.test.mjs",
+    "titlePattern": "D-3: instability words trigger stability screens only with explicit symptoms",
+    "tags": [
+      "scenario",
+      "logic-lane"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-C5-no-chief-continuation",
+    "ruleIds": [
+      "KR-C5"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/divergent/swelling-and-queue.spec.ts",
+    "titlePattern": "MIX-02 只有肿胀没有固定疼痛动作：保留观察出口",
+    "tags": [
+      "scenario"
+    ],
+    "status": "passed"
+  },
+  {
+    "scenarioId": "KR-RET02-batch-retest",
+    "ruleIds": [
+      "RET-02",
+      "KR-B1"
+    ],
+    "priority": "P0",
+    "evidenceType": "e2e",
+    "script": "tests/browser/p0/decision-gates.spec.ts",
+    "titlePattern": "RET-02 不同活动动作分别完成处理后复测",
+    "tags": [
+      "p0"
+    ],
+    "status": "passed-with-defect"
   }
 ]
