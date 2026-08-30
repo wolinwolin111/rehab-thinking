@@ -3016,8 +3016,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       ? region.exercises.filter((exercise) => foundationPatternIds[region.id]?.includes(exercise.id))
       : [];
     const recordPatternIds: Partial<Record<FullRegionId, string[]>> = {
-      "lumbar-pelvis": ["lumbar-hip-hinge"],
-      "hip-thigh": ["hip-sit-stand-hinge"],
       knee: ["knee-single-leg-bridge", "knee-standing-hip-flexion"],
       "ankle-foot": ["ankle-single-leg-bridge", "ankle-standing-hip-flexion"],
     };
