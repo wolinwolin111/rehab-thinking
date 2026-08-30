@@ -1368,12 +1368,61 @@
     "evidenceType": "unit",
     "script": "tests/component/rendered-html.test.mjs",
     "titlePattern": "ships a complete production-region assessment library and drops unsupported regions",
-    "status": "pending",
-    "notes": "契约已预销：生产 4 区域齐全 + 7 非生产区不在 FULL_REGIONS + UNSUPPORTED_REGION_NAMES 覆盖 7 区；删除提交后置 passed",
+    "status": "passed",
+    "notes": "删除后契约转绿：生产 4 区齐全 + 7 非生产区不在 FULL_REGIONS + UNSUPPORTED_REGION_NAMES 覆盖 + DIRECTION_CHAINS 销账",
     "tags": [
       "unit",
       "contract",
       "region-cleanup"
+    ]
+  },
+  {
+    "scenarioId": "U-1-unsupported-shoulder",
+    "ruleIds": [
+      "U-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/unsupported-region-hint.spec.ts",
+    "titlePattern": "U-1 提肩 → 暂不支持提示（肩关节与肩胛）",
+    "status": "passed",
+    "notes": "提肩→暂不支持肩关节与肩胛，现在只开放大腿至足部（46cf0dc 名称表驱动）",
+    "tags": [
+      "scenario",
+      "region-cleanup"
+    ]
+  },
+  {
+    "scenarioId": "U-2-unsupported-neck",
+    "ruleIds": [
+      "U-2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/unsupported-region-hint.spec.ts",
+    "titlePattern": "U-2 提颈 → 暂不支持提示（颈部）",
+    "status": "passed",
+    "notes": "提颈→暂不支持颈部",
+    "tags": [
+      "scenario",
+      "region-cleanup"
+    ]
+  },
+  {
+    "scenarioId": "U-3-restore-filters-nonprod",
+    "ruleIds": [
+      "U-3"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/component/rendered-html.test.mjs",
+    "titlePattern": "旧快照非生产 regionId 恢复安全降级",
+    "status": "passed",
+    "notes": "restoreRecord 用 isPilotRegion 过滤 bodyLocations 非生产 regionId",
+    "tags": [
+      "unit",
+      "region-cleanup",
+      "contract"
     ]
   }
 ]

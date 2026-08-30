@@ -16,12 +16,6 @@ const coreSource = await readFile(new URL("../../src/domain/rehab/treatment/buil
 
 // 运行时知识面只含已验证知识合同：4 个生产区域；7 个非生产区域从 FULL_REGIONS 移除，
 // 名称由 UNSUPPORTED_REGION_NAMES 表提供（「暂不支持」提示不再依赖知识数据）。
-const PRODUCTION_REGIONS = [
-  ["thigh-local", "大腿局部"],
-  ["knee", "膝关节"],
-  ["calf-local", "小腿局部"],
-  ["ankle-foot", "踝关节与足"],
-];
 const UNSUPPORTED_REGIONS = [
   ["neck", "颈部"],
   ["shoulder", "肩关节与肩胛"],
@@ -46,24 +40,33 @@ test("server-renders the complete RehabMind six-step workflow", async () => {
 
 test("ships a complete production-region assessment library and drops unsupported regions", async () => {
   const content = await readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
+  const limb = await readFile(new URL("../../src/knowledge/pilot/local-limb-regions.ts", import.meta.url), "utf8");
 
   assert.match(content, /export const FULL_REGIONS/);
   assert.match(content, /export type FullRegionId/);
-  // 生产 4 区域齐全（含 id 与名称）。
-  for (const [id, name] of PRODUCTION_REGIONS) {
+  // 生产 4 区域齐全：knee/ankle-foot 对象定义在 full-demo-content；thigh-local/calf-local 来自 local-limb-regions。
+  for (const [id, name] of [["knee", "膝关节"], ["ankle-foot", "踝关节与足"]]) {
     assert.match(content, new RegExp(`id:\\s*"${id}"`));
     assert.match(content, new RegExp(`name:\\s*"${name}"`));
   }
-  // 删除后 7 个非生产区域不得出现在 FULL_REGIONS 装配里（FULL_REGIONS 只保留生产区）。
+  for (const [id, name] of [["thigh-local", "大腿局部"], ["calf-local", "小腿局部"]]) {
+    assert.match(limb, new RegExp(`id:\\s*"${id}"`));
+    assert.match(limb, new RegExp(`name:\\s*"${name}"`));
+  }
+  // FULL_REGIONS 装配只含生产区（thigh-local/calf-local 经变量引用，knee/ankle-foot 经对象）。
   const fullness = content.match(/export const FULL_REGIONS: FullRegion\[\] = \[([\s\S]*?)\s*\];/);
   assert.ok(fullness, "FULL_REGIONS 装配必须存在");
+  assert.match(fullness[1], /THIGH_LOCAL_REGION/);
+  assert.match(fullness[1], /CALF_LOCAL_REGION/);
+  assert.match(fullness[1], /\bknee\b/);
+  assert.match(fullness[1], /\bankleFoot\b/);
   for (const [id] of UNSUPPORTED_REGIONS) {
     assert.doesNotMatch(fullness[1], new RegExp(`\\b${id}\\b`));
   }
   // UNSUPPORTED_REGION_NAMES 覆盖 7 个非生产区域（名称表驱动「暂不支持」提示）。
   const support = await readFile(new URL("../../src/features/rehabmind/components/workbench/workbench-support.tsx", import.meta.url), "utf8");
   for (const [id, name] of UNSUPPORTED_REGIONS) {
-    assert.match(support, new RegExp(`${id}:\\s*"${name}"`));
+    assert.match(support, new RegExp(`(?:${id}|"${id}"):\\s*"${name}"`));
   }
 
   for (const capability of [
@@ -468,16 +471,10 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /disabled=\{key === "jointMobilization"/);
   assert.match(demo, /const intakeRef = useRef<IntakeState>\(DEFAULT_INTAKE\)/);
   assert.match(content, /REGIONAL_MOBILITY_CLUSTERS/);
-  assert.match(content, /SPINAL_CONTROL_PLANS/);
-  assert.match(content, /颈部中立位深层稳定训练/);
-  assert.match(content, /胸廓呼吸与躯干稳定训练/);
-  assert.match(content, /腰腹深层稳定训练/);
-  assert.match(content, /不把复测动作当成训练反复练习/);
-  assert.match(content, /不为了追求角度反复处理/);
-  assert.match(content, /腰大肌、髂肌、股直肌与阔筋膜张肌/);
-  assert.match(content, /exercise\("lumbar-hip-hinge", "站立屈髋"/);
+  // 生产区哨兵（knee 保留 hip-flexion 动作 tag；hip/lumbar 非生产区内容已删除）。
   assert.match(content, /exercise\("knee-standing-hip-flexion", "站立屈髋"/);
-  assert.match(content, /exercise\("hip-sit-stand-hinge", "站立屈髋与坐站"/);
+  assert.doesNotMatch(content, /exercise\("lumbar-hip-hinge"/);
+  assert.doesNotMatch(content, /exercise\("hip-sit-stand-hinge"/);
   assert.doesNotMatch(content, /"臀桥或死虫"/);
   assert.doesNotMatch(content, /"臀桥与双脚提踵"/);
   assert.match(content, /withRegionalMobility\(knee/);
@@ -550,6 +547,8 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(content, /functional\("ankle-squat"/);
   assert.match(demo, /snapshot/);
   assert.match(demo, /restoreRecord/);
+  // 旧快照含非生产 regionId 的恢复安全降级：bodyLocations 用 isPilotRegion 过滤掉非生产区。
+  assert.match(demo, /bodyLocations\?\.filter\(\(item\) => isPilotRegion\(item\.regionId\)\)/);
   assert.match(demo, /补充影像/);
   assert.match(demo, /还没到建议复查时间/);
   assert.match(demo, /提前开始/);
