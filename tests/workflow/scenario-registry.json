@@ -1358,5 +1358,22 @@
       "scenario",
       "recurrent-flare"
     ]
+  },
+  {
+    "scenarioId": "KR-CONTRACT-prod-region-only",
+    "ruleIds": [
+      "KR-CONTRACT-PROD-REGION"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/component/rendered-html.test.mjs",
+    "titlePattern": "ships a complete production-region assessment library and drops unsupported regions",
+    "status": "pending",
+    "notes": "契约已预销：生产 4 区域齐全 + 7 非生产区不在 FULL_REGIONS + UNSUPPORTED_REGION_NAMES 覆盖 7 区；删除提交后置 passed",
+    "tags": [
+      "unit",
+      "contract",
+      "region-cleanup"
+    ]
   }
 ]

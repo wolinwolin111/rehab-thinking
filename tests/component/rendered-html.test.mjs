@@ -14,7 +14,15 @@ const SIX_STEPS = ["症状信息", "关键确认", "评估检查", "处理复测
 
 const coreSource = await readFile(new URL("../../src/domain/rehab/treatment/build-trial-targets-core.ts", import.meta.url), "utf8");
 
-const NINE_REGIONS = [
+// 运行时知识面只含已验证知识合同：4 个生产区域；7 个非生产区域从 FULL_REGIONS 移除，
+// 名称由 UNSUPPORTED_REGION_NAMES 表提供（「暂不支持」提示不再依赖知识数据）。
+const PRODUCTION_REGIONS = [
+  ["thigh-local", "大腿局部"],
+  ["knee", "膝关节"],
+  ["calf-local", "小腿局部"],
+  ["ankle-foot", "踝关节与足"],
+];
+const UNSUPPORTED_REGIONS = [
   ["neck", "颈部"],
   ["shoulder", "肩关节与肩胛"],
   ["thoracic-rib", "胸椎与肋骨"],
@@ -22,8 +30,6 @@ const NINE_REGIONS = [
   ["wrist-hand", "腕与手"],
   ["lumbar-pelvis", "腰椎与骨盆"],
   ["hip-thigh", "髋关节与大腿"],
-  ["knee", "膝关节"],
-  ["ankle-foot", "踝关节与足"],
 ];
 
 test("server-renders the complete RehabMind six-step workflow", async () => {
@@ -38,14 +44,26 @@ test("server-renders the complete RehabMind six-step workflow", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
-test("ships a complete nine-region assessment and intervention library", async () => {
+test("ships a complete production-region assessment library and drops unsupported regions", async () => {
   const content = await readFile(new URL("../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
 
   assert.match(content, /export const FULL_REGIONS/);
   assert.match(content, /export type FullRegionId/);
-  for (const [id, name] of NINE_REGIONS) {
+  // 生产 4 区域齐全（含 id 与名称）。
+  for (const [id, name] of PRODUCTION_REGIONS) {
     assert.match(content, new RegExp(`id:\\s*"${id}"`));
     assert.match(content, new RegExp(`name:\\s*"${name}"`));
+  }
+  // 删除后 7 个非生产区域不得出现在 FULL_REGIONS 装配里（FULL_REGIONS 只保留生产区）。
+  const fullness = content.match(/export const FULL_REGIONS: FullRegion\[\] = \[([\s\S]*?)\s*\];/);
+  assert.ok(fullness, "FULL_REGIONS 装配必须存在");
+  for (const [id] of UNSUPPORTED_REGIONS) {
+    assert.doesNotMatch(fullness[1], new RegExp(`\\b${id}\\b`));
+  }
+  // UNSUPPORTED_REGION_NAMES 覆盖 7 个非生产区域（名称表驱动「暂不支持」提示）。
+  const support = await readFile(new URL("../../src/features/rehabmind/components/workbench/workbench-support.tsx", import.meta.url), "utf8");
+  for (const [id, name] of UNSUPPORTED_REGIONS) {
+    assert.match(support, new RegExp(`${id}:\\s*"${name}"`));
   }
 
   for (const capability of [
@@ -647,9 +665,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.doesNotMatch(content, /knee-patella-tenderness-self/);
 
   // Full-positive queue control, chain grouping and midpoint decision.
-  assert.match(content, /export const DIRECTION_CHAINS/);
-  assert.match(content, /矢状面·前侧链/);
-  assert.match(content, /额状面·外侧链/);
+  // DIRECTION_CHAINS 导出已删除（candidate-order-core 用私有副本），不再断言其作为导出存在。
   assert.match(coreSource, /chiefCandidates = orderedChiefCandidates\.slice\(0, 3\)/);
   assert.match(coreSource, /matchedChiefCandidateIds/);
   assert.match(coreSource, /matchedChiefCandidateIds\.has\(candidate\.id\) \? 30 : 0/);
