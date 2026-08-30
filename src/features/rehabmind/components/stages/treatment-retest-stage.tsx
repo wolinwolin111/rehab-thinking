@@ -642,6 +642,9 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     const hasUnresolvedRangeProgress = trialRecords.some((record) =>
       Object.values(record.rangeOutcomes ?? {}).some((outcome) => outcome !== "both-match"));
     const hasUnresolvedImmediateTreatmentProblem = unresolvedImmediateLedgerProblems.length > 0 || unresolvedLedgerProblem || hasUnresolvedRangeProgress;
+    // 处理与复查都完成、主诉仍未解释且有可查方向时，走完成面板的继续
+    // 排查出口；不再被「仍有待处理」面板抢占（后者保留给查无可查的场景）。
+    const continuationExitActive = treatmentComplete && continuationSuggestions.length > 0;
     const unresolvedImmediateLabels = unresolvedImmediateLedgerProblems
       .map((entry) => treatmentProblems.find((problem) => problem.id === entry.id)?.title ?? entry.id)
       .filter((label, index, list) => label && list.indexOf(label) === index)
@@ -683,7 +686,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
         </section>
       </section>;
     }
-    if (hasUnresolvedImmediateTreatmentProblem) {
+    if (hasUnresolvedImmediateTreatmentProblem && !continuationExitActive) {
       return <section className="rm-page">
         <StepHeading eyebrow="第4步 · 处理与即时复测" title="本阶段成果" />
         <section className="rm-complete-panel is-caution">
@@ -734,7 +737,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
             ? completedAttemptDetail
             : tissuePathway.id !== "standard" ? tissuePathway.immediateActions.join("；") : treatmentEmptyState.detail}</p>
         {weakStrengthProblems.length ? <section className="rm-strength-handoff"><strong>还有力量或控制问题</strong><span>{weakStrengthProblems.map((finding) => finding.title).join("、")}</span><small>训练阶段会从低体位开始针对性练习。</small></section> : null}
-        {treatmentComplete && completedTreatmentAttempt && continuationSuggestions.length ? (
+        {treatmentComplete && continuationSuggestions.length ? (
           <section className="rm-stage-outcome-track">
             <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
             <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
