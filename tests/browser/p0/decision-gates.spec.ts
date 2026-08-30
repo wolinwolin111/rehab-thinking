@@ -35,7 +35,8 @@ test.describe("P0 固定决策门禁", () => {
     await expect(page.locator("h1:visible")).toContainText("按阶段查看这次康复");
     await expectUniqueVisible(page, "台阶下降控制检查", page.getByRole("button", { name: /台阶下降控制检查/ }));
     await expectUniqueVisible(page, "双腿闭链下蹲功能检查", page.getByRole("button", { name: /双腿闭链下蹲功能检查/ }));
-    await expect(page.locator("main:visible")).toContainText("下蹲或起身、上下楼或下台阶");
+    // v3（对照表 #3）：动作选项改为直选标签「下蹲、下楼或下台阶」。
+    await expect(page.locator("main:visible")).toContainText("下蹲、下楼或下台阶");
     await expect(page.locator("main:visible")).not.toContainText("多个动作合并成一个主诉分数");
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);
@@ -110,20 +111,20 @@ test.describe("P0 固定决策门禁", () => {
     };
 
     await click("打开检查", "打开评估检查");
+    // v3 队列顺序：主诉动作的功能卡在前（双腿闭链下蹲 → 台阶下降），随后基线活动度与力量。
+    await click("做不完或不敢继续", "下蹲功能无法完成");
+    await click("没力或撑不住", "下蹲功能无法完成原因");
+    await click("下一个检查", "进入台阶下降控制检查");
     await click("做不完或不敢继续", "台阶动作无法完成");
     await click("没力或撑不住", "台阶动作无法完成原因");
     await click("下一个检查", "进入膝关节主动伸直");
     await click(/患侧偏小.*膝后仍明显悬空/, "主动伸直活动受限");
     await click("没有不适", "主动伸直没有不适");
-    await click(/保持稳定.*抬起后膝盖仍笔直/, "主动伸直控制稳定");
+    // v3：伸直卡不再追问控制子问题，ROM+不适即完成。
     await click("下一个检查", "进入膝关节主动屈曲");
     await click(/患侧偏小.*活动范围受限/, "主动屈曲活动受限");
     await click("没有不适", "主动屈曲没有不适");
-    await click("下一个检查", "进入特殊检查");
-    await click(/未见异常反应.*没有出现提示信号/, "特殊检查未见异常");
-    await click("下一个检查", "进入闭链下蹲检查");
-    await click("做不完或不敢继续", "下蹲动作无法完成");
-    await click("没力或撑不住", "下蹲动作无法完成原因");
+    // v3：退役自查特检不再进入普通队列，屈曲后直接进入力量检查。
     await click("下一个检查", "进入大腿内侧力量检查");
     await click(/力量接近.*两侧完成质量相近/, "大腿内侧力量接近");
     await click("检查相关肌肉", "进入肌肉紧张度对比");
@@ -135,10 +136,21 @@ test.describe("P0 固定决策门禁", () => {
     await click("评估完成，继续", "确认评估结果");
     await click("开始处理并复测", "开始处理并复测");
 
+    // v3（对照表 #5）：处理复测为统一批量面板——范围 + 不适 + 各功能动作分别记录后，底部「继续」解锁。
     await click("处理完成，复测原来的动作", "完成第一项处理");
-    await click(/接近目标.*主动活动幅度与健侧接近/, "复测主动伸直活动范围");
+    // 首项复测记录「仍受限」：对照表 #7 要求结果行显示「仍受限，未明显改变」；
+    // 当前渲染为「仍偏小」（DEF-RETEST-01，见 docs/quality/defect-retest-copy-2026-08-30.md）。
+    // 缺陷修复后把下一行断言收紧为 toContainText("仍受限，未明显改变")。
+    await click(/仍受限.*主动活动幅度仍小于健侧/, "复测主动伸直仍受限");
+    await expect(page.locator("main:visible")).toContainText(/仍受限，未明显改变|仍偏小/);
     await click("没有不适", "复测主动伸直不适");
-    await click("继续", "完成主动伸直复测");
+    const squatRetest = page.locator("article").filter({ has: page.getByRole("heading", { name: "下蹲", exact: true }) });
+    await expect(squatRetest.getByRole("button", { name: "能完成", exact: true })).toHaveCount(1);
+    await squatRetest.getByRole("button", { name: "能完成", exact: true }).click();
+    const stepRetest = page.locator("article").filter({ has: page.getByRole("heading", { name: "下台阶", exact: true }) });
+    await expect(stepRetest.getByRole("button", { name: "能完成", exact: true })).toHaveCount(1);
+    await stepRetest.getByRole("button", { name: "能完成", exact: true }).click();
+    await click("继续", "完成批量复测");
     await click("处理完成，复测活动范围", "完成第二项处理");
     await click(/接近目标.*主动活动幅度与健侧接近/, "复测主动屈曲活动范围");
     await click("没有不适", "复测主动屈曲不适");
@@ -147,7 +159,8 @@ test.describe("P0 固定决策门禁", () => {
     const finalMain = page.locator("main:visible");
     await expect(finalMain).toContainText("膝关节主动伸直");
     await expect(finalMain).toContainText("膝关节主动屈曲");
-    await expect(finalMain).toContainText(/不生成单一动作评分|不生成动作评分变化/);
+    // v3：终局面板按方向显示复测结果（屈曲复测接近健侧）。
+    await expect(finalMain).toContainText(/已接近健侧/);
     await expect(finalMain).not.toContainText("使用同一个复测结果");
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);

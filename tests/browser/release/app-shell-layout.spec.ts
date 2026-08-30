@@ -28,10 +28,15 @@ test("App shell keeps first use, navigation and records usable at supported phon
   await page.getByRole("button", { name: "同意并创建案例", exact: true }).click();
   await expect(page.locator('[data-rehabmind-tutorial="symptom-input"]')).toBeEditable();
 
-  const focusSkip = page.locator(".rm-focus-skip");
-  await expect(focusSkip).toBeVisible();
-  await focusSkip.click();
-  await expect(page.locator(".rm-focus-onboarding")).toBeHidden();
+  // v3：聚焦教程延迟挂载（约2.5s）——轮询出现即跳过，避免拦截后续点击。
+  const tutorial = page.locator(".rm-focus-onboarding");
+  const skip = tutorial.getByRole("button", { name: "跳过教程", exact: true });
+  try {
+    await skip.click({ timeout: 8_000 });
+  } catch {
+    // 教程未出现则继续
+  }
+  await expect(tutorial).toHaveCount(0);
 
   for (const viewport of PHONE_VIEWPORTS) {
     await page.setViewportSize(viewport);

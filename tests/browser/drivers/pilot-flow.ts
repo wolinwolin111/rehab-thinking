@@ -79,10 +79,11 @@ export async function prepareProfessionalMultiAction(page: Page) {
   await chooseVisibleSelects(page);
   await clickUnique(page, "疼痛，性质说不清", "疼痛性质");
   await clickUnique(page, "没有以上情况", "其他情况没有以上情况");
-  await clickUnique(page, "走路、站立或负重", "负重动作");
-  const squat = await expectUniqueVisible(page, "下蹲或起身动作", page.locator(".rm-action-picker-grid button:visible").filter({ hasText: "下蹲或起身" }));
+  // v3（对照表 #3）：诱发动作统一为多选动作直选制，类别按钮（走路、站立或负重）退役。
+  // 只选「下蹲」「下楼或下台阶」两个动作，避免引入额外的走路功能卡。
+  const squat = await expectUniqueVisible(page, "下蹲动作", page.locator(".rm-action-picker-grid button:visible").filter({ hasText: /^下蹲$/ }));
   await squat.click();
-  const stairs = await expectUniqueVisible(page, "上下楼或下台阶动作", page.locator(".rm-action-picker-grid button:visible").filter({ hasText: "上下楼或下台阶" }));
+  const stairs = await expectUniqueVisible(page, "下楼或下台阶动作", page.locator(".rm-action-picker-grid button:visible").filter({ hasText: /^下楼或下台阶$/ }));
   await stairs.click();
   await clickUnique(page, /恢复正常生活/, "恢复正常生活目标");
   await completeSafetyToAssessment(page);

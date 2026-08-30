@@ -49,7 +49,8 @@ test("L6 anonymous case autosaves, restores and submits case-bound feedback @rel
   await input.fill(description);
   await expect.poll(() => page.evaluate(async (expected) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = window.indexedDB.open("rehabmind-local-cases", 2);
+      // 不带版本号打开：跟随应用已建立的当前版本（v3 存储为 v5）。
+      const request = window.indexedDB.open("rehabmind-local-cases");
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });

@@ -70,13 +70,16 @@ export async function skipOnboarding(page: Page) {
     await consent.getByRole("button", { name: "同意并创建案例", exact: true }).click();
     await expect(consent).toHaveCount(0);
   }
-  const dialog = page.locator('.rm-focus-onboarding[role="dialog"]:visible');
-  const skip = dialog.getByRole("button", { name: "跳过教程", exact: true });
-  if (await skip.count()) {
-    await expect(skip).toBeVisible();
-    await skip.click();
+  const tutorial = page.locator('.rm-focus-onboarding[role="dialog"]');
+  const skip = tutorial.getByRole("button", { name: "跳过教程", exact: true });
+  // v3 教程在创建后延迟挂载（实测约2.5s）：轮询等待出现即跳过；确认不出现再继续，
+  // 否则教程浮层会拦截后续点击（app-shell/visual 全量回归曾因此连片失败）。
+  try {
+    await skip.click({ timeout: 8_000 });
+  } catch {
+    // 教程未出现（非首次使用路径），无需跳过
   }
-  await expect(dialog).toHaveCount(0);
+  await expect(tutorial).toHaveCount(0);
 }
 
 export function symptomOrganizeButton(page: Page) {

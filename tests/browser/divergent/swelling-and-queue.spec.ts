@@ -71,8 +71,8 @@ async function prepareSwellingOnly(page: Page) {
     }
     if (await clickUnselected(page.getByRole("button", { name: "说不清的不适", exact: true }), "无固定疼痛动作的不适性质")) continue;
     if (await clickUnselected(page.getByRole("button", { name: "肿胀或淤青", exact: true }), "肿胀情况")) continue;
-    if (await clickUnselected(page.getByRole("button", { name: "说不清 / 没有固定动作", exact: true }), "没有固定动作")) continue;
-    if (await clickUnselected(page.locator(".rm-action-picker-block:visible").getByRole("button", { name: "说不清或没有固定动作", exact: true }), "确认没有固定动作")) continue;
+    // v3（对照表 #3）：诱发动作统一为多选动作直选制，「没有固定动作」是动作网格内的兜底按钮。
+    if (await clickUnselected(page.locator(".rm-unified-provocation:visible").getByRole("button", { name: "没有固定动作", exact: true }), "没有固定动作")) continue;
     if (await clickUnselected(page.getByRole("button", { name: /先消肿止痛/ }), "恢复目标")) continue;
 
     const enterSafety = page.getByRole("button", { name: "进入关键确认", exact: true }).first();
@@ -99,11 +99,12 @@ async function completeNormalAssessment(page: Page) {
     if (/先看清问题，再开始处理/.test(title)) return;
     if (/本阶段成果|评估检查完成/.test(title)) throw new Error(`肿胀场景评估提前结束：${title}`);
 
-    if (await clickMatching(page, /^接近健侧|^可以完成|^角度基本正常|^与另一方向接近|^接近平时范围/, "正常活动范围")) continue;
+    if (await clickMatching(page, /^接近健侧|^可以做完|^可以完成|^角度基本正常|^与另一方向接近|^接近平时范围/, "正常活动范围或功能完成")) continue;
     if (await clickMatching(page, /^没有不适$/, "活动没有不适")) continue;
     if (await clickMatching(page, /^软性终末感$/, "正常终末感")) continue;
-    if (await clickMatching(page, /^保持稳定|^力量接近|^完成质量正常|^未见异常反应/, "正常控制或专项检查")) continue;
+    if (await clickMatching(page, /^保持稳定|^动作基本稳定|^力量接近|^完成质量正常|^未见异常反应/, "正常控制或专项检查")) continue;
     if (await clickMatching(page, /^没有明显差别/, "没有明显肌肉差异")) continue;
+    if (await clickMatching(page, /^不会$/, "动作没有诱发不适")) continue;
 
     const next = page.getByRole("button", { name: /下一个检查|检查相关肌肉|查看评估结果/ }).filter({ visible: true }).first();
     if (await next.count() && !await next.isDisabled().catch(() => true)) {
@@ -157,20 +158,17 @@ test.describe("发散决策组合：肿胀与队列", () => {
     };
 
     await click("打开检查", "打开混合结果评估");
-    await click("暂时不做", "未知的台阶动作");
+    // v3 队列顺序：功能卡在前——双腿闭链下蹲 → 台阶下降 → 主动伸直 → 主动屈曲 → 力量。
+    await click("暂时不做", "未知的双腿闭链下蹲");
+    await click("下一个检查", "进入台阶下降控制检查");
+    await click("做不完或不敢继续", "异常的台阶下降");
+    await click("没力或撑不住", "台阶下降无法完成原因");
     await click("下一个检查", "进入膝关节主动伸直");
     await click(/^患侧偏小/, "异常的主动伸直范围");
     await click("没有不适", "主动伸直没有不适");
-    await click(/^保持稳定/, "主动伸直控制稳定");
     await click("下一个检查", "进入膝关节主动屈曲");
-    await click(/接近健侧.*两侧幅度相近/, "正常的主动屈曲范围");
+    await click(/接近健侧.*两侧幅度相近|接近健侧/, "正常的主动屈曲范围");
     await click("没有不适", "主动屈曲没有不适");
-    await click("下一个检查", "进入特殊检查");
-    await click(/未见异常反应.*没有出现提示信号/, "正常的特殊检查");
-    await click("下一个检查", "进入闭链下蹲检查");
-    await click("可以做完", "正常的下蹲完成度");
-    await click("动作基本稳定", "正常的下蹲控制");
-    await click("不会", "正常的下蹲不适");
     await click("下一个检查", "进入力量检查");
     await click(/控制偏弱.*耐力或保持不足|患侧偏弱.*不舒服这侧更差/, "异常的力量控制");
     await click("检查相关肌肉", "进入相关肌群触诊");
