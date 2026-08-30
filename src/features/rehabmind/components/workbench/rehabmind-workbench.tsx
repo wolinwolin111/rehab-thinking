@@ -5485,6 +5485,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
     setHasNewSymptom("");
+    setContinuationRoundIds([]);
     setFollowupTrends({});
     sessionHistoryRef.current = [];
     setSessionHistory([]);
@@ -5707,6 +5708,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setSessionStartedAt(nextStartedAt);
     setSessionNumber(1);
     setRetestContractVersion(1);
+    setContinuationRoundIds([]);
     sessionHistoryRef.current = [];
     setSessionHistory([]);
     setAssessmentRevision(0);
@@ -6067,6 +6069,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setFollowupFinalScore(0);
     setFollowupFinalScoreConfirmed(false);
     setHasNewSymptom("");
+    setContinuationRoundIds([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

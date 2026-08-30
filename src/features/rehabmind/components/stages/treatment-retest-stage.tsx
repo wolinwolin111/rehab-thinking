@@ -693,16 +693,6 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           {(() => { const note = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: lastChiefScore, hasRangeImprovement: treatmentCoverage.hasRangeImprovement, noImmediateResponse: noImmediateTreatmentResponse }); return note ? <p className="rm-chief-change-note">{note}</p> : null; })()}
           <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
           {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><strong>仍有待处理</strong><span>{unresolvedImmediateLabels.join("、")}</span><small>可重新确认或先进入训练巩固。</small></section> : null}
-          {continuationSuggestions.length ? (
-            <section className="rm-stage-outcome-track">
-              <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
-              <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
-              <div className="rm-page-actions">
-                <button type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
-                <small>也可以先进入训练；这些方向以后仍然可以补查。</small>
-              </div>
-            </section>
-          ) : null}
           <div className="rm-page-actions three">
             <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
             <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认剩余问题"}</button>
@@ -744,6 +734,16 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
             ? completedAttemptDetail
             : tissuePathway.id !== "standard" ? tissuePathway.immediateActions.join("；") : treatmentEmptyState.detail}</p>
         {weakStrengthProblems.length ? <section className="rm-strength-handoff"><strong>还有力量或控制问题</strong><span>{weakStrengthProblems.map((finding) => finding.title).join("、")}</span><small>训练阶段会从低体位开始针对性练习。</small></section> : null}
+        {treatmentComplete && completedTreatmentAttempt && continuationSuggestions.length ? (
+          <section className="rm-stage-outcome-track">
+            <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
+            <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
+            <div className="rm-page-actions">
+              <button type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
+              <small>也可以先进入训练或保存记录；这些方向以后仍然可以补查。</small>
+            </div>
+          </section>
+        ) : null}
         {assessmentEvidenceInsufficient
           ? <div className="rm-page-actions three"><button type="button" className="rm-primary" onClick={() => assessmentGap ? openAssessmentItem(assessmentGap.assessmentId, "已定位到需要补充的检查；完成后会回到原流程。") : reopenAssessment()}>{assessmentGapActionLabel(assessmentGap)}</button><button type="button" onClick={() => { const missing = intakeMissingFields[0]; if (missing) { setStep(0); setReviewStep(null); jumpToIntakeQuestion(missing); } else reopenAssessment(); }}>{intakeMissingFields[0] ? `补充${intakeMissingFields[0]}` : "补充症状信息"}</button><button type="button" onClick={() => saveRecord("评估未完成")}>保存，之后继续</button></div>
           : completedTreatmentAttempt
