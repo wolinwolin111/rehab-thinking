@@ -998,7 +998,7 @@
       "p0"
     ],
     "status": "passed",
-    "notes": "DEF-RETEST-01 已由 5db4aca 修复复测通过；126c7f5 口径变更抽查通过（RET-02 三断言仍成立）；已完成 range 项显示处理目标 title（trial.targetTitle），与 owner「处理名」示例的口径差异已回报待确认"
+    "notes": "DEF-RETEST-01 已修（5db4aca）复测通过；126c7f5 台账口径变更：owner 裁定已完成 range 项显示发现标题、待复查项显示评估项目名（L224 fallback 不改），RET-02 已固化断言"
   },
   {
     "scenarioId": "KR-B1-extension-contract-loop",

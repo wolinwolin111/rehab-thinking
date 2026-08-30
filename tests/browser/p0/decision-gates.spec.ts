@@ -138,6 +138,9 @@ test.describe("P0 固定决策门禁", () => {
 
     // v3（对照表 #5）：处理复测为统一批量面板——范围 + 不适 + 各功能动作分别记录后，底部「继续」解锁。
     await click("处理完成，复测原来的动作", "完成第一项处理");
+    // 126c7f5 口径：此刻伸直 range 义务 pending，台账显示评估项目名（裸域 id 映射）。
+    const ledger = page.locator('[data-testid="retest-ledger-summary"]');
+    await expect(ledger).toContainText(/膝关节主动伸直/);
     // 首项复测记录「仍受限」：对照表 #7 要求结果行显示「仍受限，未明显改变」。
     // DEF-RETEST-01 已由 5db4aca 修复（passive-limited 文案统一），断言收紧。
     await click(/仍受限.*主动活动幅度仍小于健侧/, "复测主动伸直仍受限");
@@ -165,6 +168,10 @@ test.describe("P0 固定决策门禁", () => {
     await expect(finalMain).not.toContainText("使用同一个复测结果");
     // DEF-RETEST-01 缺陷 B（5db4aca 修复）：台账不得泄漏原始域 id。
     await expect(finalMain).not.toContainText("knee-extension");
+    // 126c7f5 口径（owner 裁定）：台账已完成 range 项显示发现标题（被复查的问题），
+    // 而非处理候选名；L224 fallback 顺序不改。
+    await expect(ledger).toContainText("把膝盖绷直范围偏小");
+    await expect(ledger).not.toContainText("髌骨松动术");
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);
   });

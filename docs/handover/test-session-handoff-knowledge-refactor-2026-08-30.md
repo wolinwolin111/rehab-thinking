@@ -82,7 +82,7 @@ runner 显示 EXITCODE 0 但**一个测试都没跑**（runner 不传播失败�
 
 | id | 级别 | 摘要 | 证据 |
 |---|---|---|---|
-| ~~DEF-RETEST-01~~ | — | **已修复（`5db4aca`）并复测通过**：`passive-limited` 文案统一「仍受限，未明显改变」；台账 range 义务 label 经 `professionalAssessmentTitle` 映射，`knee-extension` 泄漏消除。RET-02 断言已收紧（含 `仍偏小`/`knee-extension` 负断言） | `tests/browser/p0/decision-gates.spec.ts` RET-02（passed） |
+| ~~DEF-RETEST-01~~ | — | **已修复（`5db4aca`，台账口径 `126c7f5`）并复测通过**：`passive-limited` 文案统一「仍受限，未明显改变」；台账 range 义务 label 映射（裸域 id→评估项目名）。owner 裁定 126c7f5：已完成 range 项显示**发现标题**（被复查的问题），待复查项显示**评估项目名**；`retest-ledger-core.ts` L224 fallback 顺序不改。RET-02 断言已固化 | `tests/browser/p0/decision-gates.spec.ts` RET-02（passed） |
 | ~~DEF-CONTINUATION-CARD~~ | — | **已修复（`8191fb0`）并复测通过**：`continuationExitActive` 绕过「仍有待处理」分支；C-1~C-4 全链路浏览器证据建立（含查无可查反向确认） | `tests/browser/scenarios/continuation-chain.spec.ts`（4/4 passed） |
 | ~~DEF-SPECIAL-QUEUE~~ | — | **已修复（`8191fb0`）并复测通过**：触发专项尾部追加不占预算；需**急性扭转口径**（慢性无外伤不触发）。safety 类阳性 → 转介出口，stability 类阳性 → 后续跟踪 | `tests/browser/scenarios/safety-blocking.spec.ts` D-3（passed） |
 | ~~runner 缺陷~~ | — | **已撤回（第二轮复核）**：`run-browser-tests.mjs` 与 npm 包装层均正确传播退出码（用必失败参数实测 EXITCODE 1）。首轮记录的 EXITCODE 0 为当次测量方式误读；判绿仍以 passed/failed 行为准 | 本轮 probe 实测（probe-exit → EXITCODE:1） |
