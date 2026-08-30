@@ -548,6 +548,30 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     fixtureNote: "预期：页面显示“当前只开放低负荷基础活动”，进阶按钮不可用。",
   },
   {
+    id: "assessment-all-normal",
+    title: "评估全正常空态",
+    description: "直接检查评估全正常、无固定主诉动作时处理段的空态出口。",
+    mode: "page_boundary",
+    target: "后续康复边界",
+    initialProblem: "右膝不适，没有明确的诱发动作。",
+    step: 3,
+    snapshotOverrides: {
+      assessmentResults: {
+        ...KNEE_PAGE_ASSESSMENTS,
+        "motion:knee-extension": NORMAL_MOTION,
+        [SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked: true, tensionLocations: [] },
+      },
+      intake: {
+        customAction: "",
+        reproduction: "",
+        noFixedAction: true,
+        provocationTypes: ["说不清 / 没有固定动作"],
+        baselineScore: 0,
+        baselineScoreConfirmed: false,
+      },
+    },
+  },
+  {
     id: "treatment-improved",
     title: "后续康复后改善",
     description: "直接检查后续康复与改善复测页面的接线。",
