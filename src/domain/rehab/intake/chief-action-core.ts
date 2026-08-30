@@ -9,6 +9,7 @@
 export type ChiefActionIntake = {
   side?: string;
   onset?: string;
+  lastEpisodeOnset?: string;
   reportedActions?: Array<{ id?: string; kind?: string; raw?: string; label?: string }>;
   customAction?: string;
   reproduction?: string;
@@ -141,7 +142,9 @@ export function assessmentSymptomCanDriveRetest(record: RetestSymptomRecord | un
   return record.familiarSymptom === "yes";
 }
 
-/** 是否急性外伤（近 7 天内 + 扭转/碰撞/拉伤机制）。 */
+/** 是否急性外伤（近 7 天内，或反复问题最近一次发作在 3 天内 + 扭转/碰撞/拉伤机制）。 */
 export function isAcuteTrauma(intake: ChiefActionIntake) {
-  return ["今天或昨天", "2～7天"].includes(intake.onset ?? "") && ["扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤"].includes(intake.mechanism ?? "");
+  const acuteWindow = ["今天或昨天", "2～7天"].includes(intake.onset ?? "")
+    || (intake.onset === "反复出现" && ["今天内", "1～3天前"].includes(intake.lastEpisodeOnset ?? ""));
+  return acuteWindow && ["扭转或崴伤", "跌倒或碰撞", "跑跳或拉伤"].includes(intake.mechanism ?? "");
 }

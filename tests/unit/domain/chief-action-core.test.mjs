@@ -49,6 +49,17 @@ test("assessmentSymptomCanDriveRetest requires a chief action or familiar sympto
   assert.equal(core.assessmentSymptomCanDriveRetest(undefined, kneeSquat), false);
 });
 
+test("isAcuteTrauma treats a recent flare of a recurrent complaint with trauma mechanism as acute", () => {
+  assert.equal(core.isAcuteTrauma({ onset: "今天或昨天", mechanism: "扭转或崴伤" }), true);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", lastEpisodeOnset: "今天内", mechanism: "扭转或崴伤" }), true);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", lastEpisodeOnset: "1～3天前", mechanism: "跌倒或碰撞" }), true);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", lastEpisodeOnset: "4～7天前", mechanism: "扭转或崴伤" }), false);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", lastEpisodeOnset: "说不清", mechanism: "扭转或崴伤" }), false);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", lastEpisodeOnset: "今天内", mechanism: "逐渐出现" }), false);
+  assert.equal(core.isAcuteTrauma({ onset: "反复出现", mechanism: "扭转或崴伤" }), false);
+  assert.equal(core.isAcuteTrauma({ onset: "超过6周", lastEpisodeOnset: "今天内", mechanism: "扭转或崴伤" }), false);
+});
+
 test("short actions like 转头/举手/抬腿 are not filtered out by function action detection", () => {
   // "转头" should not be excluded just because "向左转头" is a direction word in neck
   const neck = { ...kneeSquat, reportedActions: [{ raw: "转头" }], actionAnalysis: { task: "转头" } };
