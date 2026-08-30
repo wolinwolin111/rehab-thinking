@@ -3332,7 +3332,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const needsPainQuality = false;
   const baselineScoreApplicable = shouldCollectBaselineScore(intake);
   const descriptionSuggestsTrauma = includesAny(intake.description, ["崴", "扭伤", "拉伤", "摔", "跌", "撞", "落地", "外伤"]);
-  const mechanismQuestionRelevant = !intake.mechanism && (["今天或昨天", "2～7天"].includes(intake.onset) || descriptionSuggestsTrauma);
+  const mechanismQuestionRelevant = !intake.mechanism && (["今天或昨天", "2～7天"].includes(intake.onset)
+    || (intake.onset === "反复出现" && ["今天内", "1～3天前"].includes(intake.lastEpisodeOnset ?? ""))
+    || descriptionSuggestsTrauma);
   const provocationAlreadyClear = hasClearChiefAction(intake);
   const provocationConfirmedForFlow = confirmedIntakeMulti.provocationTypes || provocationAlreadyClear;
   const hasNoFixedProvocation = intake.noFixedAction;
