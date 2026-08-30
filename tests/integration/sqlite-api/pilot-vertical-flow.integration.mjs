@@ -12,7 +12,7 @@ test("TEST-18: source and consent, routes, SQLite, restart, and follow-up form o
     assert.equal(denied.status, 400);
     assert.equal(denied.body.code, "validation");
 
-    const initialSnapshot = completePilotSnapshot();
+    const initialSnapshot = completePilotSnapshot({ identity: { sessionId: "vertical-case:session-1" } });
     const projection = workflow.projectWorkflowState({
       intakeComplete: true,
       safetyComplete: true,
@@ -82,9 +82,9 @@ test("TEST-18: source and consent, routes, SQLite, restart, and follow-up form o
     const restored = await api.read(access.caseId, access.accessToken);
     assert.equal(restored.status, 200);
     assert.equal(restored.body.case.snapshot.revision, 1);
-    const migrated = snapshotSchema.migratePilotSnapshot(restored.body.case.snapshot.payload);
+    const migrated = snapshotSchema.validatePilotSnapshotV3(restored.body.case.snapshot.payload);
     assert.equal(migrated.ok, true);
-    assert.equal(migrated.snapshot.sessionNumber, 1);
+    assert.equal(migrated.snapshot.identity.sessionNumber, 1);
 
     const followupDecision = workflow.orchestrateWorkflowNavigation({
       currentStep: 5,
@@ -96,12 +96,9 @@ test("TEST-18: source and consent, routes, SQLite, restart, and follow-up form o
     assert.deepEqual(followupDecision.commands, [{ type: "start-followup", sessionNumber: 2 }]);
 
     const followupSnapshot = completePilotSnapshot({
-      step: 4,
-      followupMode: true,
-      sessionNumber: 2,
-      followupScore: 2,
-      followupScoreHistory: [2],
-      followupStage: "review",
+      identity: { sessionId: "vertical-case:session-2", sessionNumber: 2 },
+      workflow: { stage: 4, phase: "training" },
+      draft: { currentSession: { isLaterSession: true, phase: "review", reviewScore: 2, scoreHistory: [2] } },
     });
     const followupSave = await api.save(access.caseId, access.accessToken, {
       requestId: "request-session-2",
@@ -165,7 +162,7 @@ test("A5 SQLite/API: stale writes, invalid snapshots, deletion, and case isolati
       const response = await api.create({
         clientCreationId: `creation-${suffix}`,
         accessToken: `token-${suffix}`,
-        initialSnapshot: completePilotSnapshot({ intake: { regionId: "knee", description: suffix } }),
+        initialSnapshot: completePilotSnapshot({ domain: { intake: { description: suffix } } }),
       });
       assert.equal(response.status, 201);
       return response.body.case;
@@ -197,7 +194,7 @@ test("A5 SQLite/API: stale writes, invalid snapshots, deletion, and case isolati
       sessionId: "first:session-1",
       baseRevision: 0,
       expectedRevision: 0,
-      snapshot: completePilotSnapshot({ intake: { regionId: "knee", description: `race-${suffix}` } }),
+      snapshot: completePilotSnapshot({ identity: { sessionId: "first:session-1" }, domain: { intake: { description: `race-${suffix}` } } }),
       eventId: `race-event-${suffix}`,
       eventType: "session_saved",
       eventPayload: { suffix },

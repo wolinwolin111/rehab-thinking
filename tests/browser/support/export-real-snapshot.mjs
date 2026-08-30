@@ -49,8 +49,9 @@ try {
   let draft = null;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     draft = await page.evaluate(async () => {
+      // 不带版本号打开：始终使用页面已建立的当前版本（v3 存储已升到 v5）。
       const database = await new Promise((resolve, reject) => {
-        const request = window.indexedDB.open("rehabmind-local-cases", 2);
+        const request = window.indexedDB.open("rehabmind-local-cases");
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });

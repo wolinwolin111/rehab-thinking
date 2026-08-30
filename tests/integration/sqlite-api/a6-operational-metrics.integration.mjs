@@ -21,7 +21,7 @@ test("A6 OPS-04/ADMIN-01: first-use events, case operations, filters, and invari
       clientCreationId: "creation-metrics-a",
       accessToken: "access-metrics-a",
       firstUseFlowId: "flow-metrics-a",
-      initialSnapshot: completePilotSnapshot({ step: 4 }),
+      initialSnapshot: completePilotSnapshot({ workflow: { stage: 4, phase: "training" } }),
       currentStage: "训练居家",
       source: { channel: "xiaohongshu", detail: null },
     });
@@ -34,7 +34,7 @@ test("A6 OPS-04/ADMIN-01: first-use events, case operations, filters, and invari
       expectedRevision: 0,
       requestId: "request-metrics-a",
       sessionId: "session-metrics-a",
-      snapshot: completePilotSnapshot({ step: 5 }),
+      snapshot: completePilotSnapshot({ identity: { sessionId: "session-metrics-a" }, workflow: { stage: 5, phase: "summary" } }),
       eventId: "event-metrics-a",
       eventType: "session_saved",
       eventPayload: {

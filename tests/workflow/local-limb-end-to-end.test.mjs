@@ -97,7 +97,8 @@ test("formal demo stores one case with append-only session summaries and restore
   assert.match(demoSource, /setSessionHistory\(snapshot\.sessionHistory \?\? record\.sessionHistory \?\? \[\]\)/);
   assert.match(demoSource, /setReadyToRetest\(snapshot\.readyToRetest \?\? false\)/);
   assert.match(demoSource, /setFollowupReadyToRetest\(snapshot\.followupReadyToRetest \?\? false\)/);
-  assert.match(demoSource, /已记录 \{record\.sessionHistory\?\.length \|\| record\.sessionCount\} 次/);
+  // v3：会话次数改为「已完成 N 次」（sessionHistory.length）。
+  assert.match(demoSource, /已完成 \{sessionHistory\.length\} 次/);
   assert.match(demoSource, /const railStep: Step = followupMode/);
   assert.match(demoSource, /followupStage === "review" \? 2 : followupStage === "treatment" \? 3 : 4/);
   assert.match(demoSource, /source\?\.how \?\? paired\.how/);

@@ -55,8 +55,9 @@ test("local thigh and calf screens include one useful opposing or supporting dir
   assert.deepEqual(rankPilotAssessmentIds({ ...base, regionIds: ["thigh-local"], locations: ["大腿前侧"] }, thighAvailable), [
     "motion:thigh-front-length", "motion:thigh-back-length", "function:thigh-sit-stand",
   ]);
+  // v3（对照表 #4）：小腿内侧只打开内翻方向评估，不再自动带出外翻。
   assert.deepEqual(rankPilotAssessmentIds({ ...base, regionIds: ["calf-local"], locations: ["小腿内侧"] }, calfAvailable), [
-    "motion:calf-inversion", "motion:calf-eversion", "function:calf-single-leg",
+    "motion:calf-inversion", "function:calf-single-leg",
   ]);
 });
 
@@ -143,7 +144,7 @@ test("a flexion complaint does not remove the extension-first knee baseline", ()
   assert.deepEqual(queue.slice(0, 2), ["motion:knee-extension", "motion:knee-flexion"]);
 });
 
-test("infrapatellar stair pain keeps the chief task, both knee motions and a local check", () => {
+test("infrapatellar stair pain keeps the chief task, both knee motions and drops retired special checks", () => {
   const queue = rankPilotAssessmentIds({
     ...baseInput,
     locations: ["髌骨下方"],
@@ -153,16 +154,21 @@ test("infrapatellar stair pain keeps the chief task, both knee motions and a loc
     "function:knee-step-down",
     "motion:knee-extension",
     "motion:knee-flexion",
-    "special:knee-patella-tenderness-self",
+    "special:knee-acute-fracture-screen",
+    "special:knee-acl-stability",
     "strength:knee-quadriceps",
     "strength:knee-hamstring",
   ]);
+  // v3 知识重构：旧髌骨下压痛自查（knee-patella-tenderness-self）已退役；
+  // 新专项检查仅在对应外伤/不稳场景触发（D-1），非对应场景不得挤进首轮。
   assert.deepEqual(queue.slice(0, 4), [
     "function:knee-step-down",
     "motion:knee-extension",
     "motion:knee-flexion",
-    "special:knee-patella-tenderness-self",
+    "strength:knee-quadriceps",
   ]);
+  assert.equal(queue.includes("special:knee-acute-fracture-screen"), false);
+  assert.equal(queue.includes("special:knee-acl-stability"), false);
   assert.equal(queue.includes("strength:knee-hamstring"), false);
 });
 
@@ -182,7 +188,7 @@ test("hamstring strength is added only when knee-flexion force is a stated probl
   assert.ok(queue.includes("strength:knee-hamstring"));
 });
 
-test("acute lateral ankle prioritizes related motion and weight bearing without a full foot package", () => {
+test("acute lateral ankle keeps the four-direction base group plus the lateral column follow-up", () => {
   const input = {
     ...baseInput,
     regionIds: ["ankle-foot"],
@@ -205,15 +211,18 @@ test("acute lateral ankle prioritizes related motion and weight bearing without 
     "function:ankle-weight-bearing",
   ];
   const queue = rankPilotAssessmentIds(input, available);
-  assert.equal(queue.length, PILOT_ASSESSMENT_BUDGET.general + 1);
+  // v3 踝 P0：急性外踝 = 四方向基础组 + 外侧柱补查（骰骨方向 toe-flexion）+ 负重功能；
+  // 仍不得出现全足套装（great-toe 等不进队）。
+  assert.equal(queue.length, PILOT_ASSESSMENT_BUDGET.general + 2);
   assert.deepEqual(queue.slice(0, 4), [
     "motion:ankle-dorsiflexion",
     "motion:ankle-eversion",
     "motion:ankle-plantarflexion",
     "motion:ankle-inversion",
   ]);
-  assert.equal(queue[4], "function:ankle-weight-bearing");
-  assert.equal(queue.some((id) => id.includes("toe")), false);
+  assert.equal(queue[4], "motion:ankle-toe-flexion");
+  assert.equal(queue[5], "function:ankle-weight-bearing");
+  assert.equal(queue.some((id) => id.includes("great-toe")), false);
 });
 
 test("acute ankle sprain always keeps all four ankle directions with dorsiflexion and eversion first", () => {
@@ -375,7 +384,7 @@ test("posterior ankle or Achilles symptoms prioritize plantarflexion and dorsifl
   assert.equal(queue.includes("motion:ankle-eversion"), false);
 });
 
-test("medial ankle symptoms pair inversion and eversion without forcing all directions", () => {
+test("medial ankle symptoms open inversion only, without pairing eversion", () => {
   const queue = rankPilotAssessmentIds({
     ...baseInput,
     regionIds: ["ankle-foot"],
@@ -393,7 +402,9 @@ test("medial ankle symptoms pair inversion and eversion without forcing all dire
     "motion:ankle-eversion",
     "function:ankle-weight-bearing",
   ]);
-  assert.deepEqual(queue.slice(0, 2), ["motion:ankle-inversion", "motion:ankle-eversion"]);
+  // v3（对照表 #4）：内踝症状只打开内翻方向评估，不再自动配对外翻。
+  assert.deepEqual(queue.slice(0, 2), ["motion:ankle-inversion", "function:ankle-weight-bearing"]);
+  assert.equal(queue.includes("motion:ankle-eversion"), false);
   assert.equal(queue.includes("motion:ankle-plantarflexion"), false);
 });
 

@@ -12,7 +12,7 @@ test("A5 REL-03: one generated manifest binds package, build, commit, rule, and 
   assert.match(manifest.commitSha, /^(?:[a-f\d]{40}|workspace)$/);
   assert.ok(manifest.buildId);
   assert.equal(manifest.ruleVersion, manifest.decisionVersion);
-  assert.equal(manifest.schemaVersion, 2);
+  assert.equal(manifest.schemaVersion, 3);
   assert.match(manifest.appVersion, new RegExp(`^rehabmind-pilot-app-${packageMetadata.version.replaceAll(".", "\\.")}\\+`));
   assert.deepEqual(release.PILOT_RELEASE_VERSIONS, {
     appVersion: manifest.appVersion,

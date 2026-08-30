@@ -41,10 +41,25 @@ async function sourceFiles(root) {
   return found;
 }
 
+/** type-only 导入在运行时被完全擦除，不构成层间运行时耦合，豁免边界检查。 */
+function isTypeOnlyImport(node) {
+  if (ts.isExportDeclaration(node)) return Boolean(node.isTypeOnly);
+  const clause = node.importClause;
+  if (!clause) return false;
+  if (clause.isTypeOnly) return true;
+  // 默认导入（clause.name）存在时必是运行时导入；仅当全部具名绑定都标 type 才豁免。
+  if (clause.name) return false;
+  const bindings = clause.namedBindings;
+  return Boolean(bindings && ts.isNamedImports(bindings)
+    && bindings.elements.length > 0
+    && bindings.elements.every((element) => element.isTypeOnly));
+}
+
 function importedSpecifiers(source) {
   const values = [];
   source.forEachChild((node) => {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (isTypeOnlyImport(node)) return;
       values.push({ value: node.moduleSpecifier.text, line: source.getLineAndCharacterOfPosition(node.getStart()).line + 1 });
     }
   });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import ts from "typescript";
 import { readFile } from "node:fs/promises";
+import { completePilotSnapshot } from "../../integration/sqlite-api/support.mjs";
 
 const source = await readFile(new URL("../../../src/infrastructure/pilot/persistence/sync-core.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
@@ -65,10 +66,14 @@ test("content fingerprints are deterministic, key-order independent and value se
 });
 
 test("A5 SYNC-02: conflict summaries identify modules without returning health text", () => {
-  const local = { intake: { description: "private local text" }, trialRecords: [{ result: "better" }], sessionNumber: 1 };
-  const remote = { intake: { description: "private remote text" }, trialRecords: [{ result: "same" }], sessionNumber: 2 };
+  // v3：冲突模块按 identity/domain/workflow/draft 路径识别，输入使用 v3 四段快照。
+  const local = completePilotSnapshot({ domain: { intake: { description: "private local text" } } });
+  const remote = completePilotSnapshot({
+    domain: { intake: { description: "private remote text" } },
+    identity: { sessionNumber: 2 },
+  });
   const sections = sync.summarizePilotSnapshotConflict(local, remote);
-  assert.deepEqual(sections, ["症状信息", "处理复测", "后续康复"]);
+  assert.deepEqual(sections, ["症状信息", "康复记录"]);
   assert.doesNotMatch(JSON.stringify(sections), /private|local|remote/);
 });
 

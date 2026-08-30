@@ -5,6 +5,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
+import { completePilotSnapshot } from "./support.mjs";
 
 async function applyMigrations(databasePath) {
   const sqlite = new Database(databasePath);
@@ -60,20 +61,11 @@ test("A5 DB-01: hard purge removes the case and all referencing rows atomically"
     createPublicCode: () => "PUBLIC01",
     hashAccessToken: async (token) => `hash:${token}`,
   });
-  const snapshot = {
-    schemaVersion: 1,
-    consent: { version: "pilot-consent-v1", confirmedAt: "2026-08-24T00:00:00.000Z" },
-    step: 0,
-    intake: { regionId: "knee", description: "test" },
-    safety: {}, imaging: [], assessmentIndex: 0, assessmentResults: {}, trialTargetIndex: 0,
-    candidateIndex: 0, trialRecords: [], postScore: 0, movementResponse: "", exerciseFeedback: {},
-    trainingComplete: false, followupMode: false, sessionNumber: 1, followupScore: 0,
-    followupScoreHistory: [], followupStage: "review", followupPostScore: 0, followupCandidateId: "",
-    followupTrialRecords: [], followupExerciseChoices: {}, followupTrends: {},
-  };
+  const snapshot = completePilotSnapshot({ domain: { intake: { description: "test" } } });
+  const consentRecord = { version: "pilot-consent-v1", confirmedAt: "2026-08-24T00:00:00.000Z" };
 
   try {
-    const access = await service.createCase({ clientCreationId: "creation-a", accessToken: "token-a", initialSnapshot: snapshot, source: { channel: "douyin_fan_group", detail: null }, consent: snapshot.consent });
+    const access = await service.createCase({ clientCreationId: "creation-a", accessToken: "token-a", initialSnapshot: snapshot, source: { channel: "douyin_fan_group", detail: null }, consent: consentRecord });
     await service.saveProgress({
       caseId: access.caseId, accessToken: access.accessToken, expectedRevision: 0, snapshot,
       eventId: "event-progress", eventType: "session_saved", eventPayload: {}, sessionCount: 1,

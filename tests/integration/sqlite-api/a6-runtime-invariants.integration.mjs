@@ -11,7 +11,7 @@ test("A6 OPS-03: production save records invariant codes while logs remain free 
     const created = await harness.create({
       clientCreationId: "creation-invariant",
       accessToken: "access-invariant",
-      initialSnapshot: completePilotSnapshot({ step: 0, trainingComplete: false }),
+      initialSnapshot: completePilotSnapshot({ workflow: { stage: 0, phase: "intake" }, domain: { training: { complete: false } } }),
       currentStage: "症状信息",
     });
     assert.equal(created.status, 201);
@@ -23,7 +23,7 @@ test("A6 OPS-03: production save records invariant codes while logs remain free 
       sessionId: "session-1",
       baseRevision: 0,
       expectedRevision: 0,
-      snapshot: completePilotSnapshot({ step: 4, trainingComplete: false }),
+      snapshot: completePilotSnapshot({ identity: { sessionId: "session-1" }, workflow: { stage: 4, phase: "training" }, domain: { training: { complete: false } } }),
       eventId: "event-invariant",
       eventType: "session_saved",
       eventPayload: {
@@ -82,7 +82,7 @@ test("A6 OPS-03: production save records invariant codes while logs remain free 
       sessionId: "session-stale",
       baseRevision: 0,
       expectedRevision: 0,
-      snapshot: completePilotSnapshot({ step: 1 }),
+      snapshot: completePilotSnapshot({ identity: { sessionId: "session-stale" }, workflow: { stage: 1, phase: "safety" } }),
       eventId: "event-stale-invariant",
       eventType: "intake_saved",
       eventPayload: { raw: { complaint: "private stale wording" } },

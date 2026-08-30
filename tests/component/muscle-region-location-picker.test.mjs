@@ -13,17 +13,18 @@ const [picker, demo, styles, walkthrough] = await Promise.all([
 ]);
 
 test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {
-  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "髋前方到膝盖上缘之间的肌肉区" }, "肌肉区域文案表");
-  // RQ-S1 定性答复（2026-08-26）：合并后实现为「照片像素坐标 MUSCLE_ZONE_RECTS」单层方案，
-  // 手绘路径 MUSCLE_ZONE_PATHS 已移除；atlas-v2 为现行素材，禁令解除，
-  // 改为正向校验——picker 引用的每一张区域图必须真实存在于 public/。
-  assert.match(picker, /MUSCLE_ZONE_RECTS/);
+  // v3（对照表 #9）：肌群文案表改为「标签 + 四视角解剖底图」结构，不再使用长文范围描述。
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: 'label: "大腿前侧"' }, "肌肉区域文案表");
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: 'label: "小腿后内侧"' }, "肌肉区域文案表");
+  // v3（对照表 #9）：肌肉示意图重构为「手绘 SVG 分区路径 + 四视角解剖底图」；
+  // MUSCLE_ZONE_RECTS 像素坐标方案已退役，改为 MUSCLE_ZONE_PATHS 单层路径方案。
+  assert.match(picker, /MUSCLE_ZONE_PATHS/);
+  assert.match(picker, /PLANTAR_ZONE_PATH/);
   assert.match(picker, /MuscleAnatomyMap/);
-  // RQ-3 + RQ-S1 定性答复（2026-08-26）：atlas-v2 为现行素材，肌肉示意图重构为
-  // 「手绘分区路径 + 照片像素坐标」双层方案（照片层钩子 __photo），禁令全部解除；
-  // 改为正向校验——picker 引用的每一张区域图必须真实存在于 public/。
-  const referencedImages = [...picker.matchAll(/\/rehabmind-region-[a-z0-9-]+\.png/g)].map((m) => m[0]);
-  assert.ok(referencedImages.length >= 1, "区域图引用不应为空");
+  // v3（对照表 #9）：四视角独立底图（front/back/lateral/medial），正向校验——
+  // picker 引用的每一张底图必须真实存在于 public/。
+  const referencedImages = [...picker.matchAll(/\/rehabmind-lower-limb-[a-z0-9-]+\.png/g)].map((m) => m[0]);
+  assert.ok(referencedImages.length >= 4, "四视角底图引用不应为空");
   for (const ref of referencedImages) {
     assert.ok(
       existsSync(new URL(`.${ref}`, new URL("../../public/", import.meta.url))),
@@ -33,15 +34,15 @@ test("肌肉区域选项使用范围高亮和移动端卡片布局", () => {
   // 注：__photo 类为 v2 图（<image href={photo}>）的展示钩子，随 RQ-3/RQ-S1 解禁改为正向断言。
   assert.match(picker, /rm-muscle-location-figure__photo/);
   assert.match(picker, /rm-muscle-location-figure__highlight/);
-  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "按图示肌肉区域比较两侧的张力或按压阻力" }, "肌肉区域文案表");
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "左右各轻按一次，选择张力或按压阻力更明显的区域。" }, "肌肉区域文案表");
   assert.match(picker, /MuscleRegionTreatmentMap/);
   assert.doesNotMatch(picker, /maxSelections = 2/);
   expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "暂不判断" }, "肌肉区域文案表");
   assert.match(picker, /bilateral\?: boolean/);
-  assert.match(picker, /const encoded = \(side: "左侧" \| "右侧"\)/);
+  assert.match(picker, /const encoded = \(selectionSide: "左侧" \| "右侧"\)/);
   assert.match(picker, /sideLocation/);
   assert.match(styles, /\.rm-muscle-location-card\s*\{/);
-  assert.match(styles, /rgba\(91, 170, 146, \.24\)/);
+  assert.match(styles, /rgba\(130, 178, 168, \.16\)/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.rm-muscle-location-grid \{ grid-template-columns: 1fr; /);
 });
 

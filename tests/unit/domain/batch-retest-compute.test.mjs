@@ -1,25 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadBundle(paths) {
-  const parts = [];
-  for (let i = 0; i < paths.length; i++) {
-    const src = await readFile(new URL(paths[i], import.meta.url), "utf8");
-    let out = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-    out = out.replace(/import\s*\{[^}]*\}\s*from\s*"[^"]*";?/g, "");
-    if (i < paths.length - 1) out = out.replace(/export\s+/g, "");
-    parts.push(out);
-  }
-  return import(`data:text/javascript;base64,${Buffer.from(parts.join("\n")).toString("base64")}`);
-}
-
-const core = await loadBundle([
-  "../../../src/domain/rehab/treatment/treatment-response-core.ts",
-  "../../../src/domain/rehab/treatment/trial-record-builder.ts",
-  "../../../src/domain/rehab/retest/batch-retest-compute.ts",
-]);
+// v3 重构后 batch-retest-compute 依赖 retest-obligation-core 的 combineRetestResults 等，
+// 手拼 strip-bundle 不再可行，改为真实模块加载。
+const core = await loadTypeScriptModule("./src/domain/rehab/retest/batch-retest-compute.ts");
 
 test("all ranges resolved with chief drop yields better partial-contribution", () => {
   const { result, responseRole } = core.computeBatchResult({

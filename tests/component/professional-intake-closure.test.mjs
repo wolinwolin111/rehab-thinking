@@ -22,7 +22,7 @@ test("ordinary and professional intake use different page structures while shari
   assert.match(professionalBranch, /患者原话/);
   assert.match(professionalBranch, /病程与发生机制/);
   assert.match(professionalBranch, /症状性质与伴随表现/);
-  assert.match(professionalBranch, /诱发动作与负荷/);
+  assert.match(professionalBranch, /诱发动作与时机/);
   assert.match(professionalBranch, /本次检查条件/);
   assert.match(professionalBranch, /脊柱活动度记录方式/);
   assert.match(professionalBranch, /专业备注/);
@@ -45,9 +45,11 @@ test("professional intake has an explicit destination for every missing-data cla
   assert.match(demo, /保存本次信息/);
   assert.match(demo, /位置不清楚/);
   assert.match(demo, /范围不清楚/);
-  assert.match(demo, /说不清或没有固定动作/);
-  assert.match(demo, /没有标准关键词也不影响后续记录/);
-  assert.match(demo, /不直接等同于已确认的查体结果/);
+  assert.match(demo, /说不清 \/ 没有固定动作/);
+  // v3：关键词兜底与查体免责声明合并改写为一句。
+  assert.match(demo, /不能用这组选项替代查体/);
+  assert.match(demo, /其他动作/);
+  assert.doesNotMatch(demo, /没有标准关键词也不影响后续记录/);
 });
 
 test("professional mode, operation target and all 64 capability combinations stay closed", () => {

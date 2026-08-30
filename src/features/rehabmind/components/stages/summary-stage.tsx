@@ -28,7 +28,7 @@ import type { FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pi
 import type { ExerciseFeedback } from "@/src/features/rehabmind/controllers/use-training-flow";
 import type { TreatmentFunctionRetestAnswer } from "@/src/features/rehabmind/controllers/use-function-retest";
 import type { FunctionRetestObligation } from "@/src/domain/rehab/treatment/trial-record-types";
-import { functionRetestAnswerKey, summarizeFunctionRetestObligations } from "@/src/domain/rehab/retest/retest-obligation-core";
+import { functionRetestAnswerKey, summarizeFunctionRetestObligations } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import type { RetestObligation, RetestRecord } from "@/src/domain/rehab/retest/retest-ledger-core";
 import {
   type AssessmentItem,

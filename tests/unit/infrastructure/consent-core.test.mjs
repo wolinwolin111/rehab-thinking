@@ -37,11 +37,12 @@ test("corrupted or malformed stored consent reads as absent instead of throwing"
   assert.equal(consent.readPilotConsent(wrongShape), null);
 });
 
-test("attaching consent to a snapshot adds traceable metadata without mutating the original", () => {
-  const snapshot = { schemaVersion: 1, step: 0, intake: { description: "右膝下楼刺痛" } };
+test("attaching consent to a v3 snapshot embeds it in domain.consent without mutating the original", () => {
+  const snapshot = { schemaVersion: 3, contractRevision: 3, domain: { intake: { description: "右膝下楼刺痛" } } };
   const record = { version: "pilot-consent-v1", confirmedAt: "2026-08-22T09:30:00.000Z" };
   const attached = consent.attachPilotConsent(snapshot, record);
-  assert.deepEqual(attached.consent, record);
-  assert.equal(attached.intake, snapshot.intake);
+  assert.deepEqual(attached.domain.consent, record);
+  assert.equal(attached.domain.intake, snapshot.domain.intake);
   assert.equal("consent" in snapshot, false);
+  assert.equal("consent" in snapshot.domain, false);
 });

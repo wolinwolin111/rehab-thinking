@@ -9,7 +9,7 @@ test("A6 FEED-01/ADMIN-02: feedback context, status, notes, redacted export, and
       clientCreationId: "creation-admin-flow",
       accessToken: "access-admin-flow",
       initialSnapshot: completePilotSnapshot({
-        intake: { regionId: "knee", description: "private symptom wording", baselineScore: 4, baselineScoreConfirmed: true },
+        domain: { intake: { description: "private symptom wording", baselineScore: 4, baselineScoreConfirmed: true } },
       }),
       currentStage: "康复总结",
     });

@@ -6,7 +6,7 @@ function createInput(clientCreationId, accessToken, overrides = {}) {
   return {
     clientCreationId,
     accessToken,
-    initialSnapshot: completePilotSnapshot({ step: 0, trainingComplete: false }),
+    initialSnapshot: completePilotSnapshot({ workflow: { stage: 0, phase: "intake" }, domain: { training: { complete: false } } }),
     currentStage: "症状信息",
     isBilateral: false,
     hasSafetyStop: false,

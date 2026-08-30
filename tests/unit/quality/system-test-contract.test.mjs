@@ -1,29 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import ts from "typescript";
-import { readFile } from "node:fs/promises";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadBundle(paths) {
-  const parts = [];
-  for (let i = 0; i < paths.length; i++) {
-    const source = await readFile(new URL(paths[i], import.meta.url), "utf8");
-    let output = ts.transpileModule(source, {
-      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-    }).outputText;
-    output = output.replace(/import\s*\{[^}]*\}\s*from\s*"[^"]*";?/g, "");
-    if (i < paths.length - 1) output = output.replace(/export\s+/g, "");
-    parts.push(output);
-  }
-  return import(`data:text/javascript;base64,${Buffer.from(parts.join("\n")).toString("base64")}`);
-}
-
+// v3 重构后 batch-retest-compute 依赖 retest-obligation-core 等模块，改用真实模块加载。
 const [retest, training, profile, coverage, session, batch] = await Promise.all([
-  loadBundle(["../../../src/domain/rehab/retest/retest-eligibility-core.ts"]),
-  loadBundle(["../../../src/domain/rehab/training/training-feedback-core.ts"]),
-  loadBundle(["../../../src/domain/rehab/intake/workflow-profile-core.ts"]),
-  loadBundle(["../../../src/domain/rehab/treatment/treatment-coverage-core.ts"]),
-  loadBundle(["../../../src/domain/rehab/treatment/treatment-session-core.ts"]),
-  loadBundle(["../../../src/domain/rehab/treatment/treatment-response-core.ts", "../../../src/domain/rehab/treatment/trial-record-builder.ts", "../../../src/domain/rehab/retest/batch-retest-compute.ts"]),
+  loadTypeScriptModule("./src/domain/rehab/retest/retest-eligibility-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/training/training-feedback-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/intake/workflow-profile-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-coverage-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/treatment/treatment-session-core.ts"),
+  loadTypeScriptModule("./src/domain/rehab/retest/batch-retest-compute.ts"),
 ]);
 
 test("SYS-S02 mixed pain improvement and activity worsening is an explicit stop", () => {

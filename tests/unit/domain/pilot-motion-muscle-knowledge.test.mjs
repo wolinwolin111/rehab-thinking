@@ -62,10 +62,11 @@ test("control plans preserve only the requested directions and remove duplicates
   assert.deepEqual(plans.map((plan) => plan.id), ["ankle-dorsiflexion", "ankle-plantarflexion"]);
 });
 
-test("a treated ankle muscle region retests only its primary motion plane", () => {
-  assert.deepEqual(primaryRetestMotionIdsForRegion("calf-anterior"), ["ankle-dorsiflexion", "ankle-plantarflexion"]);
-  assert.deepEqual(primaryRetestMotionIdsForRegion("calf-lateral"), ["ankle-inversion", "ankle-eversion"]);
-  assert.equal(primaryRetestMotionIdsForRegion("calf-anterior").includes("ankle-eversion"), false);
+test("a treated ankle muscle region retests its primary motion plane", () => {
+  // v3（对照表 #5）：肌群处理只复测主运动平面，不再双平面回测。
+  assert.deepEqual(primaryRetestMotionIdsForRegion("calf-anterior"), ["ankle-dorsiflexion"]);
+  assert.deepEqual(primaryRetestMotionIdsForRegion("calf-lateral"), ["ankle-eversion"]);
+  assert.equal(primaryRetestMotionIdsForRegion("calf-anterior").includes("ankle-plantarflexion"), false);
 });
 
 test("the treatment page renders release, control and one unified retest hierarchy", async () => {
@@ -94,8 +95,9 @@ test("functional checks use action-specific observations and guided intake separ
   const content = await readFile(new URL("../../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
   assert.match(demo, /function:calf-walk/);
   assert.match(demo, /function:shoulder-overhead-task/);
-  assert.match(demo, /showIntakeQuestion\("具体动作"\)/);
-  assert.match(demo, /\[needsChiefActionConfirmation, "具体动作"\]/);
+  // v3（对照表 #3）：合并为单题「诱发动作」；旧标签（诱发场景/具体动作）只允许在兼容映射中出现。
+  assert.match(demo, /showIntakeQuestion\("诱发动作"\)/);
+  assert.match(demo, /\["诱发场景", "具体动作", "什么时候最明显"\]\.includes\(field\)\) return "诱发动作"/);
   assert.match(content, /testMode\?: "active" \| "passive" \| "combined"/);
   assert.match(content, /knee-patella-lateral[\s\S]*testMode: "passive"/);
 });

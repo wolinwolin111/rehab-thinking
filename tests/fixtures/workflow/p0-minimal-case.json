@@ -1,37 +1,136 @@
 {
-  "fixtureVersion": 1,
+  "fixtureVersion": 2,
   "case": {
     "localCaseId": "fixture-case-001",
     "sessionNumber": 1,
     "snapshot": {
-      "schemaVersion": 1,
-      "consent": { "version": "pilot-consent-v1", "confirmedAt": "2026-08-23T00:00:00.000Z" },
-      "step": 0,
-      "intake": { "regionId": "knee", "description": "右膝下楼时不适" },
-      "safety": {},
-      "imaging": [],
-      "assessmentIndex": 0,
-      "assessmentResults": {},
-      "trialTargetIndex": 0,
-      "candidateIndex": 0,
-      "trialRecords": [],
-      "postScore": 0,
-      "movementResponse": "",
-      "exerciseFeedback": {},
-      "trainingComplete": false,
-      "followupMode": false,
-      "sessionNumber": 1,
-      "followupScore": 0,
-      "followupScoreHistory": [],
-      "followupStage": "review",
-      "followupPostScore": 0,
-      "followupCandidateId": "",
-      "followupTrialRecords": [],
-      "followupExerciseChoices": {},
-      "followupTrends": {}
+      "schemaVersion": 3,
+      "contractRevision": 3,
+      "capabilitySnapshotId": "fixture-capability-snapshot-1",
+      "identity": {
+        "caseId": "fixture-case-001",
+        "localCaseId": "fixture-case-001",
+        "problemThreadId": "fixture-case-1:thread-1",
+        "sessionId": "fixture-case-1:session-1",
+        "sessionNumber": 1,
+        "sessionStatus": "draft",
+        "sessionStartedAt": "2026-08-29T08:00:00.000Z",
+        "problemThreads": [
+          {
+            "problemThreadId": "fixture-case-1:thread-1",
+            "caseId": "fixture-case-001",
+            "status": "active",
+            "createdAt": "2026-08-29T08:00:00.000Z",
+            "lastActiveAt": "2026-08-29T08:00:00.000Z",
+            "title": "fixture 主诉",
+            "regionId": "knee"
+          }
+        ],
+        "sessionIndex": [
+          {
+            "sessionId": "fixture-case-1:session-1",
+            "problemThreadId": "fixture-case-1:thread-1",
+            "caseId": "fixture-case-001",
+            "status": "draft",
+            "sessionNumber": 1,
+            "startedAt": "2026-08-29T08:00:00.000Z",
+            "lastDraftSavedAt": "2026-08-29T08:00:00.000Z"
+          }
+        ]
+      },
+      "domain": {
+        "consent": {
+          "version": "pilot-consent-v1",
+          "confirmedAt": "2026-08-24T00:00:00.000Z"
+        },
+        "intake": {
+          "regionId": "knee",
+          "description": "右膝下楼时不适",
+          "baselineScore": 4,
+          "baselineScoreConfirmed": true
+        },
+        "bodyMarks": [],
+        "scoreRecords": [],
+        "specialTestRecords": [],
+        "professionalNoteRecords": [],
+        "decisionTraces": [],
+        "treatments": [],
+        "history": [],
+        "safety": {
+          "answers": {},
+          "boneRisk": {},
+          "imaging": []
+        },
+        "assessments": [
+          {
+            "assessmentSetId": "fixture-case-1:assessment-1",
+            "caseId": "fixture-case-001",
+            "problemThreadId": "fixture-case-1:thread-1",
+            "sessionId": "fixture-case-1:session-1",
+            "recordedAt": "2026-08-29T08:00:00.000Z",
+            "assessmentRevision": 0,
+            "results": {}
+          }
+        ],
+        "retests": {
+          "obligations": [],
+          "records": []
+        },
+        "training": {
+          "initialFeedback": {},
+          "currentSessionChoices": {},
+          "records": [],
+          "complete": false,
+          "planSaved": false
+        }
+      },
+      "workflow": {
+        "stage": 0,
+        "phase": "intake",
+        "assessmentRevision": 0,
+        "treatmentPlanRevision": 0,
+        "pendingRetestCount": 0,
+        "assessmentOwnerSessionId": "fixture-case-1:session-1",
+        "bilateralNeedsReferral": false,
+        "midpointDecisionDone": false,
+        "adverseConfirmedAssessmentIds": [],
+        "adverseResponse": null
+      },
+      "draft": {
+        "confirmedIntakeMulti": {},
+        "treatmentCursor": {
+          "target": 0,
+          "candidate": 0
+        },
+        "bilateralTreatmentSides": {},
+        "bilateralRetestResponses": {},
+        "initialRetest": {
+          "postScore": 0,
+          "treatmentFinalScore": 0,
+          "finalScore": 0,
+          "postScoreConfirmed": false,
+          "ready": false,
+          "treatmentFinalConfirmed": false,
+          "trainingReadyForFinal": false,
+          "finalConfirmed": false
+        },
+        "currentSession": {
+          "isLaterSession": false,
+          "phase": "review",
+          "reviewScore": 0,
+          "postScore": 0,
+          "finalScore": 0,
+          "scoreHistory": []
+        },
+        "assessmentCursor": 0,
+        "selectedOptionalCandidateIds": []
+      }
     },
     "events": [
-      { "type": "case_created", "source": "system" }
+      {
+        "type": "case_created",
+        "source": "system"
+      }
     ]
   }
 }

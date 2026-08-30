@@ -1,7 +1,7 @@
-// 快照校验器模糊矩阵（批次 2）。
+// 快照校验器模糊矩阵（批次 2，v3 干净切换后更新）。
 // 合同（SCHEMA-01/REL-01/DATA-05 防回潮）：
-// 1. 任意畸形输入不得使 migratePilotSnapshot 抛异常——只允许返回 ok/reason；
-// 2. 返回 ok 的快照必须能再次通过迁移（接受结果自洽、可入库）；
+// 1. 任意畸形输入不得使 validatePilotSnapshotV3 抛异常——只允许返回 ok/reason；
+// 2. 返回 ok 的快照必须能再次通过校验（接受结果自洽、可入库）；
 // 3. 同一输入两次调用结果一致（确定性）；
 // 4. 循环引用与超深嵌套不得导致栈溢出或挂起。
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import test from "node:test";
 import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 import { completePilotSnapshot } from "../../integration/sqlite-api/support.mjs";
 
-const { migratePilotSnapshot } = await loadTypeScriptModule(
+const { validatePilotSnapshotV3 } = await loadTypeScriptModule(
   "./src/infrastructure/pilot/persistence/snapshot-schema.ts",
 );
 const { PILOT_SNAPSHOT_SCHEMA_VERSION } = await loadTypeScriptModule(
@@ -28,7 +28,7 @@ function pick(random, values) {
 }
 
 const base = completePilotSnapshot();
-const BASE_OK = migratePilotSnapshot(structuredClone(base));
+const BASE_OK = validatePilotSnapshotV3(structuredClone(base));
 assert.equal(BASE_OK.ok, true, `种子快照必须本身合法，reason=${BASE_OK.ok ? "" : BASE_OK.reason}`);
 
 // 收集种子对象的所有路径（深度 ≤5），供变异定位。
@@ -120,7 +120,7 @@ test("模糊矩阵：3000 组畸形快照不抛异常、结果形状稳定且接
 
     let first;
     assert.doesNotThrow(() => {
-      first = migratePilotSnapshot(input);
+      first = validatePilotSnapshotV3(input);
     }, `seed=${seed} 校验器抛出异常而非返回结构化拒绝`);
 
     assert.equal(typeof first.ok, "boolean", `seed=${seed} 缺少布尔 ok`);
@@ -135,11 +135,11 @@ test("模糊矩阵：3000 组畸形快照不抛异常、结果形状稳定且接
         PILOT_SNAPSHOT_SCHEMA_VERSION,
         `seed=${seed} 接受的快照 schemaVersion 不是当前版本`,
       );
-      const second = migratePilotSnapshot(first.snapshot);
-      assert.equal(second.ok, true, `seed=${seed} 接受的快照无法再次通过迁移：${second.reason}`);
+      const second = validatePilotSnapshotV3(first.snapshot);
+      assert.equal(second.ok, true, `seed=${seed} 接受的快照无法再次通过校验：${second.reason}`);
     }
 
-    const repeat = migratePilotSnapshot(structuredClone(input));
+    const repeat = validatePilotSnapshotV3(structuredClone(input));
     assert.equal(repeat.ok, first.ok, `seed=${seed} 同一输入两次判定不一致`);
   }
 });
@@ -170,7 +170,7 @@ test("循环引用与超深嵌套专项：不栈溢出且有确定结论", () =>
   ]) {
     let result;
     assert.doesNotThrow(() => {
-      result = migratePilotSnapshot(build());
+      result = validatePilotSnapshotV3(build());
     }, `${name} 导致异常`);
     assert.equal(typeof result?.ok, "boolean", `${name} 未返回结构化结论`);
   }

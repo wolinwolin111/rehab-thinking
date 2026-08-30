@@ -16,25 +16,25 @@ try {
   fixtureText = null;
 }
 
-test("TEST-2b: 真实浏览器快照通过迁移、入库、重启后按原文恢复", async () => {
+test("TEST-2b: 真实浏览器快照通过校验、入库、重启后按原文恢复", async () => {
   if (fixtureText === null) {
     throw new Error("缺少 tests/fixtures/real-snapshot-sample.json —— 请先运行 node tests/browser/support/export-real-snapshot.mjs 重新导出");
   }
   const fixture = JSON.parse(fixtureText);
   const snapshot = fixture.draft?.snapshot;
   assert.ok(snapshot && typeof snapshot === "object", "夹具中不存在 draft.snapshot");
-  assert.equal(fixture.description && fixture.draft.snapshot?.intake?.description, fixture.description, "夹具描述与快照内容不一致，夹具已损坏");
+  assert.equal(fixture.description && fixture.draft.snapshot?.domain?.intake?.description, fixture.description, "夹具描述与快照内容不一致，夹具已损坏");
 
   const snapshotSchema = await loadTypeScriptModule("./src/infrastructure/pilot/persistence/snapshot-schema.ts");
-  const migrated = snapshotSchema.migratePilotSnapshot(structuredClone(snapshot));
-  assert.equal(migrated.ok, true, `真实快照未通过生产校验：${migrated.ok ? "" : migrated.reason}`);
+  const validated = snapshotSchema.validatePilotSnapshotV3(structuredClone(snapshot));
+  assert.equal(validated.ok, true, `真实快照未通过生产校验：${validated.ok ? "" : validated.reason}`);
 
   const api = await createSqliteApiHarness("real-snapshot");
   try {
     const created = await api.create({
       clientCreationId: "real-snapshot-export",
       accessToken: "real-snapshot-token",
-      initialSnapshot: migrated.snapshot ?? snapshot,
+      initialSnapshot: validated.snapshot ?? snapshot,
     });
     assert.equal(created.status, 201);
 
@@ -42,9 +42,9 @@ test("TEST-2b: 真实浏览器快照通过迁移、入库、重启后按原文�
     const restored = await api.read(created.body.case.caseId, created.body.case.accessToken);
     assert.equal(restored.status, 200);
     const payload = restored.body.case.snapshot.payload;
-    assert.deepEqual(payload.intake?.description, fixture.description, "恢复后的主诉描述与浏览器原文不一致");
-    const remigrated = snapshotSchema.migratePilotSnapshot(payload);
-    assert.equal(remigrated.ok, true);
+    assert.deepEqual(payload.domain?.intake?.description, fixture.description, "恢复后的主诉描述与浏览器原文不一致");
+    const revalidated = snapshotSchema.validatePilotSnapshotV3(payload);
+    assert.equal(revalidated.ok, true);
   } finally {
     await api.close();
   }

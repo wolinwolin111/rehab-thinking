@@ -48,11 +48,12 @@ test("vague local complaints add one opposing direction without opening the full
   assert.deepEqual(ids, ["motion:thigh-lateral-load", "motion:thigh-medial-length", "function:thigh-walk"]);
 });
 
-test("medial calf loading adds the opposing control direction without opening all four", () => {
+test("medial calf loading keeps the inversion direction without pairing eversion", () => {
   const input = { ...base, regionIds: ["calf-local"], locations: ["小腿内侧"], currentTask: "走路时足弓内侧不舒服" };
   const available = ["motion:calf-dorsiflexion", "motion:calf-plantarflexion", "motion:calf-inversion", "motion:calf-eversion", "function:calf-walk"];
   const ids = engine.rankPilotAssessmentIds(input, available);
-  assert.deepEqual(ids, ["motion:calf-inversion", "motion:calf-eversion", "function:calf-walk"]);
+  // v3（对照表 #4）：小腿内侧只打开内翻方向，不再自动配对外翻。
+  assert.deepEqual(ids, ["motion:calf-inversion", "function:calf-walk"]);
 });
 
 test("local findings generate one source-backed treatment chain", () => {

@@ -31,7 +31,7 @@ async function fixture(label, faultPoint) {
   const initialSnapshot = completePilotSnapshot();
   const access = await service.createCase({
     source: { channel: "douyin_fan_group", detail: null },
-    consent: initialSnapshot.consent,
+    consent: initialSnapshot.domain.consent,
     clientCreationId: `creation-${label}`,
     accessToken: `token-${label}`,
     initialSnapshot,
@@ -58,7 +58,7 @@ test("A5 DB-01: an exception between snapshot and event writes rolls back the wh
       caseId: testCase.access.caseId,
       accessToken: testCase.access.accessToken,
       expectedRevision: 0,
-      snapshot: completePilotSnapshot({ step: 4 }),
+      snapshot: completePilotSnapshot({ workflow: { stage: 4, phase: "training" } }),
       eventId: "fault-event",
       eventType: "session_saved",
       eventPayload: {},
@@ -104,7 +104,7 @@ test("A5 DB-01: SQLITE_BUSY reports failure without advancing revision or timeli
       caseId: testCase.access.caseId,
       accessToken: testCase.access.accessToken,
       expectedRevision: 0,
-      snapshot: completePilotSnapshot({ step: 4 }),
+      snapshot: completePilotSnapshot({ workflow: { stage: 4, phase: "training" } }),
       eventId: "busy-event",
       eventType: "session_saved",
       eventPayload: {},

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
+import { completePilotSnapshot as makeSnapshot } from "../../integration/sqlite-api/support.mjs";
 
 class MemoryRepository {
   cases = new Map();
@@ -81,37 +82,6 @@ const { PilotCaseConflictError, PilotCasePayloadTooLargeError, PilotCaseValidati
 const TEST_SOURCE = { channel: "douyin_fan_group", detail: null };
 const TEST_CONSENT = { version: "pilot-consent-v1", confirmedAt: "2026-08-21T00:00:00.000Z" };
 
-function makeSnapshot(overrides = {}) {
-  return {
-    schemaVersion: 1,
-    consent: { version: "pilot-consent-v1", confirmedAt: "2026-08-21T00:00:00.000Z" },
-    step: 0,
-    intake: { regionId: "knee" },
-    safety: {},
-    imaging: [],
-    assessmentIndex: 0,
-    assessmentResults: {},
-    trialTargetIndex: 0,
-    candidateIndex: 0,
-    trialRecords: [],
-    postScore: 0,
-    movementResponse: "",
-    exerciseFeedback: {},
-    trainingComplete: false,
-    followupMode: false,
-    sessionNumber: 1,
-    followupScore: 0,
-    followupScoreHistory: [],
-    followupStage: "review",
-    followupPostScore: 0,
-    followupCandidateId: "",
-    followupTrialRecords: [],
-    followupExerciseChoices: {},
-    followupTrends: {},
-    ...overrides,
-  };
-}
-
 function makeService() {
   const repository = new MemoryRepository();
   repository.errors = { PilotCaseConflictError };
@@ -142,28 +112,20 @@ test("createCase stores an anonymous case, snapshot, initial event, and only ret
   assert.equal(record.sourceChannel, "douyin_fan_group");
   assert.equal(record.consentVersion, "pilot-consent-v1");
   assert.equal(record.accessToken, undefined);
-  const storedFirstPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
-  assert.equal(storedFirstPayload.step, 0);
-  assert.equal(storedFirstPayload.schemaVersion, 2);
-  assert.equal([...repository.events.values()][0].type, "case_created");
-  // REL-01：入库载荷补烙显式 schema 版本（缺失视为 v1）。
   const storedPayload = JSON.parse(repository.snapshots.get(access.caseId).payload);
-  assert.equal(storedPayload.schemaVersion, 2);
-  assert.deepEqual(storedPayload, {
-    ...makeSnapshot(),
-    schemaVersion: 2,
-    legacySchemaVersion: 1,
-    consent: TEST_CONSENT,
-    problemThreadId: `thread-${access.caseId}`,
-    sessionId: `session-${access.caseId}-1`,
-    sessionStatus: "draft",
-  });
+  assert.equal(storedPayload.workflow.stage, 5);
+  assert.equal(storedPayload.schemaVersion, 3);
+  assert.equal([...repository.events.values()][0].type, "case_created");
+  // v3 干净切换：服务端只校验不改写，入库载荷与提交载荷一致（仅 consent 注入 domain）。
+  const expectedSnapshot = makeSnapshot();
+  expectedSnapshot.domain.consent = TEST_CONSENT;
+  assert.deepEqual(storedPayload, expectedSnapshot);
 });
 
 test("replaying one client creation id returns the same case instead of creating a duplicate", async () => {
   const { service, repository } = makeService();
   const first = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: makeSnapshot() });
-  const replay = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: makeSnapshot({ step: 1 }) });
+  const replay = await service.createCase({ clientCreationId: "creation-001", accessToken: "persisted-token", initialSnapshot: makeSnapshot({ workflow: { stage: 1, phase: "safety" } }) });
   assert.equal(replay.caseId, first.caseId);
   assert.equal(replay.accessToken, first.accessToken);
   assert.equal(replay.replayed, true);
@@ -188,7 +150,7 @@ test("saveProgress advances the snapshot revision, appends a versioned event, an
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: makeSnapshot({ step: 1, rawComplaint: "膝前方不适" }),
+    snapshot: makeSnapshot({ workflow: { stage: 1, phase: "safety" }, rawComplaint: "膝前方不适" }),
     eventType: "intake_saved",
     eventPayload: { raw: "膝前方不适", parsed: { region: "knee" }, confirmed: false },
     eventId: "stable-event-1",
@@ -209,7 +171,7 @@ test("a case token cannot forge an administrator event source", async () => {
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: makeSnapshot({ step: 1 }),
+    snapshot: makeSnapshot({ workflow: { stage: 1, phase: "safety" } }),
     eventType: "intake_saved",
     eventPayload: { sourceAttempt: "admin" },
     source: "admin",
@@ -225,7 +187,7 @@ test("repeating the same event is idempotent and an old revision cannot overwrit
     caseId: access.caseId,
     accessToken: access.accessToken,
     expectedRevision: 0,
-    snapshot: makeSnapshot({ step: 2 }),
+    snapshot: makeSnapshot({ workflow: { stage: 2, phase: "assessment" } }),
     eventType: "assessment_answered",
     eventPayload: { assessmentId: "a1", answer: "yes" },
     eventId: "stable-event-2",
@@ -235,7 +197,7 @@ test("repeating the same event is idempotent and an old revision cannot overwrit
   assert.equal(repeated.snapshot.revision, first.snapshot.revision);
   assert.equal(repeated.event.id, first.event.id);
   await assert.rejects(
-    service.saveProgress({ ...input, eventId: "stable-event-3", snapshot: makeSnapshot({ step: 1 }) }),
+    service.saveProgress({ ...input, eventId: "stable-event-3", snapshot: makeSnapshot({ workflow: { stage: 1, phase: "safety" } }) }),
     (error) => error instanceof PilotCaseConflictError,
   );
 });
@@ -360,7 +322,7 @@ test("REL-01: future snapshot schema versions are rejected before storage", asyn
       caseId: access.caseId,
       accessToken: access.accessToken,
       expectedRevision: 0,
-      snapshot: makeSnapshot({ schemaVersion: 999, step: 2 }),
+      snapshot: makeSnapshot({ schemaVersion: 999, workflow: { stage: 2, phase: "assessment" } }),
       eventType: "assessment_answered",
       eventPayload: {},
     }),
@@ -372,8 +334,8 @@ test("REL-01: future snapshot schema versions are rejected before storage", asyn
 test("SCHEMA-01: incomplete snapshots and invalid creation consent never reach storage", async () => {
   const first = makeService();
   await assert.rejects(
-    first.service.createCase({ initialSnapshot: { schemaVersion: 1, step: 0 } }),
-    (error) => error instanceof PilotCaseValidationError && /snapshot intake is missing/.test(error.message),
+    first.service.createCase({ initialSnapshot: { schemaVersion: 3, contractRevision: 3 } }),
+    (error) => error instanceof PilotCaseValidationError && /snapshot v3 sections are incomplete/.test(error.message),
   );
   assert.equal(first.repository.cases.size, 0);
 

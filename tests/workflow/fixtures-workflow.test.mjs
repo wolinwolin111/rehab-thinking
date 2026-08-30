@@ -1,25 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../support/load-typescript-module.mjs";
 
-const contractsSource = await readFile(new URL("../../src/infrastructure/pilot/api/case-contracts.ts", import.meta.url), "utf8");
-const consentSource = await readFile(new URL("../../src/infrastructure/pilot/consent/consent-core.ts", import.meta.url), "utf8");
-const schemaSource = await readFile(new URL("../../src/infrastructure/pilot/persistence/snapshot-schema.ts", import.meta.url), "utf8");
+const schema = await loadTypeScriptModule("./src/infrastructure/pilot/persistence/snapshot-schema.ts");
 const fixture = JSON.parse(await readFile(new URL("../fixtures/workflow/p0-minimal-case.json", import.meta.url), "utf8"));
 
-function compile(source, keepExports = false) {
-  let output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText.replace(/import\s*\{[\s\S]*?\}\s*from\s*"[^"]*";?/g, "");
-  if (!keepExports) output = output.replace(/export\s+/g, "");
-  return output;
-}
-
-const schema = await import(`data:text/javascript;base64,${Buffer.from(`${compile(contractsSource)}\n${compile(consentSource)}\n${compile(schemaSource, true)}`).toString("base64")}`);
-
 test("TEST-19: the normal workflow fixture passes the production snapshot schema", () => {
-  const result = schema.migratePilotSnapshot(fixture.case.snapshot);
+  const result = schema.validatePilotSnapshotV3(fixture.case.snapshot);
   assert.equal(result.ok, true, result.reason);
   assert.equal(result.snapshot.schemaVersion, schema.PILOT_SNAPSHOT_SCHEMA_VERSION);
 });

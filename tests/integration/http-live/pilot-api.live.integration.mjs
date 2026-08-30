@@ -36,34 +36,75 @@ async function requestRaw(path, { method = "GET", headers = {}, body, bypassRate
 }
 
 function workflowSnapshot(overrides = {}) {
-  return {
-    schemaVersion: 1,
-    consent: { version: "pilot-consent-v1", confirmedAt: "2026-08-23T00:00:00.000Z" },
-    step: 0,
-    intake: { regionId: "knee", description: `D1 fixture ${runId}` },
-    safety: {},
-    imaging: [],
-    assessmentIndex: 0,
-    assessmentResults: {},
-    trialTargetIndex: 0,
-    candidateIndex: 0,
-    trialRecords: [],
-    postScore: 0,
-    movementResponse: "",
-    exerciseFeedback: {},
-    trainingComplete: false,
-    followupMode: false,
-    sessionNumber: 1,
-    followupScore: 0,
-    followupScoreHistory: [],
-    followupStage: "review",
-    followupPostScore: 0,
-    followupCandidateId: "",
-    followupTrialRecords: [],
-    followupExerciseChoices: {},
-    followupTrends: {},
-    ...overrides,
+  const caseId = "live-fixture-case";
+  const threadId = `${caseId}:thread-1`;
+  const sessionId = `${caseId}:session-1`;
+  const recordedAt = "2026-08-23T00:00:00.000Z";
+  const base = {
+    schemaVersion: 3,
+    contractRevision: 3,
+    identity: {
+      caseId,
+      localCaseId: caseId,
+      problemThreadId: threadId,
+      sessionId,
+      sessionNumber: 1,
+      sessionStatus: "draft",
+      sessionStartedAt: recordedAt,
+      problemThreads: [{
+        problemThreadId: threadId, caseId, status: "active",
+        createdAt: recordedAt, lastActiveAt: recordedAt, regionId: "knee",
+      }],
+      sessionIndex: [{
+        sessionId, problemThreadId: threadId, caseId,
+        status: "draft", sessionNumber: 1, startedAt: recordedAt,
+      }],
+    },
+    domain: {
+      consent: { version: "pilot-consent-v1", confirmedAt: recordedAt },
+      intake: { regionId: "knee", description: `D1 fixture ${runId}` },
+      bodyMarks: [], scoreRecords: [], specialTestRecords: [], professionalNoteRecords: [],
+      decisionTraces: [], treatments: [], history: [],
+      safety: { answers: {}, boneRisk: {}, imaging: [] },
+      assessments: [{
+        assessmentSetId: `${caseId}:assessment-1`, caseId, problemThreadId: threadId,
+        sessionId, recordedAt, assessmentRevision: 0, results: {},
+      }],
+      retests: { obligations: [], records: [] },
+      training: { initialFeedback: {}, currentSessionChoices: {}, records: [], complete: false, planSaved: false },
+    },
+    workflow: {
+      stage: 5, phase: "summary", assessmentRevision: 0, treatmentPlanRevision: 0,
+      pendingRetestCount: 0, assessmentOwnerSessionId: sessionId,
+      bilateralNeedsReferral: false, midpointDecisionDone: false,
+      adverseConfirmedAssessmentIds: [], adverseResponse: null,
+    },
+    draft: {
+      confirmedIntakeMulti: {},
+      treatmentCursor: { target: 0, candidate: 0 },
+      bilateralTreatmentSides: {}, bilateralRetestResponses: {},
+      initialRetest: {
+        postScore: 0, treatmentFinalScore: 0, finalScore: 0,
+        postScoreConfirmed: false, ready: false, treatmentFinalConfirmed: false,
+        trainingReadyForFinal: false, finalConfirmed: false,
+      },
+      currentSession: { isLaterSession: false, phase: "summary", reviewScore: 0, postScore: 0, finalScore: 0, scoreHistory: [] },
+      assessmentCursor: 0,
+      selectedOptionalCandidateIds: [],
+    },
   };
+  function isPlain(value) {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
+  function merge(target, patch) {
+    if (!isPlain(target) || !isPlain(patch)) return patch;
+    const merged = { ...target };
+    for (const [key, value] of Object.entries(patch)) {
+      merged[key] = key in merged ? merge(merged[key], value) : value;
+    }
+    return merged;
+  }
+  return merge(base, overrides);
 }
 
 function createPayload(suffix) {
@@ -71,7 +112,7 @@ function createPayload(suffix) {
   return {
     clientCreationId: `${runId}-${suffix}`,
     accessToken: `${runId}-access-${suffix}`,
-    initialSnapshot: workflowSnapshot({ intake: { regionId: "knee", description: `D1 fixture ${runId}-${suffix}` } }),
+    initialSnapshot: workflowSnapshot({ domain: { intake: { description: `D1 fixture ${runId}-${suffix}` } } }),
     currentStage: "症状信息",
     isBilateral: false,
     hasSafetyStop: false,
@@ -117,7 +158,7 @@ test("live HTTP contract covers onboarding data, idempotency, revisions, feedbac
 
   const progressBody = {
     expectedRevision: 0,
-    snapshot: workflowSnapshot({ step: 1, intake: { regionId: "knee", description: `D1 progress ${runId}` } }),
+    snapshot: workflowSnapshot({ workflow: { stage: 1, phase: "safety" }, domain: { intake: { description: `D1 progress ${runId}` } } }),
     eventType: "session_saved",
     eventId: `${runId}-progress-1`,
     eventPayload: { raw: { source: "user" }, parsed: { runId }, inferred: {} },
@@ -219,7 +260,7 @@ test("live HTTP contract covers onboarding data, idempotency, revisions, feedbac
   assert.equal(race.status, 201);
   const raceProgress = {
     expectedRevision: 0,
-    snapshot: workflowSnapshot({ step: 1, intake: { regionId: "knee", description: `D1 concurrent ${runId}` } }),
+    snapshot: workflowSnapshot({ workflow: { stage: 1, phase: "safety" }, domain: { intake: { description: `D1 concurrent ${runId}` } } }),
     eventType: "session_saved",
     eventPayload: { source: "concurrent-test" },
     currentStage: "关键确认",

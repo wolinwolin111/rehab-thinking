@@ -1,38 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-async function loadBundle(paths) {
-  const parts = [];
-  for (let i = 0; i < paths.length; i++) {
-    const src = await readFile(new URL(paths[i], import.meta.url), "utf8");
-    let out = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-    out = out.replace(/import\s+(?:type\s+)?\{[^}]*\}\s*from\s*"[^"]*";?/g, "");
-    out = out.replace(/import\s+[^"'\n]+\s+from\s*"[^"]*";?/g, "");
-    if (i < paths.length - 1) out = out.replace(/export\s+/g, "");
-    parts.push(out);
-  }
-  return import(`data:text/javascript;base64,${Buffer.from(parts.join("\n")).toString("base64")}`);
-}
-
-// buildTrialTargets 的运行时依赖（按拓扑序，依赖在前）
-const core = await loadBundle([
-  "../../../src/knowledge/pilot/pilot-motion-muscle-knowledge.ts",
-  "../../../src/domain/rehab/intake/action-identity-core.ts",
-  "../../../src/domain/rehab/assessment/assessment-answer-core.ts",
-  "../../../src/domain/rehab/treatment/candidate-order-core.ts",
-  "../../../src/domain/rehab/intake/chief-action-core.ts",
-  "../../../src/domain/rehab/shared/knee-decision-core.ts",
-  "../../../src/domain/rehab/shared/knee-workflow-adapter.ts",
-  "../../../src/domain/rehab/treatment/candidate-treatment-core.ts",
-  "../../../src/domain/rehab/treatment/candidate-safety-core.ts",
-  "../../../src/domain/rehab/treatment/candidate-action-core.ts",
-  "../../../src/domain/rehab/treatment/candidate-scoring-core.ts",
-  "../../../src/domain/rehab/assessment/patella-mobility-core.ts",
-  "../../../src/domain/rehab/treatment/trial-target-core.ts",
-  "../../../src/domain/rehab/treatment/build-trial-targets-core.ts",
-]);
+// v3 知识库重构后 buildTrialTargets 依赖 knee/ankle-p0-runtime、p0-assessment-access、
+// complaint-branch-matching 等 knowledge 模块——手拼拓扑 bundle 不再可行，改为真实模块加载。
+const core = await loadTypeScriptModule("./src/domain/rehab/treatment/build-trial-targets-core.ts");
 
 function product(...lists) {
   return lists.reduce((acc, list) => acc.flatMap((combo) => list.map((value) => [...combo, value])), [[]]);
