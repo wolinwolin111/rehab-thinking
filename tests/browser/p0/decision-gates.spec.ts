@@ -138,11 +138,11 @@ test.describe("P0 固定决策门禁", () => {
 
     // v3（对照表 #5）：处理复测为统一批量面板——范围 + 不适 + 各功能动作分别记录后，底部「继续」解锁。
     await click("处理完成，复测原来的动作", "完成第一项处理");
-    // 首项复测记录「仍受限」：对照表 #7 要求结果行显示「仍受限，未明显改变」；
-    // 当前渲染为「仍偏小」（DEF-RETEST-01，见 docs/quality/defect-retest-copy-2026-08-30.md）。
-    // 缺陷修复后把下一行断言收紧为 toContainText("仍受限，未明显改变")。
+    // 首项复测记录「仍受限」：对照表 #7 要求结果行显示「仍受限，未明显改变」。
+    // DEF-RETEST-01 已由 5db4aca 修复（passive-limited 文案统一），断言收紧。
     await click(/仍受限.*主动活动幅度仍小于健侧/, "复测主动伸直仍受限");
-    await expect(page.locator("main:visible")).toContainText(/仍受限，未明显改变|仍偏小/);
+    await expect(page.locator("main:visible")).toContainText("仍受限，未明显改变");
+    await expect(page.locator("main:visible")).not.toContainText("仍偏小");
     await click("没有不适", "复测主动伸直不适");
     const squatRetest = page.locator("article").filter({ has: page.getByRole("heading", { name: "下蹲", exact: true }) });
     await expect(squatRetest.getByRole("button", { name: "能完成", exact: true })).toHaveCount(1);
@@ -163,6 +163,8 @@ test.describe("P0 固定决策门禁", () => {
     // 建议）把面板改为完成面板形态，屈曲改善显示为「活动范围有所改善」+ 继续排查卡。
     await expect(finalMain).toContainText(/已接近健侧|活动范围有所改善/);
     await expect(finalMain).not.toContainText("使用同一个复测结果");
+    // DEF-RETEST-01 缺陷 B（5db4aca 修复）：台账不得泄漏原始域 id。
+    await expect(finalMain).not.toContainText("knee-extension");
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);
   });

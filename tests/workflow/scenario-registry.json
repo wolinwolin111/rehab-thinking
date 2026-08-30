@@ -997,8 +997,8 @@
     "tags": [
       "p0"
     ],
-    "status": "passed-with-defect",
-    "notes": "DEF-RETEST-01 未修（仍偏小+台账 id 泄漏，档案已补组件定位）；8191fb0 面板形态适配断言 /已接近健侧|活动范围有所改善/"
+    "status": "passed",
+    "notes": "DEF-RETEST-01 已由 5db4aca 修复复测通过：文案统一「仍受限，未明显改变」+ 台账 label 映射无 id 泄漏；RET-02 断言已收紧（含 knee-extension 负断言）"
   },
   {
     "scenarioId": "KR-B1-extension-contract-loop",

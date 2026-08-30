@@ -4,7 +4,9 @@
 > 批次：知识库重构批次（92fc130..8150b06）测试会话
 > 基线：worktree `agent/testing` @ fca0f71（dev 基线 8150b06 + 测试侧适配提交）
 > 严重级别：中（文案合同不符 + 展示信息泄漏，不阻塞数据完整性）
-> 状态：**待开发确认**
+> 状态：**已修复（`5db4aca`）并复测通过**——`passive-limited` 文案统一为「仍受限，未明显改变」；
+> 台账 range 义务 label 经 `professionalAssessmentTitle` 映射，`knee-extension` 泄漏消除。
+> RET-02 断言已收紧为 `toContainText("仍受限，未明显改变")` + `not.toContainText("knee-extension")`。
 
 ## 现象
 
