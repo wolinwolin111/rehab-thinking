@@ -1580,12 +1580,18 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         : [...interleaved, ...specialItems, ...functionItems];
     // 专业模式也必须保留用户明确选中的多个功能动作；通用排序预算只负责
     // 排顺序，不能把第二个主诉动作静默挤出独立评估队列。
+    // 触发的专项检查（先有问题再做检查）同样保留：它们是条件触发的明确
+    // 临床信号，不与基础评估竞争预算；入口已由触发过滤+上限 2 限流。
     const preservedAssessmentIds = [
       ...functionItems.map((item) => item.id),
       ...motionItems.filter((item) => item.id === "motion:knee-scar-mobility").map((item) => item.id),
       ...continuationAssessmentItems.map((item) => item.id),
     ];
-    return rankAndLimit([...order, ...continuationAssessmentItems], preservedAssessmentIds);
+    const rankedAssessments = rankAndLimit([...order, ...continuationAssessmentItems], preservedAssessmentIds);
+    // 触发的专项检查追加在基础评估之后：它们是条件触发的明确临床信号
+    //（先有问题再做检查），不与基础活动竞争预算，也不抢占基础检查顺序。
+    const specialBacked = specialItems.filter((item) => !rankedAssessments.some((entry) => entry.id === item.id));
+    return [...rankedAssessments, ...specialBacked];
   }, [region, intake, assessmentResults, confirmedIntakeMulti, canRunSpecialTest, canAssessPassive, workflowProfile, imaging, activeProvocationTypes, continuationRoundIds]);
 
   // 髌骨四方向在引擎中继续使用四个方向键，便于分别生成“向上/向下/向内/向外”

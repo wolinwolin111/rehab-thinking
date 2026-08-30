@@ -6,7 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
+    "dev": "node scripts/data/migrate-sqlite.mjs && vinext dev",
     "prebuild": "node scripts/deploy/generate-pilot-release.mjs",
     "build": "vinext build",
     "start": "vinext start",
