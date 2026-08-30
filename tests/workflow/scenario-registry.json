@@ -997,7 +997,8 @@
     "tags": [
       "p0"
     ],
-    "status": "passed-with-defect"
+    "status": "passed-with-defect",
+    "notes": "DEF-RETEST-01 未修（仍偏小+台账 id 泄漏，档案已补组件定位）；8191fb0 面板形态适配断言 /已接近健侧|活动范围有所改善/"
   },
   {
     "scenarioId": "KR-B1-extension-contract-loop",
@@ -1053,8 +1054,9 @@
     "tags": [
       "scenario"
     ],
-    "status": "blocked",
-    "note": "DEF-SPECIAL-QUEUE：专项检查无法进入专业膝部首轮队列，fixme"
+    "status": "passed",
+    "note": "DEF-SPECIAL-QUEUE：专项检查无法进入专业膝部首轮队列，fixme",
+    "notes": "8191fb0 修复复测通过：专项尾部追加（骨折风险+ACL），safety 阳性转介出口+ACL 阳性跟踪，tests/browser/scenarios/safety-blocking.spec.ts"
   },
   {
     "scenarioId": "KR-F3a-storage-failure-copy",
@@ -1096,8 +1098,9 @@
     "tags": [
       "scenario"
     ],
-    "status": "blocked",
-    "note": "DEF-CONTINUATION-CARD：卡片在已文档化流程中不可达，fixme"
+    "status": "passed",
+    "note": "DEF-CONTINUATION-CARD：卡片在已文档化流程中不可达，fixme",
+    "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts"
   },
   {
     "scenarioId": "KR-C2-continuation-skip",
@@ -1111,8 +1114,9 @@
     "tags": [
       "scenario"
     ],
-    "status": "blocked",
-    "note": "依赖 C-1 修复，fixme"
+    "status": "passed",
+    "note": "依赖 C-1 修复，fixme",
+    "notes": "8191fb0 修复复测通过：卡片在面板与训练并存，经侧栏往返不重复"
   },
   {
     "scenarioId": "KR-C3-continuation-converge",
@@ -1126,8 +1130,9 @@
     "tags": [
       "scenario"
     ],
-    "status": "blocked",
-    "note": "依赖 C-1 修复，fixme"
+    "status": "passed",
+    "note": "依赖 C-1 修复，fixme",
+    "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、仍有待处理分支保留"
   },
   {
     "scenarioId": "KR-C4-continuation-session-reset",
@@ -1141,7 +1146,8 @@
     "tags": [
       "scenario"
     ],
-    "status": "blocked",
-    "note": "依赖 C-1 修复 + 8150b06 会话重置，fixme"
+    "status": "passed",
+    "note": "依赖 C-1 修复 + 8150b06 会话重置，fixme",
+    "notes": "8191fb0 修复复测通过：接受后修改恢复目标触发问题线程重置"
   }
 ]

@@ -96,7 +96,7 @@ export async function prepareProfessionalMultiAction(page: Page) {
 }
 
 /** 专业模式评估队列的固定答案序列（与 RET-02 一致，供 C/B 组链路复用）。 */
-export async function completeProfessionalAssessment(page: Page) {
+export async function completeProfessionalAssessment(page: Page, options: { stopBeforeSummary?: boolean } = {}) {
   const click = async (name: string | RegExp, description: string) => {
     const button = await expectUniqueVisible(page, description, page.getByRole("button", { name, exact: typeof name === "string" }));
     await button.click();
@@ -110,13 +110,23 @@ export async function completeProfessionalAssessment(page: Page) {
   await click("下一个检查", "进入膝关节主动伸直");
   await click(/患侧偏小.*膝后仍明显悬空/, "主动伸直活动受限");
   await click("没有不适", "主动伸直没有不适");
+  // 伸直卡的「再来一次，能不能保持」第三题（出现时需作答，否则下一检查不可点）。
+  const holdButton = page.locator("main:visible").locator("button:visible").filter({ hasText: /保持稳定|能保持/ }).first();
+  if (await holdButton.count()) await holdButton.click();
   await click("下一个检查", "进入膝关节主动屈曲");
   await click(/患侧偏小.*活动范围受限/, "主动屈曲活动受限");
   await click("没有不适", "主动屈曲没有不适");
+  const flexHold = page.locator("main:visible").locator("button:visible").filter({ hasText: /保持稳定|能保持/ }).first();
+  if (await flexHold.count()) await flexHold.click();
   await click("下一个检查", "进入大腿内侧力量检查");
   await click(/力量接近.*两侧完成质量相近/, "大腿内侧力量接近");
-  await click("检查相关肌肉", "进入肌肉紧张度对比");
-  await click("没有明显差别", "肌肉紧张度无明显差别");
+  // 力量卡后为「单腿支撑与骨盆稳定检查」（单选直答，正常口径）。
+  await click("下一个检查", "进入单腿支撑与骨盆稳定检查");
+  await page.locator("main:visible").locator("button:visible").filter({ hasText: /力量接近/ }).first().click();
+  await page.waitForTimeout(300);
+  // 停在单腿支撑卡已答状态：D-3 需要接着处理追加的专项检查卡。
+  if (options.stopBeforeSummary) return;
+  await click("下一个检查", "进入评估汇总");
   await click("查看评估结果", "查看评估结果");
   await expect(page.locator("h1:visible")).toContainText("先看清问题，再开始处理");
   await click("评估完成，继续", "确认评估结果");
@@ -162,8 +172,7 @@ export async function completeSingleActionAssessment(page: Page) {
   const clickNextIfPresent = async () => {
     const next = main.getByRole("button", { name: "下一个检查", exact: true });
     if (await next.count()) await next.click();
-  };
-  const click = async (name: string | RegExp, description: string) => {
+  };  const click = async (name: string | RegExp, description: string) => {
     const button = await expectUniqueVisible(page, description, page.getByRole("button", { name, exact: typeof name === "string" }));
     await button.click();
   };
@@ -214,6 +223,68 @@ export async function completeSingleActionAssessment(page: Page) {
   await expect(page.locator("h1:visible")).toContainText("先看清问题，再开始处理");
   await click("评估完成，继续", "确认评估结果");
   await click("开始处理并复测", "开始处理并复测");
+}
+
+/**
+ * 继续排查补查轮：接受卡片建议回到评估队列（从第一项开始，已答卡保留原结论）。
+ * 未答卡是单选直答结构（第一选项为正常口径：力量接近/接近健侧/稳定接近等），
+ * 补查轮统一取正常口径，避免触发医学评估出口打断链路（阳性口径由 D-3 专测）。
+ */
+export async function completeContinuationAssessmentRound(page: Page) {
+  const main = page.locator("main:visible");
+  const open = main.getByRole("button", { name: "打开检查", exact: true });
+  if (await open.count()) await open.first().click();
+  let guard = 0;
+  while (guard < 24) {
+    guard += 1;
+    const summaryButton = main.getByRole("button", { name: "查看评估结果", exact: true });
+    if (await summaryButton.count()) break;
+    const next = main.getByRole("button", { name: "下一个检查", exact: true });
+    if (!(await next.count())) {
+      if (await summaryButton.count()) break;
+      // 部分卡（屈曲等）答完两题后无「下一个检查」，需走「检查相关肌肉」
+      // 肌肉紧张度子卡：部位 → 紧张度口径，答完才出现可用的「查看评估结果」。
+      const muscle = main.getByRole("button", { name: "检查相关肌肉", exact: true });
+      if (await muscle.count()) {
+        await muscle.first().click();
+        await page.waitForTimeout(400);
+        const part = main.locator("button:visible").filter({ hasText: /大腿|小腿/ }).first();
+        if (await part.count()) await part.click();
+        const noDiff = main.getByRole("button", { name: "没有明显差别", exact: true });
+        await expect(noDiff.first(), "肌肉紧张度答案必须可点").toBeEnabled({ timeout: 5_000 }).catch(() => {});
+        if (await noDiff.count()) await noDiff.first().click();
+        await page.waitForTimeout(300);
+      } else {
+        await page.waitForTimeout(300);
+      }
+      continue;
+    }
+    if (await next.isEnabled()) {
+      // 已答卡（含首轮结论与首轮已答的伸直/屈曲等）：直接跳过，保留原结论。
+      await next.click();
+      await page.waitForTimeout(300);
+      continue;
+    }
+    // 未答的单选直答卡：优先点正常口径选项，否则取第一个选项按钮。
+    const options = main.locator("article:visible button:visible");
+    const normal = options.filter({ hasText: /力量接近|接近健侧|稳定接近|可以做完/ }).first();
+    if (await normal.count()) await normal.click();
+    else {
+      const optionCount = await options.count();
+      if (!optionCount) throw new Error("补查卡未答但无可点选项");
+      await options.first().click();
+    }
+    await expect(next, "点选后下一个检查必须可用").toBeEnabled({ timeout: 5_000 });
+    await next.click();
+    await page.waitForTimeout(300);
+  }
+  const summaryButton = main.getByRole("button", { name: "查看评估结果", exact: true });
+  if (await summaryButton.count()) await summaryButton.first().click();
+  await expect(page.locator("h1:visible")).toContainText("先看清问题，再开始处理", { timeout: 10_000 });
+  await clickUnique(page, "评估完成，继续", "确认补查结果");
+  // 第二轮可能直接进入处理复查，也可能停在阶段工作台需要再次打开。
+  const startTreatment = main.getByRole("button", { name: "开始处理并复测", exact: true });
+  if (await startTreatment.count()) await startTreatment.first().click();
 }
 
 /**

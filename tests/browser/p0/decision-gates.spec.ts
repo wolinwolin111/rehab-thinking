@@ -159,8 +159,9 @@ test.describe("P0 固定决策门禁", () => {
     const finalMain = page.locator("main:visible");
     await expect(finalMain).toContainText("膝关节主动伸直");
     await expect(finalMain).toContainText("膝关节主动屈曲");
-    // v3：终局面板按方向显示复测结果（屈曲复测接近健侧）。
-    await expect(finalMain).toContainText(/已接近健侧/);
+    // v3：屈曲复测接近健侧。8191fb0 起 continuationExitActive（主诉未解决且有可查
+    // 建议）把面板改为完成面板形态，屈曲改善显示为「活动范围有所改善」+ 继续排查卡。
+    await expect(finalMain).toContainText(/已接近健侧|活动范围有所改善/);
     await expect(finalMain).not.toContainText("使用同一个复测结果");
     await assertNoHorizontalOverflow(page);
     await assertNoRuntimeErrors(runtimeErrors);

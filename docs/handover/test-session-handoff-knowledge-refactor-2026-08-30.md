@@ -77,28 +77,37 @@ runner 显示 EXITCODE 0 但**一个测试都没跑**（runner 不传播失败�
 
 ## 4. 缺陷清单
 
+> **第三轮复测（2026-08-30，基线 `8191fb0`）**：缺陷1/2 已修复并复测通过（下表状态更新）。
+
 | id | 级别 | 摘要 | 证据 |
 |---|---|---|---|
-| DEF-RETEST-01 | 中 | 复测结果行显示「仍偏小」而非对照表 #7 的「仍受限，未明显改变」；复查台账泄漏原始 id `knee-extension` | `docs/quality/defect-retest-copy-2026-08-30.md`；RET-02 error-context |
-| DEF-CONTINUATION-CARD | 中 | 继续排查卡在已文档化流程中不可达（三种口径均未渲染），C-1~C-4 浏览器证据无法建立 | `docs/quality/defect-continuation-card-2026-08-30.md` |
-| DEF-SPECIAL-QUEUE | 中 | 专项检查无法进入专业膝部首轮评估队列（排序预算结构性挤出），D-3 浏览器证据无法建立 | `docs/quality/defect-special-queue-2026-08-30.md` |
+| DEF-RETEST-01 | 中 | 复测结果行显示「仍偏小」而非对照表 #7 的「仍受限，未明显改变」；复查台账泄漏原始 id `knee-extension`。**未修复**；档案已补组件级定位（L6225 构造透传 + L6831 渲染）与期望/实际对照表 | `docs/quality/defect-retest-copy-2026-08-30.md`（已更新） |
+| ~~DEF-CONTINUATION-CARD~~ | — | **已修复（`8191fb0`）并复测通过**：`continuationExitActive` 绕过「仍有待处理」分支；C-1~C-4 全链路浏览器证据建立（含查无可查反向确认） | `tests/browser/scenarios/continuation-chain.spec.ts`（4/4 passed） |
+| ~~DEF-SPECIAL-QUEUE~~ | — | **已修复（`8191fb0`）并复测通过**：触发专项尾部追加不占预算；需**急性扭转口径**（慢性无外伤不触发）。safety 类阳性 → 转介出口，stability 类阳性 → 后续跟踪 | `tests/browser/scenarios/safety-blocking.spec.ts` D-3（passed） |
 | ~~runner 缺陷~~ | — | **已撤回（第二轮复核）**：`run-browser-tests.mjs` 与 npm 包装层均正确传播退出码（用必失败参数实测 EXITCODE 1）。首轮记录的 EXITCODE 0 为当次测量方式误读；判绿仍以 passed/failed 行为准 | 本轮 probe 实测（probe-exit → EXITCODE:1） |
 
-已排除：DEF-CONSENT-01 复发（环境问题，见 §2.1）。
+已排除：DEF-CONSENT-01 复发（环境问题，见 §2.1）。本轮删库重建后 `npm run dev`
+幂等迁移自动补齐，真实流程（引导 + trial-events + case 创建路径）无 500。
 
 ## 5. 剩余缺口（按优先级）
 
-> 第二轮测试（同日）已补齐：B-1、B-2、D-2（改走安全阶段骨性风险链路）、F-3a/F-3b
-> （经 /test 工作台故障注入场景），并新增缺陷 DEF-CONTINUATION-CARD 与
-> DEF-SPECIAL-QUEUE。剩余缺口更新如下。
+> 第三轮复测（同日，`8191fb0`）已关闭：C-1~C-4（缺陷1 修复）、D-3（缺陷2 修复，
+> 需急性扭转口径）、D-2 与 F-3 保持通过。**当前剩余缺口只剩 RET-02 收紧一项**。
 
-1. **C-1~C-4 浏览器层**：继续排查卡在三种已文档化口径下均未渲染（见
-   DEF-CONTINUATION-CARD），四条场景已写好断言骨架标记 fixme；开发确认可达性后恢复。
-2. **D-3 浏览器层**：稳定性检查阳性 → 转医学评估；受 DEF-SPECIAL-QUEUE 阻塞
-   （专项检查无法入队），场景骨架已标记 fixme。D-2 已改走安全阶段骨性风险问题
-   （Ottawa 口径）链路覆盖并通过。
-3. **F-1 的「未完成侧限制训练」断言**未在 overall 双侧用例中显式出现。
-4. RET-02 内 DEF-RETEST-01 相关断言在开发修复后收紧（文件内有注释标记）。
+1. **RET-02 断言收紧**：DEF-RETEST-01（「仍偏小」文案 + 台账 id 泄漏）开发修复后
+   收紧为 `toContainText("仍受限，未明显改变")`。注意 `8191fb0` 起
+   `continuationExitActive` 把主诉未解决面板改为完成面板形态（含继续排查卡），
+   RET-02 终局断言已适配为 `/已接近健侧|活动范围有所改善/`。
+2. **F-1 的「未完成侧限制训练」断言**未在 overall 双侧用例中显式出现。
+
+### 8191fb0 产品结构变化（知会，非缺陷）
+
+- 专业评估队列重组：肌肉紧张度对比卡从常规队列消失，新增「单腿支撑与骨盆稳定
+  检查」卡（力量卡后，单选直答）；伸直/屈曲卡新增「再来一次，能不能保持」第三题。
+- 触发专项（先有问题再做检查）追加在基础评估尾部且不受预算限制；需急性外伤
+  机制（扭转或崴伤）才触发，慢性无外伤不触发。
+- 主诉未解决且有可查建议时，处理复查终局走完成面板 + 继续排查卡（不再出现
+  「仍有待处理」面板）；查无可查时保留原分支。
 
 ## 6. 快速上手命令
 

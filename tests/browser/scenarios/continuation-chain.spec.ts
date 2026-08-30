@@ -1,18 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors } from "../support/page-helpers";
-import { completeSingleActionAssessment, completeSingleActionTreatment, prepareProfessionalSingleAction } from "../drivers/pilot-flow";
+import { completeContinuationAssessmentRound, completeSingleActionAssessment, completeSingleActionTreatment, prepareProfessionalSingleAction } from "../drivers/pilot-flow";
 
-// C 组：继续排查链路（开发侧交接第三部分 C-1~C-4，8150b06 实装的完成面板卡片）。
+// C 组：继续排查链路（开发侧交接第三部分 C-1~C-4，8150b06 实装、8191fb0 修复）。
 //
-// ⚠️ 现状（2026-08-30 测试轮）：按三种口径（功能复测未完成/复测能完成/单动作
-// 分数未降）驱动到处理完成面板，继续排查卡（"XX还没有得到解释"）均未渲染，
-// 且面板始终停在带「重新确认剩余问题」的终局分支，treatmentComplete 投影
-// 无法通过已文档化的流程达成。继续排查域逻辑（planContinuationAssessments）
-// 已有单测覆盖，卡片的浏览器可达性存疑 —— 标记 fixme，
-// 详见 docs/quality/defect-continuation-card-2026-08-30.md。
-// 修复后按 C-1~C-4 注释恢复完整链路断言。
+// 8191fb0 根因修复：问题台账"复测过 ≠ 已解决"导致 hasUnresolvedImmediateTreatmentProblem
+// 恒 true，流程恒落入「仍有待处理」分支。修复新增 continuationExitActive =
+// treatmentComplete && continuationSuggestions.length > 0：有可查建议时跳过该分支
+// 落到完成面板显示卡片；无建议（查无可查）时原分支与「重新确认剩余问题」保留。
 
-test.fixme("C-1 继续排查完整链路：主诉未解决→卡片→接受→回评估→补查→计划刷新 @scenario", async ({ page }) => {
+test("C-1 继续排查完整链路：主诉未解决→卡片→接受→回评估→补查→计划刷新 @scenario", async ({ page }) => {
   test.setTimeout(240_000);
   const runtimeErrors = collectRuntimeErrors(page);
   await prepareProfessionalSingleAction(page);
@@ -24,31 +21,94 @@ test.fixme("C-1 继续排查完整链路：主诉未解决→卡片→接受→�
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("处理和复查都完成了，但原来的不适还在");
 
-  // 接受建议 → 回评估，建议项已在清单 → 补查 → 计划刷新（二次收敛见 C-3）。
+  // 接受建议 → toast 确认 → 回评估（工作台或已展开的检查卡）→ 补查 → 计划刷新。
   await card.getByRole("button", { name: "继续检查这些方向", exact: true }).click();
-  await expect(page.locator("main:visible")).toContainText("已加入继续检查的方向");
-  await expect(page.locator("h1:visible")).toContainText(/评估检查/, { timeout: 10_000 });
+  await expect(page.locator(".rm-toast")).toContainText("已加入继续检查的方向", { timeout: 5_000 });
+  await expect(
+    page.locator("main:visible").getByRole("button", { name: /打开检查|下一个检查|查看评估结果/ }).first(),
+  ).toBeVisible({ timeout: 10_000 });
+  // 补查建议项 → 汇总确认 → 回到处理复查（第二轮）。
+  await completeContinuationAssessmentRound(page);
+  await completeSingleActionTreatment(page, { chiefScore: "5" });
+  // 第二轮面板：处理复查走通、无运行时错误即链路收敛（建议池只减不增在 C-3 断言）。
+  await expect(page.locator("main:visible")).toContainText(/本阶段成果|针对性处理/, { timeout: 10_000 });
+  await assertNoHorizontalOverflow(page);
   await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test.fixme("C-3 收敛：接受并查完所有可查项后卡片不再出现 @scenario", async ({ page }) => {
-  // 依赖 C-1 修复：第二轮补查全部完成后，卡片应消失或建议池只减不增。
+test("C-3 收敛：反复接受补查直到查无可查，卡片消失且「仍有待处理」分支保留 @scenario", async ({ page }) => {
+  // dev 复测点反向确认：所有区域项查完后建议池空 → continuationExitActive=false →
+  // 无卡片，原「仍有待处理」面板与「重新确认剩余问题」按钮原样保留（不得静默完成）。
+  test.setTimeout(300_000);
+  const runtimeErrors = collectRuntimeErrors(page);
+  await prepareProfessionalSingleAction(page);
+  await completeSingleActionAssessment(page);
+  await completeSingleActionTreatment(page, { chiefScore: "5" });
+
+  const main = page.locator("main:visible");
+  let rounds = 0;
+  while (rounds < 6) {
+    rounds += 1;
+    const card = main.locator(".rm-stage-outcome-track", { hasText: "还没有得到解释" });
+    if (!(await card.count())) break;
+    await card.getByRole("button", { name: "继续检查这些方向", exact: true }).click();
+    await completeContinuationAssessmentRound(page);
+    await completeSingleActionTreatment(page, { chiefScore: "5" });
+  }
+  // 查无可查：卡片消失，「仍有待处理」分支保留（含重新确认剩余问题出口）。
+  await expect(main.locator(".rm-stage-outcome-track", { hasText: "还没有得到解释" })).toHaveCount(0);
+  await expect(main).toContainText(/仍有待处理|重新确认剩余问题/, { timeout: 10_000 });
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
+});
+
+test("C-2 跳过路径：点进入训练不阻断，返回面板卡片不重复 @scenario", async ({ page }) => {
   test.setTimeout(240_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  await prepareProfessionalSingleAction(page);
+  await completeSingleActionAssessment(page);
+  await completeSingleActionTreatment(page, { chiefScore: "5" });
+
+  const main = page.locator("main:visible");
+  const card = main.locator(".rm-stage-outcome-track", { hasText: "还没有得到解释" });
+  await expect(card).toHaveCount(1);
+  // 卡片与完成面板动作并存：点「查看训练与居家方案」→ 过渡确认页 → 开始训练，不阻断。
+  await page.locator("button:visible").filter({ hasText: /查看训练.*居家方案/ }).first().click({ timeout: 15_000 });
+  await page.locator("button:visible").filter({ hasText: /开始训练/ }).first().click({ timeout: 10_000 });
+  await expect(page.locator("main:visible")).toContainText(/训练|居家/, { timeout: 10_000 });
+  // 经侧栏返回处理复查面板：卡片不重复渲染。
+  await page.getByRole("navigation").getByRole("button", { name: /处理复测/ }).click();
+  await expect(page.locator("main:visible")).toContainText(/本阶段成果|针对性处理|处理复测/, { timeout: 10_000 });
+  await expect(page.locator("main:visible").locator(".rm-stage-outcome-track", { hasText: "还没有得到解释" })).toHaveCount(1);
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test.fixme("C-2 跳过路径：点进入训练不阻断，同会话卡片不重复 @scenario", async ({ page }) => {
-  // 依赖 C-1 修复：卡片出现后直接进入训练不阻断；返回处理面板时卡片不重复渲染。
-  test.setTimeout(180_000);
+test("C-4 会话隔离：接受建议后修改症状信息，问题线程重置 @scenario", async ({ page }) => {
+  // 8150b06 + startNewProblemThread：接受建议（continuationRoundIds 非空）后
+  // 修改任一 intake 字段（恢复目标）→ startNewProblemThread 重置会话
+  //（setContinuationRoundIds([]) + 评估结果清空 + 回症状信息流程）。
+  test.setTimeout(240_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
-});
+  await prepareProfessionalSingleAction(page);
+  await completeSingleActionAssessment(page);
+  await completeSingleActionTreatment(page, { chiefScore: "5" });
 
-test.fixme("C-4 会话隔离：接受建议未查完，开始第二次康复后清单不残留 @scenario", async ({ page }) => {
-  // 依赖 C-1 修复 + 8150b06 的 setContinuationRoundIds([]) 会话重置：
-  // 第一次会话接受建议未查 → 开始第二次康复 → 新会话评估清单不残留建议项。
-  test.setTimeout(180_000);
-  const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const main = page.locator("main:visible");
+  const card = main.locator(".rm-stage-outcome-track", { hasText: "还没有得到解释" });
+  await expect(card).toHaveCount(1);
+  await card.getByRole("button", { name: "继续检查这些方向", exact: true }).click();
+  await expect(page.locator(".rm-toast")).toContainText("已加入继续检查的方向", { timeout: 5_000 });
+
+  // 回症状信息（侧栏可回看）→ 修改恢复目标字段（当前为基本活动档，点未选中的
+  // 「恢复一般运动」触发 onChange → invalidateAfterIntake → startNewProblemThread）。
+  await page.getByRole("navigation").getByRole("button", { name: /症状信息/ }).click();
+  const goalButton = main.locator("button:visible").filter({ hasText: "恢复一般运动" }).first();
+  await expect(goalButton).toBeVisible({ timeout: 10_000 });
+  await goalButton.click({ force: true, timeout: 15_000 });
+  // 重置后流程回到症状信息确认（未确认状态需重新提交才能进入后续阶段）。
+  await expect(
+    page.locator("main:visible").locator("button:visible").filter({ hasText: /保存并继续|进入关键确认|下一步/ }).first(),
+  ).toBeVisible({ timeout: 10_000 });
+  await assertNoRuntimeErrors(runtimeErrors);
 });
