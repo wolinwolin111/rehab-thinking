@@ -399,7 +399,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     if (outcome === "both-match") parts.push(`${title}已接近比较目标`);
     else if (outcome === "passive-match-active-limited") parts.push(`${title}主动范围仍偏小`);
     else if (outcome === "better-passive-limited") parts.push(`${title}有改善，仍未达到比较目标`);
-    else if (outcome === "passive-limited") parts.push(`${title}仍偏小`);
+    else if (outcome === "passive-limited") parts.push(`${title}仍受限，未明显改变`);
     else if (outcome === "worse") parts.push(`${title}比处理前更差`);
     return parts;
   }, []);

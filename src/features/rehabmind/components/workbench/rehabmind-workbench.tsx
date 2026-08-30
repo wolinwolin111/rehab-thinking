@@ -6224,6 +6224,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   const collectedFindingGroups = buildFindingGroups(collectedFindings);
   const professionalRetestItems = activeRetestLedger.obligations.filter((item) => item.sessionId === sessionId).map((item) => ({
     ...item,
+    // 待复查的 range 义务 label 存的是域 directionId，展示前必须换回产品文案。
+    label: item.kind === "range" ? professionalAssessmentTitle(`motion:${item.targetId}`, item.label) : item.label,
     kindLabel: ({
       range: "活动范围",
       function: "功能动作",
