@@ -1149,5 +1149,69 @@
     "status": "passed",
     "note": "依赖 C-1 修复 + 8150b06 会话重置，fixme",
     "notes": "8191fb0 修复复测通过：接受后修改恢复目标触发问题线程重置"
+  },
+  {
+    "scenarioId": "B1-1-case-bar",
+    "ruleIds": [
+      "B1-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
+    "titlePattern": "B1-1 案例栏内容与修改主诉入口",
+    "status": "passed",
+    "notes": "case-summary-bar 主诉原话+facts+修改主诉回症状信息",
+    "tags": [
+      "scenario",
+      "professional-batch1"
+    ]
+  },
+  {
+    "scenarioId": "B1-2-batch-record-sync",
+    "ruleIds": [
+      "B1-2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
+    "titlePattern": "B1-2 集中记录写入后逐项卡状态同步（需逐项补充）",
+    "status": "passed",
+    "notes": ".rm-batch-record 选主动范围→需逐项补充→返回保持；只覆盖主动范围",
+    "tags": [
+      "scenario",
+      "professional-batch1"
+    ]
+  },
+  {
+    "scenarioId": "B1-3-appendable-permission",
+    "ruleIds": [
+      "B1-3"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
+    "titlePattern": "B1-3 可追加检查权限显示",
+    "status": "passed",
+    "notes": "rm-workbench-appendable capability 徽标（已开放/按权限/未开放）+ 无专项空态",
+    "tags": [
+      "scenario",
+      "professional-batch1"
+    ]
+  },
+  {
+    "scenarioId": "B1-4-retest-ledger-column",
+    "ruleIds": [
+      "B1-4"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
+    "titlePattern": "B1-4 台账待复查列",
+    "status": "passed",
+    "notes": "rm-workbench-module 待复查项目（空态文案；待复查项出现需处理会话）",
+    "tags": [
+      "scenario",
+      "professional-batch1"
+    ]
   }
 ]
