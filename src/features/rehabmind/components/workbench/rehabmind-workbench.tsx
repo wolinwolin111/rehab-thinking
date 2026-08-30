@@ -6543,10 +6543,24 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               treatmentComplete,
               continuationSuggestions,
               onAcceptContinuationSuggestions: acceptContinuationSuggestions,
-              bilateralTrainingGateState,
-              chiefFunctionLabels,
-              hasChiefFunctionAction,
-            }}
+               bilateralTrainingGateState,
+               chiefFunctionLabels,
+               hasChiefFunctionAction,
+               isThinkingMode,
+               thinkingWorkbenchOpen,
+               onThinkingWorkbenchOpenChange: setThinkingWorkbenchOpen,
+               retestLedgerItems: professionalRetestItems,
+               workbenchContext: {
+                 canContinueSafety,
+                 assessmentNeedsReferral,
+                 assessmentReadyForTreatment,
+                 assessmentCompletedCount: assessmentDisplayItems.filter((item) => displayAssessmentComplete(item)).length,
+                 assessmentTotalCount: assessmentDisplayItems.length,
+                 trainingComplete,
+                 trainingPlanSaved,
+                 exerciseCount: exercises.length,
+               },
+             }}
             actions={{
               onStepChange: setStep,
               onReviewStepChange: setReviewStep,
