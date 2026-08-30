@@ -148,7 +148,7 @@ export type TreatmentRetestStageView = {
   thinkingWorkbenchOpen: boolean;
   onThinkingWorkbenchOpenChange: Dispatch<SetStateAction<boolean>>;
   retestLedgerItems: Array<{ obligationId: string; label: string; kindLabel: string; status: string; statusLabel: string; side?: string }>;
-  workbenchContext: { canContinueSafety: boolean; assessmentReadyForTreatment: boolean; assessmentCompletedCount: number; assessmentTotalCount: number; trainingComplete: boolean; trainingPlanSaved: boolean; exerciseCount: number };
+  workbenchContext: { canContinueSafety: boolean; assessmentNeedsReferral: boolean; assessmentReadyForTreatment: boolean; assessmentCompletedCount: number; assessmentTotalCount: number; trainingComplete: boolean; trainingPlanSaved: boolean; exerciseCount: number };
 };
 
 export type TreatmentRetestStageActions = {
@@ -272,13 +272,13 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     ];
     const pendingRetest = retestLedgerItems.filter((item) => item.status === "pending");
     const completedRetestCount = retestLedgerItems.filter((item) => item.status === "completed").length;
-    const targetStatus = (index: number) => index < trialTargetIndex ? "已完成" : index === trialTargetIndex ? "当前" : "待处理";
+    const targetStatus = (index: number) => treatmentComplete || index < trialTargetIndex ? "已完成" : index === trialTargetIndex ? "当前" : "待处理";
     return <section className="rm-page rm-thinking-workbench">
-      <CaseSummaryBar intake={intake} needsOfflineReview={!workbenchContext.canContinueSafety} onEditComplaint={() => { onThinkingWorkbenchOpenChange(false); goToStep(0); }} />
+      <CaseSummaryBar intake={intake} needsOfflineReview={!workbenchContext.canContinueSafety || workbenchContext.assessmentNeedsReferral} onEditComplaint={() => { onThinkingWorkbenchOpenChange(false); goToStep(0); }} />
       <StepHeading eyebrow="康复思路模式 · 阶段工作台" title="按阶段查看这次康复" note="处理、复查和继续排查都在这一屏；点开项目回到操作流。" />
       <section className="rm-workbench-stage-rail">{stageItems.map((stage, index) => <button type="button" key={stage.label} className={`rm-workbench-stage ${stage.state === "已完成" ? "is-done" : index === 3 ? "is-current" : ""}`} disabled={index > 3 && stage.state === "待开始"} onClick={stage.onClick}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage.label}</strong><b>{stage.state}</b></button>)}</section>
       <section className="rm-workbench-columns">
-        <article className="rm-workbench-module is-assessment"><header><div><span>处理队列</span><strong>{trialTargets.filter((_, index) => index < trialTargetIndex).length}/{trialTargets.length}</strong></div><button type="button" onClick={() => onThinkingWorkbenchOpenChange(false)}>返回处理</button></header>
+        <article className="rm-workbench-module is-assessment"><header><div><span>处理队列</span><strong>{trialTargets.filter((_, index) => treatmentComplete || index < trialTargetIndex).length}/{trialTargets.length}</strong></div><button type="button" onClick={() => onThinkingWorkbenchOpenChange(false)}>返回处理</button></header>
           {trialTargets.length ? <div className="rm-workbench-list">{trialTargets.map((target, index) => <button type="button" key={target.id} className={targetStatus(index) === "已完成" ? "is-done" : ""} onClick={() => onThinkingWorkbenchOpenChange(false)}><i>{targetStatus(index) === "已完成" ? "✓" : "·"}</i><span>{target.retestLabel || target.finding.title}</span><b>{targetStatus(index)}</b></button>)}</div> : <p className="rm-workbench-empty">{treatmentEmptyState.title}：{treatmentEmptyState.detail}</p>}
         </article>
         <article className="rm-workbench-module"><header><div><span>待复查项目</span><strong>{pendingRetest.length}项</strong></div></header>{pendingRetest.length ? <div className="rm-workbench-list">{pendingRetest.map((item) => <div className="rm-workbench-retest-row" key={item.obligationId}><i>·</i><span>{item.label}</span><b>{item.kindLabel}{item.side ? ` · ${item.side}` : ""}</b></div>)}</div> : <p className="rm-workbench-empty">{completedRetestCount ? `本次 ${completedRetestCount} 项复查已完成。` : "处理后，这里会列出需要复查的项目。"}</p>}</article>
@@ -287,8 +287,6 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
       <div className="rm-page-actions split"><button type="button" onClick={() => goToStep(2)}>继续评估</button><button type="button" className="rm-primary" onClick={() => onThinkingWorkbenchOpenChange(false)}>返回处理</button></div>
     </section>;
   }
-  if (isThinkingMode && thinkingWorkbenchOpen) return renderTreatmentWorkbench();
-
   const beforeScore = activeTarget ? targetScoreBeforeRetest(activeTarget) : intake.baselineScore;
   const change = scoreChange(beforeScore, postScore);
   const bilateralCheckpointRequired = intake.side === "双侧/中间"
@@ -670,6 +668,8 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     <StepHeading eyebrow="第4步 · 处理与即时复测" title="本次处理已暂停" />
     <section className="rm-complete-panel is-referral"><span>双侧反馈</span><h2>处理后症状加重</h2><p>先停止刚才的处理。返回检查重新确认，或者保存记录后由专业人员评估。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => reopenAssessment()}>返回相关检查</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button></div></section>
   </section>;
+  // 工作台是用户主动打开的概览视图，但安全暂停页优先级更高：加重时不允许被工作台盖住。
+  if (isThinkingMode && thinkingWorkbenchOpen) return renderTreatmentWorkbench();
   if (treatmentQueueIsRefreshing) {
     return <section className="rm-page">
       <StepHeading eyebrow="第4步 · 处理与即时复测" title="正在更新后续安排" />

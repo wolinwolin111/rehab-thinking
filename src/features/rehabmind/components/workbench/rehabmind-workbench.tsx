@@ -6552,6 +6552,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
                retestLedgerItems: professionalRetestItems,
                workbenchContext: {
                  canContinueSafety,
+                 assessmentNeedsReferral,
                  assessmentReadyForTreatment,
                  assessmentCompletedCount: assessmentDisplayItems.filter((item) => displayAssessmentComplete(item)).length,
                  assessmentTotalCount: assessmentDisplayItems.length,
