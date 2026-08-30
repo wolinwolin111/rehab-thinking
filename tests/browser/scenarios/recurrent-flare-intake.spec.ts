@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
+import { expect, test } from "@playwright/test";
+import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, launchWorkbenchScenario, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
 
 // R 组：症状收集「最近一次出现时间」（e3b9359 + d9e8f2a + 1806d9f）。
 //
@@ -9,48 +9,8 @@ import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors
 // 2. isAcuteTrauma 扩展：反复 + 最近一次∈{今天内,1～3天前} + 外伤机制 → 急性链生效
 //   （踝足 Ottawa 骨性问进关键确认等）。自发再发不判急性（Ottawa 指征是外伤）。
 // 3. 1806d9f：guided「发生方式」机制题出现条件扩展到急性再发窗口。
-
-/** 驱动 guided 到「确认你的问题信息」审阅屏（病程由描述文本解析）。R-2~R-4 fixme 恢复时可复用。 */
-async function toRecurrentReview(page: Page, description: string) {
-  await openFreshProduct(page);
-  await skipOnboarding(page);
-  const input = await expectUniqueVisible(page, "症状输入框", page.locator("textarea:visible"));
-  await input.fill(description);
-  await (await expectUniqueVisible(page, "症状信息继续按钮", symptomOrganizeButton(page))).click();
-  await page.getByRole("button", { name: /自助康复/ }).first().click();
-  await page.getByRole("button", { name: /下一步/ }).first().click();
-  await page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "右侧" }).first().click();
-  await page.locator(".rm-compact-atlas-nav button:visible").filter({ hasText: "脚踝" }).first().click();
-  await page.locator('[aria-label^="右侧 · 外踝"]:visible').first().click();
-  await page.getByRole("button", { name: /下一步/ }).first().click();
-  await expect(page.locator("h1:visible")).toContainText("确认你的问题信息", { timeout: 10_000 });
-}
-
-/** 在审阅屏作答：最近一次出现 + 发生方式（机制题）。lastEpisode 之后机制为按钮 Pill 选项。 */
-async function fillReview(page: Page, lastEpisode: string, mechanism: string | null) {
-  const lastSel = page.locator("select:visible").filter({ has: page.locator("option", { hasText: lastEpisode }) }).first();
-  await expect(lastSel, "最近一次出现 select 必须存在").toHaveCount(1, { timeout: 10_000 });
-  await lastSel.selectOption({ label: lastEpisode });
-  await page.waitForTimeout(300);
-  const mechBtn = page.locator("main button:visible").filter({ hasText: "发生方式" }).first();
-  if (mechanism) {
-    await expect(mechBtn, "急性再发必须出现发生方式（机制题）").toBeVisible();
-    await mechBtn.click();
-    await page.waitForTimeout(400);
-    const mechOption = page.locator("main button:visible").filter({ hasText: mechanism }).first();
-    await expect(mechOption).toBeVisible();
-    await mechOption.click();
-  } else {
-    if (await mechBtn.count()) {
-      mechBtn.click();
-      await page.waitForTimeout(400);
-      const traumaOpt = page.locator("main button:visible").filter({ hasText: /扭转或崴伤|跑跳或拉伤/ }).first();
-      await expect(traumaOpt).toHaveCount(0);
-    }
-  }
-  const next = page.getByRole("button", { name: /下一步/ }).first();
-  await expect(next).toBeEnabled({ timeout: 8_000 });
-}
+// R-2~R-4 经 dev 663c6c8 定向场景（安全确认边界 step 1，播种 onset+lastEpisodeOnset+mechanism，
+// 绕开解析层「今天或昨天优先匹配」的既有边界）直接断言骨性问答出现/不出现。
 
 // --- R-1 专业面板条件题：出现 / 隐藏 / 切换清除 + 还需补充清单字段名 ---
 
@@ -97,27 +57,40 @@ test("R-1 专业面板：反复出现触发最近一次字段、切离清除、�
 
 // --- R-2 急性再发踝：反复 + 今天内 + 崴伤 → 关键确认出现骨性风险问答 ---
 
-test.fixme("R-2 急性再发踝：反复+今天内+崴伤 → 骨性风险问答出现 @scenario", async ({ page }) => {
-  // 依赖 guided 描述文本把 onset 解析为「反复出现」，该解析属 dev 已注明的既有行为边界
-  //（「反反复复…今天早上又疼」会被判为今天或昨天）。稳定触发需 /test 定向场景（snapshot 设
-  // onset=反复出现 + lastEpisodeOnset=今天内 + mechanism=扭转或崴伤），待 dev 提供。
-  test.setTimeout(240_000);
+test("R-2 急性再发踝：反复+今天内+崴伤 → 骨性风险问答出现 @scenario", async ({ page }) => {
+  // dev 663c6c8 定向场景 recurrent-flare-acute（step 1 安全确认边界，直接播种 onset+lastEpisodeOnset+mechanism）。
+  test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const runtime = await launchWorkbenchScenario(page, "recurrent-flare-acute");
+  // 骨性风险阶段出现（Ottawa 标记）；问答卡在引导前置展开，本定向场景以阶段标记为准
+  //（dev 冒烟口径：acute 有「骨性风险」）。对照组断言见 R-3/R-4。
+  await expect(runtime).toContainText("骨性风险", { timeout: 10_000 });
+  await expect(runtime).toContainText("开始前确认", { timeout: 10_000 });
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
 });
 
-// --- R-3 对照组：急性再发窗口外 / 无外伤机制 → 不判急性（无骨性问答） ---
+// --- R-3 对照组：急性再发窗口外 → 不判急性（无骨性问答） ---
 
-test.fixme("R-3 对照：反复+一周以上+崴伤 → 无骨性问答 @scenario", async ({ page }) => {
-  // 同 R-2：依赖 guided onset 解析；待 /test 定向（lastEpisodeOnset=一周以上）。
-  test.setTimeout(240_000);
+test("R-3 对照：反复+一周以上+崴伤 → 无骨性问答 @scenario", async ({ page }) => {
+  test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const runtime = await launchWorkbenchScenario(page, "recurrent-flare-chronic");
+  // 对照组：骨性风险阶段不出现（dev 冒烟口径：对照组无「骨性风险」）+ 无骨性问答内容。
+  await expect(runtime).not.toContainText("骨性风险", { timeout: 10_000 });
+  await expect(runtime).not.toContainText(/骨头|骨点|当时能否|能不能连续走|压痛.*集中/, { timeout: 10_000 });
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test.fixme("R-4 对照：反复+今天内+没有明确受伤 → 无骨性问答 @scenario", async ({ page }) => {
-  // 同 R-2：依赖 guided onset 解析；待 /test 定向（lastEpisodeOnset=今天内 + mechanism=没有明确受伤）。
-  test.setTimeout(240_000);
+// --- R-4 对照组：无外伤机制 → 不判急性（无骨性问答） ---
+
+test("R-4 对照：反复+今天内+没有明确受伤 → 无骨性问答 @scenario", async ({ page }) => {
+  test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const runtime = await launchWorkbenchScenario(page, "recurrent-flare-no-trauma");
+  await expect(runtime).not.toContainText("骨性风险", { timeout: 10_000 });
+  await expect(runtime).not.toContainText(/骨头|骨点|当时能否|能不能连续走|压痛.*集中/, { timeout: 10_000 });
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
 });

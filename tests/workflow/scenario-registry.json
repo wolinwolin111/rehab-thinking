@@ -1320,8 +1320,8 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-2 急性再发踝：反复+今天内+崴伤→骨性风险问答",
-    "status": "blocked",
-    "notes": "fixme：依赖 guided 描述解析 onset=反复出现（dev 已注明属既有行为边界），需 /test 定向场景（onset+lastEpisodeOnset+mechanism 快照）",
+    "status": "passed",
+    "notes": "dev 663c6c8 recurrent-flare-acute 定向场景：关键确认出现「骨性风险」阶段",
     "tags": [
       "scenario",
       "recurrent-flare"
@@ -1336,8 +1336,8 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-3 对照：反复+一周以上+崴伤→无骨性问答",
-    "status": "blocked",
-    "notes": "fixme：同 R-2，待 /test 定向（lastEpisodeOnset=一周以上）",
+    "status": "passed",
+    "notes": "dev 663c6c8 recurrent-flare-chronic 定向场景：无「骨性风险」无骨性问答（一周以上不判急性）",
     "tags": [
       "scenario",
       "recurrent-flare"
@@ -1352,8 +1352,8 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-4 对照：反复+今天内+没有明确受伤→无骨性问答",
-    "status": "blocked",
-    "notes": "fixme：同 R-2，待 /test 定向（lastEpisodeOnset=今天内 + mechanism=没有明确受伤）",
+    "status": "passed",
+    "notes": "dev 663c6c8 recurrent-flare-no-trauma 定向场景：无「骨性风险」无骨性问答（无外伤不判急性）",
     "tags": [
       "scenario",
       "recurrent-flare"
