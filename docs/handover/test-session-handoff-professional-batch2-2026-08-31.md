@@ -14,14 +14,20 @@
 - B2-1/B2-2 通过；B2-3（安全页优先负断言）/B2-4（队列空态）暂标记 fixme（见「未决项」）。
 - 交互契约符合：点处理队列项/返回处理回流程原位；继续评估回评估段；工作台不自动打开；既有处理段用例（D-3/C-1/RET-02）零影响。
 
-## 本批次新增场景（registry 75→79）
+## 本批次新增场景（registry 75→80）
 
 | id | 断言 | 文件 | 状态 |
 |---|---|---|---|
 | B2-1 入口仅专业模式 + 三列与导航 | 普通引导无「阶段工作台」按钮；处理段（isThinkingMode）入口 1 个；工作台案例栏可见；处理队列 0/2、待复查 2 项（下蹲/下台阶功能义务）、继续排查空态；「返回处理」回流程 | `tests/browser/scenarios/professional-workbench-batch2.spec.ts` | passed |
 | B2-2 继续评估导航 | 工作台「继续评估」→ 回评估段（评估完成态落汇总「先看清问题」） | 同上 | passed |
-| B2-3 安全页优先负断言 | treatmentWorsened 时工作台不渲染（无「阶段工作台」入口） | 同上 | **fixme** |
-| B2-4 处理队列空态 | 无候选显示 treatmentEmptyState（title：detail） | 同上 | **fixme** |
+| B2-3 安全页优先负断言 | `launchWorkbenchScenario("treatment-worse")` 加重暂停页：无「阶段工作台」入口 + 出口完整（dev 提供确定性靶子） | 同上 | passed |
+| B2-4 处理段空态页 | `launchWorkbenchScenario("assessment-all-normal")`：处理段「本次没有发现明确异常」+「查看低刺激基础活动」+ 无处理卡（dev 4d1ca0e 定向场景，需无固定主诉动作+无评分 intake） | 同上 | passed |
+| B2-5 护栏源码顺序契约 | 读源码断言 `isThinkingMode && thinkingWorkbenchOpen` 早退位于 `treatmentWorsened`/`bilateralNeedsReferral` 之后（安全页优先） | `tests/unit/quality/treatment-workbench-safety-order-contract.test.mjs` | passed |
+
+## 已销账（8.27 裁定）
+
+- `docs/quality/real-browser-coverage-matrix.md` UX-02（案例学习）已按 8.27 裁定更新：
+  入口不可达即验收标准，不再列为功能缺口（closed by decision）。
 
 ## 关键知识（点击即得）
 
@@ -32,10 +38,10 @@
 - 底部导航：「继续评估」（`goToStep(2)`，评估完成态落汇总页）｜「返回处理」（关闭工作台）。
 - 案例栏安全状态：`!workbenchContext.canContinueSafety || workbenchContext.assessmentNeedsReferral`（d558c08 复核修复，与评估段一致）。
 
-## 未决项（fixme，待定）
+## 未决项（本轮全部关闭）
 
-- **B2-3 安全页优先负断言**：浏览器构造 `treatmentWorsened` 需走完复测面板多段（范围「变差」→ 不适 → 功能复测 → 继续）提交 `record.result === "worse"`，当前按序推进不稳定触发加重出口。依据静态逻辑成立：`src/domain/rehab/treatment/treatment-session-core.ts` `treatmentMustStop`（`result === "worse"`）+ `treatment-retest-stage.tsx` L639/L667 early return。**若开发有可用的加重构造路径（如既有 e2e），欢迎提供，我据此固化为断言。**
-- **B2-4 处理队列空态**：评估完成即产出处理候选，正常口径必有候选；空态属防御分支（`trialTargets.length ? ... : treatmentEmptyState`）。需要「无任何可处理目标」的主诉口径才能触发，暂未构造。
+- **B2-3/B2-4** 已按开发交付靶子固化并通过（见上），不再 fixme。
+- B2-3 护栏的源码顺序契约以 component/unit 读源码测试固化（B2-5）。
 
 ## 已知边界（非缺陷，dev 已注明）
 

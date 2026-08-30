@@ -104,3 +104,23 @@ export async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, "关键页面不应产生横向溢出").toBeLessThanOrEqual(1);
 }
+
+/**
+ * 通过测试工作台启动定向场景（page_boundary 快速直达，无需走完整流程）。
+ * 返回运行时容器（data-scenario-id 已确认匹配、康复流程导航已就绪）。
+ * 研发提供基准实现：测试工作台会持续轮询权限与刷新记录，不能用 networkidle 当就绪条件。
+ */
+export async function launchWorkbenchScenario(page: Page, scenarioId: string, mode: "页面定向" | "完整流程" = "页面定向") {
+  await page.goto("/test/", { waitUntil: "domcontentloaded" });
+  const launcher = page.getByTestId("test-workbench-launcher");
+  await expect(launcher).toBeVisible({ timeout: 15_000 });
+  await launcher.locator(".rm-test-mode > button").filter({ hasText: mode }).click();
+  const scenario = page.getByTestId(`test-scenario-${scenarioId}`);
+  await expect(scenario, `测试工作台必须提供 ${scenarioId} 真实场景卡`).toBeVisible();
+  await scenario.click();
+  await launcher.getByRole("button", { name: "开始测试", exact: true }).click();
+  const runtime = page.getByTestId("test-workbench-runtime");
+  await expect(runtime).toHaveAttribute("data-scenario-id", scenarioId, { timeout: 20_000 });
+  await expect(runtime.locator('nav[aria-label="康复流程"]')).toBeVisible({ timeout: 15_000 });
+  return runtime;
+}

@@ -1255,8 +1255,8 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-3 安全页优先负断言",
-    "status": "blocked",
-    "notes": "fixme：构造 treatmentWorsened 需走完复测面板多段触发 result=worse，浏览器构造不稳定；依据 treatment-session-core treatmentMustStop + treatment-retest-stage L639/L667 early return",
+    "status": "passed",
+    "notes": "dev 提供 treatment-worse 定向靶子（postScore7+加重），launchWorkbenchScenario 直达：加重暂停页无「阶段工作台」入口 + 出口完整",
     "tags": [
       "scenario",
       "professional-batch2"
@@ -1271,11 +1271,28 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-4 处理队列空态",
-    "status": "blocked",
-    "notes": "fixme：处理队列空需主诉无处理候选（评估完成即产候选，正常口径必有），构造口径待定",
+    "status": "passed",
+    "notes": "dev 4d1ca0e assessment-all-normal 定向场景（无固定主诉动作+无评分 intake）：处理段空态「本次没有发现明确异常」+「查看低刺激基础活动」+ 无处理卡",
     "tags": [
       "scenario",
       "professional-batch2"
+    ]
+  },
+  {
+    "scenarioId": "B2-5-safety-order-contract",
+    "ruleIds": [
+      "B2-5"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/unit/quality/treatment-workbench-safety-order-contract.test.mjs",
+    "titlePattern": "B2-5 护栏源码顺序契约：工作台渲染位于安全早退之后",
+    "status": "passed",
+    "notes": "读源码契约：isThinkingMode&&thinkingWorkbenchOpen 早退位于 treatmentWorsened/bilateralNeedsReferral 之后",
+    "tags": [
+      "unit",
+      "professional-batch2",
+      "contract"
     ]
   }
 ]

@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, openFreshProduct, skipOnboarding } from "../support/page-helpers";
+import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding, launchWorkbenchScenario } from "../support/page-helpers";
 import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 // B2 组：专业模式批次 2 终态（d558c08）——处理段只读工作台（阶段工作台按钮 + 三列 + 导航）。
 //
 // 开发交接要点：处理段工作台 = 案例栏 + 弱化 rail + 三列（处理队列/待复查项目/继续排查）
 // + 底部「继续评估｜返回处理」。工作台只读（无写路径）、不自动打开；安全页优先
-//（treatmentWorsened / bilateralNeedsReferral 时工作台不渲染）。入口按钮仅专业模式出现。
+// （treatmentWorsened / bilateralNeedsReferral 时工作台不渲染）。入口按钮仅专业模式出现。
 // 已知边界：thinkingWorkbenchOpen 两段共享（评估工作台经全局导航进处理段会带工作台）。
+// helper：launchWorkbenchScenario 走 /test 定向场景（见 page-helpers），B2-3/B2-4 据此直达。
 
 async function driveToTreatmentWorkbench(page: import("@playwright/test").Page) {
   await prepareProfessionalMultiAction(page);
@@ -87,24 +88,29 @@ test("B2-2 继续评估导航：从处理段工作台回评估段 @scenario", as
   await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test.fixme("B2-3 安全页优先：处理加重场景点不开工作台 @scenario", async ({ page }) => {
+test("B2-3 安全页优先负断言：加重暂停页无工作台入口 @scenario", async ({ page }) => {
   // d558c08 复核修复：treatmentWorsened / bilateralNeedsReferral 时早期返回安全面板，
-  // 工作台不渲染（early return 移到安全分支之后）。浏览器构造加重链路需走完复测面板
-  // 多段（范围「变差」→ 不适 → 功能复测能完成 → 继续）才能提交 result="worse"，
-  // 当前复测面板按序推进不稳定触发 treatmentWorsened —— 标记 fixme，
-  // 依据：src/domain/rehab/treatment/treatment-session-core.ts treatmentMustStop
-  // （record.result === "worse"）+ treatment-retest-stage.tsx L639/L667 early return。
-  test.setTimeout(240_000);
+  // 工作台不渲染。dev 提供确定性靶子 treatment-worse（postScore 7 + 加重，页面定向直达）。
+  test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const runtime = await launchWorkbenchScenario(page, "treatment-worse");
+  // 加重暂停页：确认停止/重新评估出口完整。
+  await expect(runtime).toContainText(/暂停|加重|停止/, { timeout: 10_000 });
+  // 防御护栏：加重暂停页不出现「阶段工作台」入口（工作台本就不渲染）。
+  await expect(runtime.getByRole("button", { name: "阶段工作台", exact: true })).toHaveCount(0);
+  await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test.fixme("B2-4 处理队列空态：无候选显示 treatmentEmptyState 文案 @scenario", async ({ page }) => {
-  // 处理队列为空需主诉无任何可处理目标（评估完成即产出候选，正常口径必有候选）。
-  // 构造口径待定（如「评估全部无法判断」引导场景）—— 标记 fixme。
-  // 代码依据：treatment-retest-stage.tsx renderTreatmentWorkbench
-  // `trialTargets.length ? ... : <p>{treatmentEmptyState.title}：{treatmentEmptyState.detail}</p>`。
-  test.setTimeout(180_000);
+test("B2-4 处理段空态页：全正常无固定主诉动作 → 空态出口 @scenario", async ({ page }) => {
+  // dev 4d1ca0e 提供的 assessment-all-normal 定向场景：需同时无固定主诉动作 + 无评分 intake
+  //（否则主诉动作未解决会落「还有问题需要补充检查」继续排查分支）。口径注记见 scenario-catalog。
+  test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
-  expect(runtimeErrors).toEqual([]);
+  const runtime = await launchWorkbenchScenario(page, "assessment-all-normal");
+  // 处理段空态：无明确异常 + 低刺激基础活动出口；不出现处理卡。
+  await expect(runtime).toContainText("本次没有发现明确异常", { timeout: 10_000 });
+  await expect(runtime).toContainText("查看低刺激基础活动", { timeout: 10_000 });
+  await expect(runtime.locator(".rm-treatment-action-card")).toHaveCount(0);
+  await assertNoHorizontalOverflow(page);
+  await assertNoRuntimeErrors(runtimeErrors);
 });
