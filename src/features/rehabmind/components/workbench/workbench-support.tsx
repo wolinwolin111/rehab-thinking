@@ -1583,6 +1583,17 @@ export function analyzeChiefAction(text: string, regionId: string, forceDirectio
   };
 }
 
+/** 「暂不支持」提示用的区域名称表：提示只依赖名称，不得依赖未发布区域的知识数据。 */
+export const UNSUPPORTED_REGION_NAMES: Record<string, string> = {
+  neck: "颈部",
+  shoulder: "肩关节与肩胛",
+  "thoracic-rib": "胸椎与肋骨",
+  elbow: "肘关节",
+  "wrist-hand": "腕与手",
+  "lumbar-pelvis": "腰椎与骨盆",
+  "hip-thigh": "髋关节与大腿",
+};
+
 export function inferRegion(text: string) {
   const normalized = text.toLowerCase();
   const map: Array<[string, string[]]> = [
