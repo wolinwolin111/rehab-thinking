@@ -862,7 +862,7 @@ body:has(.rm-app) {
   .rm-check-card > header strong { font-size: 17px; }
   .rm-check-card > section { padding: 14px; }
   .rm-check-card > section p { font-size: 15px; line-height: 1.55; }
-  .rm-check-card > section.rm-motion-answer-block { padding: 15px 14px; }
+  .rm-check-card > section.rm-motion-answer-block, .rm-function-result-stack > section.rm-motion-answer-block { padding: 15px 14px; }
   .rm-motion-answer-block .rm-result-grid:not(.is-two) {
     padding: 10px 0 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
