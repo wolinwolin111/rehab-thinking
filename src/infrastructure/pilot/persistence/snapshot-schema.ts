@@ -136,7 +136,7 @@ function validateAssessmentResults(value: SnapshotObject): string | null {
       if (Object.keys(raw.bilateralSideResults).some((key) => !["左侧", "右侧"].includes(key))) return `snapshot domain.assessments.results.${id}.bilateralSideResults is invalid`;
       if (Object.values(raw.bilateralSideResults).some((result) => !["normal", "limited"].includes(String(result)))) return `snapshot domain.assessments.results.${id}.bilateralSideResults is invalid`;
     }
-    for (const key of ["discomfort", "passiveDiscomfort", "functionDiscomfort"] as const) {
+    for (const key of ["discomfort", "passiveDiscomfort", "functionDiscomfort", "unableFearTogether"] as const) {
       if (raw[key] !== undefined && !["yes", "no"].includes(String(raw[key]))) return `snapshot domain.assessments.results.${id}.${key} is invalid`;
     }
     for (const key of ["symptomScore", "passiveSymptomScore", "pairedStrengthScore"] as const) {

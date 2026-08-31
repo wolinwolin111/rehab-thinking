@@ -300,6 +300,8 @@ export type AssessmentRecord = {
   /** 没有明确主诉动作时，只有复现了平时熟悉的症状，才建立疼痛复测目标。 */
   familiarSymptom?: FamiliarSymptomAnswer;
   unableReason?: "pain" | "fear" | "instruction" | "other";
+  /** 因疼或没力停下时，是否同时担心继续会加重（恐动与疼痛可并存，单选会互相挤掉）。 */
+  unableFearTogether?: YesNo;
   strengthUnableReason?: StrengthUnableReason;
   measuredAngle?: string;
   symptomScore?: number;

@@ -357,6 +357,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     {activeFunctionObligations.map((obligation) => <article key={obligation.assessmentId} data-assessment-id={obligation.assessmentId}>
         <header><span>再试一次</span><h3>{obligation.label}</h3></header>
         <p className="rm-choice-hint">从头做到尾就算完成；可以借力，姿势不需要完全标准。</p>
+        {assessmentResults[obligation.assessmentId]?.unableFearTogether === "yes" ? <p className="rm-choice-hint">上次你担心继续会加重：这次先用更轻的方式试，只确认能不能完成。</p> : null}
         {(obligation.sides?.length ? obligation.sides : [undefined]).map((side) => {
           const answerKey = functionRetestAnswerKey(obligation.assessmentId, side);
           const answer = treatmentFunctionRetests[answerKey] ?? { completion: "" };
