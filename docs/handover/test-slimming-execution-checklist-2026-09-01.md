@@ -22,7 +22,9 @@
 | 1.2 | workers 试验 | ✅ **w2 稳定**（full 61+9 全绿 218s，省 ~40%）；**w3 禁用**（单 vite SSR 饱和→38 click 超时+2 视觉漂移）；正式绑定轮保持 w1。顺带修 B2-1 硬编码 `localhost:3000`→相对 `./`（潜伏 bug，靠 dev 侧 3000 恰在跑才绿） |
 | 1.3 | 协议规则落档 | ✅ merge 门（只接受已提交 SHA）、文档所有权、server 运行期禁编辑 worktree——总交接 §5/§6/§1.4 成文 |
 
-## 阶段 2 · registry 卫生（单文件，删字段，不拆分）
+## 阶段 2 · registry 卫生（单文件，删字段，不拆分）——**已完成**（`b4b27b9`）
+
+93 条删 `status`(77)/`note`(5)，回归纯指针索引；`test:summary` 判决行逐字一致（前后比对）；quality 单测 33/33。
 
 | # | 动作 | 判据 |
 |---|---|---|
@@ -30,7 +32,9 @@
 | 2.2 | 前后各跑一次 `test:summary`，确认输出不变（quality-summary 只认 gateId/releaseRequired，status 无机器消费方——已核） | 零行为变化 |
 | 2.3 | 登记立项（不本轮做）：registry ↔ 发布门禁从未接线（92 条全无 gateId/releaseRequired，`test:summary` 对它们恒视为非必需）——发布工程范畴 | 记入待办 |
 
-## 阶段 3 · 文档精简（分层冻结，非删除覆盖）
+## 阶段 3 · 文档精简（分层冻结，非删除覆盖）——**已完成**（`d37b006`+`be47058`+`e030577`）
+
+归档 4 份（含 determination 合并）+ 修预存在 legacy 死链；test-plan §7 澄清发布/回归双口径、§8 补 runner、§9 加当前基线横幅；coverage-matrix 加当前口径横幅；index 冻结规矩 + 总交接 §8 活文档白名单与所有权。check:docs 绿（122 文件）。
 
 | # | 动作 | 对象 |
 |---|---|---|
@@ -49,13 +53,15 @@
 | 4.2 | dev 补处理完成态靶子后 C-2/C-4 边界化（省 ~25s，主收益是降 driver 脆弱） | 可选 |
 | 4.3 | registry ↔ 发布门禁接线 | 发布工程 |
 
-## 总验收（瘦身工程本身的 definition of done）
+## 总验收（瘦身工程本身的 definition of done）——**全部达成 2026-09-01**
 
-1. 活文档 = 5 份白名单，`check:docs` 绿；
-2. registry 无 status/note，`test:summary` 输出与改前一致；
-3. 全量通过数 ≥ 60+9（零覆盖损失）；
-4. `run-test-regression.mjs` 一条命令出判决，workers 前后墙钟对比留档；
-5. outcome-slim 证据绑定 dev 提交 sha 并推送完成。
+1. ✅ 活文档 = 5 份白名单（§8 成文），`check:docs` 绿（122 文件）；
+2. ✅ registry 无 status/note（93 条），`test:summary` 判决行逐字一致；
+3. ✅ 全量通过数 61+9（较起点 60+9 净增 OP-1，零覆盖损失）；
+4. ✅ `run-test-regression.mjs` 一键出判决；workers 对比留档：w1 全量 6.2min → w2 3.6min（省 ~40%，稳定采纳）→ w3 禁用（级联超时）；完整链 reg-20260831203635 绑 tip 全绿；
+5. ✅ outcome-slim 两轮绑定 dev sha 并推送（`c944ed3`/`1d44857`）。
+
+阶段 4（fixme 转化、C 组边界化、registry↔发布门禁接线）为独立后续轮，不属本次瘦身验收。
 
 ## 附录 · 复核中撤回/修正的论断（防等下一个模型重蹈）
 
