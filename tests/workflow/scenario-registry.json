@@ -1126,13 +1126,13 @@
     "priority": "P2",
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/continuation-chain.spec.ts",
-    "titlePattern": "C-3 收敛：接受并查完所有可查项后卡片不再出现",
+    "titlePattern": "C-3 收敛：反复接受补查直到查无可查，卡片消失且完成面板保留",
     "tags": [
       "scenario"
     ],
     "status": "passed",
     "note": "依赖 C-1 修复，fixme",
-    "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、仍有待处理分支保留；outcome-slim 后终态固化成果面板结论句 h2、分数对比与清单表行结构（类别|名称|状态）"
+    "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、成果面板保留重新确认出口；outcome-slim 终态固化结论句 h2、分数对比与清单表行结构；裁定 B 后不再钉「仍有待处理」行"
   },
   {
     "scenarioId": "KR-C4-continuation-session-reset",
@@ -1483,11 +1483,27 @@
     "script": "tests/component/rendered-html.test.mjs",
     "titlePattern": "outcome-slim：成果面板清单表与结论句契约",
     "status": "passed",
-    "notes": "三类区块合并 rm-stage-outcome-table 清单行；「本轮处理已完成」大标题三分支结论句；主诉动作降级「主诉动作：」小字；未解释卡改类名 rm-outcome-unexplained；旧行状态词与卡壳样式销账",
+    "notes": "三类区块合并 rm-stage-outcome-table 清单行；未解释卡改类名 rm-outcome-unexplained；第二轮起结论句三分支/降级行/双侧特例迁入 ChiefOutcomeSummary（组件源断言），两完成面板同源消费×2，stage 文件旧 h2=主诉清单销账",
     "tags": [
       "unit",
       "outcome-slim",
       "contract"
+    ]
+  },
+  {
+    "scenarioId": "OP-1-outcome-panel-chief-action-line",
+    "ruleIds": [
+      "OP-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/outcome-panel-slim.spec.ts",
+    "titlePattern": "OP-1 成果面板：结论句 + 主诉动作降级行 + 清单表",
+    "status": "passed",
+    "notes": "dev 第二轮靶子 outcome-panel-chief-action-line（不可分基线+瘢痕项种齐）：h2「主诉动作已复查」、rm-chief-action-line「主诉动作：下楼和下蹲」、清单表两类别（有效处理行=控制候选 actionLabel「训练股四头末端控制」small「主诉变轻」；活动范围变化行「膝关节主动伸直（AROM）」small「有改善，仍小于健侧」）、无分数块、无未解释卡；断言作用域 runtime 容器防 launcher 假阳性",
+    "tags": [
+      "scenario",
+      "outcome-slim"
     ]
   }
 ]

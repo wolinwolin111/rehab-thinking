@@ -588,7 +588,7 @@ test("a new follow-up symptom invalidates the old complaint-derived state", asyn
 });
 
 test("covers the full-positive, bilateral, no-action and extreme-input pilot rules", async () => {
-  const [demoComponent, uiSource, scoreGuideSource, recordFlowSource, chiefHistorySource, content, styles, outcome, limbRegionsSource] = await Promise.all([
+  const [demoComponent, uiSource, scoreGuideSource, recordFlowSource, chiefHistorySource, content, styles, outcome, limbRegionsSource, retestStageSource] = await Promise.all([
     readRehabMindUiSource(),
     readFile(new URL("../../src/features/rehabmind/components/shared/ui-primitives.tsx", import.meta.url), "utf8"),
     readFile(new URL("../../src/features/rehabmind/components/shared/score-guide-copy.ts", import.meta.url), "utf8"),
@@ -598,6 +598,7 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
     readFile(new URL("../../src/features/rehabmind/styles/complete-demo.css", import.meta.url), "utf8"),
     readFile(new URL("../../src/features/rehabmind/components/stages/shared/stage-outcome-sections.tsx", import.meta.url), "utf8"),
     readFile(new URL("../../src/knowledge/pilot/local-limb-regions.ts", import.meta.url), "utf8"),
+    readFile(new URL("../../src/features/rehabmind/components/stages/treatment-retest-stage.tsx", import.meta.url), "utf8"),
   ]);
   const demo = `${demoComponent}\n${uiSource}\n${scoreGuideSource}\n${recordFlowSource}\n${chiefHistorySource}\n${coreSource}`;
 
@@ -684,21 +685,29 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(outcome, /活动范围变化/);
   assert.match(outcome, /后续观察/);
   // outcome-slim（成果面板视觉瘦身）：三类区块合并为一张清单表（类别 | 名称 | 状态行），
-  // 行状态词精简；「本轮处理已完成」面板大标题改为三分支结论句，主诉动作降级为
-  // 「主诉动作：」一行小字；「还有问题没得到解释」卡改用独立类名 rm-outcome-unexplained。
+  // 行状态词精简；「还有问题没得到解释」卡改用独立类名 rm-outcome-unexplained。
   assert.match(outcome, /rm-stage-outcome-table/);
   assert.match(outcome, /rm-stage-outcome-kind/);
   assert.match(outcome, /rm-stage-outcome-row/);
   assert.doesNotMatch(outcome, /本轮后主诉变轻/);
-  assert.match(demo, /主诉暂无明显变化/);
-  assert.match(demo, /主诉动作已复查/);
-  assert.match(demo, /className="rm-chief-action-line">主诉动作：/);
   assert.match(demo, /className="rm-outcome-unexplained"/);
-  assert.match(demo, /可重新确认或先进入训练<\/small>/);
+  // 裁定 B：「仍有待处理」行不可达已删除，契约不再钉其字符串；
+  // problem-ledger-core 的「仍有待处理问题」是另一出口（台账空态标题），与本面板无关。
   assert.match(styles, /\.rm-stage-outcome-table/);
   assert.match(styles, /\.rm-outcome-unexplained/);
   assert.match(styles, /\.rm-chief-action-line/);
   assert.doesNotMatch(styles, /\.rm-stage-outcome-effective article/);
+  // outcome-slim 第二轮：结论句三分支 + 分数/降级行抽成 ChiefOutcomeSummary，
+  // 「本轮处理已完成」与 guided「本阶段成果」两面板同源消费（stage 文件不再持有这些字符串）；
+  // 不可分且非双侧 → 「主诉动作：」降级行；双侧特例「已分别记录两侧的整体感受」保留。
+  assert.match(outcome, /主诉暂无明显变化/);
+  assert.match(outcome, /主诉动作已复查/);
+  assert.match(outcome, /className="rm-chief-action-line">主诉动作：/);
+  assert.match(outcome, /已分别记录两侧的整体感受/);
+  assert.equal((demo.match(/<ChiefOutcomeSummary/g) ?? []).length, 2, "两个完成面板必须同源消费 ChiefOutcomeSummary");
+  // 旧「h2=主诉动作清单」仅从处理复测两个完成面板销账；总结页与症状信息折叠区
+  // 的 chiefComplaintLabel 标题是各自面板的合法用法，不在此列。
+  assert.doesNotMatch(retestStageSource, /<h2>\{chiefComplaintLabel\(intake\)\}<\/h2>/);
   assert.doesNotMatch(demo, /candidateBriefActivation/);
   assert.doesNotMatch(demo, /treatmentActionVisuals/);
   assert.match(demo, /exerciseActionVisual/);

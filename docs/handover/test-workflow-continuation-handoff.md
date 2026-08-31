@@ -114,16 +114,16 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 - **你没有跨会话通道**，不能主动联系开发。开发消息经「用户转交」，你处理完把「可转给开发」的回复整理好交用户。
 - **开发不碰 tests/**（其工作区 `tests/` 是旧版，会误报）。后续回归一律以 `agent/testing` 的 `tests/` 为准。
-- 你提交到 `agent/testing` 并 `push origin agent/testing`。开发侧合 dev 基线的 `main`；你 `merge main` 进来。
+- **提交先行、SHA 绑定（2026-09-01 起 dev 正式协议）**：dev 每批自验通过即提交 main 并通报 SHA，其工作树随后可能已推进到下一批。因此：①回归只针对**通报的 SHA**（`git merge <sha>`，不是 `git merge main`——main 可能已超前；merge 即隔离，禁止再从 dev 工作树拷文件覆盖）；②推送用显式 refspec：`git push origin <我的提交sha>:refs/heads/agent/testing`，**永不推 main**（origin/main 历史分叉，见 §1.4）；③每批 dev 随附**契约迁移说明**，按 SHA 异步回归，不再悬置等 dev 提交。
 - **交叉口约定**：预销契约后 dev 执行删除提交，若有断言与实际装配偏差，回失败信息给 dev 按实际修正。
 
 ---
 
 ## 6. 当前测试验收基线（outcome-slim 轮，2026-09-01）
 
-全量（edge-full）：**60 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **92 条**。
+全量（edge-full）：**61 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **93 条**。
 
-**状态**：outcome-slim 回归全绿，dev 已提交 `bb5da7e` 并 merge（`335abec`），测试侧改动（C 组定位器适配、C-3 强化、OP-CONTRACT 契约、registry、交接文档）随本提交绑定推送。详见 `test-session-handoff-outcome-slim-2026-09-01.md`。
+**状态**：outcome-slim 两轮均已绑定——第一轮 `bb5da7e`（merge `335abec` + 测试侧 `c944ed3`）；第二轮 `54b2b8e`+`7d5cc7e`（merge `f397c28`，测试侧 OP-1/契约校准/裁定 B 销钉随绑定提交）。dev 已切「提交先行、SHA 绑定」协议（§5）。详见 `test-session-handoff-outcome-slim-2026-09-01.md`。
 
 ### 6.1 已关闭
 - 知识重构批次1（C-1~C-4、D-3、RET-02）✅
@@ -131,7 +131,7 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 - 最近一次出现时间（R-1~R-4）✅
 - 非生产区域清理（KR-CONTRACT、U-1~U-3）✅
 - 疼痛对比+恐动拆分（FR-1~FR-3）✅
-- 成果面板视觉瘦身（OP-CONTRACT + C 组适配，绑定 `bb5da7e`）✅
+- 成果面板视觉瘦身（第一轮绑定 `bb5da7e`；第二轮同源化+OP-1 回归绿，待 dev 提交绑定）✅
 
 ### 6.2 待办 / 回退点
 - 无 open fixme 属本轮回归的阻塞项；9 个 skipped 为各主题遗留的 `test.fixme`（含 B2-3 安全页、R 组早期、FR 空壳等，见各档）。
@@ -141,7 +141,7 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ## 7. 收到新开发交接时的处理套路
 
-1. `git fetch origin` + `git log --oneline main -3` + `git merge main`（读 diff/stat，先理解改动）。
+1. 收到通报 SHA 后：`git log --oneline <sha> -3` 确认在 main 线上 + `git merge <sha>`（读 diff/stat 与 dev 随附的契约迁移说明，先理解改动；勿用 `merge main`，main 可能已推进到下一批）。
 2. 读 dev 提交的关键实现（`git show <sha> -- <file>`）确认 UI 文案/DOM/字段。
 3. **probe 先行**：写临时 `tests/browser/scenarios/_probeNN.spec.ts` 用 `launchWorkbenchScenario` 或 driver 实探实际渲染（按钮/文案/testid），确认断言点后再写正式场景。
 4. 写正式场景（一个主题归档为一个 spec），跑通 → 更新 registry → 写/更新交接文档 → 全量回归 → 提交推送。
