@@ -9,6 +9,39 @@
  * 避免三张等权空卡堆叠。分类词与类名保持不变，仅供样式与测试定位。
  */
 
+export type ChiefOutcomeSummaryProps = {
+  chiefScoreComparable: boolean;
+  chiefImproved: boolean;
+  noImmediateTreatmentResponse: boolean;
+  baselineScore: number;
+  lastChiefScore: number;
+  /** 主诉动作降级行展示的动作名，来自 reportedActionSummary。 */
+  reportedActions: Array<string | undefined>;
+  hasClearChiefAction: boolean;
+  /** 双侧主诉不可比分时显示「已分别记录两侧的整体感受」。 */
+  bilateralNoScore?: boolean;
+  /** 没有固定加重动作时的兜底文案。 */
+  noActionCopy: string;
+};
+
+/**
+ * 主诉结论标题 + 分数/降级行。「本轮处理已完成」与 guided 链路「本阶段成果」
+ * 两个完成面板共用，标题只陈述复查结论，不再用主诉动作清单冒充已处理项。
+ */
+export function ChiefOutcomeSummary(props: ChiefOutcomeSummaryProps) {
+  const { chiefScoreComparable, chiefImproved, noImmediateTreatmentResponse, baselineScore, lastChiefScore, reportedActions, hasClearChiefAction, bilateralNoScore = false, noActionCopy } = props;
+  return <>
+    <h2>{chiefScoreComparable && noImmediateTreatmentResponse ? "主诉暂无明显变化" : chiefImproved ? "主诉变轻" : "主诉动作已复查"}</h2>
+    {chiefScoreComparable
+      ? <div className="rm-final-score"><b>{baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, baselineScore - lastChiefScore)} 分</small></div>
+      : bilateralNoScore && hasClearChiefAction
+        ? <div className="rm-no-score-summary"><strong>已分别记录两侧的整体感受</strong></div>
+        : hasClearChiefAction
+          ? <p className="rm-chief-action-line">主诉动作：{reportedActions.join("、")}</p>
+          : <p>{noActionCopy}</p>}
+  </>;
+}
+
 export type StageOutcomeSectionsProps = {
   effectiveFocusLabels: string[];
   effectiveControlLabels: string[];
