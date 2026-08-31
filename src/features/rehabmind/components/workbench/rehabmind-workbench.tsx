@@ -631,6 +631,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           } else if (result.diagnostic || draftResult.diagnostic) {
             setPilotSyncState("error");
             setToast("发现无法读取的本机记录，原始副本已保留；请勿清理浏览器数据");
+            window.setTimeout(() => setToast(""), 5000);
           }
           draftHydratedRef.current = true;
           if (testContext) {
@@ -657,6 +658,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           setSavedRecords([]);
           setPilotSyncState("offline");
           setToast("本机案例读取失败，请不要清理浏览器数据");
+          window.setTimeout(() => setToast(""), 5000);
           setOnboardingOpen(true);
           draftHydratedRef.current = true;
         }
@@ -1176,7 +1178,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     void persistLocalRecords(next);
     void restoreRecord(copied);
     void enqueuePilotRecordSync(copied);
-    setToast("已另存为新案例，原来的两份记录仍然保留");
+    setToast("已另存新案例，原记录保留");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -1318,7 +1320,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMultiTabConflict(null);
     currentDraftFingerprintRef.current = localDraftContentFingerprint({ snapshot: persistSavedDemoSnapshot(buildCurrentSnapshot()) });
     setPilotSyncState("local-saved");
-    setToast("已保留当前页面，接下来会另存一份草稿");
+    setToast("已保留当前页面，将另存草稿");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -3520,7 +3522,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   function acceptContinuationSuggestions(ids: string[]) {
     setContinuationRoundIds((current) => Array.from(new Set([...current, ...ids])));
     setStep(2);
-    setToast("已加入继续检查的方向；补查结果会按新评估生成后续处理");
+    setToast("已加入补查方向，完成后重新安排处理");
     window.setTimeout(() => setToast(""), 2400);
   }
 
@@ -3911,10 +3913,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     if (event.returnMode === "followup") {
       restoreAdverseReturn(event, "treatment");
       setStep(3);
-      setToast("复查已确认，已按当前结果重新安排本次处理");
+      setToast("已按当前结果重新安排处理");
     } else {
       setAssessmentSummaryOpen(true);
-      setToast("复查已确认，处理和训练已按当前结果重新生成");
+      setToast("处理和训练已按新结果重新生成");
     }
     window.setTimeout(() => setToast(""), 2400);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5150,7 +5152,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setSnapshotReconfirmationOpen(false);
     setStep(snapshotResumeStep);
     setSafetyStage(2);
-    setToast("已重新确认当前症状、安全信号和发生时间，可以继续");
+    setToast("已重新确认，可以继续");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -5533,6 +5535,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .catch(() => {
         setPilotSyncState("error");
         setToast("案例创建失败，请检查网络后重试");
+        window.setTimeout(() => setToast(""), 5000);
       });
     // The reset render supplies the fresh snapshot consumed by case creation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6805,7 +6808,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       }}
       onSaveAsNew={() => savePilotConflictAsNew(currentPilotConflictRecord)}
       onExportLocal={() => exportPilotLocalConflict(currentPilotConflictRecord)}
-      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留这台设备上的记录，稍后可以继续选择"); }}
+      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留这台设备上的记录，稍后可以继续选择"); window.setTimeout(() => setToast(""), 5000); }}
     /> : null}
 
     <div className={`rm-shell ${displayedStep === 0 ? "is-intake-step" : ""}`}>

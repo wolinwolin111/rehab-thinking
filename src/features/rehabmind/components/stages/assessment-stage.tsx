@@ -335,6 +335,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       setAdverseConfirmedAssessmentIds([]);
       setStep(4);
       setToast("已记录这次加重，后面只保留更简单的做法");
+      window.setTimeout(() => setToast(""), 2800);
     }}>改用更简单的做法</button></div>
   </section>;
   if (isThinkingMode && thinkingWorkbenchOpen && !assessmentSummaryOpen && !sharedTensionOpen) return renderThinkingWorkbench();
@@ -622,7 +623,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
         {record.active === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>是什么让你停下来？</h3>
           <p className="rm-choice-hint">如果是因为疼所以不敢继续，选“疼痛或不适”。</p>
-          <div className="rm-result-grid">{([
+          <div className="rm-result-grid is-three">{([
             ["pain", "疼或不舒服"],
             ["fear", "担心继续会加重"],
             ["instruction", "不会做或没听懂说明"],
@@ -748,7 +749,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
         {item.kind === "strength" && record.simple === "unable" ? <section className="rm-motion-answer-block is-followup rm-strength-unable">
           <h3>主要卡在哪里？</h3>
-          <div className="rm-result-grid is-three">{([[
+          <div className="rm-result-grid is-two">{([[
             "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
               strengthUnableReason: value,
               discomfortLocation: value === "pain" ? record.discomfortLocation || relatedMotionRecord?.discomfortLocation : undefined,
