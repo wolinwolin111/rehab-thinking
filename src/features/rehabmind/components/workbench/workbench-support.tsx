@@ -82,6 +82,7 @@ import { type BilateralAssessmentSide, type BilateralComparison, type BilateralS
 
 
 import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
+import { localLimbPrimaryStrengthId } from "@/src/domain/rehab/shared/local-limb-decision-core";
 
 
 
@@ -2761,8 +2762,26 @@ export function directionIsRelevant(regionId: string, itemId: string, intake: In
   return true;
 }
 
+/** 膝区力量检查按主诉位置的相关度打分；0 表示与主诉无直接相关，核心两项由闸门另行保留。 */
+export function kneeStrengthChiefScore(itemId: string, intake: IntakeState) {
+  const source = `${intake.location} ${intake.description}`;
+  if (includesAny(source, ["膝前", "髌骨", "髌腱"])) return itemId === "knee-quadriceps" ? 9 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝内侧", "鹅足", "内侧关节线"])) return itemId === "knee-adductor-pes" ? 9 : itemId === "knee-glute" ? 5 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝外侧", "腓骨头", "外侧关节线"])) return itemId === "knee-glute" ? 9 : itemId === "knee-adductor-pes" ? 5 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝后", "腘窝", "大腿后侧"])) return itemId === "knee-hamstring" ? 9 : itemId === "knee-posterior-chain" ? 6 : 0;
+  if (includesAny(source, ["小腿上端", "小腿"])) return itemId === "knee-calf" ? 8 : itemId === "knee-posterior-chain" ? 3 : 0;
+  return itemId === "knee-quadriceps" ? 2 : itemId === "knee-posterior-chain" ? 1 : 0;
+}
+
 export function strengthIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
-  if (["thigh-local", "calf-local"].includes(regionId)) return directionIsRelevant(regionId, itemId, intake);
+  if (regionId === "knee") {
+    // 膝区固定保留股四头肌与后侧链两项核心，其余力量项只在主诉位置命中时入列。
+    return ["knee-quadriceps", "knee-posterior-chain"].includes(itemId) || kneeStrengthChiefScore(itemId, intake) > 0;
+  }
+  if (regionId === "thigh-local" || regionId === "calf-local") {
+    // 局部区域只查主诉象限的力量；相邻象限仍可由续测池按处理反应补入。
+    return itemId === localLimbPrimaryStrengthId(regionId, intake.location);
+  }
   if (regionId !== "ankle-foot") return true;
   const source = chiefActionSource(intake);
   // 急性踝扭伤的常用能力优先看背屈和外翻控制。主诉动作只负责
