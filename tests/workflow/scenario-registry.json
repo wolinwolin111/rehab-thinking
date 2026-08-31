@@ -1424,5 +1424,53 @@
       "region-cleanup",
       "contract"
     ]
+  },
+  {
+    "scenarioId": "FR-1-function-flare-retest-gate",
+    "ruleIds": [
+      "FR-1"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/function-together.spec.ts",
+    "titlePattern": "FR-1 function-flare-retest：复测带分且完成门生效",
+    "status": "passed",
+    "notes": "e5cdf85：能完成→疼痛滑条+context「处理前 X/10 当时做不完」；未打分记录 disabled、打分后 enable",
+    "tags": [
+      "scenario",
+      "function-retest-flare"
+    ]
+  },
+  {
+    "scenarioId": "FR-2-fear-together",
+    "ruleIds": [
+      "FR-2"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/function-together.spec.ts",
+    "titlePattern": "FR-2 恐动题：功能卡疼路径出现/填写/切换",
+    "status": "passed",
+    "notes": "2069385：功能卡疼后追问「当时是不是也担心继续会加重？[有/没有]」；unableFearTogether；fef2886 清除链",
+    "tags": [
+      "scenario",
+      "function-retest-flare"
+    ]
+  },
+  {
+    "scenarioId": "FR-3-legacy-completion-revive",
+    "ruleIds": [
+      "FR-3"
+    ],
+    "priority": "P2",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/function-together.spec.ts",
+    "titlePattern": "FR-3 旧案例 completion-status 复测（无分）复活不炸",
+    "status": "passed",
+    "notes": "恢复案例面板可用、零运行时错误（pendingFunctionRetests 派生健壮）",
+    "tags": [
+      "scenario",
+      "function-retest-flare"
+    ]
   }
 ]

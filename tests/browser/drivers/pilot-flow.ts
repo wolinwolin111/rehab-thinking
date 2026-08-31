@@ -323,6 +323,10 @@ export async function completeSingleActionTreatment(page: Page, options: { chief
         const complete = squatRetest.getByRole("button", { name: "能完成", exact: true });
         await expect(complete).toHaveCount(1);
         await complete.click();
+        // e5cdf85：completion-status 复测带分——「能完成」后出现疼痛滑条则填低分（分降更好），
+        // 无门控场景（旧行为）滑条不出现则跳过。
+        const flareSlider = main.locator('input[type="range"]:visible').first();
+        if (await flareSlider.count()) await flareSlider.fill("2");
       }
     }
     await click("继续", "完成本轮复测");
