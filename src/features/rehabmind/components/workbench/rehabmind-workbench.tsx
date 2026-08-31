@@ -3052,9 +3052,15 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       "knee-hamstring-isometric",
       "knee-supine-adductor",
     ]);
+    // 规则后门只补“有发现支持”的卡：仅由 pilot 规则注入、没有任何其它来源的
+    // 训练卡，必须命中本次评估发现的标签才发放（足弓、脚趾类跨区卡此前经此漏发）。
+    const pilotOnlyTrainingIds = new Set([...pilotTrainingIds].filter((id) =>
+      !relevantIds.has(id) && !effectiveIds.has(id) && !kneeCoreTrainingIds.has(id)
+      && !directionIds.has(id) && !recordPatternSet.has(id) && !(foundationPatternIds[region.id] ?? []).includes(id)));
     const orderedExercises = [...kneeCoreRelated, ...pilotRelated, ...directionSpecific, ...foundationPatterns, ...recordPatterns, ...effectiveRelated, ...relevant, ...current, ...foundation, ...region.exercises]
       .filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index)
       .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
+      .filter((exercise) => !pilotOnlyTrainingIds.has(exercise.id) || exercise.tags.some((tag) => findingTags.has(tag)))
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS.has(exercise.id) || ankleP1EligiblePlantarflexion.has(exercise.id))
       .filter((exercise) => !assessmentRequiredExerciseIds.has(exercise.id) || exercise.tags.some((tag) => weakStrengthTags.has(tag)))

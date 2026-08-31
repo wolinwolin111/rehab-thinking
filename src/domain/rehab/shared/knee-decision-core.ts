@@ -172,7 +172,7 @@ const ACTION_TITLES: Record<KneeActionId, string> = {
   "jump-land": "跳跃落地",
   "single-leg-balance": "单腿站",
   "single-leg-squat": "单腿下蹲",
-  "hip-hinge": "站立屈髋",
+  "hip-hinge": "站立折髋",
   "unknown-task": "原来的不适动作",
 };
 
