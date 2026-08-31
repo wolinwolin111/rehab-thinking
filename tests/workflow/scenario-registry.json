@@ -11,8 +11,7 @@
     "tags": [
       "target",
       "visual-adjacent"
-    ],
-    "status": "failed"
+    ]
   },
   {
     "scenarioId": "UX-01-primary-entry",
@@ -27,8 +26,7 @@
     "tags": [
       "target",
       "visual"
-    ],
-    "status": "failed"
+    ]
   },
   {
     "scenarioId": "UX-01-score-slider",
@@ -43,8 +41,7 @@
     "tags": [
       "target",
       "visual"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "INT-05-chief-progression",
@@ -57,8 +54,7 @@
     "titlePattern": "INT-05 主诉动作先独立检查",
     "tags": [
       "p0"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "INT-07-multi-action-queue",
@@ -71,8 +67,7 @@
     "titlePattern": "INT-07 多个功能动作分别进入独立评估队列",
     "tags": [
       "p0"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "SAFE-04-neural-safety",
@@ -85,8 +80,7 @@
     "titlePattern": "SAFE-04 麻电和感觉变化进入专业确认出口",
     "tags": [
       "p0"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "MIX-03-safety-priority",
@@ -99,8 +93,7 @@
     "titlePattern": "MIX-03 疼痛、肿胀和麻电同时出现时安全确认优先",
     "tags": [
       "p0"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "PERM-04-capability-revoke",
@@ -113,8 +106,7 @@
     "titlePattern": "PERM-04 取消被动活动能力后关节处理旧入口失效",
     "tags": [
       "p0"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "SAVE-01-local-draft-refresh",
@@ -129,8 +121,7 @@
     "tags": [
       "p0",
       "persistence"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "RET-02-different-action-isolation",
@@ -145,8 +136,7 @@
       "p0",
       "decision",
       "retest"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "MIX-06-functional-pain-with-normal-range",
@@ -160,8 +150,7 @@
     "tags": [
       "divergent",
       "decision"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "MIX-07-limited-range-without-pain",
@@ -175,8 +164,7 @@
     "tags": [
       "divergent",
       "decision"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "MIX-02-swelling-without-fixed-pain-action",
@@ -191,8 +179,7 @@
       "divergent",
       "decision",
       "observation"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "MIX-11-mixed-normal-unknown-abnormal",
@@ -207,8 +194,7 @@
       "divergent",
       "decision",
       "mixed-results"
-    ],
-    "status": "verified"
+    ]
   },
   {
     "scenarioId": "VISUAL-home-layout",
@@ -223,8 +209,7 @@
     "tags": [
       "visual",
       "layout"
-    ],
-    "status": "failed"
+    ]
   },
   {
     "scenarioId": "VISUAL-assessment-queue-layout",
@@ -240,8 +225,7 @@
       "visual",
       "layout",
       "decision"
-    ],
-    "status": "failed"
+    ]
   },
   {
     "scenarioId": "VISUAL-home-mobile-layout",
@@ -255,8 +239,7 @@
     "tags": [
       "visual",
       "mobile"
-    ],
-    "status": "failed"
+    ]
   },
   {
     "scenarioId": "INSPECT-entry-gate-after-create",
@@ -275,7 +258,6 @@
       "viewport",
       "failure"
     ],
-    "status": "failed",
     "releaseRequired": false
   },
   {
@@ -507,7 +489,6 @@
       "time-sensitive",
       "partial"
     ],
-    "status": "partial",
     "releaseRequired": false
   },
   {
@@ -527,7 +508,6 @@
       "first-use",
       "verified"
     ],
-    "status": "verified",
     "releaseRequired": false
   },
   {
@@ -548,7 +528,6 @@
       "knee",
       "verified"
     ],
-    "status": "verified",
     "releaseRequired": false
   },
   {
@@ -569,7 +548,6 @@
       "high-risk",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -590,7 +568,6 @@
       "bilateral",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -609,7 +586,6 @@
       "no-chief-action",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -630,7 +606,6 @@
       "unable",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -649,7 +624,6 @@
       "retest",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -667,7 +641,6 @@
       "retest",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -687,7 +660,6 @@
       "high-risk",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -708,7 +680,6 @@
       "worsening",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -728,7 +699,6 @@
       "persistence",
       "verified"
     ],
-    "status": "verified",
     "releaseRequired": false
   },
   {
@@ -749,7 +719,6 @@
       "longitudinal",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -768,7 +737,6 @@
       "feedback",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -789,7 +757,6 @@
       "security",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -808,7 +775,6 @@
       "cleanup",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": false
   },
   {
@@ -826,7 +792,6 @@
       "seed",
       "verified"
     ],
-    "status": "verified",
     "releaseRequired": false
   },
   {
@@ -846,7 +811,6 @@
       "preview-only",
       "partial"
     ],
-    "status": "partial",
     "releaseRequired": false
   },
   {
@@ -869,7 +833,6 @@
       "preview-only",
       "partial"
     ],
-    "status": "partial",
     "releaseRequired": false
   },
   {
@@ -889,7 +852,6 @@
       "replay",
       "failed"
     ],
-    "status": "failed",
     "releaseRequired": false
   },
   {
@@ -907,7 +869,6 @@
       "build",
       "blocked"
     ],
-    "status": "blocked",
     "releaseRequired": true
   },
   {
@@ -921,8 +882,7 @@
     "titlePattern": "B-5/D-4/B-6 普通模式评估队列不出现被动、专项与封存规则",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-D1-acute-trigger",
@@ -936,8 +896,7 @@
     "tags": [
       "scenario",
       "logic-lane"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-D1-non-trauma-negative",
@@ -952,8 +911,7 @@
     "tags": [
       "scenario",
       "logic-lane"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-D3-instability-trigger",
@@ -967,8 +925,7 @@
     "tags": [
       "scenario",
       "logic-lane"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-C5-no-chief-continuation",
@@ -981,8 +938,7 @@
     "titlePattern": "MIX-02 只有肿胀没有固定疼痛动作：保留观察出口",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-RET02-batch-retest",
@@ -997,7 +953,6 @@
     "tags": [
       "p0"
     ],
-    "status": "passed",
     "notes": "DEF-RETEST-01 已修（5db4aca）复测通过；126c7f5 台账口径变更：owner 裁定已完成 range 项显示发现标题、待复查项显示评估项目名（L224 fallback 不改），RET-02 已固化断言"
   },
   {
@@ -1011,8 +966,7 @@
     "titlePattern": "B-1 主动被动都受限：伸直方向进入处理，复查仅伸直",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-B2-terminal-extension-control",
@@ -1025,8 +979,7 @@
     "titlePattern": "B-2 被动恢复主动不足：复测后转入末端伸膝控制路径",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-D2-bone-risk-imaging",
@@ -1039,8 +992,7 @@
     "titlePattern": "D-2 骨性风险阳性：建议优先结合影像确认并安排影像",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-D3-acl-referral-browser",
@@ -1054,8 +1006,6 @@
     "tags": [
       "scenario"
     ],
-    "status": "passed",
-    "note": "DEF-SPECIAL-QUEUE：专项检查无法进入专业膝部首轮队列，fixme",
     "notes": "8191fb0 修复复测通过：专项尾部追加（骨折风险+ACL），safety 阳性转介出口+ACL 阳性跟踪，tests/browser/scenarios/safety-blocking.spec.ts"
   },
   {
@@ -1069,8 +1019,7 @@
     "titlePattern": "F-3a 本机存储不可用显示本机保存失败",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-F3b-offline-copy",
@@ -1083,8 +1032,7 @@
     "titlePattern": "F-3b 网络断开显示网络断开且本机保存",
     "tags": [
       "scenario"
-    ],
-    "status": "passed"
+    ]
   },
   {
     "scenarioId": "KR-C1-continuation-full-chain",
@@ -1098,8 +1046,6 @@
     "tags": [
       "scenario"
     ],
-    "status": "passed",
-    "note": "DEF-CONTINUATION-CARD：卡片在已文档化流程中不可达，fixme",
     "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts"
   },
   {
@@ -1114,8 +1060,6 @@
     "tags": [
       "scenario"
     ],
-    "status": "passed",
-    "note": "依赖 C-1 修复，fixme",
     "notes": "8191fb0 修复复测通过：卡片在面板与训练并存，经侧栏往返不重复"
   },
   {
@@ -1130,8 +1074,6 @@
     "tags": [
       "scenario"
     ],
-    "status": "passed",
-    "note": "依赖 C-1 修复，fixme",
     "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、成果面板保留重新确认出口；outcome-slim 终态固化结论句 h2、分数对比与清单表行结构；裁定 B 后不再钉「仍有待处理」行"
   },
   {
@@ -1146,8 +1088,6 @@
     "tags": [
       "scenario"
     ],
-    "status": "passed",
-    "note": "依赖 C-1 修复 + 8150b06 会话重置，fixme",
     "notes": "8191fb0 修复复测通过：接受后修改恢复目标触发问题线程重置"
   },
   {
@@ -1159,7 +1099,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
     "titlePattern": "B1-1 案例栏内容与修改主诉入口",
-    "status": "passed",
     "notes": "case-summary-bar 主诉原话+facts+修改主诉回症状信息",
     "tags": [
       "scenario",
@@ -1175,7 +1114,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
     "titlePattern": "B1-2 集中记录写入后逐项卡状态同步（需逐项补充）",
-    "status": "passed",
     "notes": ".rm-batch-record 选主动范围→需逐项补充→返回保持；只覆盖主动范围",
     "tags": [
       "scenario",
@@ -1191,7 +1129,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
     "titlePattern": "B1-3 可追加检查权限显示",
-    "status": "passed",
     "notes": "rm-workbench-appendable capability 徽标（已开放/按权限/未开放）+ 无专项空态",
     "tags": [
       "scenario",
@@ -1207,7 +1144,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch1.spec.ts",
     "titlePattern": "B1-4 台账待复查列",
-    "status": "passed",
     "notes": "rm-workbench-module 待复查项目（空态文案；待复查项出现需处理会话）",
     "tags": [
       "scenario",
@@ -1223,7 +1159,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-1 入口按钮仅专业模式出现 + 三列与导航",
-    "status": "passed",
     "notes": "阶段工作台按钮仅 isThinkingMode；处理队列 0/2、待复查 2 项（下蹲/下台阶功能义务）、继续排查空态；返回处理回流程",
     "tags": [
       "scenario",
@@ -1239,7 +1174,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-2 继续评估导航",
-    "status": "passed",
     "notes": "工作台「继续评估」回评估段（评估完成态落汇总「先看清问题」）",
     "tags": [
       "scenario",
@@ -1255,7 +1189,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-3 安全页优先负断言",
-    "status": "passed",
     "notes": "dev 提供 treatment-worse 定向靶子（postScore7+加重），launchWorkbenchScenario 直达：加重暂停页无「阶段工作台」入口 + 出口完整",
     "tags": [
       "scenario",
@@ -1271,7 +1204,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/professional-workbench-batch2.spec.ts",
     "titlePattern": "B2-4 处理队列空态",
-    "status": "passed",
     "notes": "dev 4d1ca0e assessment-all-normal 定向场景（无固定主诉动作+无评分 intake）：处理段空态「本次没有发现明确异常」+「查看低刺激基础活动」+ 无处理卡",
     "tags": [
       "scenario",
@@ -1287,7 +1219,6 @@
     "evidenceType": "unit",
     "script": "tests/unit/quality/treatment-workbench-safety-order-contract.test.mjs",
     "titlePattern": "B2-5 护栏源码顺序契约：工作台渲染位于安全早退之后",
-    "status": "passed",
     "notes": "读源码契约：isThinkingMode&&thinkingWorkbenchOpen 早退位于 treatmentWorsened/bilateralNeedsReferral 之后",
     "tags": [
       "unit",
@@ -1304,7 +1235,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-1 专业面板：反复出现触发最近一次字段、切离清除、清单含字段名",
-    "status": "passed",
     "notes": "onset=反复出现→lastEpisode select 出现；切离反复出现→字段隐藏+值清除；footer 还需补充含「最近一次出现」",
     "tags": [
       "scenario",
@@ -1320,7 +1250,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-2 急性再发踝：反复+今天内+崴伤→骨性风险问答",
-    "status": "passed",
     "notes": "dev 663c6c8 recurrent-flare-acute 定向场景：关键确认出现「骨性风险」阶段",
     "tags": [
       "scenario",
@@ -1336,7 +1265,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-3 对照：反复+一周以上+崴伤→无骨性问答",
-    "status": "passed",
     "notes": "dev 663c6c8 recurrent-flare-chronic 定向场景：无「骨性风险」无骨性问答（一周以上不判急性）",
     "tags": [
       "scenario",
@@ -1352,7 +1280,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/recurrent-flare-intake.spec.ts",
     "titlePattern": "R-4 对照：反复+今天内+没有明确受伤→无骨性问答",
-    "status": "passed",
     "notes": "dev 663c6c8 recurrent-flare-no-trauma 定向场景：无「骨性风险」无骨性问答（无外伤不判急性）",
     "tags": [
       "scenario",
@@ -1368,7 +1295,6 @@
     "evidenceType": "unit",
     "script": "tests/component/rendered-html.test.mjs",
     "titlePattern": "ships a complete production-region assessment library and drops unsupported regions",
-    "status": "passed",
     "notes": "删除后契约转绿：生产 4 区齐全 + 7 非生产区不在 FULL_REGIONS + UNSUPPORTED_REGION_NAMES 覆盖 + DIRECTION_CHAINS 销账",
     "tags": [
       "unit",
@@ -1385,7 +1311,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/unsupported-region-hint.spec.ts",
     "titlePattern": "U-1 提肩 → 暂不支持提示（肩关节与肩胛）",
-    "status": "passed",
     "notes": "提肩→暂不支持肩关节与肩胛，现在只开放大腿至足部（46cf0dc 名称表驱动）",
     "tags": [
       "scenario",
@@ -1401,7 +1326,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/unsupported-region-hint.spec.ts",
     "titlePattern": "U-2 提颈 → 暂不支持提示（颈部）",
-    "status": "passed",
     "notes": "提颈→暂不支持颈部",
     "tags": [
       "scenario",
@@ -1417,7 +1341,6 @@
     "evidenceType": "unit",
     "script": "tests/component/rendered-html.test.mjs",
     "titlePattern": "旧快照非生产 regionId 恢复安全降级",
-    "status": "passed",
     "notes": "restoreRecord 用 isPilotRegion 过滤 bodyLocations 非生产 regionId",
     "tags": [
       "unit",
@@ -1434,7 +1357,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/function-together.spec.ts",
     "titlePattern": "FR-1 function-flare-retest：复测带分且完成门生效",
-    "status": "passed",
     "notes": "e5cdf85：能完成→疼痛滑条+context「处理前 X/10 当时做不完」；未打分记录 disabled、打分后 enable",
     "tags": [
       "scenario",
@@ -1450,7 +1372,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/function-together.spec.ts",
     "titlePattern": "FR-2 恐动题：功能卡疼路径出现/填写/切换",
-    "status": "passed",
     "notes": "2069385：功能卡疼后追问「当时是不是也担心继续会加重？[有/没有]」；unableFearTogether；fef2886 清除链",
     "tags": [
       "scenario",
@@ -1466,7 +1387,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/function-together.spec.ts",
     "titlePattern": "FR-3 旧案例 completion-status 复测（无分）复活不炸",
-    "status": "passed",
     "notes": "恢复案例面板可用、零运行时错误（pendingFunctionRetests 派生健壮）",
     "tags": [
       "scenario",
@@ -1482,7 +1402,6 @@
     "evidenceType": "unit",
     "script": "tests/component/rendered-html.test.mjs",
     "titlePattern": "outcome-slim：成果面板清单表与结论句契约",
-    "status": "passed",
     "notes": "三类区块合并 rm-stage-outcome-table 清单行；未解释卡改类名 rm-outcome-unexplained；第二轮起结论句三分支/降级行/双侧特例迁入 ChiefOutcomeSummary（组件源断言），两完成面板同源消费×2，stage 文件旧 h2=主诉清单销账",
     "tags": [
       "unit",
@@ -1499,7 +1418,6 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/outcome-panel-slim.spec.ts",
     "titlePattern": "OP-1 成果面板：结论句 + 主诉动作降级行 + 清单表",
-    "status": "passed",
     "notes": "dev 第二轮靶子 outcome-panel-chief-action-line（不可分基线+瘢痕项种齐）：h2「主诉动作已复查」、rm-chief-action-line「主诉动作：下楼和下蹲」、清单表两类别（有效处理行=控制候选 actionLabel「训练股四头末端控制」small「主诉变轻」；活动范围变化行「膝关节主动伸直（AROM）」small「有改善，仍小于健侧」）、无分数块、无未解释卡；断言作用域 runtime 容器防 launcher 假阳性",
     "tags": [
       "scenario",
