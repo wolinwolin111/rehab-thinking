@@ -300,8 +300,6 @@ export type AssessmentRecord = {
   /** 没有明确主诉动作时，只有复现了平时熟悉的症状，才建立疼痛复测目标。 */
   familiarSymptom?: FamiliarSymptomAnswer;
   unableReason?: "pain" | "fear" | "instruction" | "other";
-  /** 因疼或没力停下时，是否同时担心继续会加重（恐动与疼痛可并存，单选会互相挤掉）。 */
-  unableFearTogether?: YesNo;
   strengthUnableReason?: StrengthUnableReason;
   measuredAngle?: string;
   symptomScore?: number;
@@ -353,11 +351,19 @@ export function motionActiveAnswerPatch(previous: AssessmentRecord, value: Motio
     passiveRangeMeasurement: undefined,
     passiveSymptomScore: undefined,
     unableReason: value === "unable" ? previous.unableReason : undefined,
-    unableFearTogether: value === "unable" ? previous.unableFearTogether : undefined,
     tensionChecked: false,
     tensionLocations: [],
     familiarSymptom: undefined,
   };
+}
+
+/**
+ * 恐动信号：动作/力量/功能因「担心继续会加重」这一主因停下。
+ * 旧的「同行恐惧」追问（unableFearTogether）已退役——它只软化两句提示，
+ * 且真正恐动的主因用户反而拿不到提示；现在两处低负荷提示统一认本谓词。
+ */
+export function stoppedFromFear(record: AssessmentRecord | undefined) {
+  return record?.unableReason === "fear" || record?.strengthUnableReason === "fear" || record?.functionUnableReason === "fear";
 }
 
 export type Finding = {

@@ -52,6 +52,7 @@ import {
   optionalTreatmentSelectionKey,
   rangeRetestOptions,
   scoreChange,
+  stoppedFromFear,
   treatmentDisplay,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
@@ -357,7 +358,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
     {activeFunctionObligations.map((obligation) => <article key={obligation.assessmentId} data-assessment-id={obligation.assessmentId}>
         <header><span>再试一次</span><h3>{obligation.label}</h3></header>
         <p className="rm-choice-hint">从头做到尾就算完成；可以借力，姿势不需要完全标准。</p>
-        {assessmentResults[obligation.assessmentId]?.unableFearTogether === "yes" ? <p className="rm-choice-hint">上次你担心继续会加重：这次先用更轻的方式试，只确认能不能完成。</p> : null}
+        {stoppedFromFear(assessmentResults[obligation.assessmentId]) ? <p className="rm-choice-hint">上次你担心继续会加重：这次先用更轻的方式试，只确认能不能完成。</p> : null}
         {(obligation.sides?.length ? obligation.sides : [undefined]).map((side) => {
           const answerKey = functionRetestAnswerKey(obligation.assessmentId, side);
           const answer = treatmentFunctionRetests[answerKey] ?? { completion: "" };
@@ -749,7 +750,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
           <div className="rm-page-actions three">
             <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
-            <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认剩余问题"}</button>
+            <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认评估答案"}</button>
             <button type="button" className="rm-primary" onClick={() => goToStep(4)}>进入训练</button>
           </div>
         </section>

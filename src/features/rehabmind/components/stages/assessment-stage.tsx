@@ -1,4 +1,4 @@
-﻿import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AnswerChoiceGrid, ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import LowerLimbLocationPicker from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
@@ -490,7 +490,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
     });
   };
   // 恐动与疼痛/没力可并存：单选会互相挤掉，因此在“疼/没力”后正交确认一次。
-  const fearTogetherQuestion = (value: YesNo | undefined, set: (v: YesNo) => void) => <div className="rm-fear-together"><strong>当时是不是也担心继续会加重？</strong><div className="rm-result-grid is-two">{([["yes", "有，担心加重"], ["no", "没有，只是做不了"]] as const).map(([v, label]) => <button type="button" key={v} className={value === v ? "is-selected" : ""} onClick={() => set(v)}>{label}</button>)}</div></div>;
   const renderSymptomDetails = (scoreLabel: string, context?: string) => <div className="rm-motion-symptom-detail rm-assessment-symptom-capture">
     <LowerLimbLocationPicker
       compact
@@ -629,7 +628,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
             ["instruction", "不会做或没听懂说明"],
           ] as Array<[NonNullable<AssessmentRecord["unableReason"]>, string]>).map(([value, label]) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
             unableReason: value,
-            unableFearTogether: value === "pain" ? record.unableFearTogether : undefined,
             discomfort: value === "pain" ? "yes" : undefined,
             discomfortLocation: value === "pain" ? record.discomfortLocation : undefined,
             discomfortLocations: value === "pain" ? record.discomfortLocations : undefined,
@@ -638,7 +636,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
             pairedStrength: undefined,
             pairedStrengthUnableReason: undefined,
           })}>{label}</button>)}</div>
-          {record.unableReason === "pain" ? fearTogetherQuestion(record.unableFearTogether, (unableFearTogether) => updateAssessment(item.id, { unableFearTogether })) : null}
           {motionFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{motionFallback.action}</p><small>{motionFallback.fallback}</small></div> : null}
         </section> : null}
 
@@ -646,7 +643,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           <h3>活动到最大范围时，有没有牵拉、卡住或不适？</h3>
           <div className="rm-result-grid is-two">{(["no", "yes"] as YesNo[]).map((value) => <button type="button" key={value} className={record.discomfort === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => value === "yes"
             ? { ...latestRecord, discomfort: value }
-            : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, unableFearTogether: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableFearTogether, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
+            : { ...latestRecord, discomfort: value, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, unableReason: latestRecord.unableReason === "pain" ? undefined : latestRecord.unableReason, pairedStrength: latestRecord.pairedStrength === "painful" ? undefined : latestRecord.pairedStrength })}>{value === "yes" ? "有不适" : "没有不适"}</button>)}</div>
           {record.discomfort === "yes" ? renderSymptomDetails("刚才这个动作有多不舒服？") : null}
         </section> : shouldCaptureUnableMotionSymptom(record.active, record.unableReason) ? <section className="rm-motion-answer-block is-symptom">
           <h3>记录刚才让你停下来的不适</h3>
@@ -748,18 +745,16 @@ export function AssessmentStage(props: AssessmentStageProps) {
         ? { simple: value, compensations: undefined, discomfortLocation: record.discomfortLocation || relatedMotionRecord?.discomfortLocation, discomfortLocations: record.discomfortLocations || relatedMotionRecord?.discomfortLocations, discomfortType: record.discomfortType || relatedMotionRecord?.discomfortType, familiarSymptom: record.familiarSymptom || relatedMotionRecord?.familiarSymptom, worseSide: record.worseSide }
         : value === "present"
           ? { simple: value, symptomStage: record.symptomStage, compensations: record.compensations, worseSide: record.worseSide }
-          : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, unableFearTogether: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
+          : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
         {item.kind === "strength" && record.simple === "unable" ? <section className="rm-motion-answer-block is-followup rm-strength-unable">
           <h3>主要卡在哪里？</h3>
           <div className="rm-result-grid is-three">{([[
             "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
               strengthUnableReason: value,
-              unableFearTogether: value === "pain" || value === "weak" ? record.unableFearTogether : undefined,
               discomfortLocation: value === "pain" ? record.discomfortLocation || relatedMotionRecord?.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? record.discomfortLocations || relatedMotionRecord?.discomfortLocations : undefined,
               discomfortType: value === "pain" ? record.discomfortType || relatedMotionRecord?.discomfortType : undefined,
             })}>{label}</button>)}</div>
-          {record.strengthUnableReason === "pain" || record.strengthUnableReason === "weak" ? fearTogetherQuestion(record.unableFearTogether, (unableFearTogether) => updateAssessment(item.id, { unableFearTogether })) : null}
           {strengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{strengthFallback.action}</p><small>{strengthFallback.fallback}</small></div> : null}
          </section> : null}</> : <div className="rm-function-result-stack">
         <section className="rm-motion-answer-block">
@@ -769,17 +764,16 @@ export function AssessmentStage(props: AssessmentStageProps) {
             ["unable", "做不完或不敢继续"],
             ["skip", "暂时不做"],
           ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
-            ? { functionCompletion: value, unableFearTogether: undefined, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
+            ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
             : value === "unable"
-               ? { functionCompletion: value, unableFearTogether: undefined, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
-              : { functionCompletion: value, unableFearTogether: undefined, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
+               ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
+              : { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
         </section>
         {functionCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>主要是什么原因停下来？</h3>
           <div className="rm-result-grid is-two">{([[
             "pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"], ["instruction", "不知道动作怎么做"]] as Array<[FunctionUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
               functionUnableReason: value,
-              unableFearTogether: value === "pain" || value === "weak" ? effectiveRecord.unableFearTogether : undefined,
               functionDiscomfort: value === "pain" ? "yes" : "no",
               discomfortLocation: value === "pain" ? effectiveRecord.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? effectiveRecord.discomfortLocations : undefined,
@@ -787,7 +781,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
               symptomScore: value === "pain" ? effectiveRecord.symptomScore : undefined,
               familiarSymptom: value === "pain" ? effectiveRecord.familiarSymptom : undefined,
             })}>{label}</button>)}</div>
-          {record.functionUnableReason === "pain" || record.functionUnableReason === "weak" ? fearTogetherQuestion(record.unableFearTogether, (unableFearTogether) => updateFunctionAssessment({ unableFearTogether })) : null}
         </section> : null}
         {functionCompletion === "complete" ? <section className="rm-motion-answer-block">
           <h3>做的时候稳不稳？</h3>
