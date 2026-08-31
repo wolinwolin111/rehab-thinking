@@ -49,12 +49,21 @@ $ok=$false; for($i=0;$i -lt 45;$i++){ try { $r=Invoke-WebRequest -Uri "http://lo
 - **dev server 运行期间不要编辑 worktree 文件**：编辑工具的原子改名写入会让 vinext 文件监视器抛 `EBUSY` 杀死 server（表现为后续用例连片 `ERR_CONNECTION_REFUSED`）。先编辑、后起 server、再跑用例；中途改了文件就重启 server。
 - **origin/main 与本地 main 无共同祖先**（GitHub main 停在 08-23 旧历史）。协作以**本地 main** 为准（两 worktree 共享 `.git`，`git merge main` 即达）；`git fetch` 后不要 merge `origin/main`；origin 仅用于 `push origin agent/testing`。
 - PowerShell 下 `npx.cmd`/`npm.cmd` 的 npm warn 走 stderr 会造成假 exit 1，判绿仍以 `passed/failed` 行为准。
+- **workers 试验结论（2026-09-01）**：`--workers=2` 全量实测稳定（full 61+9 全绿，218s，较 w1 的 6.2min 省 ~40%），用于**轮内迭代/异步批次回归**；`--workers=3` 不稳定（单 vite dev SSR 饱和→教程竞态级联 38 条 click 超时 + 视觉漂移 2 条），禁用；**正式绑定/发布证据轮保持默认 workers=1**。
+- 试验顺带修掉一个测试侧潜伏 bug：B2-1 刷新步骤曾硬编码 `http://localhost:3000`，靠 dev 侧 3000 恰在运行才绿；已改相对 `./`（走 baseURL/WALKTHROUGH_URL）。tests/ 内其余 300x 字面量均为合法默认值/解析用例。
 
 ---
 
 ## 2. 常用命令（回归顺序）
 
 ```powershell
+# 一键回归（推荐，见 scripts/quality/run-test-regression.mjs）：链式跑 fast→knowledge→(起3001)→full→overall→mobile→(停服)，
+# 自动提取 passed/failed 判绿、产 manifest、绑定 commit。默认遇红即停；--all 摸底全跑；--workers=2 轮内提速。
+node scripts/quality/run-test-regression.mjs --workers=2
+node scripts/quality/run-test-regression.mjs --only=full,overall,mobile --workers=2 --all   # 只浏览器三套件
+node scripts/quality/run-test-regression.mjs --skip=fast,knowledge                          # 逻辑层刚跑过时
+
+# 手动分步（runner 不可用或需单步排查时）：
 npm.cmd run test:fast            # check:boundaries + typecheck + build + unit/workflow/component（EXITCODE 0 为准）
 npm.cmd run check:knowledge      # 知识一致性：cases=8/episodes=11/findings=22/treatments=14/retests=14
 npm.cmd run test:browser:full    # 全量浏览器（edge-full）
@@ -65,7 +74,7 @@ npx.cmd playwright test <spec> --project=edge-full -g "X-1"
 npx.cmd playwright test <spec> --project=edge-full   # 整文件（fixme 会 skip，看 passed/skipped/failed）
 ```
 
-**判绿纪律**：以 `passed/failed` 行判断（runner 退出码经实测正确传播，但历史有「判绿看行」约定）。fixme 用例显示为 `skipped`，不算 fail。
+**判绿纪律**：以 `passed/failed` 行判断（runner 与 npm 退出码经实测正确传播，但历史有「判绿看行」约定）。fixme 用例显示为 `skipped`，不算 fail。runner 的 `verdict=passed` 已内置「exit0 且 failed=0 且 nodeFail=0」三重判据。
 
 ---
 

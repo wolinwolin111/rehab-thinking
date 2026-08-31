@@ -41,7 +41,7 @@ test("B2-1 入口按钮仅专业模式出现 + 处理段工作台三列与导航
   await openFreshProduct(page);
   await skipOnboarding(page);
   await expect(page.locator("main:visible").getByRole("button", { name: "阶段工作台", exact: true })).toHaveCount(0);
-  await page.goto("http://localhost:3000", { waitUntil: "domcontentloaded" });
+  await page.goto("./", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
   await page.reload();
 

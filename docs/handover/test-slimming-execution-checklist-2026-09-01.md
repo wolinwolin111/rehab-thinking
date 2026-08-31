@@ -4,25 +4,23 @@
 > 本清单为三轮复核（初案→文档判决→终案自审）后的定稿；被撤回项与理由见文末附录。
 > 归属：P0/P2/P3/P4 全部为测试侧动作；标注 dev 的为移交项。
 
-## 阶段 0 · outcome-slim 轮收尾（当前挂起，阻塞于 dev）
+## 阶段 0 · outcome-slim 轮收尾（**已完成**，dev 已切「提交先行」协议）
 
 | # | 动作 | 状态 |
 |---|---|---|
-| 0.1 | dev 将三文件（stage-outcome-sections / treatment-retest-stage / complete-demo.css）提交 `main` | ⏳ 等 dev |
-| 0.2 | `git checkout --` 丢弃我侧同内容覆盖 → `git merge main`（本地 main，见总交接 §1.4） | 待 0.1 |
-| 0.3 | 复跑 rendered-html（23 条）+ C 组（4 条）确认 merge 后无漂移 | 待 0.2 |
-| 0.4 | 提交测试侧改动（continuation-chain、rendered-html、registry、3 份文档）→ `push origin agent/testing`，证据正式绑定 dev sha | 待 0.3 |
-| 0.5 | 移交 dev 回复包：①L954「本阶段成果」面板 h2 一致性确认；②处理完成态 page_boundary 靶子需求（可选）；③文档所有权警告（见 1.3）；④旧 tests/ 误报提醒 | 随 0.4 |
+| 0.1 | dev 提交 outcome-slim 到 `main` | ✅ 第一轮 `bb5da7e`；第二轮 `54b2b8e`+`7d5cc7e` |
+| 0.2 | 丢弃覆盖 → `git merge <通报sha>` | ✅ `335abec`（一轮）、`f397c28`（二轮） |
+| 0.3 | 复跑 rendered-html + C 组确认无漂移 | ✅ 两轮均 23/23 + 4/4 |
+| 0.4 | 提交测试侧改动 + 显式 refspec 推送 | ✅ 一轮 `c944ed3`；二轮 `1d44857`；协议档 `3012b44` |
+| 0.5 | 移交 dev 回复包（L954 一致性、靶子、文档所有权、旧 tests/ 误报） | ✅ L954 已由二轮 `54b2b8e` 同源化解决；靶子 `outcome-panel-chief-action-line` 已交付并钉 OP-1 |
 
-已完成部分（本轮实测）：全量 60+9、overall 4/4、mobile 2/2、fast 0、knowledge ok、契约 23/23；C 组定位器适配 + C-3 终态强化 + OP-CONTRACT 契约 + registry 92 条均已在工作树。
+## 阶段 1 · 回归编排与环境纪律（**已完成** 2026-09-01）
 
-## 阶段 1 · 回归编排与环境纪律（收益最大，先行）
-
-| # | 动作 | 判据 |
+| # | 动作 | 结果 |
 |---|---|---|
-| 1.1 | 新增 `scripts/quality/run-test-regression.mjs`：链式跑 test:fast → check:knowledge → browser full → overall → mobile-preview；内置 3001 dev server 起服/探活/收尾停服；自动提取各套件 `passed/failed/skipped` 行产出紧凑判决 + manifest（复用 run-browser-tests.mjs 的 runId/manifest 约定） | 一条命令出全轮判决；判绿纪律进代码不进脑子 |
-| 1.2 | workers 试验：`--workers=3` 全量一次（用 1.1 量墙钟）。判据：60+9 且零 retry 才算稳；不稳则维持 1 并把原因写进总交接 | 全量 7.2min → 预期 ~3min 或证伪 |
-| 1.3 | 协议规则落档（总交接 §5/§8 增补）：①**merge 门**——测试侧只接受已提交 main，拒绝工作树覆盖（本轮为最后一次例外）；②**文档所有权**——docs/quality 测试相关文档与 docs/handover test-* 文档归测试侧，dev 工作区旧副本不得提交进 main（dev 脏区已含 test-plan/coverage-matrix 旧改动，有踩踏风险）；③**server 运行期禁编辑 worktree**（watcher EBUSY 实证） | 规则成文并转 dev |
+| 1.1 | `scripts/quality/run-test-regression.mjs` 一键编排器 | ✅ 链式 fast→knowledge→(起3001)→full→overall→mobile→(停服)；自动提取 passed/failed 判绿、产 manifest、绑 commit；`--workers`/`--only`/`--skip`/`--all`；Windows 日志名避冒号（`test:browser:full`→`full.log`） |
+| 1.2 | workers 试验 | ✅ **w2 稳定**（full 61+9 全绿 218s，省 ~40%）；**w3 禁用**（单 vite SSR 饱和→38 click 超时+2 视觉漂移）；正式绑定轮保持 w1。顺带修 B2-1 硬编码 `localhost:3000`→相对 `./`（潜伏 bug，靠 dev 侧 3000 恰在跑才绿） |
+| 1.3 | 协议规则落档 | ✅ merge 门（只接受已提交 SHA）、文档所有权、server 运行期禁编辑 worktree——总交接 §5/§6/§1.4 成文 |
 
 ## 阶段 2 · registry 卫生（单文件，删字段，不拆分）
 
