@@ -2426,7 +2426,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         label: item.title,
         baselineCompletion: evidence.completion as FunctionRetestCompletion,
         mode: evidence.retestMode as FunctionRetestMode,
-        baselineScore: evidence.retestMode === "ordinary" && typeof record?.symptomScore === "number" ? record.symptomScore : undefined,
+        baselineScore: typeof record?.symptomScore === "number" ? record.symptomScore : undefined,
         sides: intake.side === "双侧/中间" ? (["左侧", "右侧"] as Array<"左侧" | "右侧">) : undefined,
         candidateIds: candidateIdsByAssessment.get(item.id) ?? [],
         assessmentRevision,

@@ -1,6 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
-import { FUNCTION_COMPLETION_RETEST_COPY } from "@/src/features/rehabmind/components/shared/user-facing-copy";
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -178,20 +177,18 @@ export function TrainingStage(props: TrainingStageProps) {
     immediateTiming: tissuePathway.retestTiming === "same-session",
   });
   if (trainingReadyForFinalRetest) {
-    const finalRetestNeedsScore = chiefRetestEligibility !== "completion-status";
+    // completion-status 也要求打分：疼痛基线是“当时做不完时的疼”，与处理复测同一对比口径。
     const finalChange = scoreChange(intake.baselineScore, finalRetestScore);
     const finalResult = finalRetestConfirmed ? resultFromScore(intake.baselineScore, finalRetestScore) : "same";
     const allFunctionRetestsComplete = chiefFunctionLabels.every((label) => {
       const r = finalFunctionRetests[label];
       if (!r || !r.completion) return false;
       if (r.completion === "unable" && !r.unableReason) return false;
-      if (!chiefRetestEligibility || chiefRetestEligibility !== "completion-status") {
-        if (typeof r.score !== "number") return false;
-        if (r.completion === "complete" && !r.control) return false;
-      }
+      if (typeof r.score !== "number") return false;
+      if (r.completion === "complete" && !r.control) return false;
       return true;
     });
-    const overallComplete = (finalRetestNeedsScore ? finalRetestConfirmed : true) && allFunctionRetestsComplete;
+    const overallComplete = finalRetestConfirmed && allFunctionRetestsComplete;
     return <section className="rm-page rm-overall-retest-page">
       <StepHeading eyebrow="第5步 · 结束前复测" title="最后再看一次整体变化" />
       {chiefFunctionLabels.length ? <section className="rm-overall-retest-functions">
@@ -213,8 +210,8 @@ export function TrainingStage(props: TrainingStageProps) {
         <h2>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : chiefComplaintLabel(intake)}</h2>
         <p>{hasClearChiefAction(intake) ? "按最开始的方式完成一次，不额外增加速度、负重或次数。" : "按最开始记录的位置和感觉，判断现在的主要不适。"}</p>
       </section>
-      {finalRetestNeedsScore ? <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={`最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10`} /> : <div className="rm-retest-mode-note"><strong>{FUNCTION_COMPLETION_RETEST_COPY.title}</strong><span>{FUNCTION_COMPLETION_RETEST_COPY.description}</span></div>}
-      {finalRetestNeedsScore && finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
+      <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={intake.baselineScoreConfirmed ? `最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10` : `处理后 ${lastChiefScore}/10 · 当时做不完时的疼`} />
+      {finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
         <span>本次整体结果</span>
         <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
         <p>{finalResult === "better" ? "这次训练有帮助，继续保持现在的做法。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "这次没有明显变化，先不增加难度；持续不变时建议线下评估。"}</p>

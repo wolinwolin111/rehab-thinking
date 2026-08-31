@@ -27,11 +27,25 @@ test("executed treatment keeps its unfinished function retest after the live can
       candidateId: "muscle:quadriceps",
       targetId: "target:motion:knee-flexion",
       functionRetests: {
-        "function:knee-step-down": { ...stepDown, afterCompletion: "complete" },
+        "function:knee-step-down": { ...stepDown, afterCompletion: "complete", afterScore: 5 },
       },
     }],
   });
   assert.deepEqual(completed, []);
+});
+
+test("completion-status 有疼痛基线时，能完成但未打分不算已复测", () => {
+  const pending = core.pendingFunctionRetests({
+    targets: [{ candidates: [{ id: "muscle:quadriceps" }], functionRetestObligations: [stepDown] }],
+    records: [{
+      candidateId: "muscle:quadriceps",
+      targetId: "target:motion:knee-flexion",
+      functionRetests: {
+        "function:knee-step-down": { ...stepDown, afterCompletion: "complete" },
+      },
+    }],
+  });
+  assert.deepEqual(pending.map((item) => item.assessmentId), ["function:knee-step-down"]);
 });
 
 test("two performed function actions remain independent obligations", () => {
@@ -49,13 +63,30 @@ test("two performed function actions remain independent obligations", () => {
   const complete = core.summarizeFunctionRetestObligations({
     obligations: [squat, singleLeg],
     answers: {
-      "function:knee-squat": { completion: "complete" },
-      "function:knee-single-leg-squat": { completion: "unable", unableReason: "pain" },
+      "function:knee-squat": { completion: "complete", score: 5, scoreConfirmed: true },
+      "function:knee-single-leg-squat": { completion: "unable", unableReason: "pain", score: 7, scoreConfirmed: true },
     },
   });
   assert.equal(complete.ready, true);
   assert.deepEqual(Object.keys(complete.records), ["function:knee-squat", "function:knee-single-leg-squat"]);
   assert.equal(complete.result, "partial");
+});
+
+test("completion-status 分数对比：降=better、平=partial、未完成但降=partial", () => {
+  const summarize = (answer) => core.summarizeFunctionRetestObligations({
+    obligations: [stepDown],
+    answers: { "function:knee-step-down": answer },
+  });
+  assert.equal(summarize({ completion: "complete", score: 5, scoreConfirmed: true }).result, "better");
+  assert.equal(summarize({ completion: "complete", score: 8, scoreConfirmed: true }).result, "partial");
+  assert.equal(summarize({ completion: "complete", score: 9, scoreConfirmed: true }).result, "worse");
+  assert.equal(summarize({ completion: "unable", unableReason: "pain", score: 4, scoreConfirmed: true }).result, "partial");
+  assert.equal(summarize({ completion: "unable", unableReason: "pain", score: 8, scoreConfirmed: true }).result, "same");
+  // 没力/不敢没有疼痛可比性要求，不打分也算答完。
+  assert.equal(summarize({ completion: "unable", unableReason: "weak" }).result, "same");
+  assert.equal(summarize({ completion: "unable", unableReason: "weak" }).ready, true);
+  // 能完成但没打分 → 未答完。
+  assert.equal(summarize({ completion: "complete" }).ready, false);
 });
 
 test("bilateral function retest requires and stores both sides", () => {
@@ -68,7 +99,7 @@ test("bilateral function retest requires and stores both sides", () => {
   const summary = core.summarizeFunctionRetestObligations({
     obligations: [bilateral],
     answers: {
-      "function:knee-step-down::左侧": { completion: "complete" },
+      "function:knee-step-down::左侧": { completion: "complete", score: 5, scoreConfirmed: true },
       "function:knee-step-down::右侧": { completion: "unable", unableReason: "weak" },
     },
   });

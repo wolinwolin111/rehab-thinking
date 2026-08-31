@@ -138,6 +138,42 @@ test("T-01: 首次完成、复测仍完成时不适用加重规则", () => {
   assert.notEqual(result.automaticResult, "worse");
 });
 
+test("flare: completion-status 带疼痛基线时分数必答，且分数参与结果", () => {
+  const flareBase = {
+    isFunctionTarget: true,
+    mode: "completion-status",
+    completion: "complete",
+    unableReason: "",
+    hasBaselineScore: true,
+    baselineScore: 8,
+  };
+  const noScore = core.resolveFunctionRetestTransition({ ...flareBase, scoreConfirmed: false });
+  assert.equal(noScore.requiresScore, true);
+  assert.equal(noScore.functionReady, false);
+
+  const better = core.resolveFunctionRetestTransition({ ...flareBase, scoreConfirmed: true, score: 5 });
+  assert.equal(better.functionReady, true);
+  assert.equal(better.automaticResult, "better");
+
+  const flat = core.resolveFunctionRetestTransition({ ...flareBase, scoreConfirmed: true, score: 8 });
+  assert.equal(flat.automaticResult, "partial");
+
+  const up = core.resolveFunctionRetestTransition({ ...flareBase, scoreConfirmed: true, score: 9 });
+  assert.equal(up.automaticResult, "worse");
+
+  // 还是做不完：因疼中断要打分，降=partial；没力不要求分数。
+  const unablePain = core.resolveFunctionRetestTransition({
+    ...flareBase, completion: "unable", unableReason: "pain", scoreConfirmed: true, score: 4,
+  });
+  assert.equal(unablePain.automaticResult, "partial");
+  const unableWeak = core.resolveFunctionRetestTransition({
+    ...flareBase, completion: "unable", unableReason: "weak", scoreConfirmed: false,
+  });
+  assert.equal(unableWeak.requiresScore, false);
+  assert.equal(unableWeak.functionReady, true);
+  assert.equal(unableWeak.automaticResult, "same");
+});
+
 test("T-01: 主诉分数不可比时完成状态恶化仍要触发加重", () => {
   const gate = core.resolveTreatmentRetestGate({
     isFunctionTarget: true,
