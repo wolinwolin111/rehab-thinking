@@ -353,6 +353,7 @@ export function motionActiveAnswerPatch(previous: AssessmentRecord, value: Motio
     passiveRangeMeasurement: undefined,
     passiveSymptomScore: undefined,
     unableReason: value === "unable" ? previous.unableReason : undefined,
+    unableFearTogether: value === "unable" ? previous.unableFearTogether : undefined,
     tensionChecked: false,
     tensionLocations: [],
     familiarSymptom: undefined,

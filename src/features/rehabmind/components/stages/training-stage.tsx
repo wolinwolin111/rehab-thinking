@@ -210,7 +210,7 @@ export function TrainingStage(props: TrainingStageProps) {
         <h2>{hasClearChiefAction(intake) ? chiefActionLabel(intake) : chiefComplaintLabel(intake)}</h2>
         <p>{hasClearChiefAction(intake) ? "按最开始的方式完成一次，不额外增加速度、负重或次数。" : "按最开始记录的位置和感觉，判断现在的主要不适。"}</p>
       </section>
-      <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={intake.baselineScoreConfirmed ? `最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10` : `处理后 ${lastChiefScore}/10 · 当时做不完时的疼`} />
+      <ScoreSlider value={finalRetestScore} selected={finalRetestConfirmed} onChange={(value) => { setFinalRetestScore(value); setFinalRetestConfirmed(true); }} label="现在主诉的疼痛或不适是多少分？" context={intake.baselineScoreConfirmed ? `最开始 ${intake.baselineScore}/10 · 处理后 ${lastChiefScore}/10` : lastChiefScore > 0 ? `处理后 ${lastChiefScore}/10` : "对比当时做不完时的疼"} />
       {finalRetestConfirmed ? <section className={`rm-overall-retest-result is-${finalResult}`}>
         <span>本次整体结果</span>
         <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
