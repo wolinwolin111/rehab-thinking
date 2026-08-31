@@ -2776,7 +2776,12 @@ export function kneeStrengthChiefScore(itemId: string, intake: IntakeState) {
 export function strengthIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
   if (regionId === "knee") {
     // 膝区固定保留股四头肌与后侧链两项核心，其余力量项只在主诉位置命中时入列。
-    return ["knee-quadriceps", "knee-posterior-chain"].includes(itemId) || kneeStrengthChiefScore(itemId, intake) > 0;
+    if (["knee-quadriceps", "knee-posterior-chain"].includes(itemId)) return true;
+    // 腘绳触发词与 pilot-decision-engine 的 localKneeStrength/hamstringStrength
+    // 保持同一口径：屈膝类症状即使位置不在膝后，决策核也会点名这项检查。
+    if (itemId === "knee-hamstring"
+      && includesAny(`${intake.description} ${intake.symptomType} ${intake.symptoms.join(" ")}`, ["屈膝", "弯膝发力", "脚跟向后拉", "膝后无力", "大腿后侧无力"])) return true;
+    return kneeStrengthChiefScore(itemId, intake) > 0;
   }
   if (regionId === "thigh-local" || regionId === "calf-local") {
     // 局部区域只查主诉象限的力量；相邻象限仍可由续测池按处理反应补入。

@@ -1376,8 +1376,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       };
     });
     // 力量检查的入列闸门统一在 strengthIsRelevant（含膝区核心两项与主诉位置裁剪）。
+    // 用户已接受的续测补查项必须可渲染，即使它不在默认闸门内（补查池取区域全集）。
     const strengthItems: AssessmentItem[] = region.strengths
-      .filter((item) => strengthIsRelevant(region.id, item.id, intake))
+      .filter((item) => strengthIsRelevant(region.id, item.id, intake) || continuationRoundIds.includes(`strength:${item.id}`))
       .sort((a, b) => b.tags.filter((tag) => forceTags.has(tag)).length - a.tags.filter((tag) => forceTags.has(tag)).length || strengthLocationScore(b.id) - strengthLocationScore(a.id))
       .map((item) => {
       const copy = assessmentCopy(item.id, item.how, item.observe);
