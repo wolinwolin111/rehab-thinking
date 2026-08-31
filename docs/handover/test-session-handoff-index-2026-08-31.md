@@ -3,6 +3,7 @@
 > 日期：2026-08-31（为两天的连续验收会话补一份总览索引）
 > 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`）
 > 说明：本文件是总目录，串起这两天的 6 份主题交接文档；各主题的详细验收结论见对应档。
+> **接手续模型请先读 `test-workflow-continuation-handoff.md`**（环境/流程/陷阱/命令速查）。
 
 | 序 | 主题交接文档 | dev 基线 | 关联场景/registry | 验收结论摘要 |
 |---|---|---|---|---|
