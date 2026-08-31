@@ -1,5 +1,7 @@
 # RehabMind 项目交接文档
 
+> **归档（2026-09-01）**：本档为放错目录（quality/）的 dev 批次交接，内容与 [HANDOVER.md](../handover/HANDOVER.md) 及质量整改登记表重复。当前测试侧口径见 [测试工作总交接](../handover/test-workflow-continuation-handoff.md)。
+
 更新日期：2026-08-26
 
 ## 一、已完成的优化整改

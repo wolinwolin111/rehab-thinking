@@ -61,7 +61,7 @@
 - [线下康复记录经验地图](../research/clinical-record-joint-map.md)
 - [全身关节统一总结](../research/remaining-joint-record-map.md)
 - [动作演示系统方案](../plans/motion-demo-system-plan.md)
-- [全关节 Demo 测试用例](../quality/full-joint-demo-test-cases.md)
+- [全关节 Demo 测试用例](./full-joint-demo-test-cases.md)
 
 最终产品不应是“输入症状后输出一套动作”，而应完成下面这件事：
 

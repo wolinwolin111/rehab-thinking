@@ -206,7 +206,7 @@ B3 第一次执行因动作不适位置和分数需要额外填写，测试连�
 
 ## 崴脚自动走读脚本维护（2026-08-20）
 
-脚本位于 [`scripts/legacy-browser/real-browser-walkthrough-ankle.mjs`](../../scripts/legacy-browser/real-browser-walkthrough-ankle.mjs)，固定使用真实用户原话启动，不注入内部状态。当前覆盖：
+走读脚本 `scripts/legacy-browser/real-browser-walkthrough-ankle.mjs`（已随 `83e47be` legacy 清理移除，历史覆盖如下），固定使用真实用户原话启动，不注入内部状态。当前覆盖：
 
 - 肿胀位置确认、右侧外踝定位和急性骨性风险/影像门控；
 - 踝足四方向主动评估，实际选择外翻受限并验证主诉动作基线；
