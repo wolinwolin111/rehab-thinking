@@ -161,6 +161,8 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ## 8. 注意事项
 
+- **活文档白名单（测试侧，2026-09-01 立）**：只有这 5 份是「当前口径」，新知识只进这里 + 当期主题档——① `test-workflow-continuation-handoff.md`（本档：环境/命令/基线/协议）② `docs/quality/rehabmind-test-plan.md`（分层与门禁）③ `docs/quality/real-browser-coverage-matrix.md`（场景↔证据）④ `tests/workflow/scenario-registry.json`（纯指针索引）⑤ `tests/README.md`。其余 `test-session-handoff-*`/`defect-*`/批次档均为**冻结证据链**，只追加不改写、不再当现行标准检索源。
+- **文档所有权**：docs/quality 测试相关文档 + docs/handover `test-*` 归测试侧；`development-to-test-*` 归 dev（测试侧只读）；`docs/README.md`（文档中心）、`HANDOVER.md`、`project-status.md` 归产品/dev，测试侧不改。dev 工作区 `tests/` 与 docs/quality 旧副本禁止提交进 main（会踩踏测试侧现行版）。
 - **powershell 中文乱码**：一切含中文的读/写走 Read/Write/Edit 工具或 node UTF-8 脚本，别在 PowerShell 里 grep 中文。
 - **`.tmp/` 放下临时脚本**（已存在、pre-approved），用完可删；`.tmp/probe*.cjs`、`scan*.cjs`、`reg-*.cjs` 是本次会话留下的，可复用作模板。
 - **`release.generated.ts`**：dev 每次构建会重写，属生成文件，你的回归会看到它 diff——不提交它（除非 release 流程需要，本轮未要求）。

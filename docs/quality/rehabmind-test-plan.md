@@ -165,9 +165,24 @@ L5 必须覆盖：
 - 场景自己创建的案例尽量在结尾删除；
 - 浏览器门禁不登记评估/处理组合覆盖率。
 
-旧 `p0`、`divergent`、`visual` 和 `legacy-browser` 脚本只作为历史诊断材料，除非按当前入口重新校准，否则不计当前发布证据。浏览器不穷举所有临床组合；组合逻辑由 L2/L3 workflow 测试负责。
+**两套浏览器口径（勿混淆，2026-09-01 澄清）**：
+
+- **发布证据门禁** = `test:browser:release`（`edge-release`，4 条最小接线：入口/刷新/反馈/移动壳/管理员拒绝）。§7 上文五点是它的判据。
+- **回归基线** = `test:browser:full`（`edge-full`，当前 **61 passed + 9 skipped(fixme)**）+ `test:browser:overall`（4/4）+ `test:browser:mobile-preview`（2/2）。`p0`、`divergent`、`visual`、`scenarios` 均已按当前 /test 工作台与 v3 快照重新校准、全绿，**是现行回归基线的组成部分**（本节旧版曾把它们统称「历史诊断材料」，属误导，已更正）；只有 `legacy-browser/*.mjs` 独立走读脚本随 `83e47be` 删除、不再是证据。
+- 浏览器不穷举所有临床组合；组合逻辑由 L2/L3 workflow 测试负责。
 
 ## 8. 执行流程
+
+### 每轮批次回归（测试侧接手 dev 通报 SHA 时）
+
+一键编排器链式跑 fast→knowledge→(起 3001)→full→overall→mobile→(停服)，自动判绿、产 manifest、绑 commit：
+
+```bash
+node scripts/quality/run-test-regression.mjs --workers=2      # 轮内迭代/异步批次回归（~4min）
+node scripts/quality/run-test-regression.mjs                  # 正式绑定/发布证据轮（默认 workers=1）
+```
+
+协议：只 `git merge <通报 SHA>`（勿 merge main，dev 工作树可能已推进）；推送用显式 refspec `git push origin <sha>:refs/heads/agent/testing`，永不推 main。workers 试验结论：w2 稳定省 40%，w3 禁用（单 vite SSR 饱和致级联超时）。详见 `docs/handover/test-workflow-continuation-handoff.md` §5/§1.4。
 
 ### 日常窄改动
 
@@ -224,6 +239,8 @@ npm run test:summary
 RMD 批次的退出条件是：定向回归通过，必要的变异测试能抓住门禁回归，L5 数据/安全检查通过，L6 Edge 发布基线通过；涉及移动的批次还必须完成对应 M 层独立运行。浏览器不承担临床组合穷举，组合逻辑以 L2/L3 测试和内部逻辑覆盖矩阵为准。
 
 ## 9. 当前证据（历史基线 + 2026-08-27 整改核验）
+
+> **当前回归基线（2026-09-01，outcome-slim 轮）**：`test:fast` EXITCODE 0；`check:knowledge` ok（cases=8/episodes=11/findings=22/treatments=14/retests=14）；Edge full **61 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；registry 93 条纯指针索引。权威逐轮记录见 `docs/handover/test-workflow-continuation-handoff.md` §6 与各主题档。下方 §9.1 及以后为 2026-08-27 整改核验的历史基线，保留作审计，不代表当前计数。
 
 | 项目 | 结果 |
 | --- | --- |

@@ -2,6 +2,8 @@
 
 更新时间：2026-08-27（历史执行记录保留；本轮职责、证据分类和当前结果已回写）
 
+> **当前口径（2026-09-01）**：现行回归基线为 Edge full **61 passed + 9 skipped(fixme)**、overall 4/4、mobile-preview 2/2，场景↔脚本↔规则的反查以 `tests/workflow/scenario-registry.json`（93 条纯指针索引，已删 status/note）为唯一机器可读入口，逐轮通过状态见 `docs/handover/test-workflow-continuation-handoff.md` §6 与当期主题档。本文件下方 2026-08-21/27 段落（含 D1、7 条 P0、41 项套件等）均为**历史执行记录**，保留作审计，不代表当前计数；D1/Cloudflare 集成已随架构迁移废弃。
+
 **当前结果口径**：本轮以“2026-08-27 最终收口证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
 
 ## 2026-08-27 最终收口证据
