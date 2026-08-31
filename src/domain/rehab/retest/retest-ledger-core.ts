@@ -121,7 +121,18 @@ export function projectRetestLedger(input: { obligations: RetestObligation[]; re
 function resultFromFunctionRetest(record: FunctionRetestRecord, side?: RetestSide): TrialResult {
   const answer = side ? record.sideResults?.[side] : record;
   if (!answer) return "same";
-  if (record.baselineCompletion === "unable") return answer.afterCompletion === "complete" ? "better" : "same";
+  if (record.baselineCompletion === "unable") {
+    // 有疼痛基线时分数参与判定：能完成但疼没走=partial，忍着做完不算全好。
+    if (typeof record.baselineScore === "number" && typeof answer.afterScore === "number") {
+      if (answer.afterCompletion === "complete") {
+        if (answer.afterScore < record.baselineScore) return "better";
+        if (answer.afterScore > record.baselineScore) return "worse";
+        return "partial";
+      }
+      return answer.afterScore < record.baselineScore ? "partial" : "same";
+    }
+    return answer.afterCompletion === "complete" ? "better" : "same";
+  }
   if (answer.afterCompletion === "unable") return "worse";
   if (typeof record.baselineScore === "number" && typeof answer.afterScore === "number") {
     if (answer.afterScore < record.baselineScore) return "better";

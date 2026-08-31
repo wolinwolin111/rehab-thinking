@@ -801,6 +801,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
     ...effectiveControlLabels.map((label) => `继续${label}，观察相关动作是否更轻松`),
     ...findings.filter((finding) => !finding.internal && finding.priority === "support" && anyMotionIdFromFinding(finding) !== resolvedChiefDirection).map((finding) => `复查${finding.title}`),
     ...findings.filter((finding) => !finding.internal && finding.priority === "track").map((finding) => `比较${finding.title}的恢复趋势`),
+    ...Object.values(assessmentResults).some((record) => record.unableFearTogether === "yes") ? ["上次担心加重的动作，先从更低负荷试起"] : [],
     trainingPlanSaved ? "本次未执行训练，下次先确认是否实际完成保存的方案" : "查看居家训练的完成质量，以及当天晚些时候和第二天的反应",
   ].filter((focus, index, list) => list.indexOf(focus) === index).slice(0, 3);
   if (followupMode) return renderFollowup();

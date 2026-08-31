@@ -611,6 +611,21 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     },
   },
   {
+    id: "function-flare-retest",
+    title: "功能复查疼痛对比",
+    description: "首次因疼痛做不完的下蹲，处理后复查时检查疼痛分数对比与完成门。",
+    mode: "page_boundary",
+    target: "后续康复边界",
+    initialProblem: "右膝下蹲时前侧疼。",
+    step: 3,
+    snapshotOverrides: {
+      assessmentResults: {
+        ...KNEE_PAGE_ASSESSMENTS,
+        "function:knee-squat": { functionCompletion: "unable", functionDiscomfort: "yes", functionUnableReason: "pain", symptomScore: 8 },
+      },
+    },
+  },
+  {
     id: "assessment-all-normal",
     title: "评估全正常空态",
     description: "直接检查评估全正常、无固定主诉动作时处理段的空态出口。",

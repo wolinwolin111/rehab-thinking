@@ -9,6 +9,10 @@ export type FunctionRetestTransitionInput = {
   completion: FunctionRetestCompletion;
   unableReason?: FunctionUnableReason | "";
   scoreConfirmed: boolean;
+  /** completion-status 的疼痛基线（中断时打分）；没有它就不追加分数复测。 */
+  hasBaselineScore?: boolean;
+  score?: number;
+  baselineScore?: number;
   chiefScoreRetestBlocked?: boolean;
   /** T-01：首次评估的动作完成状态；ordinary 复测中从 complete 变 unable 视同加重。 */
   initialCompletion?: "complete" | "unable" | "skip" | "unknown";
@@ -22,7 +26,7 @@ export type FunctionRetestTransition = {
   functionReady: boolean;
   retestReady: boolean;
   evidenceCaptured: boolean;
-  automaticResult?: "partial" | "same" | "worse";
+  automaticResult?: "better" | "partial" | "same" | "worse";
 };
 
 export type TreatmentRetestGateInput = FunctionRetestTransitionInput & {
@@ -46,7 +50,10 @@ export function resolveFunctionRetestTransition(
 ): FunctionRetestTransition {
   const completionOnly = input.isFunctionTarget && input.mode === "completion-status";
   const requiresCompletion = input.isFunctionTarget;
-  const requiresScore = input.isFunctionTarget ? !completionOnly : true;
+  // completion-status 有疼痛基线时，分数是必答的另一半：能完成（或因疼做不完）都要打分。
+  const flareNeedsScore = completionOnly && input.hasBaselineScore === true
+    && (input.completion === "complete" || input.completion === "unable" && input.unableReason === "pain");
+  const requiresScore = input.isFunctionTarget ? (completionOnly ? flareNeedsScore : true) : true;
   const answerComplete = input.completion === "complete"
     || input.completion === "unable" && Boolean(input.unableReason);
   const functionReady = input.isFunctionTarget
@@ -59,6 +66,10 @@ export function resolveFunctionRetestTransition(
   const completionWorsened = !completionOnly
     && input.initialCompletion === "complete"
     && input.completion === "unable";
+  // completion-status 的分数对比：能完成时降=better、平=partial（忍着做完）、升=worse。
+  const flareScoreResult = input.hasBaselineScore && typeof input.score === "number" && typeof input.baselineScore === "number"
+    ? input.score < input.baselineScore ? "better" as const : input.score > input.baselineScore ? "worse" as const : "partial" as const
+    : undefined;
 
   return {
     completionOnly,
@@ -69,7 +80,9 @@ export function resolveFunctionRetestTransition(
     retestReady,
     evidenceCaptured,
     automaticResult: completionOnly && answerComplete
-      ? input.completion === "complete" ? "partial" : "same"
+      ? input.completion === "complete"
+        ? flareScoreResult ?? "partial"
+        : flareScoreResult === "better" ? "partial" : "same"
       : completionWorsened && answerComplete
         ? "worse"
         : undefined,

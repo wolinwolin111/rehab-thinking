@@ -30,7 +30,23 @@ function answerResult(obligation: FunctionRetestObligation, answer: FunctionRete
   if (!answer.completion) return null;
   if (answer.completion === "unable" && !answer.unableReason) return null;
   if (obligation.mode === "ordinary" && answer.completion === "complete" && !answer.scoreConfirmed) return null;
-  if (obligation.baselineCompletion === "unable") return answer.completion === "complete" ? "better" : "same";
+  // completion-status 带疼痛基线时，疼痛分是复测的另一半答案：
+  // 能完成（或做不完但仍因疼）时必须打分，否则“忍着做完”和“不疼做完”无法区分。
+  const flareNeedsScore = obligation.mode === "completion-status"
+    && typeof obligation.baselineScore === "number"
+    && (answer.completion === "complete" || answer.completion === "unable" && answer.unableReason === "pain");
+  if (flareNeedsScore && !answer.scoreConfirmed) return null;
+  if (obligation.baselineCompletion === "unable") {
+    if (flareNeedsScore && typeof answer.score === "number" && typeof obligation.baselineScore === "number") {
+      if (answer.completion === "complete") {
+        if (answer.score < obligation.baselineScore) return "better";
+        if (answer.score > obligation.baselineScore) return "worse";
+        return "partial";
+      }
+      return answer.score < obligation.baselineScore ? "partial" : "same";
+    }
+    return answer.completion === "complete" ? "better" : "same";
+  }
   if (answer.completion === "unable") return "worse";
   if (typeof obligation.baselineScore === "number" && typeof answer.score === "number") {
     if (answer.score < obligation.baselineScore) return "better";
@@ -81,7 +97,7 @@ export function summarizeFunctionRetestObligations(input: {
     ? "worse"
     : results.length > 0 && results.every((item) => item === "better")
       ? "better"
-      : results.includes("better")
+      : results.includes("better") || results.includes("partial")
         ? "partial"
         : "same";
 
@@ -101,15 +117,27 @@ export function combineRetestResults(rangeResult: TrialResult, functionResult?: 
   return "partial";
 }
 
+function functionRetestAnswerKeyDone(obligation: { mode?: string; baselineScore?: number }, completion: "complete" | "unable", unableReason: FunctionUnableReason | undefined, afterScore: number | undefined) {
+  if (obligation.mode === "ordinary" && completion === "complete" && typeof afterScore !== "number") return false;
+  // completion-status 的作答完整性与 answerResult 的必答门保持一致。
+  if (obligation.mode === "completion-status" && typeof obligation.baselineScore === "number"
+    && (completion === "complete" || unableReason === "pain")
+    && typeof afterScore !== "number") return false;
+  return true;
+}
+
 export function completedFunctionRetestIds(records: Array<Pick<TrialRecord, "functionRetests" | "functionRetestMode" | "functionAfterCompletion" | "targetId">>) {
   const completed = new Set<string>();
   records.forEach((record) => {
     Object.entries(record.functionRetests ?? {}).forEach(([assessmentId, retest]) => {
-      const sidesComplete = !retest.sides?.length || retest.sides.every((side) => {
-        const result = retest.sideResults?.[side];
-        if (!result || result.afterCompletion === "unable" && !result.unableReason) return false;
-        return retest.mode !== "ordinary" || result.afterCompletion !== "complete" || typeof result.afterScore === "number";
-      });
+      const sidesComplete = retest.sides?.length
+        ? retest.sides.every((side) => {
+          const result = retest.sideResults?.[side];
+          if (!result || result.afterCompletion === "unable" && !result.unableReason) return false;
+          return functionRetestAnswerKeyDone(retest, result.afterCompletion, result.unableReason, result.afterScore);
+        })
+        : retest.afterCompletion
+          && functionRetestAnswerKeyDone(retest, retest.afterCompletion, retest.unableReason, retest.afterScore);
       if (sidesComplete) completed.add(assessmentId);
     });
     if (record.functionRetestMode && record.functionAfterCompletion && record.targetId.startsWith("target:function:")) {
