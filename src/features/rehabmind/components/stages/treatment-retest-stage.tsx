@@ -17,7 +17,7 @@ import { motionIdFromFinding, motionWasSymptomatic, samePhysicalAction, valueFor
 import { nextRangeCandidateType } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateTreatmentKey, candidateTreatmentName } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { candidateAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { chiefActionLabel, chiefMotionDirectionId, chiefMotionDirectionIds, hasClearChiefAction, reportedActionSummary } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { bilateralCheckpointOptions, type BilateralPriorityResolution, type BilateralSide, type BilateralTrainingGate } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { functionEvidenceFromRecord } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { combineRetestResults, functionRetestAnswerKey, summarizeFunctionRetestObligations } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -748,11 +748,11 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
         <StepHeading eyebrow="第4步 · 处理与即时复测" title="本阶段成果" />
         <section className="rm-complete-panel is-caution">
           <span>本轮处理已完成</span>
-          <h2>{chiefComplaintLabel(intake)}</h2>
-          {chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : hasClearChiefAction(intake) ? <p>已记录本次实际做过的动作和复查结果。</p> : <p>这次没有固定的加重动作，已记录其他活动和症状变化。</p>}
+          <h2>{chiefScoreComparable && noImmediateTreatmentResponse ? "主诉暂无明显变化" : chiefImprovedDuringTreatment ? "主诉变轻" : "主诉动作已复查"}</h2>
+          {chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, intake.baselineScore - lastChiefScore)} 分</small></div> : hasClearChiefAction(intake) ? <p className="rm-chief-action-line">主诉动作：{reportedActionSummary(intake).join("、")}</p> : <p>这次没有固定的加重动作，已记录其他活动和症状变化。</p>}
           {(() => { const note = chiefChangeExplanation({ comparable: chiefScoreComparable, baseline: intake.baselineScore, latest: lastChiefScore, hasRangeImprovement: treatmentCoverage.hasRangeImprovement, noImmediateResponse: noImmediateTreatmentResponse }); return note ? <p className="rm-chief-change-note">{note}</p> : null; })()}
           <StageOutcomeSections effectiveFocusLabels={effectiveFocusLabels} effectiveControlLabels={effectiveControlLabels} recoveredRangeLabels={recoveredRangeLabels} improvedRangeLabels={improvedRangeLabels} trackObservationLabels={trackObservationLabels} strengthProblemTitles={weakStrengthProblems.map((finding) => finding.title)} />
-          {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><strong>仍有待处理</strong><span>{unresolvedImmediateLabels.join("、")}</span><small>可重新确认或先进入训练巩固。</small></section> : null}
+          {unresolvedImmediateLabels.length ? <section className="rm-stage-outcome-track"><span className="rm-stage-outcome-kind">仍有待处理</span><div className="rm-stage-outcome-rows"><div className="rm-stage-outcome-row"><strong>{unresolvedImmediateLabels.join("、")}</strong><small>可重新确认或先进入训练</small></div></div></section> : null}
           <div className="rm-page-actions three">
             <button type="button" onClick={() => reviewCompletedStep(2)}>查看评估记录</button>
             <button type="button" onClick={hasSpecificAssessmentGap ? () => openAssessmentItem(assessmentGap!.assessmentId, "请完成这项检查，完成后再安排处理。") : editCompletedAssessment}>{hasSpecificAssessmentGap ? assessmentGapActionLabel(assessmentGap) : "重新确认剩余问题"}</button>
@@ -795,7 +795,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
             : tissuePathway.id !== "standard" ? tissuePathway.immediateActions.join("；") : treatmentEmptyState.detail}</p>
         {weakStrengthProblems.length ? <section className="rm-strength-handoff"><strong>还有力量或控制问题</strong><span>{weakStrengthProblems.map((finding) => finding.title).join("、")}</span><small>训练阶段会从低体位开始针对性练习。</small></section> : null}
         {treatmentComplete && continuationSuggestions.length ? (
-          <section className="rm-stage-outcome-track">
+          <section className="rm-outcome-unexplained">
             <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
             <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
             <div className="rm-page-actions">
