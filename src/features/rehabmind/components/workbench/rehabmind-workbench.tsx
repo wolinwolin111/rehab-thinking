@@ -2955,12 +2955,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 训练卡混入当前安排。页面仍提供完成出口，允许保存本次记录。
     if (tissuePathway.id === "bone-stress-suspected") return [];
     if (tissuePathway.id === "tendon-load") {
-      const tendonStarterIds = region.id === "ankle-foot"
-        ? ["ankle-achilles-isometric"]
+      // 跟腱负荷路径：首诊只给静态保持止痛；第二次会话起加入慢速离心下落
+      // （Alfredson 式），让肌腱在可控受力中进阶，而不是永远停在等长。
+      const tendonPlanIds = region.id === "ankle-foot"
+        ? (sessionNumber >= 2 ? ["ankle-achilles-isometric", "ankle-achilles-eccentric-drop"] : ["ankle-achilles-isometric"])
         : localLimbDecision?.trainingIds.slice(0, 1) ?? (region.id === "knee" ? ["knee-heel-slide-quad-set"] : []);
       return region.exercises
-        .filter((exercise) => tendonStarterIds.includes(exercise.id))
-        .map((exercise) => adaptExerciseForCurrentStage(exercise, 1));
+        .filter((exercise) => tendonPlanIds.includes(exercise.id))
+        .map((exercise) => adaptExerciseForCurrentStage(exercise, exercise.id === "ankle-achilles-eccentric-drop" ? 2 : 1));
     }
     if (localLimbDecision) {
       const localTrainingOrder = new Map(localLimbDecision.trainingIds.map((id, index) => [id, index]));

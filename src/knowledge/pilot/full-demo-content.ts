@@ -600,7 +600,8 @@ const ankleFoot: FullRegion = {
   ],
   exercises: [
     exercise("ankle-four-way-motion", "踝关节四方向活动", 1, "3组", "每个方向每组10个", "仰卧或半躺，小腿放松，分别缓慢做勾脚、下压、脚掌向内转和向外转。", "小腿不跟着转，不硬顶肿胀或刺痛末端。", "每组6个、减小幅度。", "加入弹力带轻阻力。", ["ankle-rom"]),
-    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, "2组", "每组5次，每次保持5秒", "坐稳，前脚掌踩地，缓慢抬起脚跟到可接受高度并保持，再轻轻放下。", "跟腱症状不逐次增加；当天晚些时候和第二天没有持续加重。", "减小抬起高度或保持3秒。", "先增加到每组8次，再进入双脚慢速提踵。", ["achilles", "tendon-loading", "heel-raise", "isometric"]),
+    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, "2组", "每组5次，每次保持30秒", "坐稳，前脚掌踩地，缓慢抬起脚跟到可接受高度，保持30秒（均匀呼吸不憋气）再轻轻放下。", "跟腱症状不逐次增加；当天晚些时候和第二天没有持续加重。", "减小抬起高度或保持10秒。", "保持30秒不变，缩短组间休息，再进入双脚慢速提踵。", ["achilles", "tendon-loading", "heel-raise", "isometric"], "跟腱疼痛时静态保持是最安全的负荷：撑满30秒才能真正抑制肌腱痛感，几秒钟只是动一下。"),
+    exercise("ankle-achilles-eccentric-drop", "台阶边缘缓慢下落", 2, "3组", "每组8～12个", "前脚掌踩在台阶边缘，扶稳后缓慢把脚跟降到台阶面以下（心里数3秒），用健侧脚帮忙回到起点；直腿做一组、弯膝做一组交替进行。", "跟腱有酸胀的用力感但不出现锐痛；第二天没有持续加重。", "先在平地上做慢速小幅提踵和落下。", "在专业人员指导下增加下落深度或手持轻负重。", ["achilles", "eccentric", "heel-raise", "tendon-loading"], "跟腱病康复里证据最扎实的负荷动作：慢速离心下落让肌腱在可控受力中重新变强，比静态保持更接近走路蹬地的真实需求。"),
     exercise("ankle-bridge", "臀桥", 2, "3组", "每组10个", "仰卧屈膝，双脚稳定踩地，轻收腹后抬起臀部，停1秒再缓慢落下。", "骨盆不歪斜，臀部和大腿后侧发力，脚踝保持稳定。", "减小抬起高度或每组6个。", "能够稳定完成后进阶单腿臀桥。", ["glute-max", "hamstring", "posterior-chain", "pelvic-stability"]),
     exercise("ankle-single-leg-bridge", "单腿臀桥", 3, "3组", "每侧每组6～10个", "先完成双脚臀桥，再抬起一只脚，用另一侧臀部抬起骨盆。", "骨盆不旋转，支撑脚稳定，不用腰部顶起。", "继续双脚臀桥，或只把一只脚轻轻离地。", "进阶站立屈髋和重心转移。", ["glute-max", "hamstring", "posterior-chain", "single-leg", "pelvic-stability"]),
     exercise("ankle-standing-hip-flexion", "站立屈髋", 3, "3组", "每组10个", "双脚站稳，膝盖微屈，臀部向后移动，身体从髋部向前折叠，再用臀腿站起。", "骨盆稳定，髋膝踝方向一致，脚掌保持接触地面。", "臀部向后碰墙并扶住固定物。", "增加范围、轻负重或改单腿屈髋。", ["hip-hinge", "standing-hip-flexion", "posterior-chain", "hip-knee-ankle"]),
@@ -608,7 +609,6 @@ const ankleFoot: FullRegion = {
     exercise("ankle-plantarflexion-control", "跖屈控制（下压脚背）", 2, "3组", "每组10～15个", "仰卧或半躺，脚掌轻推弹力带做向下压脚背；能稳定完成后再进阶坐姿提踵。", "动作来自脚踝，脚趾不过度抓地。", "去掉弹力带，只做主动下压。", "进阶到坐姿、扶墙双脚提踵，再到单脚提踵。", ["calf", "plantarflexion", "heel-raise", "ankle-calf"]),
     exercise("ankle-inversion-control", "内翻与足弓控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做小幅脚掌向内转；能稳定完成后再加入轻弹力带。", "小腿不跟着旋转，内踝后方不过度刺痛。", "去掉弹力带，只做小幅主动内翻。", "进阶到坐位弹力带，再在站立中保持足弓。", ["tibialis-posterior", "tibialis-anterior", "inversion", "arch", "ankle-invertor"]),
     exercise("ankle-eversion-control", "外翻控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做脚掌向外转；能稳定完成后再加入轻弹力带。", "动作来自脚踝，不用膝盖或整条小腿向外转。", "去掉弹力带，只做小幅主动外翻。", "进阶到坐位弹力带，再进入单腿站和侧向控制。", ["peroneal", "eversion", "ankle-evertor"]),
-    exercise("ankle-toe-control", "足趾主动控制", 2, "3组", "每组8～10个", "坐稳、脚跟着地，分别抬起和放下脚趾；只练检查中仍然控制不足的动作。", "脚趾分别活动，脚踝和膝盖保持稳定，不用抓地代偿。", "减小幅度，每组5个。", "能够稳定完成后再增加保持时间。", ["toe-control", "toe-extensor", "foot"]),
     exercise("ankle-band-heelraise", "四方向抗阻与双脚提踵", 2, "3组", "每项每组12个", "按力量缺口选1～2个弹力带方向，再做双脚提踵。", "动作来自踝足，膝和脚趾不过度代偿。", "改为等长或扶墙小幅提踵。", "单脚提踵或加轻负重。", ["ankle-strength", "calf", "peroneal"]),
     exercise("ankle-gait-weightshift", "重心转移与步态滚动", 3, "3组", "每组10次重心转移 + 10米步行", "从双脚前后重心转移，练到脚跟着地—胫骨前移—前足蹬地。", "步幅自然，骨盆、髋、膝、踝连续协同。", "扶桌原地转移。", "增加连续步数或不同速度。", ["gait", "weight-shift", "hip-knee-ankle"]),
     exercise("ankle-single-leg-step", "单腿站、提踵与台阶", 4, "3组", "每项每侧8个", "先单腿站，再单脚提踵和低台阶上下。", "足弓、踝、膝和骨盆稳定，台阶下降可控。", "扶墙、双脚提踵或降低台阶。", "增加高度、连续次数或轻负重。", ["single-leg", "heel-raise", "step"]),

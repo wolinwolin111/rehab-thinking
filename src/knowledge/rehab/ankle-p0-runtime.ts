@@ -189,16 +189,13 @@ export function ankleP0EligibleControlExerciseIds(records: AnkleP0AssessmentReco
   const dfExtended = records["motion:ankle-dorsiflexion"];
   const dfFlexed = records["motion:ankle-dorsiflexion-knee-flexed"];
   const eversion = records["motion:ankle-eversion"];
-  const toe = records["motion:ankle-toe-flexion"];
   if ((controlDeficit(dfExtended) && passiveAvailable(dfExtended))
     || (controlDeficit(dfFlexed) && passiveAvailable(dfFlexed))) eligible.add("ankle-dorsiflexion-control");
   if (controlDeficit(eversion) && passiveAvailable(eversion)) eligible.add("ankle-eversion-control");
-  if (controlDeficit(toe) && passiveAvailable(toe)) eligible.add("ankle-toe-control");
   return eligible;
 }
 
 export const ANKLE_P0_CONTROL_EXERCISE_IDS = new Set([
   "ankle-dorsiflexion-control",
   "ankle-eversion-control",
-  "ankle-toe-control",
 ]);
