@@ -15,7 +15,7 @@ import type { PilotTestFaultMode } from "@/src/infrastructure/pilot/api/case-cli
 
 export type PilotTestMode = "full_flow" | "page_boundary";
 
-export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem";
+export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem" | "outcome-panel-records";
 
 export type PilotScenarioSeedContext = Readonly<{
   localCaseId: string;
@@ -411,6 +411,20 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
     seededIdentity.midpointDecisionDone = false;
   }
 
+  if (scenario.fixtureKind === "outcome-panel-records") {
+    // 处理记录必须携带与种子案例一致的身份三元组，否则服务端快照合同
+    // 会按「记录身份与处理身份不匹配」拒绝，页面定向场景无法落点。
+    seededIdentity.trialRecords = snapshot.trialRecords.map((record, index) => ({
+      ...record,
+      treatmentRecordId: `test-seed-outcome-${index + 1}`,
+      caseId: seed.localCaseId,
+      problemThreadId: seed.problemThreadId,
+      sessionId: seed.sessionId,
+      recordedAt: seed.savedAt,
+      assessmentRevision: 0,
+    }));
+  }
+
   return {
     ...snapshot,
     ...seededIdentity,
@@ -647,6 +661,52 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
         baselineScore: 0,
         baselineScoreConfirmed: false,
       },
+    },
+  },
+  {
+    id: "outcome-panel-chief-action-line",
+    title: "成果面板主诉动作降级行",
+    description: "基线不可分且处理队列清空时，直接检查「本轮处理已完成」面板：结论句标题、主诉动作降级行与成果清单表。",
+    mode: "page_boundary",
+    target: "后续康复边界",
+    initialProblem: "右膝下楼和下蹲时前侧不适，大腿前侧处理后已复查。",
+    step: 3,
+    fixtureKind: "outcome-panel-records",
+    snapshotOverrides: {
+      intake: { baselineScoreConfirmed: false },
+      // 继续排查池 = 区域方向+力量全集；补齐 KNEE_PAGE_ASSESSMENTS 缺的
+      // 瘢痕活动项，让 suggested 为空，落点才会进入「本轮处理已完成」面板
+      // 而不是完成面板的继续排查出口。
+      assessmentResults: {
+        ...KNEE_PAGE_ASSESSMENTS,
+        "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
+      },
+      trialRecords: [
+        {
+          candidateId: "knee-anterior-thigh-rectus-femoris",
+          candidateTitle: "大腿前侧肌群松解",
+          treatmentName: "大腿前侧肌群松解",
+          action: "在大腿前侧轻柔放松",
+          targetId: "target:chief",
+          beforeScore: 5,
+          afterScore: 4,
+          result: "better",
+          movement: "smoother",
+          rangeOutcomes: { "knee-extension": "better-passive-limited" },
+        },
+        {
+          candidateId: "knee-extension-control",
+          candidateTitle: "膝伸展末端控制",
+          treatmentName: "膝伸展末端控制",
+          action: "练习膝后轻轻下压，找回末端伸膝控制",
+          targetId: "target:motion:knee-extension",
+          beforeScore: 5,
+          afterScore: 4,
+          result: "better",
+          movement: "smoother",
+          rangeOutcomes: { "knee-extension": "better-passive-limited" },
+        },
+      ],
     },
   },
   {
