@@ -13,6 +13,7 @@
 | 4 | `test-session-handoff-recurrent-flare-2026-08-31.md` | `1806d9f`（+`e3b9359`/`d9e8f2a`）→ `663c6c8` | R-1~R-4；reg 84 | 「最近一次出现时间」：两模式条件题 + 骨性问答矩阵（acute 现/慢性/无外伤不现） |
 | 5 | `test-session-handoff-region-cleanup-2026-08-31.md` | `46cf0dc` → `7c3e734` | KR-CONTRACT / U-1~U-3；reg 88 | 非生产区域清理：生产 4 区契约、提肩/提颈提示、恢复过滤安全降级 |
 | 6 | `test-session-handoff-function-retest-flare-2026-08-31.md` | `e5cdf85` → `2069385` → `fef2886` | FR-1~FR-3；reg 91 | 功能复测疼痛对比 + 恐动拆分：完成门、恐动题、恢复不炸 |
+| 7 | `test-session-handoff-outcome-slim-2026-09-01.md` | outcome-slim 三文件（dev 未提交，工作树覆盖回归） | OP-CONTRACT + C 组适配/强化；reg 92 | 成果面板视觉瘦身：清单表、结论句 h2、rm-outcome-unexplained 类名；全量与基线一致 |
 
 ## 提交历史线（agent/testing @ `2194834`）
 

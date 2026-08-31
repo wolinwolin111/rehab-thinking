@@ -1,9 +1,9 @@
 # RehabMind 测试工作接手交接（面向接手续模型）
 
-> 有效期：2026-08-31 起
+> 有效期：2026-08-31 起（2026-09-01 outcome-slim 轮更新）
 > 接手对象：下一位负责 RehabMind 前端测试的模型/agent
-> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `7829beb`）
-> 仓库：github.com/wolinwolin111/rehab-thinking（remote `origin`）
+> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `1c50d8f` + 工作树待提交改动）
+> 仓库：github.com/wolinwolin111/rehab-thinking（remote `origin`；注意 §1.4 历史分叉说明）
 
 ---
 
@@ -41,6 +41,14 @@ $ok=$false; for($i=0;$i -lt 45;$i++){ try { $r=Invoke-WebRequest -Uri "http://lo
 ### 1.3 库重建（遇到迁移/500 时）
 
 `data/rehabmind.sqlite`（+ `-shm`/`-wal`）删除后 `npm.cmd run dev` 幂等迁移自动重建。不必手动 migrate（`npm run dev` 已前置 `scripts/data/migrate-sqlite.mjs`）。
+
+### 1.4 本机（DSH Web 环境）修正（2026-09-01 实测，优先级高于 §1.2）
+
+- **禁止 `Get-Process node | Stop-Process -Force`**：本机 DSH harness 自身以 node 进程运行，全杀会杀掉 agent 运行时与无关进程。清理 dev server 按端口定位：`(Get-NetTCPConnection -LocalPort <port> -State Listen).OwningProcess` → `Stop-Process -Id <pid>`。
+- **端口 3000 常驻开发侧 dev server**（从 `rehab-thinking-demo` worktree 启动，服务 main + 其未提交 src）。测试侧回归一律用 **3001**：`Start-Process cmd.exe -ArgumentList "/c npm.cmd run dev -- --port 3001 > .tmp\dev-server-3001.log 2>&1" -WorkingDirectory <agent/testing worktree>`，跑 playwright 前 `$env:WALKTHROUGH_URL="http://localhost:3001/"`（config 的 reuseExistingServer 会复用）。
+- **dev server 运行期间不要编辑 worktree 文件**：编辑工具的原子改名写入会让 vinext 文件监视器抛 `EBUSY` 杀死 server（表现为后续用例连片 `ERR_CONNECTION_REFUSED`）。先编辑、后起 server、再跑用例；中途改了文件就重启 server。
+- **origin/main 与本地 main 无共同祖先**（GitHub main 停在 08-23 旧历史）。协作以**本地 main** 为准（两 worktree 共享 `.git`，`git merge main` 即达）；`git fetch` 后不要 merge `origin/main`；origin 仅用于 `push origin agent/testing`。
+- PowerShell 下 `npx.cmd`/`npm.cmd` 的 npm warn 走 stderr 会造成假 exit 1，判绿仍以 `passed/failed` 行为准。
 
 ---
 
@@ -111,9 +119,11 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ---
 
-## 6. 当前测试验收基线（HEAD `7829beb`）
+## 6. 当前测试验收基线（outcome-slim 轮，2026-09-01）
 
-全量（edge-full）：**60 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry 91 条。
+全量（edge-full）：**60 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **92 条**。
+
+**状态**：outcome-slim 回归全绿，dev 已提交 `bb5da7e` 并 merge（`335abec`），测试侧改动（C 组定位器适配、C-3 强化、OP-CONTRACT 契约、registry、交接文档）随本提交绑定推送。详见 `test-session-handoff-outcome-slim-2026-09-01.md`。
 
 ### 6.1 已关闭
 - 知识重构批次1（C-1~C-4、D-3、RET-02）✅
@@ -121,10 +131,11 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 - 最近一次出现时间（R-1~R-4）✅
 - 非生产区域清理（KR-CONTRACT、U-1~U-3）✅
 - 疼痛对比+恐动拆分（FR-1~FR-3）✅
+- 成果面板视觉瘦身（OP-CONTRACT + C 组适配，绑定 `bb5da7e`）✅
 
 ### 6.2 待办 / 回退点
 - 无 open fixme 属本轮回归的阻塞项；9 个 skipped 为各主题遗留的 `test.fixme`（含 B2-3 安全页、R 组早期、FR 空壳等，见各档）。
-- 若后续开发推新基线：**先 `git fetch origin` + `git merge main`**，再全量回归；回归前必跑 §1.2 dev server。
+- 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前必起 3001 dev server（见 §1.4）。
 
 ---
 

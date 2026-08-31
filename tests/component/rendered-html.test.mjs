@@ -683,6 +683,22 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(outcome, /有效处理/);
   assert.match(outcome, /活动范围变化/);
   assert.match(outcome, /后续观察/);
+  // outcome-slim（成果面板视觉瘦身）：三类区块合并为一张清单表（类别 | 名称 | 状态行），
+  // 行状态词精简；「本轮处理已完成」面板大标题改为三分支结论句，主诉动作降级为
+  // 「主诉动作：」一行小字；「还有问题没得到解释」卡改用独立类名 rm-outcome-unexplained。
+  assert.match(outcome, /rm-stage-outcome-table/);
+  assert.match(outcome, /rm-stage-outcome-kind/);
+  assert.match(outcome, /rm-stage-outcome-row/);
+  assert.doesNotMatch(outcome, /本轮后主诉变轻/);
+  assert.match(demo, /主诉暂无明显变化/);
+  assert.match(demo, /主诉动作已复查/);
+  assert.match(demo, /className="rm-chief-action-line">主诉动作：/);
+  assert.match(demo, /className="rm-outcome-unexplained"/);
+  assert.match(demo, /可重新确认或先进入训练<\/small>/);
+  assert.match(styles, /\.rm-stage-outcome-table/);
+  assert.match(styles, /\.rm-outcome-unexplained/);
+  assert.match(styles, /\.rm-chief-action-line/);
+  assert.doesNotMatch(styles, /\.rm-stage-outcome-effective article/);
   assert.doesNotMatch(demo, /candidateBriefActivation/);
   assert.doesNotMatch(demo, /treatmentActionVisuals/);
   assert.match(demo, /exerciseActionVisual/);

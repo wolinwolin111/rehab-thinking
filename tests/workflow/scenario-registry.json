@@ -1132,7 +1132,7 @@
     ],
     "status": "passed",
     "note": "依赖 C-1 修复，fixme",
-    "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、仍有待处理分支保留"
+    "notes": "8191fb0 修复复测通过：多轮收敛查无可查后卡片消失、仍有待处理分支保留；outcome-slim 后终态固化成果面板结论句 h2、分数对比与清单表行结构（类别|名称|状态）"
   },
   {
     "scenarioId": "KR-C4-continuation-session-reset",
@@ -1471,6 +1471,23 @@
     "tags": [
       "scenario",
       "function-retest-flare"
+    ]
+  },
+  {
+    "scenarioId": "OP-CONTRACT-outcome-slim",
+    "ruleIds": [
+      "OP-CONTRACT"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/component/rendered-html.test.mjs",
+    "titlePattern": "outcome-slim：成果面板清单表与结论句契约",
+    "status": "passed",
+    "notes": "三类区块合并 rm-stage-outcome-table 清单行；「本轮处理已完成」大标题三分支结论句；主诉动作降级「主诉动作：」小字；未解释卡改类名 rm-outcome-unexplained；旧行状态词与卡壳样式销账",
+    "tags": [
+      "unit",
+      "outcome-slim",
+      "contract"
     ]
   }
 ]
