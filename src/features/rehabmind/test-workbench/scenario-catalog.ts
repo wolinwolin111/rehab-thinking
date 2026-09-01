@@ -741,7 +741,15 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     step: 3,
     fixtureKind: "outcome-panel-records",
     snapshotOverrides: {
-      intake: { baselineScoreConfirmed: false },
+      intake: {
+        baselineScoreConfirmed: true,
+        reportedActions: [
+          { id: "functional-step-down", label: "下楼或下台阶", kind: "functional", raw: "下楼" },
+          { id: "functional-squat", label: "下蹲", kind: "functional", raw: "下蹲" },
+        ],
+        customAction: "",
+        reproduction: "",
+      },
       // 继续排查池 = 区域方向+力量全集；补齐 KNEE_PAGE_ASSESSMENTS 缺的
       // 瘢痕活动项，让 suggested 为空，落点才会进入「本轮处理已完成」面板
       // 而不是完成面板的继续排查出口。
@@ -760,6 +768,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
           afterScore: 4,
           result: "better",
           movement: "smoother",
+          chiefRetested: true,
           rangeOutcomes: { "knee-extension": "better-passive-limited" },
         },
         {
