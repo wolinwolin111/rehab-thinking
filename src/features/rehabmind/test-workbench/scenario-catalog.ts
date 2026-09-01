@@ -15,7 +15,7 @@ import type { PilotTestFaultMode } from "@/src/infrastructure/pilot/api/case-cli
 
 export type PilotTestMode = "full_flow" | "page_boundary";
 
-export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem" | "outcome-panel-records";
+export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem" | "outcome-panel-records" | "bilateral-per-side-retest" | "treatment-worse-stop";
 
 export type PilotScenarioSeedContext = Readonly<{
   localCaseId: string;
@@ -301,7 +301,7 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
 
   const fixtureIntake = scenario.fixtureKind === "history-new-problem"
     ? NEW_PROBLEM_INTAKE
-    : scenario.fixtureKind === "bilateral-training-gate" || scenario.fixtureKind === "bilateral-longitudinal"
+    : scenario.fixtureKind === "bilateral-training-gate" || scenario.fixtureKind === "bilateral-longitudinal" || scenario.fixtureKind === "bilateral-per-side-retest"
       ? BILATERAL_INTAKE
       : undefined;
   const snapshot: SavedDemoSnapshot = {
@@ -411,7 +411,7 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
     seededIdentity.midpointDecisionDone = false;
   }
 
-  if (scenario.fixtureKind === "outcome-panel-records") {
+  if (scenario.fixtureKind === "outcome-panel-records" || scenario.fixtureKind === "treatment-worse-stop") {
     // 处理记录必须携带与种子案例一致的身份三元组，否则服务端快照合同
     // 会按「记录身份与处理身份不匹配」拒绝，页面定向场景无法落点。
     seededIdentity.trialRecords = snapshot.trialRecords.map((record, index) => ({
@@ -423,6 +423,19 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
       recordedAt: seed.savedAt,
       assessmentRevision: 0,
     }));
+  }
+
+  if (scenario.fixtureKind === "bilateral-per-side-retest") {
+    // 双侧伸直受限形成主诉靶点；右侧已分配处理、逐侧复测尚未记录，
+    // 落点应停在处理段并显示右侧逐侧复测控件（左侧完成前不生成汇总结论）。
+    seededIdentity.assessmentResults = {
+      ...withCompletedBilateralComparisons(snapshot.assessmentResults),
+      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", discomfort: "yes" },
+      "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
+    };
+    seededIdentity.bilateralTreatmentSides = { "target:chief": ["右侧"] };
+    seededIdentity.bilateralRetestResponses = {};
+    seededIdentity.midpointDecisionDone = false;
   }
 
   return {
@@ -675,6 +688,48 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
       intake: { surgeryHad: "yes", surgeryProcedure: "acl", surgeryTiming: "w2-6" },
     },
     fixtureNote: "预期：postop-referral 卡出现且「开始评估检查」不存在；把时长改为超过1年后 postop-recorded-note 出现、可继续。",
+  },
+  {
+    id: "treatment-worse-stop",
+    title: "处理后加重停止面板",
+    description: "直接检查带 worse 处理记录的停止面板：重新评估、补充症状信息与保存出口都在，且不再显示继续处理或训练入口。",
+    mode: "page_boundary",
+    target: "处理加重边界",
+    initialProblem: "右膝下楼和下蹲时前侧疼，处理后反而加重。",
+    step: 3,
+    fixtureKind: "treatment-worse-stop",
+    snapshotOverrides: {
+      intake: { baselineScoreConfirmed: false },
+      assessmentResults: {
+        ...KNEE_PAGE_ASSESSMENTS,
+        "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
+      },
+      trialRecords: [
+        {
+          candidateId: "knee-anterior-thigh-rectus-femoris",
+          candidateTitle: "大腿前侧肌群松解",
+          treatmentName: "大腿前侧肌群松解",
+          action: "在大腿前侧轻柔放松",
+          targetId: "target:chief",
+          beforeScore: 5,
+          afterScore: 7,
+          result: "worse",
+          movement: "worse",
+        },
+      ],
+    },
+    fixtureNote: "预期：显示「刚才的处理使症状或活动表现加重」面板，含重新评估/补充症状信息/保存并结束三出口；该面板本身不含指向训练步的动作（导轨标签不算）。",
+  },
+  {
+    id: "bilateral-per-side-retest",
+    title: "双侧处理段逐侧复测",
+    description: "双侧伸直受限、右侧已分配处理且逐侧复测未记录时，处理段应显示右侧逐侧复测控件，左侧完成前不出汇总结论。",
+    mode: "page_boundary",
+    target: "双侧纵向流程",
+    initialProblem: "两侧膝盖伸直都不舒服，右侧更明显，想先改善右侧。",
+    step: 3,
+    fixtureKind: "bilateral-per-side-retest",
+    fixtureNote: "预期：处理段显示右侧待逐侧复测；补录右侧后要求左侧；两侧齐全前不进入汇总或训练。",
   },
   {
     id: "outcome-panel-chief-action-line",
