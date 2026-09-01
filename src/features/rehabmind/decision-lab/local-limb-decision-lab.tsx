@@ -15,7 +15,7 @@ const LABELS: Record<string, string> = {
   "calf-inversion": "小腿内侧活动", "calf-invertor-strength": "小腿内侧发力", "calf-medial-release": "小腿内侧轻柔松解", "calf-medial-control": "内翻与足弓控制",
   "calf-eversion": "小腿外侧活动", "calf-evertor-strength": "小腿外侧发力", "calf-lateral-release": "小腿外侧轻柔松解", "calf-lateral-control": "外翻主动控制",
   "calf-walk": "走路", "calf-heel-raise": "提踵", "calf-jog": "慢跑准备", "calf-local-control": "对应方向低负荷控制", "calf-heel-raise-progress": "提踵进阶", "calf-gait": "步态", "calf-step-single-leg": "台阶与单腿", "calf-run-hop": "跑跳回归",
-  "thigh-front-isometric": "大腿前侧绷紧保持", "thigh-front-extension-control": "坐姿伸膝控制", "thigh-back-isometric": "脚跟后拉保持", "thigh-medial-isometric": "夹枕保持", "thigh-medial-active": "侧向收腿控制", "thigh-lateral-isometric": "侧向抬腿保持", "thigh-lateral-stability": "单腿骨盆稳定", "thigh-hip-hinge": "站立屈髋", "thigh-lateral-step": "侧向迈步",
+  "thigh-front-isometric": "大腿前侧绷紧保持", "thigh-front-extension-control": "坐姿伸膝控制", "thigh-back-isometric": "大腿后侧等长保持", "thigh-medial-isometric": "夹枕保持", "thigh-medial-active": "侧向收腿控制", "thigh-lateral-isometric": "侧向抬腿保持", "thigh-lateral-stability": "单腿骨盆稳定", "thigh-hip-hinge": "站立屈髋", "thigh-lateral-step": "侧向迈步",
   "calf-front-active": "主动勾脚", "calf-front-endurance": "脚跟走耐力", "calf-back-seated-raise": "坐姿提踵", "calf-back-standing-raise": "双脚站姿提踵", "calf-medial-active": "小幅内翻控制", "calf-medial-arch": "足弓保持与提踵", "calf-lateral-active": "小幅外翻控制", "calf-lateral-stability": "单腿外侧稳定",
 };
 

@@ -1377,7 +1377,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     });
     // 力量检查的入列闸门统一在 strengthIsRelevant（含膝区核心两项与主诉位置裁剪）。
     // 用户已接受的续测补查项必须可渲染，即使它不在默认闸门内（补查池取区域全集）。
-    const strengthItems: AssessmentItem[] = region.strengths
+    let strengthItems: AssessmentItem[] = region.strengths
       .filter((item) => strengthIsRelevant(region.id, item.id, intake) || continuationRoundIds.includes(`strength:${item.id}`))
       .sort((a, b) => b.tags.filter((tag) => forceTags.has(tag)).length - a.tags.filter((tag) => forceTags.has(tag)).length || strengthLocationScore(b.id) - strengthLocationScore(a.id))
       .map((item) => {
@@ -1406,6 +1406,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         `function:${item.id}`,
         functionSimpleAnswer(assessmentResults[`function:${item.id}`] ?? {}),
       ])),
+    });
+    // 同动作去重：功能计划已含"单脚站立/提踵"时，不再重复排同动作的力量卡
+    // （臀肌与骨盆稳定≈单脚站立、小腿三头肌≈提踵），保留打分更完整的版本。
+    const strengthFunctionTwins: Record<string, string> = { "strength:knee-glute": "knee-single-leg", "strength:knee-calf": "knee-heel-raise" };
+    const plannedFunctionIds = new Set(functionPlan.map((plan) => plan.id));
+    strengthItems = strengthItems.filter((item) => {
+      const twin = strengthFunctionTwins[item.id];
+      return !twin || !plannedFunctionIds.has(twin) || continuationRoundIds.includes(item.id);
     });
     const selectedFunctionEntries = functionPlan
       .map((plan) => region.functions.find((item) => item.id === plan.id))

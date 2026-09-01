@@ -164,7 +164,7 @@ export const PILOT_RELATIONS: PilotRelation[] = [
       treatment("knee-lateral-chain", "muscle", "大腿外侧链", "轻柔松解外侧紧张区域", ["motion:knee-extension", "function:knee-step-down"], "same-session", { priority: 70 }),
       treatment("knee-extension-joint", "joint", "膝关节", "根据剩余受限方向进行低刺激关节松动", ["motion:knee-extension"], "same-session", { priority: 30, requiresProfessional: true, requiresPriorMuscleTrial: true }),
     ],
-    trainingIds: ["knee-heel-slide-quad-set", "knee-supine-arch-control", "knee-step"],
+    trainingIds: ["knee-heel-slide-quad-set", "knee-step"],
     evidence: "P2",
     status: "reviewed-source",
     sourceCases: ["KNEE-005"],
