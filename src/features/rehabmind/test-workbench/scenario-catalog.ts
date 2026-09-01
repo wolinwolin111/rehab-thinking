@@ -81,12 +81,25 @@ const NORMAL_FUNCTION: AssessmentRecord = { functionCompletion: "complete", func
 
 function withCompletedBilateralComparisons(records: Record<string, AssessmentRecord>) {
   return Object.fromEntries(Object.entries(records).map(([id, record]) => {
-    if (!/^(strength|function|special):/.test(id)) return [id, record];
-    return [id, {
-      ...record,
-      bilateralComparison: "两侧接近",
-      worseSide: "两侧接近",
-    } satisfies AssessmentRecord];
+    if (/^(strength|function|special):/.test(id)) {
+      return [id, {
+        ...record,
+        bilateralComparison: "两侧接近",
+        worseSide: "两侧接近",
+      } satisfies AssessmentRecord];
+    }
+    // motion 项在双侧场景需补 bilateralSideResults 才能完成评估。
+    if (id.startsWith("motion:") && !(record as any).bilateralSideResults) {
+      const motionRecord = record as Record<string, unknown>;
+      if (motionRecord.passive && motionRecord.passiveDiscomfort !== undefined) {
+        // 被动项（如髌骨滑动、瘢痕活动）：两侧无差异
+        return [id, { ...record, bilateralSideResults: { "左侧": "normal", "右侧": "normal" }, bilateralComparison: "两侧接近", worseSide: "两侧接近" } satisfies AssessmentRecord];
+      }
+      // 手动添加 bilateralSideResults 避免覆盖主动项（如 knee-extension 可单独设 limited）
+      if (!motionRecord.active) return [id, record];
+      return [id, { ...record, bilateralSideResults: { "左侧": "normal", "右侧": "normal" }, bilateralComparison: "两侧接近", worseSide: "两侧接近" } satisfies AssessmentRecord];
+    }
+    return [id, record];
   })) as Record<string, AssessmentRecord>;
 }
 
@@ -430,12 +443,14 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
     // 落点应停在处理段并显示右侧逐侧复测控件（左侧完成前不生成汇总结论）。
     seededIdentity.assessmentResults = {
       ...withCompletedBilateralComparisons(snapshot.assessmentResults),
-      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", discomfort: "yes" },
+      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", active: "limited", discomfort: "no", pairedStrength: "normal" },
+      "motion:knee-flexion": { bilateralSideResults: { "右侧": "normal", "左侧": "normal" }, bilateralComparison: "两侧接近", worseSide: "两侧接近", active: "same", discomfort: "no", pairedStrength: "normal" },
       "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
     };
     seededIdentity.bilateralTreatmentSides = { "target:chief": ["右侧"] };
     seededIdentity.bilateralRetestResponses = {};
-    seededIdentity.midpointDecisionDone = false;
+    seededIdentity.midpointDecisionDone = true;
+    seededIdentity.readyToRetest = true;
   }
 
   return {
@@ -718,7 +733,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
         },
       ],
     },
-    fixtureNote: "预期：显示「刚才的处理使症状或活动表现加重」面板，含重新评估/补充症状信息/保存并结束三出口；该面板本身不含指向训练步的动作（导轨标签不算）。",
+    fixtureNote: "预期：显示「刚才的反应/症状或活动表现变差」面板，含确认加重后的变化/补充症状信息/保存并结束三出口；该面板本身不含指向训练步的动作（导轨标签不算）。",
   },
   {
     id: "bilateral-per-side-retest",

@@ -38,8 +38,8 @@
 
 | 靶子 | testid/断言点 |
 |---|---|
-| `treatment-worse-stop` | 「刚才的处理使症状或活动表现加重」面板；重新评估/补充症状信息/保存并结束；无训练步动作 |
-| `bilateral-per-side-retest` | 第4步处理段；右侧逐侧复测控件；汇总结论不出现 |
+| `treatment-worse-stop` | 「刚才的反应」+ h2「症状或活动表现变差」（5→7 纯变重非混合）面板；三出口：确认加重后的变化（主按钮）/补充症状信息/保存并结束；无训练步动作。注：原档写的「刚才的处理使症状或活动表现加重 + 重新评估」为旧口径，实际渲染为批 J 后不良反应重评流文案（行为本质一致）。 |
+| `bilateral-per-side-retest` | 第4步处理段；右侧逐侧复测控件；汇总结论不出现。注：夹具经 2026-09-02 三处种子修复（补双侧分侧结果/midpointDecisionDone:true/readyToRetest:true）后不再落 checkpoint；台账渲染仍待测试侧在 agent/testing 复核。 |
 
 ## 4. 验证证据
 

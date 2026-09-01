@@ -175,7 +175,7 @@ async function seedScenario(scenario: PilotTestScenario, testRunId: string, snap
     savedAt,
     region: snapshot.intake.regionId || "待确认",
     complaint: snapshot.intake.description.trim() || scenario.initialProblem,
-    goal: getGoalLabel(snapshot.intake.goal),
+    goal: getGoalLabel(snapshot.intake.goal, snapshot.intake.productMode === "thinking"),
     initialScore: snapshot.intake.baselineScore,
     latestScore: snapshot.followupScoreHistory.at(-1) ?? snapshot.intake.baselineScore,
     scoreComparable: Boolean(snapshot.intake.baselineScoreConfirmed),

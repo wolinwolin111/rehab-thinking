@@ -78,3 +78,56 @@
 - 实测：rail「5 训练居家」=**可进入**；点击「进入训练」→ 进入训练过渡页；`data-pending-count`=0；零 pageerror；`rendered-html` 17 pass / 6 fail（基线不变）。
 - 测试侧钉该场景：断言改为「进入训练可导航 + rail 训练可进入 + 降级行存在 + pending-count 为 0」。
 
+---
+
+# 追加通知：2026-09-01 第四轮——UX 文案清理（品牌统一 + 目标文案断裂）
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `6258424` | 代码 | UX 文案清理：品牌统一（悦舒运动康复）+ getGoalLabel 按模式返回（选 A 显示 A） |
+
+## 要点
+
+1. **品牌统一**：顶部栏/移动端「关于 RehabMind」→「关于悦舒运动康复」；教程弹窗「RehabMind 入门」→「入门指南」。欢迎页本来就是「悦舒运动康复」，现全程一致。
+2. **目标文案断裂修复**：自助用户选「先消肿止痛/疼痛明显减轻/恢复日常活动」，案例栏/记录页/保存记录此前显示 PRO 版（急性反应减轻等），现已按模式返回对应文案。专业模式不受影响。
+3. **测试影响**：现存测试用目标选择按钮（SELF 版）定位，不受影响；rendered-html 17/6 基线不变。
+4. **仍开放**：批 G §7 方向侧接受补查丢失缺陷（测试侧建议开条目，本批未涉及）。
+
+---
+
+# 追加通知：2026-09-01 第五轮——方向侧续测补查项静默丢失修复
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `c66b21d` | 代码 | 批 G §7 遗留：方向侧续测补查项静默丢失修复（被动能力闸门加续测旁路） |
+
+## 要点
+
+1. **根因**：`assessments` 装配 `motionItems` 第二个 filter（被动能力闸门）无续测旁路。自助模式 `canAssessPassive=false`，P0 表外被动方向项（髌骨滑动 `knee-patella-*`、瘢痕活动 `knee-scar-mobility`）与 P0 表内 `ankle-cuboid-mobility` 均在 `p0AssessmentAccess` 返回 undefined 或 `visible:false` 时被裁掉；用户接受补查后 `continuationRoundIds` 已写入，但装配仍不可渲染 → 静默丢失。
+2. **修复**：`rehabmind-workbench.tsx:1355-1358` 把 `continuationRoundIds.includes("motion:"+id)` 旁路提到整个 filter 表达式之后，覆盖 `reviewedAccess` 与 fallback 两个分支。未接受续测时行为不变；接受后被动方向项可渲染（评估卡自带「暂不检查｜今天先跳过」出口，自助用户可跳过，不卡死）。
+3. **验证**：npx tsx 直测 4 方向项（未接受=false/接受=true），主动项不受影响；typecheck 干净；rendered-html 17/6 基线不变。
+4. **契约提示**：若测试侧钉"接受补查必出现"，方向侧现在与力量侧一致（均经续测旁路保证已接受项可渲染）。详细见 development-to-test-direction-continuation-bypass-2026-09-01.md。
+
+---
+
+# 追加通知：2026-09-01 第六轮——方向续测旁路复核修复
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `55c726f` | 代码 | 对抗性复核发现 c66b21d 续测旁路可能让自助用户接受被动-only 方向补查后渲染空卡 → 卡流程；加 guard 限制旁路仅对自助用户可完成的项生效 |
+
+## 要点
+
+1. **根因**：c66b21d 的续测旁路 `(reviewedAccess ? ... : ...) || continuationRoundIds.includes()` 会绕过被动能力闸门，自助用户接受被动-only 方向（如髌骨滑动、瘢痕活动、骰骨活动）后，渲染空卡无法完成。
+2. **修复**：guard 条件 `(item.testMode !== "passive" || canAssessPassive)`，被动项续测旁路受限（不渲染，不卡流程），主动/combined 项续测旁路不变。
+3. **验证**：npx tsx 直测 5 方向项；typecheck 干净；rendered-html 17/6 基线不变。
+4. **c66b21d 已推送**，55c726f 为 fix-forward 提交，不 amend 已推送历史。
+
+
+

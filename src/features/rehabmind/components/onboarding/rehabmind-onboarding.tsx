@@ -90,7 +90,7 @@ export function RehabMindOnboarding({
     {targetRect ? <div className="rm-focus-spotlight" style={spotlightStyle} aria-hidden="true" /> : <div className="rm-focus-dim" aria-hidden="true" />}
     <section className={`rm-focus-tooltip is-${tooltip.side}${targetRect ? "" : " is-unanchored"}`} style={{ left: tooltip.left, top: tooltip.top, width: tooltip.width }}>
       <header className="rm-focus-header">
-        <div><span>RehabMind 入门</span><strong>{stepIndex + 1} / {FOCUS_STEPS.length}</strong></div>
+        <div><span>入门指南</span><strong>{stepIndex + 1} / {FOCUS_STEPS.length}</strong></div>
         <button type="button" className="rm-focus-skip" onClick={dismiss}>跳过教程</button>
       </header>
       <div className="rm-focus-progress" aria-label={`教程进度，第${stepIndex + 1}步，共${FOCUS_STEPS.length}步`}>

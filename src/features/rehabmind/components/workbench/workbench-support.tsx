@@ -1673,8 +1673,9 @@ export function inferImagingFromDescription(text: string) {
   return inferred;
 }
 
-export function getGoalLabel(level: number) {
-  return GOALS_PRO.find((goal) => goal.level === level)?.title ?? "尚未确认";
+export function getGoalLabel(level: number, useProfessional = false) {
+  const list = useProfessional ? GOALS_PRO : GOALS_SELF;
+  return list.find((goal) => goal.level === level)?.title ?? "尚未确认";
 }
 
 export function forceDirectionOptions(regionId: string) {

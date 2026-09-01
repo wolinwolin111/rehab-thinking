@@ -105,7 +105,7 @@ export function MobileMoreMenu({
       <nav>
         <button type="button" onClick={onOpenRecords}>康复记录</button>
         <button type="button" onClick={onOpenFeedback}>问题反馈</button>
-        <button type="button" onClick={onOpenHelp}>关于 RehabMind</button>
+        <button type="button" onClick={onOpenHelp}>关于悦舒运动康复</button>
         <button type="button" onClick={onSave}>保存本次记录</button>
       </nav>
     </section>
