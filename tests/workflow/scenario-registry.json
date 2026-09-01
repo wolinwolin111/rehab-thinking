@@ -1315,8 +1315,7 @@
     "priority": "P2",
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/function-together.spec.ts",
-    "titlePattern": "FR-2 恐动题：功能卡疼路径出现/填写/切换",
-    "notes": "2069385：功能卡疼后追问「当时是不是也担心继续会加重？[有/没有]」；unableFearTogether；fef2886 清除链",
+    "titlePattern": "FR-2 恐动主因：Q2 追问已退役、恐动作主因可提交",
     "tags": [
       "scenario",
       "function-retest-flare"

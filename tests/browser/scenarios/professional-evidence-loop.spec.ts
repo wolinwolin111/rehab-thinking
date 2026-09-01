@@ -53,7 +53,7 @@ test("B-2 被动恢复主动不足：复测后转入末端伸膝控制路径 @sc
   if (await continueButton.count() && await continueButton.isEnabled()) await continueButton.click();
 
   // 计划刷新：伸直问题的复查义务保留在台账（控制复查），提供进入训练入口。
-  await expect(main).toContainText(/重新确认剩余问题|进入训练/, { timeout: 15_000 });
+  await expect(main).toContainText(/重新确认评估答案|进入训练/, { timeout: 15_000 });
   // 控制路径落地：过渡页/完成面板 → 训练页出现末端伸膝主动控制类练习。
   const trainEntry = main.getByRole("button", { name: /开始训练|进入训练/ }).first();
   await expect(trainEntry).toBeVisible({ timeout: 10_000 });

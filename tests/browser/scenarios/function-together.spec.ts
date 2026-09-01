@@ -5,9 +5,8 @@ import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 //
 // e5cdf85：completion-status 复测带疼痛分数对比（context「处理前 X/10 当时做不完时的疼」，
 // 没打分不能提交=完成门）；结果语义：能完成+分降=better / 分平=partial / 分升=worse。
-// 2069385：恐动与疼痛/不会做解耦——评估功能/动作/力量卡疼后追加正交题
-//「当时是不是也担心继续会加重？[有/没有]」→ unableFearTogether（可选字段，不 bump 版本）。
-// fef2886：恐动答案随原因切换清除（疼↔没力保留，切到不敢/不会清除）+ 文案防御。
+// 批 A（aaf136e）：退役「当时是不是也担心继续会加重？」追问（Q2）及 unableFearTogether 写入链；
+// 恐动改由主因「担心继续会加重」驱动（谓词 stoppedFromFear），复测卡/总结页低负荷提示人群随之改变。
 
 test("FR-1 function-flare-retest：复测带分且完成门生效 @scenario", async ({ page }) => {
   test.setTimeout(120_000);
@@ -31,29 +30,27 @@ test("FR-1 function-flare-retest：复测带分且完成门生效 @scenario", as
   await assertNoRuntimeErrors(runtimeErrors);
 });
 
-test("FR-2 恐动题：功能卡疼路径出现、填写、切换清除 @scenario", async ({ page }) => {
+test("FR-2 恐动主因：Q2 追问已退役、恐动作主因可提交 @scenario", async ({ page }) => {
+  // 批 A（aaf136e）退役恐动追问 Q2。新口径：恐动是主因之一，不再疼后追问。
+  // 本条钉退役本身（Q2 不再出现）+ 恐动作主因可正常提交推进；
+  // 下游低负荷提示（stoppedFromFear → treatment-retest/summary）需完成态靶子，另批覆盖。
   test.setTimeout(240_000);
   const runtimeErrors = collectRuntimeErrors(page);
   await prepareProfessionalMultiAction(page);
   const main = page.locator("main:visible");
   await main.getByRole("button", { name: "打开检查", exact: true }).click();
   await page.waitForTimeout(400);
-  // 下蹲功能卡：unable + 疼 → 恐动题出现。
+  // 下蹲 unable → 疼：Q2 追问已退役，选疼后不再出现「当时是不是也担心继续会加重？」。
   await main.getByRole("button", { name: "做不完或不敢继续", exact: true }).first().click();
   await page.waitForTimeout(300);
   await main.getByRole("button", { name: /疼或不舒服/ }).first().click();
   await page.waitForTimeout(300);
-  const fearQ = main.locator(".rm-fear-together:visible");
-  await expect(fearQ).toHaveCount(1);
-  await expect(fearQ).toContainText("当时是不是也担心继续会加重？");
-  // 填「有，担心加重」。
-  const yes = fearQ.locator("button:visible").filter({ hasText: /有，担心加重/ }).first();
-  await expect(yes).toBeVisible();
-  await yes.click();
-  // 切换原因到「没力或撑不住」→ 恐动答案清除（疼↔没力保留，此处验证按钮仍可切换）。
-  const weak = main.getByRole("button", { name: /没力或撑不住/ }).first();
-  await weak.click();
+  await expect(main.locator(".rm-fear-together")).toHaveCount(0);
+  await expect(main).not.toContainText("当时是不是也担心继续会加重？");
+  // 切主因到「担心继续会加重」（恐动为主因）→ 卡片可提交推进。
+  await main.getByRole("button", { name: /担心继续会加重/ }).first().click();
   await page.waitForTimeout(300);
+  await expect(main.getByRole("button", { name: "下一个检查", exact: true })).toBeEnabled({ timeout: 8_000 });
   await assertNoRuntimeErrors(runtimeErrors);
 });
 

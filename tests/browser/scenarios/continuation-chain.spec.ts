@@ -7,7 +7,7 @@ import { completeContinuationAssessmentRound, completeSingleActionAssessment, co
 // 8191fb0 根因修复：问题台账"复测过 ≠ 已解决"导致 hasUnresolvedImmediateTreatmentProblem
 // 恒 true，流程恒落入「仍有待处理」分支。修复新增 continuationExitActive =
 // treatmentComplete && continuationSuggestions.length > 0：有可查建议时跳过该分支
-// 落到完成面板显示卡片；无建议（查无可查）时原分支与「重新确认剩余问题」保留。
+// 落到完成面板显示卡片；无建议（查无可查）时原分支与「重新确认评估答案」保留。
 
 test("C-1 继续排查完整链路：主诉未解决→卡片→接受→回评估→补查→计划刷新 @scenario", async ({ page }) => {
   test.setTimeout(240_000);
@@ -23,7 +23,7 @@ test("C-1 继续排查完整链路：主诉未解决→卡片→接受→回评�
 
   // 接受建议 → toast 确认 → 回评估（工作台或已展开的检查卡）→ 补查 → 计划刷新。
   await card.getByRole("button", { name: "继续检查这些方向", exact: true }).click();
-  await expect(page.locator(".rm-toast")).toContainText("已加入继续检查的方向", { timeout: 5_000 });
+  await expect(page.locator(".rm-toast")).toContainText("已加入补查方向", { timeout: 5_000 });
   await expect(
     page.locator("main:visible").getByRole("button", { name: /打开检查|下一个检查|查看评估结果/ }).first(),
   ).toBeVisible({ timeout: 10_000 });
@@ -38,7 +38,7 @@ test("C-1 继续排查完整链路：主诉未解决→卡片→接受→回评�
 
 test("C-3 收敛：反复接受补查直到查无可查，卡片消失且完成面板保留 @scenario", async ({ page }) => {
   // dev 复测点反向确认：所有区域项查完后建议池空 → continuationExitActive=false →
-  // 无卡片，落「本轮处理已完成」成果面板，「重新确认剩余问题」出口保留（不得静默完成）。
+  // 无卡片，落「本轮处理已完成」成果面板，「重新确认评估答案」出口保留（不得静默完成）。
   // 裁定 B（outcome-slim 第二轮）：面板内「仍有待处理」行已删除，不再钉其存在。
   test.setTimeout(300_000);
   const runtimeErrors = collectRuntimeErrors(page);
@@ -56,9 +56,9 @@ test("C-3 收敛：反复接受补查直到查无可查，卡片消失且完成�
     await completeContinuationAssessmentRound(page);
     await completeSingleActionTreatment(page, { chiefScore: "5" });
   }
-  // 查无可查：卡片消失，成果面板保留「重新确认剩余问题」出口。
+  // 查无可查：卡片消失，成果面板保留「重新确认评估答案」出口（批 A 由「重新确认剩余问题」改名）。
   await expect(main.locator(".rm-outcome-unexplained", { hasText: "还没有得到解释" })).toHaveCount(0);
-  await expect(main).toContainText(/重新确认剩余问题/, { timeout: 10_000 });
+  await expect(main).toContainText(/重新确认评估答案/, { timeout: 10_000 });
   // 视觉瘦身（outcome-slim）：成果面板大标题为结论句而非主诉动作清单（旧 h2 为「蹲起」）；
   // 活动范围变化等以一张清单表渲染（类别 | 名称 | 状态行），不再有 article 卡壳结构。
   const outcomePanel = main.locator(".rm-complete-panel").filter({ hasText: "本轮处理已完成" });
@@ -113,7 +113,7 @@ test("C-4 会话隔离：接受建议后修改症状信息，问题线程重置 
   const card = main.locator(".rm-outcome-unexplained", { hasText: "还没有得到解释" });
   await expect(card).toHaveCount(1);
   await card.getByRole("button", { name: "继续检查这些方向", exact: true }).click();
-  await expect(page.locator(".rm-toast")).toContainText("已加入继续检查的方向", { timeout: 5_000 });
+  await expect(page.locator(".rm-toast")).toContainText("已加入补查方向", { timeout: 5_000 });
 
   // 回症状信息（侧栏可回看）→ 修改恢复目标字段（当前为基本活动档，点未选中的
   // 「恢复一般运动」触发 onChange → invalidateAfterIntake → startNewProblemThread）。
