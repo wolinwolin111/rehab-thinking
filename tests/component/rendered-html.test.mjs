@@ -473,7 +473,8 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(content, /REGIONAL_MOBILITY_CLUSTERS/);
   // 生产区哨兵（knee 保留 hip-flexion 动作 tag；hip/lumbar 非生产区内容已删除）。
   // 批 H 膝区可读性改名：站立屈髋 → 站立折髋（臀向后）；ID 不变，踝/大腿区仍留「站立屈髋」。
-  assert.match(content, /exercise\("knee-standing-hip-flexion", "站立折髋（臀向后）"/);
+  // 9.2 批（a2fcaf7 所在批）：膝区改回「站立屈髋（臀部向后）」+ how 统一「背对墙…轻碰墙面」；踝区同步。
+  assert.match(content, /exercise\("knee-standing-hip-flexion", "站立屈髋（臀部向后）"/);
   assert.doesNotMatch(content, /exercise\("lumbar-hip-hinge"/);
   assert.doesNotMatch(content, /exercise\("hip-sit-stand-hinge"/);
   assert.doesNotMatch(content, /"臀桥或死虫"/);

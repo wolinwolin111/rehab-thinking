@@ -17,14 +17,15 @@
 | 7 | `test-session-handoff-outcome-slim-2026-09-01.md` | outcome-slim 三文件（dev 未提交，工作树覆盖回归） | OP-CONTRACT + C 组适配/强化；reg 92 | 成果面板视觉瘦身：清单表、结论句 h2、rm-outcome-unexplained 类名；全量与基线一致 |
 | 8 | `test-session-handoff-phase41-fixme-2026-09-01.md` | 无新 dev 批次（纯测试侧，消费既有 catalog 种子） | 6 fixme 转真 + 3 壳删除转缺口；reg 90；基线 61+9→67+0 | Phase 4.1 fixme 转化：踝安全停止/双侧逐侧评估/无伪造分数/无法完成多原因/训练加重/T-09 快照；复核出 treatment-worse 与双侧处理段两处种子缺口转 dev |
 | 9 | `test-session-handoff-batch-ghij-2026-09-01.md` | `8411e33`→`fff8951`→`0c9ce2c`→`a9a6b04`→`f5be546`（+4 打包祖先）；通知档 `255f724`（agent/dev-20260901） | 契约迁移 6 处；reg 90 不变；基线 67+0 保持 | 批 G/H/G修复/I/J-1 绑定：站立折髋改名、FR-2 重写（Q2 退役）、toast/成果面板按钮改名、移动视觉基线重生成；裁定关闭有效处理行标签开放问题；范围事实 5 通报实为 9 提交 |
+| 10 | `test-session-handoff-outcome-target-fix-2026-09-02.md` | `dc01a10`（agent/dev-20260901 tip；核心 `a2fcaf7`，含批 J/K/种子①② `00e417a`） | OP-1 重写（四靶心）；hip-flexion 契约改名；reg 90；基线 67+0→68+0 | ③处理完成态靶子修复绑定：maxUnlocked 死出口根因；OP-1 断言改「主诉变轻/下楼、下蹲/rail 可进入/进入训练导航/pending-count=0」；种子①② catalog 靶子落地待挂断言；实录 3001 并行致 goto 假失败 |
 
 ## 提交历史线（agent/testing，当前 tip `d6fe867`；docs 提交持续前移，权威绑定见 continuation-handoff §6）
 
-主干（旧→新）：`知识重构批次1(8150b06..126c7f5)` → `工作台批次1(effeb36)` → `工作台批次2(d558c08)` → `最近一次出现(1806d9f/663c6c8)` → `区域清理(46cf0dc/7c3e734)` → `疼痛对比+恐动(e5cdf85/2069385/fef2886)` → `outcome-slim 两轮(bb5da7e/54b2b8e+7d5cc7e)` → `Phase 4.1 fixme 转化(6136281)` → `批 G/H/G修复/I/J-1 绑定(f5be546→merge 35c405a→b355f90→0ed74d1)` → `文档整理(d6fe867)`。
+主干（旧→新）：`知识重构批次1(8150b06..126c7f5)` → `工作台批次1(effeb36)` → `工作台批次2(d558c08)` → `最近一次出现(1806d9f/663c6c8)` → `区域清理(46cf0dc/7c3e734)` → `疼痛对比+恐动(e5cdf85/2069385/fef2886)` → `outcome-slim 两轮(bb5da7e/54b2b8e+7d5cc7e)` → `Phase 4.1 fixme 转化(6136281)` → `批 G/H/G修复/I/J-1 绑定(f5be546→merge 35c405a→b355f90→0ed74d1)` → `文档整理(d6fe867)` → `③靶子修复绑定(dc01a10→merge c42a529→OP-1 重写+契约改名)`。
 
 ## 全量基线说明
 
-- **当前基线以 `test-workflow-continuation-handoff.md` §6 为唯一权威**（当前：Edge full 67 passed + 0 skipped、overall 10/10、mobile 2/2、registry 90 条）。本索引不再维护平行计数，避免漂移。
+- **当前基线以 `test-workflow-continuation-handoff.md` §6 为唯一权威**（当前：Edge full 68 passed + 0 skipped、overall 10/10、mobile 2/2、registry 90 条）。本索引不再维护平行计数，避免漂移。
 - 每个主题档对应一份独立的 dev 合并基线（见上表「dev 基线」列）；测试分支 `agent/testing` 逐次 merge。
 - 各档均附本主题的回归结果（fast EXITCODE 0、browser full、overall、mobile-preview），档内「回归记录」段为该轮历史快照，不代表当前计数。
 

@@ -129,13 +129,15 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ---
 
-## 6. 当前测试验收基线（批 G/H/G修复/I/J-1 绑定轮，2026-09-01）
+## 6. 当前测试验收基线（③处理完成态靶子修复绑定轮，2026-09-02）
 
-全量（edge-full）：**67 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **90 条**。
+全量（edge-full）：**68 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **90 条**。
 
-**状态**：已绑定开发汇总通知（`255f724`，分支 `agent/dev-20260901`）的 5 个通报 SHA，merge tip `f5be546` → merge `35c405a` + 契约迁移 `b355f90`。⚠️ 合入实际含 **9 个提交**（另 4 个打包祖先：恐动追问退役/评估卡节奏/功能卡内嵌/移动 toast，各带交接文档）——详见 `test-session-handoff-batch-ghij-2026-09-01.md` §2。契约迁移 6 处：站立折髋改名、FR-2 重写（Q2 退役）、接受补查 toast 改名、成果面板按钮改名、移动视觉基线重生成、registry FR-2 对齐。回归 run=`reg-20260901091214-24388`。
+**状态**：已绑定 `dc01a10`（dev 分支 `agent/dev-20260901` tip；核心为 `a2fcaf7` ③处理完成态靶子修复——`outcome-panel-chief-action-line` 死出口根因 baselineScoreConfirmed:false→intakeComplete=false→maxUnlocked=0）。merge tip `dc01a10` → merge `c42a529` + 契约迁移 `b355f90` 后续（OP-1 重写 + hip-flexion 契约改名）。OP-1 断言改为修复后四靶心：rail「训练居家」可进入、「进入训练」点击→「05 处理复测完成/开始训练」过渡页、降级行「主诉动作：下楼、下蹲」存在、pending-count=0；结论句 h2「主诉动作已复查」→「主诉变轻」；降级行拼接符「和」→「、」（多主诉动作 not-comparable 路线替代 baselineScoreConfirmed:false 路线）。批 J 文案/裁定 + 批 K postop-routing + 种子①② `00e417a` 随本批合入（未列专门靶子，快照级合入）。回归 run=`reg-20260902`。
 
-上一轮 Phase 4.1（6 fixme 转真 + 3 删壳转缺口）与 outcome-slim 两轮绑定不变。批 A 裁定已关闭「有效处理行标签」开放问题（肌肉行=肌群名、控制行=动作名，OP-1 正确）。
+⚠️ 环境陷阱（本轮实录）：**playwright 全量回归时禁止并行手动 dev server**（本机 3001 手动 server 占编译资源 → config 自动 3000 webServer 冷启动 goto 30s 超时 → R-4 假失败；单跑即绿，JSON 重跑 68 全绿）。
+
+上一轮 Phase 4.1、outcome-slim 两轮、批 G/H/G修复/I/J-1 绑定不变。批 A 裁定已关闭「有效处理行标签」开放问题（肌肉行=肌群名、控制行=动作名，OP-1 正确）。
 
 ### 6.1 已关闭
 - 知识重构批次1（C-1~C-4、D-3、RET-02）✅
@@ -146,12 +148,13 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 - 成果面板视觉瘦身（两轮绑定）✅
 - Phase 4.1 fixme 转化（6 转真 + 3 删壳转缺口）✅
 - **批 G/H/G修复/I/J-1 绑定（含 4 打包祖先，契约迁移 6 处）✅**
+- **种子缺口③ 处理完成态靶子修复绑定（a2fcaf7；OP-1 重写为训练交接四靶心断言）✅**
 
 ### 6.2 待办 / 回退点
-- **种子缺口（转 dev，Phase 4.2 候选）**：① treatment-worse 带 worse trialRecord 靶子（钉处理加重停止，E2E-09）；② 双侧处理段逐侧复测控件靶子（E2E-04 处理段）；③ 处理完成态靶子（C-2/C-4 边界化 + FR-2 下游低负荷提示钉断）。
+- **种子缺口（转 dev，Phase 4.2 候选）**：① treatment-worse 带 worse trialRecord 靶子（钉处理加重停止，E2E-09）——✅ 已随 `00e417a` 合入；② 双侧处理段逐侧复测控件靶子（E2E-04 处理段）——✅ 已随 `00e417a` 合入；~~③ 处理完成态靶子~~ ✅ `a2fcaf7` 已修复并绑定。三缺口清零，但①②的 dev 侧靶子（catalog `treatment-worse-stop`/`bilateral-per-side-retest`，见 `00e417a` + seed-gaps 通知档 §3）尚未在测试侧挂正式断言（registry 无条目，候选下一轮）。
 - **既有缺陷（dev 批 G §7 自曝，建议开条目）**：方向侧接受补查静默丢失（`directionIsRelevant`/能力闸门裁掉已接受的方向补查项，踝区早于批 G 存在）。
 - **通知载体改进（转 dev）**：汇总通知档应把"打包祖先"提交显式列出（本轮 5 通报实为 9 提交，测试侧需自行对账）。
-- 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前必起 3001 dev server（见 §1.4）。
+- 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前**起且仅起一个** dev server（config 自动 3000，手动 3001 会抢编译资源致 goto 超时假失败，见 §6）。
 
 ---
 

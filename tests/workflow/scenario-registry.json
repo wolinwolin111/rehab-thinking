@@ -1360,8 +1360,8 @@
     "priority": "P2",
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/outcome-panel-slim.spec.ts",
-    "titlePattern": "OP-1 成果面板：结论句 + 主诉动作降级行 + 清单表",
-    "notes": "dev 第二轮靶子 outcome-panel-chief-action-line（不可分基线+瘢痕项种齐）：h2「主诉动作已复查」、rm-chief-action-line「主诉动作：下楼和下蹲」、清单表两类别（有效处理行=控制候选 actionLabel「训练股四头末端控制」small「主诉变轻」；活动范围变化行「膝关节主动伸直（AROM）」small「有改善，仍小于健侧」）、无分数块、无未解释卡；断言作用域 runtime 容器防 launcher 假阳性",
+    "titlePattern": "OP-1 成果面板：结论句 + 主诉动作降级行 + 清单表 + 训练交接",
+    "notes": "dev 第二轮靶子 outcome-panel-chief-action-line（a2fcaf7 修复死出口后形态）：h2「主诉变轻」、rm-chief-action-line「主诉动作：下楼、下蹲」（多主诉动作顿号拼接→not-comparable 降级行，替代旧 baselineScoreConfirmed:false 不可比路线）、清单表两类别（有效处理行=控制候选 actionLabel「训练股四头末端控制」small「主诉变轻」；活动范围变化行「膝关节主动伸直（AROM）」small「有改善，仍小于健侧」）、无分数块、无未解释卡、无非 0 pending-count；rail「训练居家」可进入+「进入训练」点击→「05 处理复测完成/开始训练」过渡页（修复前 maxUnlocked=0 死按钮）；断言作用域 runtime 容器防 launcher 假阳性",
     "tags": [
       "scenario",
       "outcome-slim"
