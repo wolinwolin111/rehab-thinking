@@ -16,9 +16,9 @@
 
 把该夹具改为**生产真实可达路径**——「康复思路·给别人」专业模式，并补齐专业评估记录完整性：
 
-1. **场景 `snapshotOverrides.intake`**：`productMode:"thinking"` + `operationTarget:"other"` + `examSetup:"professional-other"` + `userRole:"rehab"` + 全能力位（passiveRange/resistedStrength/endFeel/palpation/specialTest/jointMobilization）。使 `canAssessPassive=true`，P0 被动证据不被剥离。
+1. **场景 `snapshotOverrides.intake`**：`productMode:"thinking"` + `operationTarget:"other"` + `examSetup:"professional-other"` + `userRole:"rehab"` + 能力位仅开 `passiveRange` 与 `palpation`（其余显式 false）。`passiveRange` 使 `canAssessPassive=true`、P0 被动证据不被剥离；`palpation` 使 `palpationMode="professional-basic"`、共享触诊的 `tensionLocations` 不被 `p0AssessmentEvidenceForDecision` 清空。二者即渲染台账的最小充分集。
 2. **共享触诊改中文标签**：`[SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked:true, tensionLocations:["大腿前侧"] }`（覆盖 KNEE_PAGE_ASSESSMENTS 的英文 id 默认值，仅本夹具，不动全局）。
-3. **`motion:knee-extension` 补全专业被动记录**：`active:"both-limited"`（→ `bilateralSideForMotionAnswer` 映射「两侧异常」→ `activeTargetSides` 双侧，台账才列左右两行）+ `passive:"limited"`（P0 lineage 命中）+ `passiveEndFeel:"firm"` + `passiveDiscomfort:"no"`（`passiveMotionRecordComplete` 在 requireEndFeel 下判完整，否则 motion finding 不生成）。
+3. **`motion:knee-extension` 补全专业被动记录**：`active:"both-limited"`（→ `bilateralSideForMotionAnswer` 映射「两侧异常」→ `activeTargetSides` 双侧，台账才列左右两行）+ `passive:"limited"`（P0 lineage 命中）+ `passiveDiscomfort:"no"`（`passiveMotionRecordComplete` 判完整；未开 `endFeel` 能力故不写 `passiveEndFeel`）。
 4. **`bilateralTreatmentSides` 键对齐真实靶点**：`{"target:motion:knee-extension":["右侧"]}`（原 `"target:chief"` 与实际活动靶点不符）。
 5. 顺带修 `withCompletedBilateralComparisons` 里遗留的 `(record as any)` lint 错误（`AssessmentRecord` 本就含 `bilateralSideResults`）。
 

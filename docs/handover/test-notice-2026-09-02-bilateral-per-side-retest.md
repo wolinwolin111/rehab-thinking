@@ -29,7 +29,7 @@
 1. **自助模式结构性不可达**：膝伸直前侧 `knee-extension-anterior-lateral` 是 released P0 单元，`buildTrialTargets` 的 P0 lineage 门槛要求 `passive:"limited"`，而 `p0AssessmentEvidenceForDecision` 对自助 profile 剥离 passive → 候选被丢 → `trialTargets` 空 → 落完成面板。逐侧复测台账在自助模式**按设计拿不到**。
 2. **夹具共享触诊用了英文 id**：`KNEE_PAGE_ASSESSMENTS` 的 tensionLocations 写 `"thigh-anterior"`，生产写中文标签「大腿前侧」，膝决策 `anteriorThighEvidence` 按中文匹配 → 单元不生成。
 
-**修复**：把该夹具改为生产真实可达路径——「康复思路·给别人」专业模式（`snapshotOverrides.intake` 全能力位），共享触诊改中文「大腿前侧」，`motion:knee-extension` 补 `active:"both-limited"`（映射「两侧异常」→ 台账列左右两行）+ `passive:"limited"` + `passiveEndFeel:"firm"` + `passiveDiscomfort:"no"`（专业记录完整），`bilateralTreatmentSides` 键对齐 `target:motion:knee-extension`。
+**修复**：把该夹具改为生产真实可达路径——「康复思路·给别人」专业模式（`snapshotOverrides.intake`，能力位仅开 `passiveRange`+`palpation`），共享触诊改中文「大腿前侧」，`motion:knee-extension` 补 `active:"both-limited"`（映射「两侧异常」→ 台账列左右两行）+ `passive:"limited"` + `passiveDiscomfort:"no"`（专业被动记录完整），`bilateralTreatmentSides` 键对齐 `target:motion:knee-extension`。
 
 **浏览器实测确认**：`bilateral-retest-ledger` 渲染，h2「分别记录左右两侧处理后的变化」，`bilateral-retest-left`/`bilateral-retest-right` 各 pending + better/same/worse 三按钮，`data-priority-side="右侧"`，主按钮「确认双侧复测」。typecheck / eslint 干净。
 

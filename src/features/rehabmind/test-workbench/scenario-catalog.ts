@@ -449,7 +449,7 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
       // 膝决策的 anteriorThighEvidence 按中文匹配；用英文 id 会让处理单元
       // 生成不出来，逐侧复测台账也就无从渲染。
       [SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked: true, tensionLocations: ["大腿前侧"] },
-      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", active: "both-limited", passive: "limited", passiveEndFeel: "firm", passiveDiscomfort: "no", discomfort: "no", pairedStrength: "normal" },
+      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", active: "both-limited", passive: "limited", passiveDiscomfort: "no", discomfort: "no", pairedStrength: "normal" },
       "motion:knee-flexion": { bilateralSideResults: { "右侧": "normal", "左侧": "normal" }, bilateralComparison: "两侧接近", worseSide: "两侧接近", active: "same", discomfort: "no", pairedStrength: "normal" },
       "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
     };
@@ -756,7 +756,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
         operationTarget: "other",
         examSetup: "professional-other",
         userRole: "rehab",
-        capabilities: { passiveRange: true, resistedStrength: true, endFeel: true, palpation: true, specialTest: true, jointMobilization: true },
+        capabilities: { passiveRange: true, resistedStrength: false, endFeel: false, palpation: true, specialTest: false, jointMobilization: false },
       },
     },
     fixtureNote: "预期：处理段渲染 bilateral-retest-ledger（标题「分别记录左右两侧处理后的变化」），左右各一行「轻了/没变化/更重」，主按钮「确认双侧复测」；两侧记录齐全前不进入汇总或训练。",
