@@ -27,6 +27,7 @@ import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegion, t
 import { classifyPilotAssessmentEvidence, matchPilotRelations, rankPilotAssessmentIds, type PilotFindingInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 import { buildKneeDecision } from "@/src/domain/rehab/shared/knee-decision-core";
 import { buildLocalLimbDecision, localLimbArea, type LocalLimbFinding } from "@/src/domain/rehab/shared/local-limb-decision-core";
+import { REHABGUIDE_BASE, SURGERY_PROCEDURES, SURGERY_TIMINGS, inferSurgeryHadFromText, resolvePostOpRouting } from "@/src/domain/rehab/safety/postop-routing-core";
 import { classifyTreatmentResponse, resolvedTreatmentCombination, treatmentResponsePriority, type TreatmentResponseRole } from "@/src/domain/rehab/treatment/treatment-response-core";
 import { findNextCandidateIndex, type PendingQueueAdvance } from "@/src/domain/rehab/shared/workflow-state-core";
 import { keepOtherSessionRecords, resolveDownstreamInvalidation, shouldInvalidateFollowupWork } from "@/src/domain/rehab/shared/downstream-invalidation-core";
@@ -1324,6 +1325,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     window.setTimeout(() => setToast(""), 2800);
   }
 
+  // 术后分流（仅自助模式）：描述含明确手术史时默认"做过"，用户可改；绝不默认"没做过"。
+  const surgeryHad = intake.surgeryHad ?? inferSurgeryHadFromText(`${intake.description} ${intake.mechanism}`);
+  const postopRouting = resolvePostOpRouting({ had: surgeryHad, procedure: intake.surgeryProcedure ?? "", timing: intake.surgeryTiming ?? "", isGuided: workflowProfile.isGuided });
+
   const assessments = useMemo<AssessmentItem[]>(() => {
     if (!region) return [];
     const forceTags = new Set(forceDirectionTags(intake.forceDirection));
@@ -1343,7 +1348,8 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       return 0;
     };
     const motionItems: AssessmentItem[] = region.directions
-      .filter((item) => directionIsRelevant(region.id, item.id, intake))
+      // 用户已接受的续测补查方向必须可渲染（补查池取区域方向全集）；能力闸门仍在下方独立生效。
+      .filter((item) => directionIsRelevant(region.id, item.id, intake) || continuationRoundIds.includes(`motion:${item.id}`))
       // 纯被动项目（例如髌骨滑动）必须由资料显式声明；不能靠页面标题猜测。
       // 自助模式或没有被动检查能力时不展示，避免把被动检查误解成主动发力。
       .filter((item) => {
@@ -1377,7 +1383,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     });
     // 力量检查的入列闸门统一在 strengthIsRelevant（含膝区核心两项与主诉位置裁剪）。
     // 用户已接受的续测补查项必须可渲染，即使它不在默认闸门内（补查池取区域全集）。
-    const strengthItems: AssessmentItem[] = region.strengths
+    let strengthItems: AssessmentItem[] = region.strengths
       .filter((item) => strengthIsRelevant(region.id, item.id, intake) || continuationRoundIds.includes(`strength:${item.id}`))
       .sort((a, b) => b.tags.filter((tag) => forceTags.has(tag)).length - a.tags.filter((tag) => forceTags.has(tag)).length || strengthLocationScore(b.id) - strengthLocationScore(a.id))
       .map((item) => {
@@ -1406,6 +1412,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         `function:${item.id}`,
         functionSimpleAnswer(assessmentResults[`function:${item.id}`] ?? {}),
       ])),
+    });
+    // 同动作去重：功能计划已含"单脚站立/提踵"时，不再重复排同动作的力量卡
+    // （臀肌与骨盆稳定≈单脚站立、小腿三头肌≈提踵），保留打分更完整的版本。
+    const strengthFunctionTwins: Record<string, string> = { "strength:knee-glute": "knee-single-leg", "strength:knee-calf": "knee-heel-raise" };
+    const plannedFunctionIds = new Set(functionPlan.map((plan) => plan.id));
+    strengthItems = strengthItems.filter((item) => {
+      const twin = strengthFunctionTwins[item.id];
+      return !twin || !plannedFunctionIds.has(twin) || continuationRoundIds.includes(item.id);
     });
     const selectedFunctionEntries = functionPlan
       .map((plan) => region.functions.find((item) => item.id === plan.id))
@@ -6388,6 +6402,18 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         boneRisk={boneRisk}
         imaging={imaging}
         imagingOptions={IMAGING_OPTIONS}
+        showSurgeryQuestion={workflowProfile.isGuided}
+        surgeryHad={surgeryHad}
+        surgeryProcedure={intake.surgeryProcedure ?? ""}
+        surgeryTiming={intake.surgeryTiming ?? ""}
+        surgeryProcedures={SURGERY_PROCEDURES}
+        surgeryTimings={SURGERY_TIMINGS}
+        postopRouting={postopRouting}
+        consultationUrl={`${REHABGUIDE_BASE}/consultation`}
+        onSurgeryHad={(value) => applyIntakeChange((current) => ({ ...current, surgeryHad: value as "no" | "yes" | "unsure", surgeryProcedure: value === "yes" ? current.surgeryProcedure ?? "" : "", surgeryTiming: value === "yes" ? current.surgeryTiming ?? "" : "" }))}
+        onSurgeryProcedure={(value) => applyIntakeChange((current) => ({ ...current, surgeryProcedure: value }))}
+        onSurgeryTiming={(value) => applyIntakeChange((current) => ({ ...current, surgeryTiming: value }))}
+        onSaveReferral={() => saveRecord("术后转介专项指导站")}
         backLabel={safetyStage === 0 ? "返回症状信息" : "上一步"}
         continueLabel={safetyStage === 0 ? hasSafetySignal ? "继续填写医生结论" : needsBoneQuestions ? "继续确认骨性风险" : "继续填写影像结论" : safetyStage === 1 ? "继续填写影像结论" : "开始评估检查"}
         onSafetyAnswer={(id, answer) => setSafety((current) => ({ ...current, [id]: answer }))}

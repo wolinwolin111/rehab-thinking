@@ -195,7 +195,7 @@ const ACTION_LABEL: Record<string, string> = {
   "jump-land": "跳跃落地",
   "single-leg-balance": "单腿站",
   "single-leg-squat": "单腿下蹲",
-  "hip-hinge": "站立折髋",
+  "hip-hinge": "站立屈髋",
   "unknown-task": "原症状位置",
 };
 
