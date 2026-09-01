@@ -487,7 +487,7 @@
     "tags": [
       "snapshot",
       "time-sensitive",
-      "partial"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -546,7 +546,7 @@
       "overall",
       "safety",
       "high-risk",
-      "blocked"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -566,7 +566,7 @@
     "tags": [
       "overall",
       "bilateral",
-      "blocked"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -584,7 +584,7 @@
     "tags": [
       "overall",
       "no-chief-action",
-      "blocked"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -604,7 +604,7 @@
     "tags": [
       "overall",
       "unable",
-      "blocked"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -673,12 +673,12 @@
     "layer": "L3-L6",
     "evidenceType": "workflow-plus-browser",
     "script": "tests/browser/overall/retest-training-followup.spec.ts",
-    "titlePattern": "训练反馈门槛和训练后加重停止",
+    "titlePattern": "处理后加重和训练后加重必须进入独立的停止与聚焦复查证据",
     "tags": [
       "overall",
       "training",
       "worsening",
-      "blocked"
+      "verified"
     ],
     "releaseRequired": false
   },
@@ -717,62 +717,6 @@
     "tags": [
       "overall",
       "longitudinal",
-      "blocked"
-    ],
-    "releaseRequired": false
-  },
-  {
-    "scenarioId": "E2E-13-feedback-context",
-    "ruleIds": [
-      "FEED-01",
-      "DATA-05"
-    ],
-    "priority": "P1",
-    "layer": "L5-L6",
-    "evidenceType": "integration-plus-browser",
-    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
-    "titlePattern": "反馈绑定当前模块、目标记录和提交位置",
-    "tags": [
-      "overall",
-      "feedback",
-      "blocked"
-    ],
-    "releaseRequired": false
-  },
-  {
-    "scenarioId": "E2E-14-admin-redaction",
-    "ruleIds": [
-      "SEC-01",
-      "SEC-03",
-      "DATA-09",
-      "OPS-03"
-    ],
-    "priority": "P0",
-    "layer": "L5-L7",
-    "evidenceType": "security-plus-browser",
-    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
-    "titlePattern": "管理员脱敏、错误凭据拒绝和匿名案例查询",
-    "tags": [
-      "overall",
-      "security",
-      "blocked"
-    ],
-    "releaseRequired": false
-  },
-  {
-    "scenarioId": "E2E-15-test-data-cleanup",
-    "ruleIds": [
-      "OPS-03",
-      "DATA-06"
-    ],
-    "priority": "P1",
-    "layer": "L5-L7",
-    "evidenceType": "integration-plus-security",
-    "script": "tests/browser/overall/feedback-admin-cleanup.spec.ts",
-    "titlePattern": "测试数据按本轮 runId 清理且不误删其他案例",
-    "tags": [
-      "overall",
-      "cleanup",
       "blocked"
     ],
     "releaseRequired": false

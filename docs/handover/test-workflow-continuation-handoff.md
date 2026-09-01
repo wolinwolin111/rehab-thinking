@@ -129,11 +129,13 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ---
 
-## 6. 当前测试验收基线（outcome-slim 轮，2026-09-01）
+## 6. 当前测试验收基线（Phase 4.1 fixme 转化轮，2026-09-01）
 
-全量（edge-full）：**61 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **93 条**。
+全量（edge-full）：**67 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **90 条**（原 93，删 3 条指向已删壳的条目）。
 
-**状态**：outcome-slim 两轮均已绑定——第一轮 `bb5da7e`（merge `335abec` + 测试侧 `c944ed3`）；第二轮 `54b2b8e`+`7d5cc7e`（merge `f397c28`，测试侧 OP-1/契约校准/裁定 B 销钉随绑定提交）。dev 已切「提交先行、SHA 绑定」协议（§5）。详见 `test-session-handoff-outcome-slim-2026-09-01.md`。
+**状态**：Phase 4.1 已把 9 个 `test.fixme` 壳清零——6 条转真测试（急性踝安全停止+保存出口、双侧优先侧+逐侧评估、无主诉动作不伪造分数、动作无法完成多原因分别保留、训练后加重独立停止、T-09 快照四边界），3 条服务器侧壳（反馈绑定/管理员脱敏/测试数据清理）删除并在 coverage-matrix 转显式缺口。回归 run=`reg-20260901004537-19680`。详见 `test-session-handoff-phase41-fixme-2026-09-01.md`。
+
+上一轮 outcome-slim 两轮绑定不变：第一轮 `bb5da7e`（merge `335abec` + 测试侧 `c944ed3`）；第二轮 `54b2b8e`+`7d5cc7e`（merge `f397c28`，测试侧 OP-1/契约校准/裁定 B 销钉随绑定提交）。dev 已切「提交先行、SHA 绑定」协议（§5）。
 
 ### 6.1 已关闭
 - 知识重构批次1（C-1~C-4、D-3、RET-02）✅
@@ -141,10 +143,11 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 - 最近一次出现时间（R-1~R-4）✅
 - 非生产区域清理（KR-CONTRACT、U-1~U-3）✅
 - 疼痛对比+恐动拆分（FR-1~FR-3）✅
-- 成果面板视觉瘦身（第一轮绑定 `bb5da7e`；第二轮同源化+OP-1 回归绿，待 dev 提交绑定）✅
+- 成果面板视觉瘦身（两轮绑定）✅
+- **Phase 4.1 fixme 转化（6 转真 + 3 删壳转缺口）✅**
 
 ### 6.2 待办 / 回退点
-- 无 open fixme 属本轮回归的阻塞项；9 个 skipped 为各主题遗留的 `test.fixme`（含 B2-3 安全页、R 组早期、FR 空壳等，见各档）。
+- **Phase 4.1 复核出的种子缺口（转 dev）**：① treatment-worse 页面定向种子只设 postScore、无 worse trialRecord，落继续排查面板而非处理加重停止面板——需 dev 补带 worse trialRecord 的靶子才能钉处理加重停止（E2E-09 仍 blocked）；② 双侧处理段逐侧复测控件——bilateral-longitudinal 到处理段落「双侧处理顺序→进入正常训练」完成面板，未见逐侧复测控件，需 dev 靶子。
 - 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前必起 3001 dev server（见 §1.4）。
 
 ---

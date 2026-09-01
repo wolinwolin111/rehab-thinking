@@ -49,7 +49,7 @@
 
 | # | 动作 | 定性 |
 |---|---|---|
-| 4.1 | fixme 处置：6-7 条转化（踝扭伤/双侧/动作无法完成/训练加重/快照陈旧×3/二次康复——catalog 已有靶子）；feedback/admin 3 条删壳并在 coverage-matrix 登记缺口 | **覆盖扩展**，非瘦身 |
+| 4.1 | ✅ **已完成 2026-09-01**：6 条转化（踝安全停止/双侧逐侧评估/无伪造分数/动作无法完成多原因/训练加重/T-09 快照×4 边界）；feedback/admin 3 条删壳并在 coverage-matrix 登记缺口。基线 61+9→**67+0**，registry 93→90，run=`reg-20260901004537-19680`。复核出 2 处种子缺口转 dev（treatment-worse worse-trialRecord、双侧处理段逐侧复测）。详见 `test-session-handoff-phase41-fixme-2026-09-01.md` | **覆盖扩展**，非瘦身 |
 | 4.2 | dev 补处理完成态靶子后 C-2/C-4 边界化（省 ~25s，主收益是降 driver 脆弱） | 可选 |
 | 4.3 | registry ↔ 发布门禁接线 | 发布工程 |
 

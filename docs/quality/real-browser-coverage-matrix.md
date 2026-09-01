@@ -2,7 +2,7 @@
 
 更新时间：2026-08-27（历史执行记录保留；本轮职责、证据分类和当前结果已回写）
 
-> **当前口径（2026-09-01）**：现行回归基线为 Edge full **61 passed + 9 skipped(fixme)**、overall 4/4、mobile-preview 2/2，场景↔脚本↔规则的反查以 `tests/workflow/scenario-registry.json`（93 条纯指针索引，已删 status/note）为唯一机器可读入口，逐轮通过状态见 `docs/handover/test-workflow-continuation-handoff.md` §6 与当期主题档。本文件下方 2026-08-21/27 段落（含 D1、7 条 P0、41 项套件等）均为**历史执行记录**，保留作审计，不代表当前计数；D1/Cloudflare 集成已随架构迁移废弃。
+> **当前口径（2026-09-01，Phase 4.1 fixme 转化后）**：现行回归基线为 Edge full **67 passed + 0 skipped**（原 61+9，9 个 fixme 壳：6 条转真测试、3 条服务器侧壳删除转显式缺口）、overall 10/10、mobile-preview 2/2，场景↔脚本↔规则的反查以 `tests/workflow/scenario-registry.json`（90 条纯指针索引，已删 status/note）为唯一机器可读入口，逐轮通过状态见 `docs/handover/test-workflow-continuation-handoff.md` §6 与当期主题档。本文件下方 2026-08-21/27 段落（含 D1、7 条 P0、41 项套件等）均为**历史执行记录**，保留作审计，不代表当前计数；D1/Cloudflare 集成已随架构迁移废弃。
 
 **当前结果口径**：本轮以“2026-08-27 最终收口证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
 
@@ -299,22 +299,22 @@
 
 | ID | 设计规则/场景 | 应出现 | 禁止出现 | 证据职责 | 当前状态 |
 | --- | --- | --- | --- | --- | --- |
-| SNAPSHOT-STALE-01 | 按实际经过时间恢复快照 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒 | 自动修改原答案；急性未确认进入普通流程 | L2/L3 + L5 + L6 | 部分覆盖：规则通过，浏览器缺 UI 快照夹具 |
+| SNAPSHOT-STALE-01 | 按实际经过时间恢复快照 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒 | 自动修改原答案；急性未确认进入普通流程 | L2/L3 + L5 + L6 | 覆盖·本轮浏览器：T-09 四陈旧恢复边界定向种子全通过（Phase 4.1 转化） |
 | E2E-01-first-use-consent-case | 首次进入、来源、同意、匿名建案 | 同意门完成后进入案例并关闭遮罩 | 未同意使用、遮罩残留、匿名身份泄露 | L6 | 覆盖·本轮浏览器：full 通过 |
 | E2E-02-unilateral-knee-normal | 单侧膝正常闭环 | 症状→评估→处理复测→训练反馈→总结 | 跳阶段、侧别串线、遗漏反馈 | L6 | 覆盖·本轮浏览器：full 通过 |
-| E2E-03-acute-ankle-safety-stop | 急性踝扭伤安全停止 | 安全出口和保存出口可见 | 继续普通评估/处理/训练 | L6 | blocked：整体脚本 fixme，缺稳定 UI 夹具 |
-| E2E-04-bilateral-priority-and-assessment | 双侧优先侧与双侧评估 | 左右分别记录、分别复测、优先侧明确 | 一侧覆盖另一侧、只评一侧进入训练 | L6 | blocked：整体脚本 fixme |
-| E2E-05-no-clear-chief-action | 无明确主诉动作 | 保留一般症状且不生成动作分数 | 自动猜动作、伪造前后分数 | L3 + L6 | blocked：整体脚本 fixme；规则层另有证据 |
-| E2E-06-unable-action-reasons | 动作无法完成 | 原因分流、保留无法完成、无正常分数 | 无法完成当成正常 | L3 + L6 | blocked：整体脚本 fixme；规则层另有证据 |
+| E2E-03-acute-ankle-safety-stop | 急性踝扭伤安全停止 | 安全出口和保存出口可见 | 继续普通评估/处理/训练 | L6 | 覆盖·本轮浏览器：真实引导流安全信号「有」→ 医学评估停止+保存出口，普通评估禁用（Phase 4.1 转化） |
+| E2E-04-bilateral-priority-and-assessment | 双侧优先侧与双侧评估 | 左右分别记录、分别复测、优先侧明确 | 一侧覆盖另一侧、只评一侧进入训练 | L6 | 覆盖·本轮浏览器：双侧伸直逐侧记录+「只完成一侧保持未完成」门禁+优先侧标注（评估段，Phase 4.1 转化；处理段逐侧复测控件仍待 dev 靶子） |
+| E2E-05-no-clear-chief-action | 无明确主诉动作 | 保留一般症状且不生成动作分数 | 自动猜动作、伪造前后分数 | L3 + L6 | 覆盖·本轮浏览器：assessment-all-normal 空态无 final-score/滑条/动作分数（Phase 4.1 转化） |
+| E2E-06-unable-action-reasons | 动作无法完成 | 原因分流、保留无法完成、无正常分数 | 无法完成当成正常 | L3 + L6 | 覆盖·本轮浏览器：weak→当前无法完成、fear→暂时没判断清楚，分别保留不误判正常（Phase 4.1 转化） |
 | E2E-07-treatment-better | 处理后改善 | 记录改善并进入下一合法阶段 | 把处理结果误当训练后结果 | L3 + L6 | blocked：整体脚本 fixme |
 | E2E-08-treatment-no-change | 处理后无变化 | 保留无变化并进入观察/复评出口 | 无变化显示成功；自动加大训练 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-09-treatment-worsening | 处理后加重 | 停止并进入聚焦复查 | 加重后继续处理或训练 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-10-training-worsening | 训练后加重 | 反馈门槛、停止或有限退阶 | 空反馈完成、无限退阶 | L3 + L6 | blocked：整体脚本 fixme |
+| E2E-09-treatment-worsening | 处理后加重 | 停止并进入聚焦复查 | 加重后继续处理或训练 | L3 + L6 | blocked：treatment-worse 种子只设 postScore、无 worse trialRecord，落继续排查面板非加重停止面板；需 dev 补 worse-trialRecord 靶子（Phase 4.1 复核确认） |
+| E2E-10-training-worsening | 训练后加重 | 反馈门槛、停止或有限退阶 | 空反馈完成、无限退阶 | L3 + L6 | 覆盖·本轮浏览器：训练反馈「做完更不舒服」→ 独立加重警告+处理这次加重+保存并结束（Phase 4.1 转化） |
 | E2E-11-refresh-restore | 刷新恢复 | 原答案、阶段和本机草稿保持 | 丢答案、错误回退 | L5 + L6 | 覆盖·本轮浏览器：full 通过 |
 | E2E-12-second-rehab-new-history | 第二次康复和新问题 | 旧历史保留、新问题开新路径 | 覆盖第一次康复 | L5 + L6 | blocked：整体脚本 fixme |
-| E2E-13-feedback-context | 反馈绑定 | 目标记录、当前模块和提交位置正确 | 无案例反馈或绑定错误记录 | L5 + L6 | blocked：缺真实管理员/反馈整体夹具 |
-| E2E-14-admin-redaction | 管理员脱敏 | 匿名查询和错误凭据拒绝，响应脱敏 | 令牌、主诉或堆栈泄露 | L5/L7 | blocked：整体脚本 fixme；security/release 层另有证据 |
-| E2E-15-test-data-cleanup | 测试数据清理 | 只清理本轮 runId 创建的数据 | 误删其他案例或留下不可追踪数据 | L5/L7 | blocked：缺独立清理夹具 |
+| E2E-13-feedback-context | 反馈绑定 | 目标记录、当前模块和提交位置正确 | 无案例反馈或绑定错误记录 | L5 + L6 | 缺口：需服务器案例与管理员测试凭据（原 fixme 壳已删，Phase 4.1；服务/历史层另有证据） |
+| E2E-14-admin-redaction | 管理员脱敏 | 匿名查询和错误凭据拒绝，响应脱敏 | 令牌、主诉或堆栈泄露 | L5/L7 | 缺口：需隔离测试服务凭据（原 fixme 壳已删，Phase 4.1；security/release 层另有证据） |
+| E2E-15-test-data-cleanup | 测试数据清理 | 只清理本轮 runId 创建的数据 | 误删其他案例或留下不可追踪数据 | L5/L7 | 缺口：需真实测试 API 与独立 runId 夹具（原 fixme 壳已删，Phase 4.1） |
 | TEST-03-real-ui-seeded-exploration | 固定 seed 真实工作台探索 | 只操作可见控件，失败可重放 | 复制简化模型或只保存终端错误 | L6 exploration | 覆盖·本轮浏览器：seed=20260827，full 通过 |
 | TEST-10-mobile-preview | Pixel 5、iPhone 13 移动预览 | 独立报告输入、人体图、滑条、保存恢复、安全停止、双侧、加重、训练、总结、焦点、溢出 | Edge 结果冒充移动通过 | L6-preview | 部分覆盖：Pixel 5/iPhone 13 2/2；当前脚本为预览冒烟 |
 | TEST-10-firefox-high-risk | Firefox 高风险流程 | 安全停止、麻电/感觉变化、处理/训练加重 | 把 Firefox 冒烟写成全量兼容门禁 | L6 preview | 部分覆盖：Firefox 1/1；仅高风险冒烟 |
@@ -364,11 +364,10 @@ npm run test:browser:firefox-risk
 
 ## 当前明确未覆盖
 
-- T-09 的浏览器层实际陈旧提醒、7 天急性阻断和答案保留；规则层边界测试已通过；
-- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作和无法完成多原因的整体页面闭环；
-- 处理后改善/无变化/加重、训练后加重、第二次康复新问题历史的整体页面闭环；
-- 反馈绑定的管理员真实查询、测试数据按 runId 清理；
+- 处理后改善、处理后无变化、处理后加重停止面板、第二次康复新问题历史的整体页面闭环（Phase 4.1 复核：treatment-worse 种子无 worse trialRecord，落继续排查面板而非加重停止面板，需 dev 补 worse-trialRecord 靶子；训练后加重已于 Phase 4.1 转化通过）；
+- 双侧处理段逐侧复测控件（Phase 4.1 已覆盖双侧评估段逐侧记录与优先侧，处理段逐侧复测仍待 dev 靶子）；
+- 反馈绑定的管理员真实查询、测试数据按 runId 清理（Phase 4.1 删除原 fixme 壳，转为显式缺口：需服务器案例、隔离测试服务凭据、独立 runId 夹具）；
 - 移动端人体图、评分滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结和弹层焦点的专门移动行为证据；当前 Pixel 5/iPhone 13 仅完成输入/溢出/入口冒烟；
 - 离线、存储不可用和部分异常页面分支仍缺正式产品 oracle；这不影响本次已收口的多标签页冲突路径；
-- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作、无法完成多原因、处理/训练加重、第二次康复新问题、管理员查询和测试数据清理等整体页面场景仍按显式 skipped/blocked 记录；
+- Phase 4.1 已转化并纳入基线的整体页面场景（不再是缺口）：T-09 快照四边界、急性踝安全停止+保存出口、双侧优先侧+逐侧评估、无明确主诉动作不伪造分数、动作无法完成多原因分别保留、训练后加重独立停止；
 - 移动端本次仍是 Pixel 5/iPhone 13 预览冒烟，不把桌面 Edge 结果冒充移动全量行为覆盖；Android 真机/模拟器不在本次环境证据内。
