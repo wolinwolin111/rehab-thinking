@@ -990,7 +990,7 @@
     "tags": [
       "scenario"
     ],
-    "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts；9.2 批 c66b21d+55c726f 方向侧续测旁路修复由本链路 + rendered-html 源码契约（directionIsRelevant/strengthIsRelevant 续测旁路 + passive-only 守卫）共同覆盖",
+    "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts；9.2 批 c66b21d+55c726f 方向侧续测旁路修复由本链路 + rendered-html 源码契约（directionIsRelevant/strengthIsRelevant 续测旁路 + passive-only 守卫）共同覆盖"
   },
   {
     "scenarioId": "KR-C2-continuation-skip",
@@ -1376,7 +1376,22 @@
     "evidenceType": "e2e",
     "script": "tests/browser/scenarios/treatment-worse-stop.spec.ts",
     "titlePattern": "SG-1 处理后加重停止面板：刚才的反应 + 三出口 + 无训练入口",
-    "notes": "种子缺口①正式断言（dev 00e417a 靶子 treatment-worse-stop，page_boundary/step3/fixtureKind treatment-worse-stop）：target:chief 一条 worse(5→7) trialRecord→treatmentWorsened 直派，落「本次处理已暂停」is-referral 停止面板；面板文案随批 J 迁移为不良反应重评流（span「刚才的反应」+h2「症状或活动表现变差」+p「先停止刚才的处理…不会返回整套评估」，dev seed-gaps §3 旧口径「重新评估」已过时）；三出口=确认加重后的变化（主按钮，beginAdverseReassessment）/补充症状信息/保存并结束；面板无训练入口；rail 处理复测进行中+训练居家/康复总结待解锁。SG-2（bilateral-per-side-retest）未挂：实探落点为 :720 双侧训练闸门 checkpoint「另一侧针对性评估还未完成」而非逐侧复测台账（夹具未种 readyToRetest→showingRetest=false；其余 motion 项缺双侧分侧结果→bilateralAssessmentComplete=false），夹具修正归 dev，等修复后再钉",
+    "notes": "种子缺口①正式断言（dev 00e417a 靶子 treatment-worse-stop，page_boundary/step3/fixtureKind treatment-worse-stop）：target:chief 一条 worse(5→7) trialRecord→treatmentWorsened 直派，落「本次处理已暂停」is-referral 停止面板；面板文案随批 J 迁移为不良反应重评流（span「刚才的反应」+h2「症状或活动表现变差」+p「先停止刚才的处理…不会返回整套评估」，dev seed-gaps §3 旧口径「重新评估」已过时）；三出口=确认加重后的变化（主按钮，beginAdverseReassessment）/补充症状信息/保存并结束；面板无训练入口；rail 处理复测进行中+训练居家/康复总结待解锁",
+    "tags": [
+      "scenario",
+      "seed-gaps"
+    ]
+  },
+  {
+    "scenarioId": "SG-2-bilateral-per-side-retest",
+    "ruleIds": [
+      "SG-2"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/bilateral-per-side-retest.spec.ts",
+    "titlePattern": "SG-2 双侧处理段逐侧复测：台账渲染 + 左右复测交互 + 汇总收敛",
+    "notes": "种子缺口②正式断言（dev 00e417a catalog 靶子 + f605270/975cbc9 修复渲染）。语义口径：专业模式（康复思路·给别人，能力位仅 passiveRange+palpation）——自助模式膝伸直前侧走 released P0（lineage 要 passive:limited，自助 profile 剥离 passive）结构性拿不到处理单元，逐侧复测台账不可达；双侧逐侧复测本就属专业场景，测试侧接受该口径。关键种子：中文触诊标签「大腿前侧」→ anteriorThighEvidence 命中；motion:knee-extension active:both-limited+passive:limited→两侧异常→台账左右两行；bilateralTreatmentSides 键对齐 target:motion:knee-extension。断言：bilateral-retest-ledger 渲染（data-priority-side=右侧）、left/right 各 pending+better/same/worse、confirm 未记完 disabled 记全 enabled、点确认后台账收敛进完成面板（主诉动作已复查）、无完成面板/checkpoint 抢先、零 runtime errors；断言作用域 runtime 容器防 launcher 假阳性",
     "tags": [
       "scenario",
       "seed-gaps"
