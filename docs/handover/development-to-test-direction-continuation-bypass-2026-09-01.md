@@ -60,3 +60,11 @@
 ## 6. 测试侧建议
 
 若契约钉"接受补查必出现"：方向侧现在与力量侧一致，均通过续测旁路保证已接受补查项可渲染。可验证场景：自助模式 → 处理完成主诉未解决 → 建议含被动方向 → 接受 → 回到评估时该项可见且可跳过。
+
+## 7. 复核修复（对抗性复核后追加，fix-forward）
+
+对上述修复做对抗性复核时发现并修复一处新引入的问题：
+
+- **续测旁路会绕过被动能力闸门 → 自助用户接受被动-only 方向补查后渲染空卡 → 卡流程**。根因：`motionNeedsPassive` 在 `canAssessPassive=false` 时返回 false，`passiveOnly=true` 项主动卡不渲染、`needsPassive=false` 项被动卡不渲染 → 空卡，`assessmentRecordComplete` 对 `testMode==="passive"` 返回 `canAssessPassive && passiveMotionRecordComplete` = false（即使选"跳过"）→ 无法完成。
+- 修复：续测旁路加 guard，只对自助用户实际能完成的项生效——`(item.testMode !== "passive" || canAssessPassive)`。自助模式下被动项（髌骨滑动/瘢痕活动/骰骨活动）接受补查后仍保持不渲染（不引入空卡），主动/combined 方向项续测旁路不变。未接受续测时行为不变。
+- 验证：npx tsx 直测 5 方向项（自助 profile）：被动项未接受=false/接受=false（旁路受限，正确），主动项两种情况均 true；typecheck 干净；rendered-html 17/6 基线不变。

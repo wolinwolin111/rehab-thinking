@@ -112,5 +112,22 @@
 3. **验证**：npx tsx 直测 4 方向项（未接受=false/接受=true），主动项不受影响；typecheck 干净；rendered-html 17/6 基线不变。
 4. **契约提示**：若测试侧钉"接受补查必出现"，方向侧现在与力量侧一致（均经续测旁路保证已接受项可渲染）。详细见 development-to-test-direction-continuation-bypass-2026-09-01.md。
 
+---
+
+# 追加通知：2026-09-01 第六轮——方向续测旁路复核修复
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `55c726f` | 代码 | 对抗性复核发现 c66b21d 续测旁路可能让自助用户接受被动-only 方向补查后渲染空卡 → 卡流程；加 guard 限制旁路仅对自助用户可完成的项生效 |
+
+## 要点
+
+1. **根因**：c66b21d 的续测旁路 `(reviewedAccess ? ... : ...) || continuationRoundIds.includes()` 会绕过被动能力闸门，自助用户接受被动-only 方向（如髌骨滑动、瘢痕活动、骰骨活动）后，渲染空卡无法完成。
+2. **修复**：guard 条件 `(item.testMode !== "passive" || canAssessPassive)`，被动项续测旁路受限（不渲染，不卡流程），主动/combined 项续测旁路不变。
+3. **验证**：npx tsx 直测 5 方向项；typecheck 干净；rendered-html 17/6 基线不变。
+4. **c66b21d 已推送**，55c726f 为 fix-forward 提交，不 amend 已推送历史。
+
 
 
