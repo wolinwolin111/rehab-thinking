@@ -26,7 +26,7 @@
 
 - check:knowledge ok（cases=8/episodes=11/findings=22/treatments=14/retests=14）
 - test:fast EXITCODE 0（含 hip-flexion 契约改名后）
-- edge-full：**68 passed + 0 skipped**（67→68：合入带进新用例，Total 以 `--list` 为准 68）
+- edge-full：**67 passed + 0 skipped**（与批 GHIJ 轮持平；⚠️ 本档初稿曾写「68（合入带进新用例）」系把回归时的临时探针误计为用例，订正）
 - overall 10/10；mobile-preview 2/2
 
 首轮 full 曾报 1 failed（R-4 `page.goto` 30s 超时）——**环境性假失败**：手动 3001 dev server 与 config 自动 3000 webServer 并行抢 vite 编译资源。单跑 R-4 4.4s 绿；JSON 全量重跑 68/0/0。教训已入 continuation-handoff §6：**全量回归时禁止并行手动 dev server**。

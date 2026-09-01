@@ -1366,5 +1366,20 @@
       "scenario",
       "outcome-slim"
     ]
+  },
+  {
+    "scenarioId": "SG-1-treatment-worse-stop",
+    "ruleIds": [
+      "SG-1"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/treatment-worse-stop.spec.ts",
+    "titlePattern": "SG-1 处理后加重停止面板：刚才的反应 + 三出口 + 无训练入口",
+    "notes": "种子缺口①正式断言（dev 00e417a 靶子 treatment-worse-stop，page_boundary/step3/fixtureKind treatment-worse-stop）：target:chief 一条 worse(5→7) trialRecord→treatmentWorsened 直派，落「本次处理已暂停」is-referral 停止面板；面板文案随批 J 迁移为不良反应重评流（span「刚才的反应」+h2「症状或活动表现变差」+p「先停止刚才的处理…不会返回整套评估」，dev seed-gaps §3 旧口径「重新评估」已过时）；三出口=确认加重后的变化（主按钮，beginAdverseReassessment）/补充症状信息/保存并结束；面板无训练入口；rail 处理复测进行中+训练居家/康复总结待解锁。SG-2（bilateral-per-side-retest）未挂：实探落点为 :720 双侧训练闸门 checkpoint「另一侧针对性评估还未完成」而非逐侧复测台账（夹具未种 readyToRetest→showingRetest=false；其余 motion 项缺双侧分侧结果→bilateralAssessmentComplete=false），夹具修正归 dev，等修复后再钉",
+    "tags": [
+      "scenario",
+      "seed-gaps"
+    ]
   }
 ]
