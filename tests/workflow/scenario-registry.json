@@ -990,7 +990,7 @@
     "tags": [
       "scenario"
     ],
-    "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts"
+    "notes": "8191fb0 修复复测通过：卡片→接受→补查→计划刷新全链路，tests/browser/scenarios/continuation-chain.spec.ts；9.2 批 c66b21d+55c726f 方向侧续测旁路修复由本链路 + rendered-html 源码契约（directionIsRelevant/strengthIsRelevant 续测旁路 + passive-only 守卫）共同覆盖",
   },
   {
     "scenarioId": "KR-C2-continuation-skip",

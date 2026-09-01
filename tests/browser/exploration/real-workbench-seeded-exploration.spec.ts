@@ -57,7 +57,7 @@ async function exploreVisibleControls(page: Page, testInfo: TestInfo, seed: numb
         operations.push({ action: "click", control: description });
       }
     }
-    await expect(page.locator("body")).toContainText("RehabMind");
+    await expect(page.locator("body")).toContainText("悦舒运动康复");
   } catch (error) {
     const screenshotPath = testInfo.outputPath(`seed-${seed}-failure.png`);
     await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => undefined);

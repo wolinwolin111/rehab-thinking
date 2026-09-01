@@ -19,6 +19,7 @@
 | 9 | `test-session-handoff-batch-ghij-2026-09-01.md` | `8411e33`→`fff8951`→`0c9ce2c`→`a9a6b04`→`f5be546`（+4 打包祖先）；通知档 `255f724`（agent/dev-20260901） | 契约迁移 6 处；reg 90 不变；基线 67+0 保持 | 批 G/H/G修复/I/J-1 绑定：站立折髋改名、FR-2 重写（Q2 退役）、toast/成果面板按钮改名、移动视觉基线重生成；裁定关闭有效处理行标签开放问题；范围事实 5 通报实为 9 提交 |
 | 10 | `test-session-handoff-outcome-target-fix-2026-09-02.md` | `dc01a10`（agent/dev-20260901 tip；核心 `a2fcaf7`，含批 J/K/种子①② `00e417a`） | OP-1 重写（四靶心）；hip-flexion 契约改名；reg 90；基线 67+0 保持 | ③处理完成态靶子修复绑定：maxUnlocked 死出口根因；OP-1 断言改「主诉变轻/下楼、下蹲/rail 可进入/进入训练导航/pending-count=0」；种子①② catalog 靶子落地待挂断言；实录 3001 并行致 goto 假失败 |
 | 11 | `test-session-handoff-seed-gap-targets-2026-09-02.md` | 同 10（`dc01a10`，无新 dev 批） | SG-1 新增；reg 91；基线 67+0→68+0 | 种子①②挂断言：SG-1 加重停止面板落地（文案已随批 J 迁移，按实际 DOM 断言）；SG-2 夹具缺陷退回 dev（checkpoint 拦截+readyToRetest 未种，机制链已核实）；dev 待办 +2 |
+| 12 | `test-session-handoff-ux-direction-sg2-2026-09-02.md` | `f3ae2c9`（agent/dev-20260901 tip：UX 6258424 + 方向续测 c66b21d/55c726f + 双侧种子 778a7ac） | UX 品牌迁移 6 处 + 视觉基线 2 张；方向续测源码契约；reg 91；基线 68+0 保持 | UX 品牌统一（悦舒运动康复）+ 目标文案模式一致；方向续测旁路源码契约 + C-1 行为网；SG-2 二次诊断：queue 仍空，buildTrialTargets 候选在 P0 证据门槛被滤，等 dev 挂牌定位 |
 
 ## 提交历史线（agent/testing，当前 tip `d6fe867`；docs 提交持续前移，权威绑定见 continuation-handoff §6）
 

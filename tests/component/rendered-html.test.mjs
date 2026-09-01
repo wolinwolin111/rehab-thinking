@@ -482,6 +482,18 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(content, /withRegionalMobility\(knee/);
   assert.doesNotMatch(demo, /选择现在要做的处理/);
 
+  // 方向侧接受补查续测旁路（批 G §7 修复 c66b21d + 复核 55c726f）：
+  // ① motionItems 第二 filter 必须带旁路（已接受补查的方向可渲染）；
+  // ② 旁路必须限定自助可完成项（testMode!=="passive"||canAssessPassive），
+  //    否则自助用户接受 passive-only 方向后渲染空卡卡流程；
+  // ③ 力量侧旁路保持存在（批 G 先例）。
+  assert.match(
+    demo,
+    /canRender \|\| \(continuationRoundIds\.includes\(`motion:\$\{item\.id\}`\) && \(item\.testMode !== "passive" \|\| canAssessPassive\)\)/,
+  );
+  assert.match(demo, /directionIsRelevant\(region\.id, item\.id, intake\) \|\| continuationRoundIds\.includes\(`motion:\$\{item\.id\}`\)/);
+  assert.match(demo, /strengthIsRelevant\(region\.id, item\.id, intake\) \|\| continuationRoundIds\.includes\(`strength:\$\{item\.id\}`\)/);
+
   // Later workflow stages stay locked until the required prior work is complete.
   for (const gate of [
     "intakeComplete",

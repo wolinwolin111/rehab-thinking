@@ -47,7 +47,7 @@ test("首次进入、来源、同意和匿名建案形成完整入口闭环", as
 
   await page.goto("./", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle");
-  await expect(page.locator("body")).toContainText("RehabMind");
+  await expect(page.locator("body")).toContainText("悦舒运动康复");
   await completeFirstUse(page);
 
   await expect(page.locator("#rm-consent-title")).toHaveCount(0);

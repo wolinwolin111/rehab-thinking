@@ -129,13 +129,16 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ---
 
-## 6. 当前测试验收基线（种子①②断言轮，2026-09-02）
+## 6. 当前测试验收基线（UX 品牌迁移 + 方向续测旁路契约轮，2026-09-02）
 
-全量（edge-full）：**68 passed + 0 skipped**（67 真实用例 + SG-1；⚠️ 订正：上一档曾把回归时的临时探针误计为「合入新增用例 68」，实际合并前后提交套件均为 67）；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **91 条**。
+全量（edge-full）：**68 passed + 0 skipped**（与上轮持平；品牌迁移致 3 视觉基线更新→重跑 68 绿）；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **91 条**（KR-C1 notes 追加方向续测覆盖）。
 
-**状态**：dev 分支 `agent/dev-20260901` tip `dc01a10` 已绑定（merge `c42a529`，详见第 10 档）。本轮在其上新增 SG-1（种子①加重停止面板正式断言，`86a7c0e` 之后的种子断言提交）；**种子②（bilateral-per-side-retest）夹具缺陷退回 dev**——checkpoint 拦截 + readyToRetest 未种 + motion 分侧结果不全，机制链见 `test-session-handoff-seed-gap-targets-2026-09-02.md` §2，修好前不钉。③靶子修复绑定不变（OP-1 四靶心）。回归 run=`reg-20260902-seeds`。
+**状态**：dev 分支 `agent/dev-20260901` tip `f3ae2c9`（merge `6a09b8b`）。本批涵盖：
+1. UX 品牌统一（6258424）：5 处测试契约迁移 + 2 张视觉基线重生成（critical-home 桌面+移动）；目标文案模式一致性正常。
+2. 方向续测旁路（c66b21d+55c726f）：源码契约钉住三个 guard（directionIsRelevant/strengthIsRelevant 续测旁路 + passive-only 守卫）；C-1 行为链为空卡回归网。
+3. SG-2 双侧种子（778a7ac）三处修后队列仍空——完成面板落地（「本轮处理已完成/主诉动作已复查」），`bilateral-retest-ledger` 仍缺席。根因在 buildTrialTargets 候选被 P0 证据门槛过滤，退回 dev 挂牌定位。SG-2 不钉该面板（台账将消逝它）。
 
-⚠️ 环境陷阱（本轮实录）：**playwright 全量回归时禁止并行手动 dev server**（本机 3001 手动 server 占编译资源 → config 自动 3000 webServer 冷启动 goto 30s 超时 → R-4 假失败；单跑即绿，JSON 重跑 68 全绿）。
+⚠️ 环境陷阱：playwright 全量回归时禁止并行手动 dev server（3001 抢编译→goto 超时假失败）。
 
 上一轮 Phase 4.1、outcome-slim 两轮、批 G/H/G修复/I/J-1 绑定不变。批 A 裁定已关闭「有效处理行标签」开放问题（肌肉行=肌群名、控制行=动作名，OP-1 正确）。
 
@@ -151,8 +154,8 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 - **种子缺口③ 处理完成态靶子修复绑定（a2fcaf7；OP-1 重写为训练交接四靶心断言）✅**
 
 ### 6.2 待办 / 回退点
-- **种子缺口（转 dev，Phase 4.2 候选）**：① treatment-worse 带 worse trialRecord 靶子（钉处理加重停止，E2E-09）——✅ 已随 `00e417a` 合入且测试侧已挂正式断言（SG-1）；② 双侧处理段逐侧复测控件靶子（E2E-04 处理段）——`00e417a` 落了 catalog 靶子但**夹具缺陷退回 dev**（checkpoint 拦截 + readyToRetest 未种 + motion 分侧结果不全，见 `test-session-handoff-seed-gap-targets-2026-09-02.md` §2），修好前不钉；~~③ 处理完成态靶子~~ ✅ `a2fcaf7` 已修复并绑定。
-- **dev 待办（种子轮增量）**：① bilateral-per-side-retest 夹具三处种子；② treatment-worse-stop fixtureNote/seed-gaps §3 旧口径文案更新（非阻塞）。
+- **种子缺口（转 dev，Phase 4.2 候选）**：① treatment-worse 带 worse trialRecord 靶子（钉处理加重停止，E2E-09）——✅ 已随 `00e417a` 合入且测试侧已挂正式断言（SG-1）；② 双侧处理段逐侧复测控件靶子（E2E-04 处理段）——`00e417a` catalog 靶子 + `778a7ac` 三处种子均已合入，**但处理队列仍空**：落完成面板「本轮处理已完成/主诉动作已复查」而非逐侧复测台账；根因在 buildTrialTargets 候选被 P0 证据门槛过滤（`kneeP0EvidenceAllowed`/`kneeCandidateBelongsToCurrentDecision` 对双侧分侧记录形状），已请 dev 在 `build-trial-targets-core.ts` 各 `.filter()` 挂牌定位，修好前不钉；~~③ 处理完成态靶子~~ ✅ `a2fcaf7` 已修复并绑定。
+- **dev 待办（2026-09-02）**：① SG-2 buildTrialTargets 候选被过滤——挂牌定位并修好知会；② treatment-worse-stop fixtureNote/seed-gaps §3 旧口径文案已更新（✅ 完成）。
 - **既有缺陷（dev 批 G §7 自曝，建议开条目）**：方向侧接受补查静默丢失（`directionIsRelevant`/能力闸门裁掉已接受的方向补查项，踝区早于批 G 存在）。
 - **通知载体改进（转 dev）**：汇总通知档应把"打包祖先"提交显式列出（本轮 5 通报实为 9 提交，测试侧需自行对账）。
 - 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前**起且仅起一个** dev server（config 自动 3000，手动 3001 会抢编译资源致 goto 超时假失败，见 §6）。

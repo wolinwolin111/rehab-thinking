@@ -18,7 +18,7 @@ test("mobile shell exposes compact status, stage drawer, record entry and more m
   assert.match(workbench, /<span>本次记录<\/span>/);
   assert.match(navigation, /康复记录/);
   assert.match(navigation, /问题反馈/);
-  assert.match(navigation, /关于 RehabMind/);
+  assert.match(navigation, /关于悦舒运动康复/);
   assert.match(navigation, /复制/);
 });
 

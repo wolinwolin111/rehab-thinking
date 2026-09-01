@@ -45,7 +45,7 @@ test.describe("历史缺陷回放·首页和教程", () => {
     await dialog.getByRole("button", { name: "开始使用", exact: true }).click();
     await expect(dialog).toHaveCount(0);
 
-    const tutorialButton = await expectUniqueVisible(page, "首页教程入口", page.getByRole("button", { name: "关于 RehabMind", exact: true }));
+    const tutorialButton = await expectUniqueVisible(page, "首页教程入口", page.getByRole("button", { name: "关于悦舒运动康复", exact: true }));
     await tutorialButton.click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "跳过教程", exact: true }).click();

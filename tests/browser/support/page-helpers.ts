@@ -14,7 +14,9 @@ export function collectRuntimeErrors(page: Page) {
 export async function openFreshProduct(page: Page) {
   await page.goto("./", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle");
-  await expect(page.locator("body")).toContainText("RehabMind");
+  // 批 UX（6258424）品牌统一：落地页可见品牌为「悦舒运动康复」（顶部栏 +
+  // 教程按钮 + 移动端菜单）；「RehabMind」仅保留在 <title>/资源路径/内部标识。
+  await expect(page.locator("body")).toContainText("悦舒运动康复");
   await expect(page.locator('[data-rehabmind-tutorial="symptom-input"]:visible')).toHaveCount(1);
 }
 
