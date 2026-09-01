@@ -168,7 +168,7 @@ L5 必须覆盖：
 **两套浏览器口径（勿混淆，2026-09-01 澄清）**：
 
 - **发布证据门禁** = `test:browser:release`（`edge-release`，4 条最小接线：入口/刷新/反馈/移动壳/管理员拒绝）。§7 上文五点是它的判据。
-- **回归基线** = `test:browser:full`（`edge-full`，当前 **61 passed + 9 skipped(fixme)**）+ `test:browser:overall`（4/4）+ `test:browser:mobile-preview`（2/2）。`p0`、`divergent`、`visual`、`scenarios` 均已按当前 /test 工作台与 v3 快照重新校准、全绿，**是现行回归基线的组成部分**（本节旧版曾把它们统称「历史诊断材料」，属误导，已更正）；只有 `legacy-browser/*.mjs` 独立走读脚本随 `83e47be` 删除、不再是证据。
+- **回归基线** = `test:browser:full`（`edge-full`，当前 **67 passed + 0 skipped**）+ `test:browser:overall`（10/10）+ `test:browser:mobile-preview`（2/2）。`p0`、`divergent`、`visual`、`scenarios` 均已按当前 /test 工作台与 v3 快照重新校准、全绿，**是现行回归基线的组成部分**（本节旧版曾把它们统称「历史诊断材料」，属误导，已更正）；只有 `legacy-browser/*.mjs` 独立走读脚本随 `83e47be` 删除、不再是证据。
 - 浏览器不穷举所有临床组合；组合逻辑由 L2/L3 workflow 测试负责。
 
 ## 8. 执行流程
@@ -240,7 +240,7 @@ RMD 批次的退出条件是：定向回归通过，必要的变异测试能抓�
 
 ## 9. 当前证据（历史基线 + 2026-08-27 整改核验）
 
-> **当前回归基线（2026-09-01，outcome-slim 轮）**：`test:fast` EXITCODE 0；`check:knowledge` ok（cases=8/episodes=11/findings=22/treatments=14/retests=14）；Edge full **61 passed + 9 skipped(fixme)**；overall 4/4；mobile-preview 2/2；registry 93 条纯指针索引。权威逐轮记录见 `docs/handover/test-workflow-continuation-handoff.md` §6 与各主题档。下方 §9.1 及以后为 2026-08-27 整改核验的历史基线，保留作审计，不代表当前计数。
+> **当前回归基线（2026-09-01，批 G/H/G修复/I/J-1 绑定轮）**：`test:fast` EXITCODE 0；`check:knowledge` ok（cases=8/episodes=11/findings=22/treatments=14/retests=14）；Edge full **67 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；registry 90 条纯指针索引。权威逐轮记录见 `docs/handover/test-workflow-continuation-handoff.md` §6 与各主题档。下方 §9.1 及以后为 2026-08-27 整改核验的历史基线，保留作审计，不代表当前计数。
 
 | 项目 | 结果 |
 | --- | --- |

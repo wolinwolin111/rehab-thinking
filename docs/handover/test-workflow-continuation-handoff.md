@@ -1,8 +1,8 @@
 # RehabMind 测试工作接手交接（面向接手续模型）
 
-> 有效期：2026-08-31 起（2026-09-01 outcome-slim 轮更新）
+> 有效期：2026-08-31 起（2026-09-01 最近更新：批 G/H/G修复/I/J-1 绑定轮）
 > 接手对象：下一位负责 RehabMind 前端测试的模型/agent
-> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `1c50d8f` + 工作树待提交改动）
+> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `0ed74d1`，工作树干净——仅 `start-dev-3001.cmd` 未跟踪、`release.generated.ts` 生成文件，二者均不提交）
 > 仓库：github.com/wolinwolin111/rehab-thinking（remote `origin`；注意 §1.4 历史分叉说明）
 
 ---
@@ -10,6 +10,8 @@
 ## 0. 一句定位
 
 你在 `agent/testing` 分支上维护 **Playwright 浏览器测试 + 域契约测试 + registry 登记**，与开发（dev）侧通过「用户转交消息」协作。你的产出是：新场景脚本、驱动更新、契约更新、registry 登记、交接文档、以及一趟全量回归后的提交推送。
+
+**接手三步**：① 读 §1（环境陷阱，尤其 §1.4 端口/编辑崩服/共享 .git）+ §5（协作协议）+ §6（当前基线与待办）；② 跑 `node scripts/quality/run-test-regression.mjs --workers=2` 确认基线绿（67+0）；③ 等下一份开发交接（形态见 §5「通知载体两种形态」），按 §7 套路处理。当前无进行中任务，处于「等下一批 SHA」态。
 
 ---
 
@@ -49,7 +51,7 @@ $ok=$false; for($i=0;$i -lt 45;$i++){ try { $r=Invoke-WebRequest -Uri "http://lo
 - **dev server 运行期间不要编辑 worktree 文件**：编辑工具的原子改名写入会让 vinext 文件监视器抛 `EBUSY` 杀死 server（表现为后续用例连片 `ERR_CONNECTION_REFUSED`）。先编辑、后起 server、再跑用例；中途改了文件就重启 server。
 - **origin/main 与本地 main 无共同祖先**（GitHub main 停在 08-23 旧历史）。协作以**本地 main** 为准（两 worktree 共享 `.git`，`git merge main` 即达）；`git fetch` 后不要 merge `origin/main`；origin 仅用于 `push origin agent/testing`。
 - PowerShell 下 `npx.cmd`/`npm.cmd` 的 npm warn 走 stderr 会造成假 exit 1，判绿仍以 `passed/failed` 行为准。
-- **workers 试验结论（2026-09-01）**：`--workers=2` 全量实测稳定（full 61+9 全绿，218s，较 w1 的 6.2min 省 ~40%），用于**轮内迭代/异步批次回归**；`--workers=3` 不稳定（单 vite dev SSR 饱和→教程竞态级联 38 条 click 超时 + 视觉漂移 2 条），禁用；**正式绑定/发布证据轮保持默认 workers=1**。
+- **workers 试验结论（2026-09-01）**：`--workers=2` 全量实测稳定（试验时基线 full 61+9 全绿，218s，较 w1 的 6.2min 省 ~40%；当前基线见 §6），用于**轮内迭代/异步批次回归**；`--workers=3` 不稳定（单 vite dev SSR 饱和→教程竞态级联 38 条 click 超时 + 视觉漂移 2 条），禁用；**正式绑定/发布证据轮保持默认 workers=1**。
 - 试验顺带修掉一个测试侧潜伏 bug：B2-1 刷新步骤曾硬编码 `http://localhost:3000`，靠 dev 侧 3000 恰在运行才绿；已改相对 `./`（走 baseURL/WALKTHROUGH_URL）。tests/ 内其余 300x 字面量均为合法默认值/解析用例。
 
 ---
@@ -93,7 +95,7 @@ tests/browser/
   overall/                       # 双侧 overall 组
 tests/component/rendered-html.test.mjs  # 读源码契约（区域库/生产区/NRS…）
 tests/unit/quality/              # 读源码契约/护栏契约（safety-order、real-browser-audit 等）
-tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），scenarioId 作 key
+tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指针索引），scenarioId 作 key
 ```
 
 ### 3.2 launchWorkbenchScenario（关键 helper）
@@ -107,15 +109,9 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ## 4. 主题交接文档索引（先读这些）
 
-`docs/handover/test-session-handoff-index-2026-08-31.md` 是总索引。逐主题（按 dev 基线）：
-1. 知识重构批次1（8150b06..126c7f5）— C/D/RET 闭环 + 缺陷
-2. 工作台批次1（effeb36）— 案例栏/集中记录/可追加检查
-3. 工作台批次2（d558c08）— 处理段工作台三列/导航/安全优先
-4. 最近一次出现时间（1806d9f/663c6c8）— R-1~R-4
-5. 非生产区域清理（46cf0dc/7c3e734）— 契约销账/U 组
-6. 疼痛对比+恐动拆分（e5cdf85/2069385/fef2886）— FR-1~FR-3
+**唯一权威清单**在 `docs/handover/test-session-handoff-index-2026-08-31.md`（按 dev 基线由旧到新逐档列出，当前 9 档：知识重构批次1 → 工作台批次1/2 → 最近一次出现时间 → 非生产区域清理 → 疼痛对比+恐动拆分 → outcome-slim → Phase 4.1 fixme 转化 → 批 G/H/G修复/I/J-1 绑定）。本档不再复制该列表（避免漂移）。
 
-每份含：验收结论、场景表、关键知识（DOM/testid/文案）、回归记录、待办。
+每份主题档含：验收结论、场景表、关键知识（DOM/testid/文案）、回归记录、待办。**主题档是冻结证据链，只追加不改写**；当前口径只认 §8 活文档白名单 5 份 + 当期主题档。接手时按需检索具体主题，不必全读。
 
 ---
 
@@ -126,6 +122,10 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 - **提交先行、SHA 绑定（2026-09-01 起 dev 正式协议）**：dev 每批自验通过即提交 main 并通报 SHA，其工作树随后可能已推进到下一批。因此：①回归只针对**通报的 SHA**（`git merge <sha>`，不是 `git merge main`——main 可能已超前；merge 即隔离，禁止再从 dev 工作树拷文件覆盖）；②推送用显式 refspec：`git push origin <我的提交sha>:refs/heads/agent/testing`，**永不推 main**（origin/main 历史分叉，见 §1.4）；③每批 dev 随附**契约迁移说明**，按 SHA 异步回归，不再悬置等 dev 提交。
 - **dev→test 交接载体（2026-09-01 起）**：每批一份 `docs/handover/development-to-test-<主题>-<日期>.md`（dev 所有、随批次提交、测试侧只读），取代聊天长消息——消息只作指针。必备段（沿用 knowledge-refactor 档骨架）：批次 SHA、测试资产修改清单/旧断言预期对照表（=契约迁移说明）、全新场景与 catalog 靶子 id、可判定不变式（oracle）、明确非阻塞的未覆盖范围、已知坑。测试侧产出仍走 `test-session-handoff-*`（测试所有）。
 - **交叉口约定**：预销契约后 dev 执行删除提交，若有断言与实际装配偏差，回失败信息给 dev 按实际修正。
+- **通知载体两种形态（2026-09-01 起并存）**：① 逐批 `development-to-test-<主题>-<日期>.md` 随批次提交在 main（原始形态，merge 该 SHA 即得文档）；② 汇总通知 `test-notice-<日期>-<主题>.md` + 专用 dev 分支（如 `agent/dev-20260901`，批 GHIJ 首用）——一次通报多批 SHA，含跨批契约要点、既有红免责、夹具坑、在途声明。遇 ②：`git fetch origin` 取通知分支 → 读汇总档 → 按其列的 SHA 逐个 merge（这些 SHA 在本地 main 上，共享 .git 直达）。
+- **共享 .git 可达性（关键）**：两 worktree 共用一个 .git 对象库——dev 的 main 提交（含通报 SHA）在我 worktree 里 `git log main` / `git merge <sha>` **零网络直达**；origin 上的分支（`agent/testing`、`agent/dev-*`）需 `git fetch origin`。反向同理：dev 也能零成本读我的档（`git show agent/testing:<path>`）。所以「让开发知道」不是访问问题，只是触发/习惯问题。
+- **反向通道现状（无正式载体）**：test→dev 目前只有「用户转达」一条路；我的 `test-session-handoff-*` 在 `agent/testing` 上、dev 不例行读。有请求要开发处理（种子缺口、既有缺陷、契约异议）时，整理成一段可转达的文字交用户，并记在当期主题档 §待办。`test-to-development-*` 固定反向载体讨论过但**尚未落地**（需 dev 同意批前读的约定）。
+- **打包祖先范围对账**：通报的 tip SHA 可能带未列出的祖先提交（批 GHIJ：通报 5 个、merge 实带入 9 个）。merge 前 `git log --oneline <merge-base>..<tip>` 核对实际带入项；凡自带 development-to-test 文档且不在「在途勿等」清单的，按交接一并处理。
 
 ---
 
