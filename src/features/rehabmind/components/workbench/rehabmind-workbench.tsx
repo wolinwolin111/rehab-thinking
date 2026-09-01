@@ -1354,7 +1354,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       // 自助模式或没有被动检查能力时不展示，避免把被动检查误解成主动发力。
       .filter((item) => {
         const reviewedAccess = p0AssessmentAccess(`motion:${item.id}`, workflowProfile);
-        return reviewedAccess ? reviewedAccess.visible : item.testMode !== "passive" || canAssessPassive;
+        return (reviewedAccess ? reviewedAccess.visible : (item.testMode !== "passive" || canAssessPassive)) || continuationRoundIds.includes(`motion:${item.id}`);
       })
       .sort((a, b) => motionPriority(b.id) - motionPriority(a.id))
       .map((item) => {
