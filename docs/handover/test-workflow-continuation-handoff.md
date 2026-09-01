@@ -2,7 +2,7 @@
 
 > 有效期：2026-08-31 起（2026-09-01 最近更新：批 G/H/G修复/I/J-1 绑定轮）
 > 接手对象：下一位负责 RehabMind 前端测试的模型/agent
-> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `0ed74d1`，工作树干净——仅 `start-dev-3001.cmd` 未跟踪、`release.generated.ts` 生成文件，二者均不提交）
+> 测试分支：`agent/testing`（worktree `D:\Study\codex\project\rehabmind-agent`，HEAD `d6fe867`；docs 提交会持续前移，回归的权威绑定 SHA 见 §6 line「状态」，不以此行 tip 为准。工作树干净——仅 `start-dev-3001.cmd` 未跟踪、`release.generated.ts` 生成文件，二者均不提交）
 > 仓库：github.com/wolinwolin111/rehab-thinking（remote `origin`；注意 §1.4 历史分叉说明）
 
 ---

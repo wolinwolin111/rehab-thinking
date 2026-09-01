@@ -18,9 +18,9 @@
 | 8 | `test-session-handoff-phase41-fixme-2026-09-01.md` | 无新 dev 批次（纯测试侧，消费既有 catalog 种子） | 6 fixme 转真 + 3 壳删除转缺口；reg 90；基线 61+9→67+0 | Phase 4.1 fixme 转化：踝安全停止/双侧逐侧评估/无伪造分数/无法完成多原因/训练加重/T-09 快照；复核出 treatment-worse 与双侧处理段两处种子缺口转 dev |
 | 9 | `test-session-handoff-batch-ghij-2026-09-01.md` | `8411e33`→`fff8951`→`0c9ce2c`→`a9a6b04`→`f5be546`（+4 打包祖先）；通知档 `255f724`（agent/dev-20260901） | 契约迁移 6 处；reg 90 不变；基线 67+0 保持 | 批 G/H/G修复/I/J-1 绑定：站立折髋改名、FR-2 重写（Q2 退役）、toast/成果面板按钮改名、移动视觉基线重生成；裁定关闭有效处理行标签开放问题；范围事实 5 通报实为 9 提交 |
 
-## 提交历史线（agent/testing，当前 tip `0ed74d1`）
+## 提交历史线（agent/testing，当前 tip `d6fe867`；docs 提交持续前移，权威绑定见 continuation-handoff §6）
 
-主干（旧→新）：`知识重构批次1(8150b06..126c7f5)` → `工作台批次1(effeb36)` → `工作台批次2(d558c08)` → `最近一次出现(1806d9f/663c6c8)` → `区域清理(46cf0dc/7c3e734)` → `疼痛对比+恐动(e5cdf85/2069385/fef2886)` → `outcome-slim 两轮(bb5da7e/54b2b8e+7d5cc7e)` → `Phase 4.1 fixme 转化(6136281)` → `批 G/H/G修复/I/J-1 绑定(f5be546→merge 35c405a→b355f90→0ed74d1)`。
+主干（旧→新）：`知识重构批次1(8150b06..126c7f5)` → `工作台批次1(effeb36)` → `工作台批次2(d558c08)` → `最近一次出现(1806d9f/663c6c8)` → `区域清理(46cf0dc/7c3e734)` → `疼痛对比+恐动(e5cdf85/2069385/fef2886)` → `outcome-slim 两轮(bb5da7e/54b2b8e+7d5cc7e)` → `Phase 4.1 fixme 转化(6136281)` → `批 G/H/G修复/I/J-1 绑定(f5be546→merge 35c405a→b355f90→0ed74d1)` → `文档整理(d6fe867)`。
 
 ## 全量基线说明
 
