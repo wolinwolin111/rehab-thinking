@@ -95,4 +95,22 @@
 3. **测试影响**：现存测试用目标选择按钮（SELF 版）定位，不受影响；rendered-html 17/6 基线不变。
 4. **仍开放**：批 G §7 方向侧接受补查丢失缺陷（测试侧建议开条目，本批未涉及）。
 
+---
+
+# 追加通知：2026-09-01 第五轮——方向侧续测补查项静默丢失修复
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `c66b21d` | 代码 | 批 G §7 遗留：方向侧续测补查项静默丢失修复（被动能力闸门加续测旁路） |
+
+## 要点
+
+1. **根因**：`assessments` 装配 `motionItems` 第二个 filter（被动能力闸门）无续测旁路。自助模式 `canAssessPassive=false`，P0 表外被动方向项（髌骨滑动 `knee-patella-*`、瘢痕活动 `knee-scar-mobility`）与 P0 表内 `ankle-cuboid-mobility` 均在 `p0AssessmentAccess` 返回 undefined 或 `visible:false` 时被裁掉；用户接受补查后 `continuationRoundIds` 已写入，但装配仍不可渲染 → 静默丢失。
+2. **修复**：`rehabmind-workbench.tsx:1355-1358` 把 `continuationRoundIds.includes("motion:"+id)` 旁路提到整个 filter 表达式之后，覆盖 `reviewedAccess` 与 fallback 两个分支。未接受续测时行为不变；接受后被动方向项可渲染（评估卡自带「暂不检查｜今天先跳过」出口，自助用户可跳过，不卡死）。
+3. **验证**：npx tsx 直测 4 方向项（未接受=false/接受=true），主动项不受影响；typecheck 干净；rendered-html 17/6 基线不变。
+4. **契约提示**：若测试侧钉"接受补查必出现"，方向侧现在与力量侧一致（均经续测旁路保证已接受项可渲染）。详细见 development-to-test-direction-continuation-bypass-2026-09-01.md。
+
+
 
