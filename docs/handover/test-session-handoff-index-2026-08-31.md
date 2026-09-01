@@ -16,6 +16,7 @@
 | 6 | `test-session-handoff-function-retest-flare-2026-08-31.md` | `e5cdf85` → `2069385` → `fef2886` | FR-1~FR-3；reg 91 | 功能复测疼痛对比 + 恐动拆分：完成门、恐动题、恢复不炸 |
 | 7 | `test-session-handoff-outcome-slim-2026-09-01.md` | outcome-slim 三文件（dev 未提交，工作树覆盖回归） | OP-CONTRACT + C 组适配/强化；reg 92 | 成果面板视觉瘦身：清单表、结论句 h2、rm-outcome-unexplained 类名；全量与基线一致 |
 | 8 | `test-session-handoff-phase41-fixme-2026-09-01.md` | 无新 dev 批次（纯测试侧，消费既有 catalog 种子） | 6 fixme 转真 + 3 壳删除转缺口；reg 90；基线 61+9→67+0 | Phase 4.1 fixme 转化：踝安全停止/双侧逐侧评估/无伪造分数/无法完成多原因/训练加重/T-09 快照；复核出 treatment-worse 与双侧处理段两处种子缺口转 dev |
+| 9 | `test-session-handoff-batch-ghij-2026-09-01.md` | `8411e33`→`fff8951`→`0c9ce2c`→`a9a6b04`→`f5be546`（+4 打包祖先）；通知档 `255f724`（agent/dev-20260901） | 契约迁移 6 处；reg 90 不变；基线 67+0 保持 | 批 G/H/G修复/I/J-1 绑定：站立折髋改名、FR-2 重写（Q2 退役）、toast/成果面板按钮改名、移动视觉基线重生成；裁定关闭有效处理行标签开放问题；范围事实 5 通报实为 9 提交 |
 
 ## 提交历史线（agent/testing @ `2194834`）
 

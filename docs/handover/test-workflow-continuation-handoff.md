@@ -129,13 +129,13 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 
 ---
 
-## 6. 当前测试验收基线（Phase 4.1 fixme 转化轮，2026-09-01）
+## 6. 当前测试验收基线（批 G/H/G修复/I/J-1 绑定轮，2026-09-01）
 
-全量（edge-full）：**67 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **90 条**（原 93，删 3 条指向已删壳的条目）。
+全量（edge-full）：**67 passed + 0 skipped**；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **90 条**。
 
-**状态**：Phase 4.1 已把 9 个 `test.fixme` 壳清零——6 条转真测试（急性踝安全停止+保存出口、双侧优先侧+逐侧评估、无主诉动作不伪造分数、动作无法完成多原因分别保留、训练后加重独立停止、T-09 快照四边界），3 条服务器侧壳（反馈绑定/管理员脱敏/测试数据清理）删除并在 coverage-matrix 转显式缺口。回归 run=`reg-20260901004537-19680`。详见 `test-session-handoff-phase41-fixme-2026-09-01.md`。
+**状态**：已绑定开发汇总通知（`255f724`，分支 `agent/dev-20260901`）的 5 个通报 SHA，merge tip `f5be546` → merge `35c405a` + 契约迁移 `b355f90`。⚠️ 合入实际含 **9 个提交**（另 4 个打包祖先：恐动追问退役/评估卡节奏/功能卡内嵌/移动 toast，各带交接文档）——详见 `test-session-handoff-batch-ghij-2026-09-01.md` §2。契约迁移 6 处：站立折髋改名、FR-2 重写（Q2 退役）、接受补查 toast 改名、成果面板按钮改名、移动视觉基线重生成、registry FR-2 对齐。回归 run=`reg-20260901091214-24388`。
 
-上一轮 outcome-slim 两轮绑定不变：第一轮 `bb5da7e`（merge `335abec` + 测试侧 `c944ed3`）；第二轮 `54b2b8e`+`7d5cc7e`（merge `f397c28`，测试侧 OP-1/契约校准/裁定 B 销钉随绑定提交）。dev 已切「提交先行、SHA 绑定」协议（§5）。
+上一轮 Phase 4.1（6 fixme 转真 + 3 删壳转缺口）与 outcome-slim 两轮绑定不变。批 A 裁定已关闭「有效处理行标签」开放问题（肌肉行=肌群名、控制行=动作名，OP-1 正确）。
 
 ### 6.1 已关闭
 - 知识重构批次1（C-1~C-4、D-3、RET-02）✅
@@ -144,10 +144,13 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 91 条），s
 - 非生产区域清理（KR-CONTRACT、U-1~U-3）✅
 - 疼痛对比+恐动拆分（FR-1~FR-3）✅
 - 成果面板视觉瘦身（两轮绑定）✅
-- **Phase 4.1 fixme 转化（6 转真 + 3 删壳转缺口）✅**
+- Phase 4.1 fixme 转化（6 转真 + 3 删壳转缺口）✅
+- **批 G/H/G修复/I/J-1 绑定（含 4 打包祖先，契约迁移 6 处）✅**
 
 ### 6.2 待办 / 回退点
-- **Phase 4.1 复核出的种子缺口（转 dev）**：① treatment-worse 页面定向种子只设 postScore、无 worse trialRecord，落继续排查面板而非处理加重停止面板——需 dev 补带 worse trialRecord 的靶子才能钉处理加重停止（E2E-09 仍 blocked）；② 双侧处理段逐侧复测控件——bilateral-longitudinal 到处理段落「双侧处理顺序→进入正常训练」完成面板，未见逐侧复测控件，需 dev 靶子。
+- **种子缺口（转 dev，Phase 4.2 候选）**：① treatment-worse 带 worse trialRecord 靶子（钉处理加重停止，E2E-09）；② 双侧处理段逐侧复测控件靶子（E2E-04 处理段）；③ 处理完成态靶子（C-2/C-4 边界化 + FR-2 下游低负荷提示钉断）。
+- **既有缺陷（dev 批 G §7 自曝，建议开条目）**：方向侧接受补查静默丢失（`directionIsRelevant`/能力闸门裁掉已接受的方向补查项，踝区早于批 G 存在）。
+- **通知载体改进（转 dev）**：汇总通知档应把"打包祖先"提交显式列出（本轮 5 通报实为 9 提交，测试侧需自行对账）。
 - 若后续开发推新基线：**先 `git fetch origin` + `git merge main`（本地 main，见 §1.4）**，再全量回归；回归前必起 3001 dev server（见 §1.4）。
 
 ---
