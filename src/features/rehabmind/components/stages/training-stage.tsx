@@ -250,7 +250,7 @@ export function TrainingStage(props: TrainingStageProps) {
         <div className="rm-exercise-summary"><i>{visibleExerciseIndex + 1}</i><span><small>{exercise.startPosition}</small><strong>{exercise.title}</strong></span><b>{exercise.sets} · {exercise.reps}</b><em>{feedback ? "已反馈" : "当前动作"}</em></div>
         <div className="rm-exercise-detail">
           {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : null}
-          <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
+          <dl>{exercise.purpose ? <div><dt>{isThinkingMode ? "训练目的" : "为什么练这个"}</dt><dd>{exercise.purpose}</dd></div> : null}<div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
           <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
           <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
           <section className="rm-first-set"><header><span>第一组做完后，选一个最接近的情况</span><strong>{feedbackAdvice(exercise)}</strong></header><div className="rm-feedback-quick">{([

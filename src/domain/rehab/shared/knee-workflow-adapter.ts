@@ -71,7 +71,7 @@ export function kneeTreatmentInstruction(unit: KneeTreatmentUnit) {
     "knee-flexion-control": "仰卧，脚跟贴着床面，缓慢把脚跟滑向臀部，再主动控制着回到起点；只做到可以接受的范围，先做6～10次。",
     "knee-extension-joint": "由专业人员根据伸直受限方向完成低刺激关节松动；出现明显刺痛、硬性阻挡或症状加重时停止。",
     "knee-proximal-fibula": "由专业人员做一次腓骨近端辅助反应：保持原动作和速度，轻柔辅助后复测；不判断错位，不强推疼痛末端。",
-    "knee-hip-knee-control": "先练较容易的站立屈髋或扶物浅蹲，让髋、膝和脚尖方向保持一致，再逐步进入台阶动作。",
+    "knee-hip-knee-control": "先练较容易的站立折髋或扶物浅蹲，让髋、膝和脚尖方向保持一致，再逐步进入台阶动作。",
     "knee-quadriceps-strength": "从膝后下压或坐位伸膝开始，能稳定完成后再进入坐站和低台阶训练。",
   };
   return instructions[unit.id] ?? unit.action;
@@ -90,7 +90,7 @@ export function kneeRetestInstruction(unit: KneeTreatmentUnit) {
     walk: "走路",
     run: "跑步",
     "jump-land": "跳跃落地",
-    "hip-hinge": "站立屈髋",
+    "hip-hinge": "站立折髋",
     "unknown-task": "原来的动作",
   };
   const actions = unit.relatedActionIds.map((actionId) => labels[actionId] ?? "原来的动作");

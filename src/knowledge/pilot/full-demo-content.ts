@@ -80,6 +80,8 @@ export type FullExercise = {
   stage: FullExerciseStage;
   sets: string;
   reps: string;
+  /** 一句大白话：这个动作练的是什么、为什么现在安排它。低发力感动作（等长/激活类）必须提供。 */
+  purpose?: string;
   how: string;
   observe: string;
   easier: string;
@@ -228,6 +230,7 @@ const exercise = (
   easier: string,
   harder: string,
   tags: string[],
+  purpose?: string,
 ): FullExercise => {
   const text = `${title} ${how}`;
   const startPosition: FullExercise["startPosition"] = /侧卧|蚌式/.test(text)
@@ -239,7 +242,7 @@ const exercise = (
         : /坐姿|坐位|坐在|坐好|坐站/.test(text)
           ? "坐位"
           : "站立";
-  return { id, title, stage, sets, reps, how, observe, easier, harder, tags, startPosition };
+  return { id, title, stage, sets, reps, purpose, how, observe, easier, harder, tags, startPosition };
 };
 
 const knee: FullRegion = {
@@ -347,21 +350,21 @@ const knee: FullRegion = {
     },
   ],
   exercises: [
-    exercise("knee-heel-slide-quad-set", "脚跟滑动与膝后下压", 1, "3组", "每项每组10个", "仰卧，先做脚跟滑动恢复屈曲，再绷紧大腿把膝后向床面下压。", "活动在可接受范围，膝后下压时髋不抬起。", "减小范围，每组6个。", "在新范围加入终末伸膝弹力带。", ["knee-rom", "quad-activation", "quadriceps", "terminal-extension"]),
-    exercise("knee-bridge", "臀桥", 2, "3组", "每组10～12个", "仰卧屈膝，轻收腹后抬起臀部，停1秒再缓慢落下。", "臀部和大腿后侧发力，腰部不向上顶。", "减小高度或每组6个。", "脚垫高或进阶单腿臀桥。", ["glute", "hamstring", "posterior-chain"]),
-    exercise("knee-single-leg-bridge", "单腿臀桥", 3, "3组", "每侧每组6～10个", "先做一次稳定的双脚臀桥，再抬起一只脚，用另一侧臀部把骨盆抬起，停1秒后缓慢落下。", "骨盆不歪斜，主要由臀部和大腿后侧发力，腰部不过度顶起。", "继续双脚臀桥，或只把一只脚轻轻离地。", "增加次数，再进阶站立屈髋。", ["glute", "hamstring", "posterior-chain", "single-leg", "pelvic-stability"]),
-    exercise("knee-supine-adductor", "仰卧夹枕", 2, "3组", "每组8～12个", "仰卧屈膝，在两膝之间夹软枕，轻轻向内夹住3秒后放松。", "大腿内侧均匀发力，不用疼痛顶住。", "减小夹力或每组6个。", "进阶到坐位或桥式夹枕。", ["adductor", "medial-knee"]),
-    exercise("knee-side-abduction", "侧卧髋外展", 2, "3组", "每侧每组8～12个", "侧卧，下侧腿屈曲保持稳定，上侧腿伸直并稍向后放，脚尖朝前，缓慢抬起再落下。", "骨盆不要向后翻，大腿外侧不过度抢力。", "减小抬腿高度或每组6个。", "增加次数或加入轻弹力带。", ["glute", "glute-med", "hip-abduction", "pelvic-stability"]),
-    exercise("knee-hamstring-isometric", "脚跟后拉发力", 2, "3组", "每侧每组8～10个，每次保持5秒", "坐稳或仰卧屈膝，脚跟踩稳地面，保持脚不移动，轻轻向后拉地面并保持。", "感受大腿后侧发力，膝内侧和膝后不要出现刺痛。", "减小发力或每组6个。", "增加保持时间，再进阶臀桥或站立屈髋。", ["hamstring", "knee-flexion", "posterior-chain"]),
-    exercise("knee-supine-ankle-press", "仰卧下压脚背", 2, "3组", "每组10～15个", "仰卧或半躺，用脚掌轻推弹力带向下压，缓慢回到原位。", "小腿后侧发力，脚趾不要抓紧。", "去掉弹力带，只做主动下压。", "进阶到坐姿提踵，再到站立提踵。", ["calf", "heel-raise"]),
-    exercise("knee-supine-arch-control", "仰卧足弓控制", 2, "3组", "每组8～12个", "仰卧屈膝，脚掌轻贴床面，脚趾放松，轻轻收起足弓后保持3秒。", "脚趾不抓床，小腿和膝盖不跟着转。", "只保持2秒或每组6个。", "进阶到坐位，再到站立保持足弓。", ["tibialis-posterior", "arch", "foot-intrinsic"]),
-    exercise("knee-anterior-lower-leg-control", "勾脚与抬脚趾控制", 2, "3组", "每组10个", "仰卧或坐稳，先把脚背向上勾，再保持脚踝不动抬起脚趾；两个动作分别缓慢完成。", "小腿前侧发力，膝盖不跟着转；只保留不会让原膝部不适加重的动作。", "去掉阻力，每组6个。", "加入轻弹力带，或站立时练习脚跟着地后的抬脚控制。", ["tibialis-anterior", "toe-extensor", "dorsiflexion", "knee-weight-bearing"]),
-    exercise("knee-calf-raise", "扶墙双脚提踵", 2, "3组", "每组10～15个", "双手轻扶墙，脚跟垂直抬起，停1秒后缓慢落下。", "两侧高度接近，膝盖保持稳定，脚踝不向内外倒。", "坐姿提踵或减少高度。", "单脚提踵或增加轻负重。", ["calf", "heel-raise", "gait"]),
-    exercise("knee-standing-hip-flexion", "站立屈髋", 3, "3组", "每组10个", "双脚站稳，膝盖微屈，臀部向后移动，身体从髋部向前折叠，再用臀腿站起。", "髋膝踝方向一致，脚掌稳定，腰部不抢先弯曲。", "臀部向后碰墙并扶支撑。", "增加屈髋范围、轻负重或改单腿屈髋。", ["hip-hinge", "movement-pattern", "standing-hip-flexion", "stairs"]),
-    exercise("knee-sit-stand-squat", "坐站与浅蹲", 3, "3组", "每组10个", "从合适高度椅子坐站，进阶到不碰椅子的浅蹲。", "髋膝踝同向、左右承重接近、下降可控。", "提高椅子并扶手。", "降低椅子或手持轻重量。", ["sit-to-stand", "squat", "movement-pattern"]),
-    exercise("knee-step", "低台阶上台与下台", 4, "3组", "每侧每组8个", "先练患侧上台，稳定后练患侧支撑慢慢下台。", "骨盆稳定，膝与足方向一致，不突然掉落。", "降低台阶、增加扶持。", "增加高度、连续次数或负重。", ["step-up", "step-down", "stairs"]),
-    exercise("knee-single-leg-strength", "分腿蹲与单腿屈髋", 4, "3组", "每侧每组8个", "前后站位做分腿蹲，再用手扶支撑练单腿屈髋。", "前脚稳定，骨盆不旋转，患侧可控承重。", "减小幅度或双手扶持。", "增加负重或减少扶持。", ["single-leg", "strength", "daily"]),
-    exercise("knee-jump-decelerate", "跳跃落地与减速", 5, "4组", "每组5个", "从双脚小跳落地开始，进阶到前向落地、单脚和变向。", "髋膝踝共同缓冲，每次落地都能稳定停住。", "快速提踵或小幅蹲起。", "增加高度、速度、方向或专项组合。", ["jump", "landing", "change-direction"]),
+    exercise("knee-heel-slide-quad-set", "脚跟滑动与膝后下压", 1, "3组", "每项每组10个", "仰卧，先做脚跟滑动恢复屈曲，再绷紧大腿把膝后向床面下压。", "活动在可接受范围，膝后下压时髋不抬起。", "减小范围，每组6个。", "在新范围加入终末伸膝弹力带。", ["knee-rom", "quad-activation", "quadriceps", "terminal-extension"], "先把膝盖弯和直的范围找回来，同时叫醒因疼痛“罢工”的大腿前侧肌肉，这是后面所有练习的地基。"),
+    exercise("knee-bridge", "臀桥", 2, "3组", "每组10～12个", "仰卧屈膝，轻收腹后抬起臀部，停1秒再缓慢落下。", "臀部和大腿后侧发力，腰部不向上顶。", "减小高度或每组6个。", "脚垫高或进阶单腿臀桥。", ["glute", "hamstring", "posterior-chain"], "让臀部和大腿后侧接管发力，替膝盖分担压力，是起身、上楼和站稳的基础力量。"),
+    exercise("knee-single-leg-bridge", "单腿臀桥", 3, "3组", "每侧每组6～10个", "先做一次稳定的双脚臀桥，再抬起一只脚，用另一侧臀部把骨盆抬起，停1秒后缓慢落下。", "骨盆不歪斜，主要由臀部和大腿后侧发力，腰部不过度顶起。", "继续双脚臀桥，或只把一只脚轻轻离地。", "增加次数，再进阶站立折髋。", ["glute", "hamstring", "posterior-chain", "single-leg", "pelvic-stability"], "练一条腿承重时骨盆不歪、膝盖不打软，这是上下楼和慢跑前的必经台阶。"),
+    exercise("knee-supine-adductor", "仰卧夹枕", 2, "3组", "每组8～12个", "仰卧屈膝，在两膝之间夹软枕，轻轻向内夹住3秒后放松。", "大腿内侧均匀发力，不用疼痛顶住。", "减小夹力或每组6个。", "进阶到坐位或桥式夹枕。", ["adductor", "medial-knee"], "大腿内侧没劲，膝内侧的压力就更大。轻轻夹枕头是唤醒内侧肌肉，不刺激膝盖。"),
+    exercise("knee-side-abduction", "侧卧髋外展", 2, "3组", "每侧每组8～12个", "侧卧，下侧腿屈曲保持稳定，上侧腿伸直并稍向后放，脚尖朝前，缓慢抬起再落下。", "骨盆不要向后翻，大腿外侧不过度抢力。", "减小抬腿高度或每组6个。", "增加次数或加入轻弹力带。", ["glute", "glute-med", "hip-abduction", "pelvic-stability"], "臀中肌是膝盖的“方向盘”，它有力，走路时膝盖才不会往内扣。"),
+    exercise("knee-hamstring-isometric", "大腿后侧绷紧保持", 2, "3组", "每侧每组8～10个，每次保持5秒", "坐稳或仰卧屈膝，脚跟踩稳地面，保持脚不移动，轻轻向后拉地面并保持。", "感受大腿后侧发力，膝内侧和膝后不要出现刺痛。", "减小发力或每组6个。", "增加保持时间，再进阶臀桥或站立折髋。", ["hamstring", "knee-flexion", "posterior-chain"], "大腿后侧和前侧是一对拮抗搭档，后侧肯发力，膝盖前侧负担就小。绷住不动，是在不磨损膝盖的前提下练它。"),
+    exercise("knee-supine-ankle-press", "仰卧绷脚背", 2, "3组", "每组10～15个", "仰卧或半躺，用脚掌轻推弹力带向下压，缓慢回到原位。", "小腿后侧发力，脚趾不要抓紧。", "去掉弹力带，只做主动下压。", "进阶到坐姿提踵，再到站立提踵。", ["calf", "heel-raise"], "小腿是走路蹬地的发动机。先躺着用轻阻力找到发力感，膝盖不用承重。"),
+    exercise("knee-supine-arch-control", "仰卧足弓控制", 2, "3组", "每组8～12个", "仰卧屈膝，脚掌轻贴床面，脚趾放松，轻轻收起足弓后保持3秒。", "脚趾不抓床，小腿和膝盖不跟着转。", "只保持2秒或每组6个。", "进阶到坐位，再到站立保持足弓。", ["tibialis-posterior", "arch", "foot-intrinsic"], "足弓塌了，力量会拧着劲传到膝盖。先学会轻轻撑起足弓，而不是脚趾抠地。"),
+    exercise("knee-anterior-lower-leg-control", "勾脚与抬脚趾控制", 2, "3组", "每组10个", "仰卧或坐稳，先把脚背向上勾，再保持脚踝不动抬起脚趾；两个动作分别缓慢完成。", "小腿前侧发力，膝盖不跟着转；只保留不会让原膝部不适加重的动作。", "去掉阻力，每组6个。", "加入轻弹力带，或站立时练习脚跟着地后的抬脚控制。", ["tibialis-anterior", "toe-extensor", "dorsiflexion", "knee-weight-bearing"], "小腿前侧失控，走路落脚会“啪叽”砸地，冲击直接传膝盖。练缓慢勾脚、慢慢放脚。"),
+    exercise("knee-calf-raise", "扶墙双脚提踵", 2, "3组", "每组10～15个", "双手轻扶墙，脚跟垂直抬起，停1秒后缓慢落下。", "两侧高度接近，膝盖保持稳定，脚踝不向内外倒。", "坐姿提踵或减少高度。", "单脚提踵或增加轻负重。", ["calf", "heel-raise", "gait"], "小腿力量回来了，走路蹬地才有劲，站立时膝盖也更稳。"),
+    exercise("knee-standing-hip-flexion", "站立折髋（臀向后）", 3, "3组", "每组10个", "双脚站稳，膝盖微屈，臀部向后移动，身体从髋部向前折叠，再用臀腿站起。", "髋膝踝方向一致，脚掌稳定，腰部不抢先弯曲。", "臀部向后碰墙并扶支撑。", "增加折髋范围、轻负重或改单腿。", ["hip-hinge", "movement-pattern", "standing-hip-flexion", "stairs"], "练“用髋不用膝”的动作模式——捡东西、坐下、下楼都靠它，膝盖疼的人最该重新学会。"),
+    exercise("knee-sit-stand-squat", "坐站与浅蹲", 3, "3组", "每组10个", "从合适高度椅子坐站，进阶到不碰椅子的浅蹲。", "髋膝踝同向、左右承重接近、下降可控。", "提高椅子并扶手。", "降低椅子或手持轻重量。", ["sit-to-stand", "squat", "movement-pattern"], "把前面练的肌肉放进真实动作里：坐站是最安全的下蹲替身，先找回膝盖受控弯曲的感觉。"),
+    exercise("knee-step", "低台阶上台与下台", 4, "3组", "每侧每组8个", "先练患侧上台，稳定后练患侧支撑慢慢下台。", "骨盆稳定，膝与足方向一致，不突然掉落。", "降低台阶、增加扶持。", "增加高度、连续次数或负重。", ["step-up", "step-down", "stairs"], "下楼梯是多数膝痛最难的一关。慢速下台阶专门练膝盖的“刹车”能力。"),
+    exercise("knee-single-leg-strength", "分腿蹲与单腿屈髋", 4, "3组", "每侧每组8个", "前后站位做分腿蹲，再用手扶支撑练单腿屈髋。", "前脚稳定，骨盆不旋转，患侧可控承重。", "减小幅度或双手扶持。", "增加负重或减少扶持。", ["single-leg", "strength", "daily"], "从双腿过渡到一条腿承重，让患侧膝盖能独立站稳、可控发力，为跑跳做准备。"),
+    exercise("knee-jump-decelerate", "跳跃落地与减速", 5, "4组", "每组5个", "从双脚小跳落地开始，进阶到前向落地、单脚和变向。", "髋膝踝共同缓冲，每次落地都能稳定停住。", "快速提踵或小幅蹲起。", "增加高度、速度、方向或专项组合。", ["jump", "landing", "change-direction"], "跳回来的关键不是跳多高，而是落地那一下膝盖不内扣、稳得住。先练“落地刹车”。"),
   ],
 };
 
@@ -597,15 +600,14 @@ const ankleFoot: FullRegion = {
   ],
   exercises: [
     exercise("ankle-four-way-motion", "踝关节四方向活动", 1, "3组", "每个方向每组10个", "仰卧或半躺，小腿放松，分别缓慢做勾脚、下压、脚掌向内转和向外转。", "小腿不跟着转，不硬顶肿胀或刺痛末端。", "每组6个、减小幅度。", "加入弹力带轻阻力。", ["ankle-rom"]),
-    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, "2组", "每组5次，每次保持5秒", "坐稳，前脚掌踩地，缓慢抬起脚跟到可接受高度并保持，再轻轻放下。", "跟腱症状不逐次增加；当天晚些时候和第二天没有持续加重。", "减小抬起高度或保持3秒。", "先增加到每组8次，再进入双脚慢速提踵。", ["achilles", "tendon-loading", "heel-raise", "isometric"]),
+    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, "2组", "每组5次，每次保持30秒", "坐稳，前脚掌踩地，缓慢抬起脚跟到可接受高度，保持30秒（均匀呼吸不憋气）再轻轻放下。", "跟腱症状不逐次增加；当天晚些时候和第二天没有持续加重。", "减小抬起高度或保持10秒。", "保持30秒不变，缩短组间休息，再进入双脚慢速提踵。", ["achilles", "tendon-loading", "heel-raise", "isometric"], "跟腱疼痛时静态保持是最安全的负荷：撑满30秒才能真正抑制肌腱痛感，几秒钟只是动一下。"),
+    exercise("ankle-achilles-eccentric-drop", "台阶边缘缓慢下落", 2, "3组", "每组8～12个", "前脚掌踩在台阶边缘，扶稳后缓慢把脚跟降到台阶面以下（心里数3秒），用健侧脚帮忙回到起点；直腿做一组、弯膝做一组交替进行。", "跟腱有酸胀的用力感但不出现锐痛；第二天没有持续加重。", "先在平地上做慢速小幅提踵和落下。", "在专业人员指导下增加下落深度或手持轻负重。", ["achilles", "eccentric", "heel-raise", "tendon-loading"], "跟腱病康复里证据最扎实的负荷动作：慢速离心下落让肌腱在可控受力中重新变强，比静态保持更接近走路蹬地的真实需求。"),
     exercise("ankle-bridge", "臀桥", 2, "3组", "每组10个", "仰卧屈膝，双脚稳定踩地，轻收腹后抬起臀部，停1秒再缓慢落下。", "骨盆不歪斜，臀部和大腿后侧发力，脚踝保持稳定。", "减小抬起高度或每组6个。", "能够稳定完成后进阶单腿臀桥。", ["glute-max", "hamstring", "posterior-chain", "pelvic-stability"]),
     exercise("ankle-single-leg-bridge", "单腿臀桥", 3, "3组", "每侧每组6～10个", "先完成双脚臀桥，再抬起一只脚，用另一侧臀部抬起骨盆。", "骨盆不旋转，支撑脚稳定，不用腰部顶起。", "继续双脚臀桥，或只把一只脚轻轻离地。", "进阶站立屈髋和重心转移。", ["glute-max", "hamstring", "posterior-chain", "single-leg", "pelvic-stability"]),
     exercise("ankle-standing-hip-flexion", "站立屈髋", 3, "3组", "每组10个", "双脚站稳，膝盖微屈，臀部向后移动，身体从髋部向前折叠，再用臀腿站起。", "骨盆稳定，髋膝踝方向一致，脚掌保持接触地面。", "臀部向后碰墙并扶住固定物。", "增加范围、轻负重或改单腿屈髋。", ["hip-hinge", "standing-hip-flexion", "posterior-chain", "hip-knee-ankle"]),
     exercise("ankle-dorsiflexion-control", "背屈控制（勾脚）", 2, "3组", "每组10～15个", "仰卧或半躺，小腿放松，主动把脚背向小腿方向勾起；需要增加负荷时再加入轻弹力带。", "脚踝带动，不只抬脚趾；小腿不向外转。", "先做无阻力，每组6～8个。", "进阶到坐位弹力带，再到站立脚跟走的短距离控制。", ["tibialis-anterior", "dorsiflexion", "ankle-dorsiflexor"]),
     exercise("ankle-plantarflexion-control", "跖屈控制（下压脚背）", 2, "3组", "每组10～15个", "仰卧或半躺，脚掌轻推弹力带做向下压脚背；能稳定完成后再进阶坐姿提踵。", "动作来自脚踝，脚趾不过度抓地。", "去掉弹力带，只做主动下压。", "进阶到坐姿、扶墙双脚提踵，再到单脚提踵。", ["calf", "plantarflexion", "heel-raise", "ankle-calf"]),
-    exercise("ankle-inversion-control", "内翻与足弓控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做小幅脚掌向内转；能稳定完成后再加入轻弹力带。", "小腿不跟着旋转，内踝后方不过度刺痛。", "去掉弹力带，只做小幅主动内翻。", "进阶到坐位弹力带，再在站立中保持足弓。", ["tibialis-posterior", "tibialis-anterior", "inversion", "arch", "ankle-invertor"]),
     exercise("ankle-eversion-control", "外翻控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做脚掌向外转；能稳定完成后再加入轻弹力带。", "动作来自脚踝，不用膝盖或整条小腿向外转。", "去掉弹力带，只做小幅主动外翻。", "进阶到坐位弹力带，再进入单腿站和侧向控制。", ["peroneal", "eversion", "ankle-evertor"]),
-    exercise("ankle-toe-control", "足趾主动控制", 2, "3组", "每组8～10个", "坐稳、脚跟着地，分别抬起和放下脚趾；只练检查中仍然控制不足的动作。", "脚趾分别活动，脚踝和膝盖保持稳定，不用抓地代偿。", "减小幅度，每组5个。", "能够稳定完成后再增加保持时间。", ["toe-control", "toe-extensor", "foot"]),
     exercise("ankle-band-heelraise", "四方向抗阻与双脚提踵", 2, "3组", "每项每组12个", "按力量缺口选1～2个弹力带方向，再做双脚提踵。", "动作来自踝足，膝和脚趾不过度代偿。", "改为等长或扶墙小幅提踵。", "单脚提踵或加轻负重。", ["ankle-strength", "calf", "peroneal"]),
     exercise("ankle-gait-weightshift", "重心转移与步态滚动", 3, "3组", "每组10次重心转移 + 10米步行", "从双脚前后重心转移，练到脚跟着地—胫骨前移—前足蹬地。", "步幅自然，骨盆、髋、膝、踝连续协同。", "扶桌原地转移。", "增加连续步数或不同速度。", ["gait", "weight-shift", "hip-knee-ankle"]),
     exercise("ankle-single-leg-step", "单腿站、提踵与台阶", 4, "3组", "每项每侧8个", "先单腿站，再单脚提踵和低台阶上下。", "足弓、踝、膝和骨盆稳定，台阶下降可控。", "扶墙、双脚提踵或降低台阶。", "增加高度、连续次数或轻负重。", ["single-leg", "heel-raise", "step"]),

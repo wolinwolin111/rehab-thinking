@@ -291,8 +291,8 @@ body:has(.rm-app) {
 .rm-result-grid button,
 .rm-page-actions > button {
   border-color: var(--rm-visual-line);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, .86);
+  border-radius: 12px;
+  background: #f8fafc;
   transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 .rm-options button:hover:not(:disabled),
@@ -336,7 +336,11 @@ body:has(.rm-app) {
 .rm-check-card > header > i,
 .rm-exercise-summary > i { border-radius: 11px; background: linear-gradient(135deg, var(--rm-visual-primary), #8e6ee3); box-shadow: 0 6px 14px rgba(101, 103, 220, .18); transform: rotate(0); }
 .rm-result-grid button.is-selected { color: white; }
-.rm-motion-answer-block.is-followup { border-radius: 12px; background: #f7f7ff; }
+.rm-motion-answer-block.is-followup { border-radius: 14px; background: #f7f8fd; }
+/* 追问区做成明确的内嵌面板：与主问题之间的分隔线负责分组，面板自身边框不再充当分隔线。 */
+.rm-check-card > section.rm-motion-answer-block.is-followup,
+.rm-function-result-stack > section.rm-motion-answer-block.is-followup { margin: 6px 18px 18px; padding: 16px; border: 1px solid #e6e9f5; }
+.rm-motion-answer-block.is-followup h3 { font-size: 17px; color: #3d4443; }
 .rm-retest-mode-note {
   margin-top: 16px;
   padding: 15px 17px;
@@ -862,19 +866,26 @@ body:has(.rm-app) {
   .rm-check-card > header strong { font-size: 17px; }
   .rm-check-card > section { padding: 14px; }
   .rm-check-card > section p { font-size: 15px; line-height: 1.55; }
-  .rm-check-card > section.rm-motion-answer-block { padding: 15px 14px; }
+  .rm-check-card > section.rm-motion-answer-block, .rm-function-result-stack > section.rm-motion-answer-block { padding: 15px 14px; }
+  .rm-check-card > section.rm-motion-answer-block.is-followup, .rm-function-result-stack > section.rm-motion-answer-block.is-followup { margin: 2px 10px 12px; padding: 13px 12px; }
+  .rm-motion-answer-block h3 { font-size: 17px; }
+  .rm-motion-answer-block.is-followup h3 { font-size: 16px; }
   .rm-motion-answer-block .rm-result-grid:not(.is-two) {
     padding: 10px 0 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
   .rm-motion-answer-block .rm-result-grid:not(.is-two) button {
-    min-height: 60px;
-    padding: 7px 8px;
-    font-size: 13px;
+    min-height: 54px;
+    padding: 8px 10px;
+    font-size: 14px;
   }
   .rm-motion-answer-block .rm-result-grid:not(.is-two) button strong { font-size: 13px; }
   .rm-motion-answer-block .rm-result-grid:not(.is-two) button small { font-size: 10px; line-height: 1.3; }
+  /* 奇数个选项的网格：末位独占一行，避免半宽孤儿按钮。 */
+  .rm-motion-answer-block .rm-result-grid:not(.is-two) button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* 移动端 is-two 本就接近全宽，440px 封顶只造成右缘参差。 */
+  .rm-motion-answer-block .rm-result-grid.is-two { max-width: none; }
   .rm-finding-board { padding: 16px !important; }
   .rm-finding-board > div { grid-template-columns: 1fr; gap: 9px; }
   .rm-finding-board > div > section { border-radius: 12px; }

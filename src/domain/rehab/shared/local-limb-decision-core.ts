@@ -84,6 +84,12 @@ export function localLimbArea(location: string): LocalLimbArea {
   return "front";
 }
 
+/** 局部肢体区域主诉象限对应的力量检查项；与决策规则表同源，供评估队列裁剪使用。 */
+export function localLimbPrimaryStrengthId(regionId: LocalLimbRegionId, location: string): string {
+  const rules = regionId === "thigh-local" ? THIGH_RULES : CALF_RULES;
+  return rules[localLimbArea(location)].strengthId;
+}
+
 export function isAcuteLocalStrain(input: Pick<LocalLimbDecisionInput, "onset" | "mechanism">) {
   return ["今天或昨天", "2～7天"].includes(input.onset) && /跑跳|拉伤|冲刺|突然发力/.test(input.mechanism);
 }

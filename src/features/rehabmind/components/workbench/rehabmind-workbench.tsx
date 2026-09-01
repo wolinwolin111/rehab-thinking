@@ -103,7 +103,7 @@ import { activeMotionRecordComplete } from "@/src/domain/rehab/assessment/motion
 import { assessmentRecordComplete } from "@/src/domain/rehab/assessment/assessment-record-complete-core";
 import { hasRecordedChiefRetest, latestRecordedChiefScore } from "@/src/domain/rehab/retest/chief-retest-history-core";
 import { isTreatmentQueueCandidateEligible } from "@/src/domain/rehab/treatment/treatment-queue-eligibility-core";
-import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, UNSUPPORTED_REGION_NAMES, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentAllowsEndFeel, assessmentAllowsMuscleComparison, assessmentAllowsPassive, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, effectiveProvocationTypes, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
+import { isTreatmentQueueDirectionCandidateNeeded } from "@/src/domain/rehab/treatment/treatment-queue-direction-core";import { AssessmentItem, AssessmentRecord, DEFAULT_INTAKE, Finding, FollowupExerciseChoice, FollowupNewSymptomAnswer, FollowupReviewAnswer, FollowupStage, FollowupTreatmentRecord, IMAGING_OPTIONS, IntakeMultiConfirmation, IntakeState, PATELLA_DIRECTION_IDS, PATELLA_GROUP_PRIMARY_ID, PilotDraftEnvelope, PilotSyncDisplayState, RESIDUAL_REVIEW_ID, RetestPlan, SAFETY_ITEMS, SHARED_TENSION_ASSESSMENT_ID, STAGE_TRANSITIONS, STEPS, SavedDemoRecord, SavedDemoSnapshot, Step, TransitionTarget, TreatmentProblem, TrialTarget, UNSUPPORTED_REGION_NAMES, adaptExerciseForCurrentStage, analyzeChiefAction, assessmentAllowsEndFeel, assessmentAllowsMuscleComparison, assessmentAllowsPassive, assessmentCopy, assessmentTitle, bilateralAssessmentCopy, bilateralComparisonToSide, bilateralSideForMotionAnswer, canonicalIntakeField, canonicalRetestAction, chiefComplaintLabel, chiefFunctionAssessmentId, directionIsRelevant, discomfortDecisionTags, dynamicMuscleCandidateFromRecord, effectiveAssessmentRecord, effectiveBilateralComparison, effectiveProvocationTypes, forceDirectionTags, functionSimpleAnswer, getGoalLabel, inferImagingFromDescription, inferRegion, isCompletedRangeRetestAnswer, isPatellaDirectionId, isPatellaGroupSecondaryId, isPilotRegion, isSpinalRegion, kneeStrengthChiefScore, locationSelectionsLabel, migrateIntakeState, motionAnswerIsLimited, motionComparisonMode, motionComparisonTarget, normalizeSavedDemoSnapshot, operationTargetLabel, optionalTreatmentSelectionKey, passiveAnswerIsLimited, passiveEndFeelLabel, passiveMotionInstruction, persistSavedDemoSnapshot, pilotInputFromIntake, professionalAssessmentCopy, professionalFindingLabel, profileLabelForIntake, sharedTensionLocationsForMotion, restoredBaselineScoreConfirmed, shouldCollectBaselineScore, sideFromLocationSelections, spineModeLabel, strengthIsRelevant, type PersistedDemoSnapshotV3 } from "./workbench-support";
 import { deriveMedicalGuidance, medicalGuidanceNeedsClarification } from "@/src/domain/rehab/intake/medical-guidance-core";
 import type { AssessmentSessionRecord } from "./workbench-support";
 
@@ -631,6 +631,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           } else if (result.diagnostic || draftResult.diagnostic) {
             setPilotSyncState("error");
             setToast("发现无法读取的本机记录，原始副本已保留；请勿清理浏览器数据");
+            window.setTimeout(() => setToast(""), 5000);
           }
           draftHydratedRef.current = true;
           if (testContext) {
@@ -657,6 +658,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           setSavedRecords([]);
           setPilotSyncState("offline");
           setToast("本机案例读取失败，请不要清理浏览器数据");
+          window.setTimeout(() => setToast(""), 5000);
           setOnboardingOpen(true);
           draftHydratedRef.current = true;
         }
@@ -1176,7 +1178,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     void persistLocalRecords(next);
     void restoreRecord(copied);
     void enqueuePilotRecordSync(copied);
-    setToast("已另存为新案例，原来的两份记录仍然保留");
+    setToast("已另存新案例，原记录保留");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -1318,7 +1320,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setMultiTabConflict(null);
     currentDraftFingerprintRef.current = localDraftContentFingerprint({ snapshot: persistSavedDemoSnapshot(buildCurrentSnapshot()) });
     setPilotSyncState("local-saved");
-    setToast("已保留当前页面，接下来会另存一份草稿");
+    setToast("已保留当前页面，将另存草稿");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -1327,14 +1329,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     const forceTags = new Set(forceDirectionTags(intake.forceDirection));
     const strengthSource = `${intake.location} ${intake.description}`;
     const strengthLocationScore = (id: string) => {
-      if (region.id === "knee") {
-        if (includesAny(strengthSource, ["膝前", "髌骨", "髌腱"])) return id === "knee-quadriceps" ? 9 : id === "knee-posterior-chain" ? 3 : 0;
-        if (includesAny(strengthSource, ["膝内侧", "鹅足", "内侧关节线"])) return id === "knee-adductor-pes" ? 9 : id === "knee-glute" ? 5 : id === "knee-posterior-chain" ? 3 : 0;
-        if (includesAny(strengthSource, ["膝外侧", "腓骨头", "外侧关节线"])) return id === "knee-glute" ? 9 : id === "knee-adductor-pes" ? 5 : id === "knee-posterior-chain" ? 3 : 0;
-        if (includesAny(strengthSource, ["膝后", "腘窝", "大腿后侧"])) return id === "knee-hamstring" ? 9 : id === "knee-posterior-chain" ? 6 : 0;
-        if (includesAny(strengthSource, ["小腿上端", "小腿"] )) return id === "knee-calf" ? 8 : id === "knee-posterior-chain" ? 3 : 0;
-        return id === "knee-quadriceps" ? 2 : id === "knee-posterior-chain" ? 1 : 0;
-      }
+      if (region.id === "knee") return kneeStrengthChiefScore(id, intake);
       if (includesAny(strengthSource, ["外踝", "外侧", "崴脚"])) return id === "ankle-evertor" ? 8 : id === "ankle-dorsiflexor" ? 4 : 0;
       if (includesAny(strengthSource, ["内踝", "足弓内侧"])) return id === "ankle-invertor" ? 8 : id === "ankle-calf" ? 3 : 0;
       if (includesAny(strengthSource, ["踝前", "脚背"])) return id === "ankle-dorsiflexor" ? 8 : 0;
@@ -1380,8 +1375,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         allowsMuscleComparison: reviewedAccess?.muscleComparison,
       };
     });
+    // 力量检查的入列闸门统一在 strengthIsRelevant（含膝区核心两项与主诉位置裁剪）。
+    // 用户已接受的续测补查项必须可渲染，即使它不在默认闸门内（补查池取区域全集）。
     const strengthItems: AssessmentItem[] = region.strengths
-      .filter((item) => strengthIsRelevant(region.id, item.id, intake))
+      .filter((item) => strengthIsRelevant(region.id, item.id, intake) || continuationRoundIds.includes(`strength:${item.id}`))
       .sort((a, b) => b.tags.filter((tag) => forceTags.has(tag)).length - a.tags.filter((tag) => forceTags.has(tag)).length || strengthLocationScore(b.id) - strengthLocationScore(a.id))
       .map((item) => {
       const copy = assessmentCopy(item.id, item.how, item.observe);
@@ -2958,12 +2955,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     // 训练卡混入当前安排。页面仍提供完成出口，允许保存本次记录。
     if (tissuePathway.id === "bone-stress-suspected") return [];
     if (tissuePathway.id === "tendon-load") {
-      const tendonStarterIds = region.id === "ankle-foot"
-        ? ["ankle-achilles-isometric"]
+      // 跟腱负荷路径：首诊只给静态保持止痛；第二次会话起加入慢速离心下落
+      // （Alfredson 式），让肌腱在可控受力中进阶，而不是永远停在等长。
+      const tendonPlanIds = region.id === "ankle-foot"
+        ? (sessionNumber >= 2 ? ["ankle-achilles-isometric", "ankle-achilles-eccentric-drop"] : ["ankle-achilles-isometric"])
         : localLimbDecision?.trainingIds.slice(0, 1) ?? (region.id === "knee" ? ["knee-heel-slide-quad-set"] : []);
       return region.exercises
-        .filter((exercise) => tendonStarterIds.includes(exercise.id))
-        .map((exercise) => adaptExerciseForCurrentStage(exercise, 1));
+        .filter((exercise) => tendonPlanIds.includes(exercise.id))
+        .map((exercise) => adaptExerciseForCurrentStage(exercise, exercise.id === "ankle-achilles-eccentric-drop" ? 2 : 1));
     }
     if (localLimbDecision) {
       const localTrainingOrder = new Map(localLimbDecision.trainingIds.map((id, index) => [id, index]));
@@ -3056,9 +3055,15 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       "knee-hamstring-isometric",
       "knee-supine-adductor",
     ]);
+    // 规则后门只补“有发现支持”的卡：仅由 pilot 规则注入、没有任何其它来源的
+    // 训练卡，必须命中本次评估发现的标签才发放（足弓、脚趾类跨区卡此前经此漏发）。
+    const pilotOnlyTrainingIds = new Set([...pilotTrainingIds].filter((id) =>
+      !relevantIds.has(id) && !effectiveIds.has(id) && !kneeCoreTrainingIds.has(id)
+      && !directionIds.has(id) && !recordPatternSet.has(id) && !(foundationPatternIds[region.id] ?? []).includes(id)));
     const orderedExercises = [...kneeCoreRelated, ...pilotRelated, ...directionSpecific, ...foundationPatterns, ...recordPatterns, ...effectiveRelated, ...relevant, ...current, ...foundation, ...region.exercises]
       .filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index)
       .filter((exercise) => exercise.id !== "knee-heel-slide-quad-set" || kneeSharedControlAllowed)
+      .filter((exercise) => !pilotOnlyTrainingIds.has(exercise.id) || exercise.tags.some((tag) => findingTags.has(tag)))
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P0_CONTROL_EXERCISE_IDS.has(exercise.id) || ankleP0EligibleControls.has(exercise.id))
       .filter((exercise) => region.id !== "ankle-foot" || !ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS.has(exercise.id) || ankleP1EligiblePlantarflexion.has(exercise.id))
       .filter((exercise) => !assessmentRequiredExerciseIds.has(exercise.id) || exercise.tags.some((tag) => weakStrengthTags.has(tag)))
@@ -3520,7 +3525,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
   function acceptContinuationSuggestions(ids: string[]) {
     setContinuationRoundIds((current) => Array.from(new Set([...current, ...ids])));
     setStep(2);
-    setToast("已加入继续检查的方向；补查结果会按新评估生成后续处理");
+    setToast("已加入补查方向，完成后重新安排处理");
     window.setTimeout(() => setToast(""), 2400);
   }
 
@@ -3911,10 +3916,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     if (event.returnMode === "followup") {
       restoreAdverseReturn(event, "treatment");
       setStep(3);
-      setToast("复查已确认，已按当前结果重新安排本次处理");
+      setToast("已按当前结果重新安排处理");
     } else {
       setAssessmentSummaryOpen(true);
-      setToast("复查已确认，处理和训练已按当前结果重新生成");
+      setToast("处理和训练已按新结果重新生成");
     }
     window.setTimeout(() => setToast(""), 2400);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5150,7 +5155,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setSnapshotReconfirmationOpen(false);
     setStep(snapshotResumeStep);
     setSafetyStage(2);
-    setToast("已重新确认当前症状、安全信号和发生时间，可以继续");
+    setToast("已重新确认，可以继续");
     window.setTimeout(() => setToast(""), 2800);
   }
 
@@ -5533,6 +5538,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       .catch(() => {
         setPilotSyncState("error");
         setToast("案例创建失败，请检查网络后重试");
+        window.setTimeout(() => setToast(""), 5000);
       });
     // The reset render supplies the fresh snapshot consumed by case creation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6805,7 +6811,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       }}
       onSaveAsNew={() => savePilotConflictAsNew(currentPilotConflictRecord)}
       onExportLocal={() => exportPilotLocalConflict(currentPilotConflictRecord)}
-      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留这台设备上的记录，稍后可以继续选择"); }}
+      onLater={() => { dispatchPilotSync(localCaseId, { type: "restore-conflict", caseId: localCaseId }); setToast("已保留这台设备上的记录，稍后可以继续选择"); window.setTimeout(() => setToast(""), 5000); }}
     /> : null}
 
     <div className={`rm-shell ${displayedStep === 0 ? "is-intake-step" : ""}`}>

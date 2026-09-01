@@ -82,6 +82,7 @@ import { type BilateralAssessmentSide, type BilateralComparison, type BilateralS
 
 
 import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
+import { localLimbPrimaryStrengthId } from "@/src/domain/rehab/shared/local-limb-decision-core";
 
 
 
@@ -300,8 +301,6 @@ export type AssessmentRecord = {
   /** 没有明确主诉动作时，只有复现了平时熟悉的症状，才建立疼痛复测目标。 */
   familiarSymptom?: FamiliarSymptomAnswer;
   unableReason?: "pain" | "fear" | "instruction" | "other";
-  /** 因疼或没力停下时，是否同时担心继续会加重（恐动与疼痛可并存，单选会互相挤掉）。 */
-  unableFearTogether?: YesNo;
   strengthUnableReason?: StrengthUnableReason;
   measuredAngle?: string;
   symptomScore?: number;
@@ -353,11 +352,19 @@ export function motionActiveAnswerPatch(previous: AssessmentRecord, value: Motio
     passiveRangeMeasurement: undefined,
     passiveSymptomScore: undefined,
     unableReason: value === "unable" ? previous.unableReason : undefined,
-    unableFearTogether: value === "unable" ? previous.unableFearTogether : undefined,
     tensionChecked: false,
     tensionLocations: [],
     familiarSymptom: undefined,
   };
+}
+
+/**
+ * 恐动信号：动作/力量/功能因「担心继续会加重」这一主因停下。
+ * 旧的「同行恐惧」追问（unableFearTogether）已退役——它只软化两句提示，
+ * 且真正恐动的主因用户反而拿不到提示；现在两处低负荷提示统一认本谓词。
+ */
+export function stoppedFromFear(record: AssessmentRecord | undefined) {
+  return record?.unableReason === "fear" || record?.strengthUnableReason === "fear" || record?.functionUnableReason === "fear";
 }
 
 export type Finding = {
@@ -2755,8 +2762,31 @@ export function directionIsRelevant(regionId: string, itemId: string, intake: In
   return true;
 }
 
+/** 膝区力量检查按主诉位置的相关度打分；0 表示与主诉无直接相关，核心两项由闸门另行保留。 */
+export function kneeStrengthChiefScore(itemId: string, intake: IntakeState) {
+  const source = `${intake.location} ${intake.description}`;
+  if (includesAny(source, ["膝前", "髌骨", "髌腱"])) return itemId === "knee-quadriceps" ? 9 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝内侧", "鹅足", "内侧关节线"])) return itemId === "knee-adductor-pes" ? 9 : itemId === "knee-glute" ? 5 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝外侧", "腓骨头", "外侧关节线"])) return itemId === "knee-glute" ? 9 : itemId === "knee-adductor-pes" ? 5 : itemId === "knee-posterior-chain" ? 3 : 0;
+  if (includesAny(source, ["膝后", "腘窝", "大腿后侧"])) return itemId === "knee-hamstring" ? 9 : itemId === "knee-posterior-chain" ? 6 : 0;
+  if (includesAny(source, ["小腿上端", "小腿"])) return itemId === "knee-calf" ? 8 : itemId === "knee-posterior-chain" ? 3 : 0;
+  return itemId === "knee-quadriceps" ? 2 : itemId === "knee-posterior-chain" ? 1 : 0;
+}
+
 export function strengthIsRelevant(regionId: string, itemId: string, intake: IntakeState) {
-  if (["thigh-local", "calf-local"].includes(regionId)) return directionIsRelevant(regionId, itemId, intake);
+  if (regionId === "knee") {
+    // 膝区固定保留股四头肌与后侧链两项核心，其余力量项只在主诉位置命中时入列。
+    if (["knee-quadriceps", "knee-posterior-chain"].includes(itemId)) return true;
+    // 腘绳触发词与 pilot-decision-engine 的 localKneeStrength/hamstringStrength
+    // 保持同一口径：屈膝类症状即使位置不在膝后，决策核也会点名这项检查。
+    if (itemId === "knee-hamstring"
+      && includesAny(`${intake.description} ${intake.symptomType} ${intake.symptoms.join(" ")}`, ["屈膝", "弯膝发力", "脚跟向后拉", "膝后无力", "大腿后侧无力"])) return true;
+    return kneeStrengthChiefScore(itemId, intake) > 0;
+  }
+  if (regionId === "thigh-local" || regionId === "calf-local") {
+    // 局部区域只查主诉象限的力量；相邻象限仍可由续测池按处理反应补入。
+    return itemId === localLimbPrimaryStrengthId(regionId, intake.location);
+  }
   if (regionId !== "ankle-foot") return true;
   const source = chiefActionSource(intake);
   // 急性踝扭伤的常用能力优先看背屈和外翻控制。主诉动作只负责
