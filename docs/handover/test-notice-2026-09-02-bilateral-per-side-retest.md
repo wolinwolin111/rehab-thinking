@@ -33,8 +33,8 @@
 
 **浏览器实测确认**：`bilateral-retest-ledger` 渲染，h2「分别记录左右两侧处理后的变化」，`bilateral-retest-left`/`bilateral-retest-right` 各 pending + better/same/worse 三按钮，`data-priority-side="右侧"`，主按钮「确认双侧复测」。typecheck / eslint 干净。
 
-## 给 SG-2 的口径
+## 给 SG-2 的口径（已定）
 
-- 本夹具现为**专业模式**，SG-2 断言以此为准；fixtureNote 已更新为实际渲染。
-- 若需**自助模式**逐侧复测台账：膝伸直前侧走 P0 不可达；要覆盖自助逐侧复测需换非 P0 靶点（如膝内侧松解），属夹具语义变更，请开条目确认。
+- **决策**：本台账按**专业模式**收口。膝伸直前侧是 released P0 单元，需被动证据，而自助模式强制剥离被动 → 自助拿不到是产品设计事实、非缺陷。owner 已授权按专业模式定稿。SG-2 断言以专业模式落点为准；fixtureNote 已更新为实际渲染。
+- **自助逐侧复测覆盖 = 独立条目，本批不做**：将来若要覆盖自助，需换非 P0 靶点（如膝内侧松解）另开夹具，不影响本 SG-2 收口。
 - 详见 `development-to-test-bilateral-per-side-retest-ledger-2026-09-02.md`。
