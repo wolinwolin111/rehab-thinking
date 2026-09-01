@@ -267,7 +267,7 @@ export const PILOT_RELATIONS: PilotRelation[] = [
     treatmentCandidates: [
       treatment("ankle-direction-control", "control", "脚踝", "练习检查中偏弱方向的主动控制", ["motion:ankle-dorsiflexion", "motion:ankle-plantarflexion", "motion:ankle-inversion", "motion:ankle-eversion"], "later"),
     ],
-    trainingIds: ["ankle-dorsiflexion-control", "ankle-plantarflexion-control", "ankle-inversion-control", "ankle-eversion-control"],
+    trainingIds: ["ankle-dorsiflexion-control", "ankle-plantarflexion-control", "ankle-eversion-control"],
     evidence: "P3",
     status: "reviewed-source",
     sourceCases: ["ANKLE-001", "MULTI-001"],
@@ -281,7 +281,7 @@ export const PILOT_RELATIONS: PilotRelation[] = [
       treatment("ankle-medial-calf", "muscle", "小腿内侧", "检查确认紧张后，轻柔松解对应区域", ["motion:ankle-inversion", "strength:ankle-invertor", "function:ankle-weight-bearing"], "same-session", { priority: 90 }),
       treatment("ankle-medial-control", "control", "踝足内侧", "检查确认控制不足后，练习内翻与足弓主动控制", ["strength:ankle-invertor"], "later", { priority: 60 }),
     ],
-    trainingIds: ["ankle-inversion-control"],
+    trainingIds: [],
     evidence: "P2",
     status: "reviewed-source",
     sourceCases: ["MULTI-001"],
@@ -329,7 +329,7 @@ export const PILOT_RELATIONS: PilotRelation[] = [
     treatmentCandidates: [
       treatment("ankle-control-regression", "control", "当前训练方向", "降低体位、范围或阻力，保留能够稳定完成的版本", [], "later"),
     ],
-    trainingIds: ["ankle-dorsiflexion-control", "ankle-plantarflexion-control", "ankle-inversion-control", "ankle-eversion-control"],
+    trainingIds: ["ankle-dorsiflexion-control", "ankle-plantarflexion-control", "ankle-eversion-control"],
     evidence: "P1",
     status: "reviewed-source",
     sourceCases: ["MULTI-002"],
