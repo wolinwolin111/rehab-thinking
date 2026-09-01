@@ -11,7 +11,7 @@ export function CaseSummaryBar({ intake, needsOfflineReview, onEditComplaint }: 
     { label: "性质", value: intake.symptomType || "待补充" },
     { label: "时间", value: [intake.onset, intake.mechanism].filter((item) => item && item !== "没有明确受伤").join(" · ") || "待补充" },
     { label: "安全", value: needsOfflineReview ? "需线下确认" : "无明显风险" },
-    { label: "目标", value: getGoalLabel(intake.goal) },
+    { label: "目标", value: getGoalLabel(intake.goal, intake.productMode === "thinking") },
   ];
   return <section className="rm-case-bar" data-testid="case-summary-bar">
     <div className="rm-case-bar-complaint"><span>主诉原话</span><strong>{intake.description || "未记录"}</strong></div>

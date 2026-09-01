@@ -616,7 +616,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               savedAt: draft.savedAt,
               region: draftSnapshot.intake.regionId,
               complaint: draftSnapshot.intake.description,
-              goal: getGoalLabel(draftSnapshot.intake.goal),
+              goal: getGoalLabel(draftSnapshot.intake.goal, !workflowProfile.isGuided),
               initialScore: draftSnapshot.intake.baselineScore,
               latestScore: draftSnapshot.intake.baselineScore,
               scoreComparable: false,
@@ -766,7 +766,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       savedAt: "案例已创建",
       region: "待确认",
       complaint: intake.description.trim() || "待描述",
-      goal: intake.goal ? getGoalLabel(intake.goal) : "待确认",
+      goal: intake.goal ? getGoalLabel(intake.goal, !workflowProfile.isGuided) : "待确认",
       initialScore: intake.baselineScore,
       latestScore: intake.baselineScore,
       scoreComparable: false,
@@ -5021,7 +5021,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       savedAt: `第${sessionNumber}次康复`,
       region: region?.name ?? "未选择部位",
       complaint: chiefComplaintLabel(intake),
-      goal: getGoalLabel(intake.goal),
+      goal: getGoalLabel(intake.goal, !workflowProfile.isGuided),
       initialScore: intake.baselineScore,
       latestScore: latestScoreOverride ?? (followupMode
         ? followupFinalScoreConfirmed
@@ -6198,7 +6198,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ...(intake.symptoms.includes("按压痛") || activeProvocationTypes.includes("按压") ? [{ label: "按压痛位置", value: intake.tendernessLocation || "待确认" }] : []),
     ...(intake.symptomType === "麻或电感" || intake.symptoms.includes("麻、电或感觉变化") ? [{ label: "麻电范围", value: intake.sensoryLocation || "待确认" }] : []),
     ...((intake.priorCare ?? []).length ? [{ label: "之前处理", value: (intake.priorCare ?? []).join("、") }] : []),
-    { label: "恢复目标", value: getGoalLabel(intake.goal) },
+    { label: "恢复目标", value: getGoalLabel(intake.goal, !workflowProfile.isGuided) },
   ];
   const intakeProgressItems = [
     { field: "使用方式", value: intake.productMode ? (workflowProfile.isStudy ? "案例学习" : profileLabelForIntake(intake, workflowProfile)) : "待补充" },
@@ -6220,7 +6220,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     ...((intake.symptomType === "刺痛" || intakeHasTenderness) && (needsStabbingPalpation || intake.stabbingPalpation) ? [
       { field: "轻按反应", value: ({ sharp: "清楚刺痛", dull: "钝痛或酸胀", none: "没有明显感觉", "not-tried": "没有尝试", "": "待补充" } as const)[intake.stabbingPalpation] },
     ] : []),
-    { field: "恢复目标", value: intake.goal ? getGoalLabel(intake.goal) : "待补充" },
+    { field: "恢复目标", value: intake.goal ? getGoalLabel(intake.goal, !workflowProfile.isGuided) : "待补充" },
   ];
   const completedIntakeItemCount = intakeProgressItems.filter((item) => item.value !== "待补充").length;
   const visibleIntakeProgressItems = intakeProgressItems.filter((item) => showAllIntakeFields || item.value !== "待补充" || item.field === currentIntakeField);
@@ -6783,9 +6783,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
     <header className="rm-topbar">
-      <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>RehabMind</strong><small>康复思路工作台</small></span></button>
+      <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></button>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
-      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于 RehabMind</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
+      <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于悦舒运动康复</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">
