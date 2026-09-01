@@ -1354,7 +1354,10 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       // 自助模式或没有被动检查能力时不展示，避免把被动检查误解成主动发力。
       .filter((item) => {
         const reviewedAccess = p0AssessmentAccess(`motion:${item.id}`, workflowProfile);
-        return (reviewedAccess ? reviewedAccess.visible : (item.testMode !== "passive" || canAssessPassive)) || continuationRoundIds.includes(`motion:${item.id}`);
+        const canRender = reviewedAccess ? reviewedAccess.visible : (item.testMode !== "passive" || canAssessPassive);
+        // 续测旁路只对自助用户实际能完成的项生效；被动-only 项（如髌骨滑动、瘢痕活动）
+        // 自助用户物理上无法操作，批 G 的续测旁路不应绕过此限制，否则渲染后无法完成 → 卡流程。
+        return canRender || (continuationRoundIds.includes(`motion:${item.id}`) && (item.testMode !== "passive" || canAssessPassive));
       })
       .sort((a, b) => motionPriority(b.id) - motionPriority(a.id))
       .map((item) => {
