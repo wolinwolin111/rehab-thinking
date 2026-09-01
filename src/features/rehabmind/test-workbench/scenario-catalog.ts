@@ -89,7 +89,7 @@ function withCompletedBilateralComparisons(records: Record<string, AssessmentRec
       } satisfies AssessmentRecord];
     }
     // motion 项在双侧场景需补 bilateralSideResults 才能完成评估。
-    if (id.startsWith("motion:") && !(record as any).bilateralSideResults) {
+    if (id.startsWith("motion:") && !record.bilateralSideResults) {
       const motionRecord = record as Record<string, unknown>;
       if (motionRecord.passive && motionRecord.passiveDiscomfort !== undefined) {
         // 被动项（如髌骨滑动、瘢痕活动）：两侧无差异
@@ -439,15 +439,21 @@ export function createPilotScenarioSnapshot(scenario: PilotTestScenario, seed?: 
   }
 
   if (scenario.fixtureKind === "bilateral-per-side-retest") {
-    // 双侧伸直受限形成主诉靶点；右侧已分配处理、逐侧复测尚未记录，
-    // 落点应停在处理段并显示右侧逐侧复测控件（左侧完成前不生成汇总结论）。
+    // 双侧膝伸直受限在自助模式下按 P0 设计拿不到处理单元（前侧松解需被动
+    // 证据，自助被剥离），逐侧复测台账无从渲染；只有「康复思路·给别人」专业
+    // 模式（见本场景 snapshotOverrides）才会生成伸直前侧处理并进入逐侧复测。
+    // 右侧已分配处理、双侧复测尚未记录，落点应停在处理段显示双侧逐侧复测台账。
     seededIdentity.assessmentResults = {
       ...withCompletedBilateralComparisons(snapshot.assessmentResults),
-      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", active: "limited", discomfort: "no", pairedStrength: "normal" },
+      // 生产环境共享触诊写入的是中文区域标签（pilotMuscleRegion.label），
+      // 膝决策的 anteriorThighEvidence 按中文匹配；用英文 id 会让处理单元
+      // 生成不出来，逐侧复测台账也就无从渲染。
+      [SHARED_TENSION_ASSESSMENT_ID]: { tensionChecked: true, tensionLocations: ["大腿前侧"] },
+      "motion:knee-extension": { bilateralSideResults: { "右侧": "limited", "左侧": "limited" }, bilateralComparison: "两侧异常", worseSide: "右侧", active: "both-limited", passive: "limited", passiveEndFeel: "firm", passiveDiscomfort: "no", discomfort: "no", pairedStrength: "normal" },
       "motion:knee-flexion": { bilateralSideResults: { "右侧": "normal", "左侧": "normal" }, bilateralComparison: "两侧接近", worseSide: "两侧接近", active: "same", discomfort: "no", pairedStrength: "normal" },
       "motion:knee-scar-mobility": { passive: "same", passiveDiscomfort: "no" },
     };
-    seededIdentity.bilateralTreatmentSides = { "target:chief": ["右侧"] };
+    seededIdentity.bilateralTreatmentSides = { "target:motion:knee-extension": ["右侧"] };
     seededIdentity.bilateralRetestResponses = {};
     seededIdentity.midpointDecisionDone = true;
     seededIdentity.readyToRetest = true;
@@ -738,13 +744,22 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
   {
     id: "bilateral-per-side-retest",
     title: "双侧处理段逐侧复测",
-    description: "双侧伸直受限、右侧已分配处理且逐侧复测未记录时，处理段应显示右侧逐侧复测控件，左侧完成前不出汇总结论。",
+    description: "专业模式（康复思路·给别人）下双侧膝伸直受限、右侧已分配处理且逐侧复测未记录时，处理段应显示双侧逐侧复测台账；两侧齐全前不进入汇总或训练。",
     mode: "page_boundary",
     target: "双侧纵向流程",
     initialProblem: "两侧膝盖伸直都不舒服，右侧更明显，想先改善右侧。",
     step: 3,
     fixtureKind: "bilateral-per-side-retest",
-    fixtureNote: "预期：处理段显示右侧待逐侧复测；补录右侧后要求左侧；两侧齐全前不进入汇总或训练。",
+    snapshotOverrides: {
+      intake: {
+        productMode: "thinking",
+        operationTarget: "other",
+        examSetup: "professional-other",
+        userRole: "rehab",
+        capabilities: { passiveRange: true, resistedStrength: true, endFeel: true, palpation: true, specialTest: true, jointMobilization: true },
+      },
+    },
+    fixtureNote: "预期：处理段渲染 bilateral-retest-ledger（标题「分别记录左右两侧处理后的变化」），左右各一行「轻了/没变化/更重」，主按钮「确认双侧复测」；两侧记录齐全前不进入汇总或训练。",
   },
   {
     id: "outcome-panel-chief-action-line",
