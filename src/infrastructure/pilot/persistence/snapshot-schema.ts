@@ -102,7 +102,7 @@ function validateIntake(value: SnapshotObject): string | null {
     "description", "userRole", "examSetup", "productMode", "operationTarget", "spineAssessmentMode", "side",
     "prioritySide", "location", "onset", "lastEpisodeOnset", "mechanism", "symptomType", "forceDirection", "swellingLocation",
     "tendernessLocation", "sensoryLocation", "reproduction", "customAction", "professionalNotes",
-    "stabbingSpread", "stabbingPalpation",
+    "stabbingSpread", "stabbingPalpation", "surgeryHad", "surgeryProcedure", "surgeryTiming",
   ], (item) => typeof item === "string");
   if (stringKey) return `snapshot domain.intake.${stringKey} is invalid`;
   const booleanKey = optionalFields(value, [

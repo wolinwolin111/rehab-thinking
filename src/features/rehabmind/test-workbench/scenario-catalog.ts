@@ -664,6 +664,19 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     },
   },
   {
+    id: "postop-referral",
+    title: "术后转介卡",
+    description: "自助用户在开始前确认答「ACL重建+2~6周」时显示术后专项转介卡并封锁继续入口；改选超期答案后显示已记录提示且可继续。",
+    mode: "page_boundary",
+    target: "术后分流",
+    initialProblem: "右膝前交叉韧带重建术后两个月，想恢复运动。",
+    step: 1,
+    snapshotOverrides: {
+      intake: { surgeryHad: "yes", surgeryProcedure: "acl", surgeryTiming: "w2-6" },
+    },
+    fixtureNote: "预期：postop-referral 卡出现且「开始评估检查」不存在；把时长改为超过1年后 postop-recorded-note 出现、可继续。",
+  },
+  {
     id: "outcome-panel-chief-action-line",
     title: "成果面板主诉动作降级行",
     description: "基线不可分且处理队列清空时，直接检查「本轮处理已完成」面板：结论句标题、主诉动作降级行与成果清单表。",

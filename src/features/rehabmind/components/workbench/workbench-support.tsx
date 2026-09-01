@@ -203,6 +203,10 @@ export type IntakeState = {
   priorCare: string[];
   /** 从既往就医和医生/影像结论投影出的可审计状态；旧快照可缺省。 */
   medicalGuidance?: MedicalGuidance;
+  /** 术后分流三题（仅自助模式采集）；旧快照可缺省，缺省视为未提问。 */
+  surgeryHad?: "" | "no" | "yes" | "unsure";
+  surgeryProcedure?: string;
+  surgeryTiming?: string;
 };
 
 export type IntakeMultiConfirmation = {
@@ -752,7 +756,7 @@ export type SavedDemoRecord = {
   sessionIndex?: SessionIndexRecord[];
   /** @deprecated 仅保留旧记录读取兼容，新记录不再写入。 */
   archivedSessionHistory?: RehabSessionSummary[];
-  status: "康复中" | "等待影像" | "待医学评估" | "待复查" | "处理后加重，待重新评估" | "训练后加重，待重新评估" | "评估未完成" | "现有检查未形成明确处理方向" | "处理后主诉未明显改善" | "处理完成";
+  status: "康复中" | "等待影像" | "待医学评估" | "待复查" | "处理后加重，待重新评估" | "训练后加重，待重新评估" | "评估未完成" | "现有检查未形成明确处理方向" | "处理后主诉未明显改善" | "处理完成" | "术后转介专项指导站";
   snapshot?: SavedDemoSnapshot;
   pilotCaseId?: string;
   pilotClientCreationId?: string;

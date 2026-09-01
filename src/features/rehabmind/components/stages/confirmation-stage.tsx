@@ -1,4 +1,5 @@
 import { StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import type { PostOpRouting } from "@/src/domain/rehab/safety/postop-routing-core";
 
 type YesNo = "yes" | "no";
 type BoneAnswer = YesNo | "unsure";
@@ -27,9 +28,22 @@ type ConfirmationStageProps = {
   imagingOptions: readonly string[];
   backLabel: string;
   continueLabel: string;
+  /** 术后分流：仅自助模式提问；转介动作由纯核心投影。 */
+  showSurgeryQuestion: boolean;
+  surgeryHad: string;
+  surgeryProcedure: string;
+  surgeryTiming: string;
+  surgeryProcedures: readonly { id: string; label: string }[];
+  surgeryTimings: readonly { id: string; label: string }[];
+  postopRouting: PostOpRouting;
+  consultationUrl: string;
   onSafetyAnswer: (id: string, answer: YesNo) => void;
   onBoneRiskAnswer: (id: string, answer: BoneAnswer) => void;
   onImagingToggle: (option: string) => void;
+  onSurgeryHad: (value: string) => void;
+  onSurgeryProcedure: (value: string) => void;
+  onSurgeryTiming: (value: string) => void;
+  onSaveReferral: () => void;
   onBack: () => void;
   onContinue: () => void;
   onSaveMedicalReview: () => void;
@@ -46,7 +60,10 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
     safetyStage, safetyAnswered, needsBoneQuestions, boneQuestionsAnswered, boneImagingSuggested,
     hasSafetySignal, hasClearance, structuralImagingSignal, canContinueSafety, priorCare,
     activeSafetyItems, safety, boneRisk, imaging, imagingOptions, backLabel, continueLabel,
-    onSafetyAnswer, onBoneRiskAnswer, onImagingToggle, onBack, onContinue, onSaveMedicalReview,
+    showSurgeryQuestion, surgeryHad, surgeryProcedure, surgeryTiming, surgeryProcedures, surgeryTimings,
+    postopRouting, consultationUrl,
+    onSafetyAnswer, onBoneRiskAnswer, onImagingToggle, onSurgeryHad, onSurgeryProcedure, onSurgeryTiming, onSaveReferral,
+    onBack, onContinue, onSaveMedicalReview,
   } = props;
 
   return <section className="rm-page">
@@ -70,13 +87,32 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
 
     {safetyStage === 2 ? <div className="rm-form-block"><div className="rm-label"><span>已有影像或医生结论</span><b>不要求粘贴报告原文</b></div><div className="rm-imaging">{imagingOptions.map((option) => <button type="button" key={option} className={imaging.includes(option) ? "is-selected" : ""} onClick={() => onImagingToggle(option)}>{option}</button>)}</div></div> : null}
 
+    {showSurgeryQuestion ? <section className="rm-form-block" data-rehabmind-test="surgery-question">
+      <div className="rm-label"><span>这个部位做过手术吗？</span><b>术后恢复以手术医生的方案为先</b></div>
+      <div className="rm-imaging">{([["no", "没做过"], ["yes", "做过"], ["unsure", "不确定"]] as const).map(([value, label]) => <button type="button" key={value} data-rehabmind-test={`surgery-had-${value}`} className={surgeryHad === value ? "is-selected" : ""} onClick={() => onSurgeryHad(value)}>{label}</button>)}</div>
+      {surgeryHad === "yes" ? <>
+        <div className="rm-label"><span>哪个手术？</span></div>
+        <div className="rm-imaging">{surgeryProcedures.map((item) => <button type="button" key={item.id} data-rehabmind-test={`surgery-procedure-${item.id}`} className={surgeryProcedure === item.id ? "is-selected" : ""} onClick={() => onSurgeryProcedure(item.id)}>{item.label}</button>)}</div>
+        <div className="rm-label"><span>距手术多久？</span></div>
+        <div className="rm-imaging">{surgeryTimings.map((item) => <button type="button" key={item.id} data-rehabmind-test={`surgery-timing-${item.id}`} className={surgeryTiming === item.id ? "is-selected" : ""} onClick={() => onSurgeryTiming(item.id)}>{item.label}</button>)}</div>
+      </> : null}
+    </section> : null}
+    {postopRouting.action === "proceed-recorded" ? <p className="rm-inline-note" data-rehabmind-test="postop-recorded-note">已记录：{postopRouting.procedureLabel}（{postopRouting.timingLabel}）——已过该术式的专项指导期，按普通流程继续；范围内活动仍以医生允许为准。</p> : null}
+
     {safetyStage === 2 && hasSafetySignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>接下来</span><h2>先完成针对性医学评估</h2><p>明显错位、远端感觉或循环异常、力量持续下降以及发热伴快速加重，不适合继续普通检查。本次信息会保存。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && structuralImagingSignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>先确认医生意见</span><h2>影像提示结构异常</h2><p>先明确允许的负重、活动范围和训练时间。获得医生允许后，可以回到本次记录继续评估。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && safetyAnswered && boneQuestionsAnswered && imaging.length > 0 ? <section className="rm-route-note is-clear"><span>接下来</span><h2>{boneImagingSuggested && imaging.includes("没有做影像") ? "先做轻柔检查，同时安排影像确认" : "开始本次功能检查"}</h2></section> : null}
 
     {(structuralImagingSignal || imaging.includes("医生有限制")) && <p className="rm-inline-note">后续只在医生允许的负重、活动范围和时间内进行，并以最新医嘱为准。</p>}
 
-    <div className="rm-page-actions split">
+    {postopRouting.action === "refer" ? <section className="rm-route-note is-waiting" data-rehabmind-test="postop-referral">
+      <span>术后专项指导</span>
+      <h2>这个应用不提供术后恢复方案</h2>
+      <p>{postopRouting.procedureLabel ? `${postopRouting.procedureLabel}${postopRouting.timingLabel ? `（${postopRouting.timingLabel}）` : ""}还在按专项指南恢复的阶段。` : "先确认手术情况，再决定这里能帮到什么。"}</p>
+      <p>配套的术后恢复指导站有分阶段的专项内容；任何与手术医生要求冲突的地方，都以医生意见为先。</p>
+      <div className="rm-page-actions split"><button type="button" className="rm-primary" data-rehabmind-test="postop-referral-open" onClick={() => window.open(postopRouting.guideUrl ?? consultationUrl, "_blank", "noopener")}>去术后指导站查看</button><button type="button" onClick={onSaveReferral}>保存本次信息</button></div>
+      <p><a href={consultationUrl} target="_blank" rel="noreferrer">没有匹配的专项指南？预约线上讲解人工沟通</a></p>
+    </section> : <div className="rm-page-actions split">
       <button type="button" onClick={onBack}>{backLabel}</button>
       <button type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
-    </div>
+    </div>}
   </section>;
 }
