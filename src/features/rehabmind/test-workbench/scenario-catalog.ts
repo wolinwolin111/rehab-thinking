@@ -733,7 +733,7 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
         },
       ],
     },
-    fixtureNote: "预期：显示「刚才的处理使症状或活动表现加重」面板，含重新评估/补充症状信息/保存并结束三出口；该面板本身不含指向训练步的动作（导轨标签不算）。",
+    fixtureNote: "预期：显示「刚才的反应/症状或活动表现变差」面板，含确认加重后的变化/补充症状信息/保存并结束三出口；该面板本身不含指向训练步的动作（导轨标签不算）。",
   },
   {
     id: "bilateral-per-side-retest",
