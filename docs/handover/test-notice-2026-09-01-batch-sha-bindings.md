@@ -29,3 +29,31 @@
 - 批 K-lite：术后转介（一题+转介卡+术式时长查表分流，阈值正对照 AAOS 术后康复书逐术式核实中）。
 
 以上完成后另行 SHA 通知。
+
+---
+
+# 追加通知（2026-09-01 第二轮）：批 J / 批 K-lite / 种子缺口①②
+
+按 §6.2 通知载体改进要求，本轮**显式列出全部提交（含打包祖先）**。
+
+## 范围事实：本轮 6 个提交，其中 2 个为文档类打包祖先
+
+基线 = 上一轮 tip `f5be546`（已绑定）。`f5be546..255f724+` 区间共 6 提交：
+
+| # | SHA | 性质 | 内容 |
+|---|---|---|---|
+| 1 | `6bd1832` | **打包祖先（纯文档）** | docs/research：术后阈值逐术式 AAOS 书证（半月板缝合 4月→6月修正） |
+| 2 | `d1cbf15` | **打包祖先（纯文档）** | docs/research：PCL 站点核对补记 + 执行清单 |
+| 3 | `5f12b4c` | **功能** | 批 J：命名回改（标题保专业词+短括号，批 H 三张回改）、53 卡 purpose 全覆盖、可行性文案（滑跟末端保持/屈髋碰墙/足弓收短/步态两段/单腿拍视频锚点）、四项裁决（删膝足弓卡+KNEE-R07 引用、力量/功能同动作去重、砍抬脚趾半段、新增低台阶落地下定卡） |
+| 4 | `e11b081` | **功能** | 批 K-lite：术后分流（确认步三题组仅自助、术式阈值查表转介 RehabGuide、refer 态封锁继续入口、proceed-recorded 放行记录）+ **方向侧接受补查旁路修复**（§6.2 转办项，能力闸门独立保留） |
+| 5 | `00e417a` | **测试靶子** | 种子缺口①②：`treatment-worse-stop`（worse 记录→停止面板）+ `bilateral-per-side-retest`（双侧逐侧复测态） |
+
+分支 `agent/dev-20260901` 已快进到 `00e417a`，全部可达。
+
+## 契约迁移要点（每批详表见各自 development-to-test 文档）
+
+1. **批 J**（development-to-test-batch-j-copy-and-adjudications-2026-09-01.md）：批 H 轮钉的 `站立折髋（臀向后）`/`大腿后侧绷紧保持`/`仰卧绷脚背` 需再迁移为 `站立屈髋（臀部向后）`/`大腿后侧等长保持（脚跟轻拉地面）`/`仰卧踝跖屈（绷脚背）`；`勾脚与抬脚趾控制`→`踝背屈控制（勾脚）`；`knee-supine-arch-control` 删除；膝区训练卡数仍 15（删足弓+加落地卡）、四区总数 54→**53**（purpose 全覆盖）；思考模式同动作去重（外侧膝+单腿站计划→队列无臀肌力量卡）。**建议**：契约改用卡 id 定位、标题只做弱断言——命名本批已二次迁移。
+2. **批 K-lite**（development-to-test-batch-k-postop-routing-2026-09-01.md）：新 testid `surgery-question`/`postop-referral`/`postop-referral-open`/`postop-recorded-note`/`surgery-had-*`/`surgery-procedure-*`/`surgery-timing-*`；新记录状态"术后转介专项指导站"；新场景 `postop-referral`；专业模式与旧快照行为不变。
+3. **种子缺口**（development-to-test-seed-gaps-2026-09-01.md）：新场景 `treatment-worse-stop`、`bilateral-per-side-retest`（落点已实测）；**③ 根因已定位未修**——outcome 场景 `baselineScoreConfirmed:false` 破坏 intakeComplete→maxUnlocked=0→出口死锁，合法修复路径（多主诉动作→not-comparable）与风险已写入文档 §4，Phase 4.2 执行。
+4. **回归基线**：typecheck 干净；工作区 tests 6 既有红不变；测试侧 agent/testing 契约由本轮三份 development-to-test 文档驱动迁移。
+
