@@ -57,3 +57,24 @@
 3. **种子缺口**（development-to-test-seed-gaps-2026-09-01.md）：新场景 `treatment-worse-stop`、`bilateral-per-side-retest`（落点已实测）；**③ 根因已定位未修**——outcome 场景 `baselineScoreConfirmed:false` 破坏 intakeComplete→maxUnlocked=0→出口死锁，合法修复路径（多主诉动作→not-comparable）与风险已写入文档 §4，Phase 4.2 执行。
 4. **回归基线**：typecheck 干净；工作区 tests 6 既有红不变；测试侧 agent/testing 契约由本轮三份 development-to-test 文档驱动迁移。
 
+---
+
+# 追加通知：2026-09-01 第三轮——③ 处理完成态靶子修复（Phase 4.2）
+
+## 范围：实际 3 个提交，含 2 个打包祖先（文档类）
+
+分支 `agent/dev-20260901` 快进范围 `00e417a..a2fcaf7`：
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `450a18e` | **打包祖先（文档）** | 第二轮 SHA 通知档（已单独同步过，随本次一并可达） |
+| 2 | `10ff663` | **打包祖先（文档）** | dev→dev 接手指南（硬规矩/架构/待办/批次索引/环境陷阱） |
+| 3 | `a2fcaf7` | **代码** | ③ 处理完成态靶子修复：outcome 场景 `baselineScoreConfirmed:false` 死锁解除 |
+
+## ③ 修复要点（详表见 development-to-test-outcome-target-fix-2026-09-01.md）
+
+- 根因链：`baselineScoreConfirmed:false` → `intakeComplete=false` → `maxUnlocked=0` → 「进入训练/查看评估记录」被 workflow 静默拒绝（死按钮）。
+- 修复（仅 `scenario-catalog.ts` 一个文件）：① 保 `baselineScoreConfirmed:true`；② 种 `reportedActions` 两条（下楼、下蹲）→ `reportedActionSummary().length===2` → `not-comparable` → 降级行「主诉动作：下楼、下蹲」保留、intakeComplete 成立；③ 首条 trialRecord 加 `chiefRetested:true` → 不生成 pending 主诉义务 → `pendingRequiredCount=0` → `treatmentComplete=true` → `maxUnlocked=4`。
+- 实测：rail「5 训练居家」=**可进入**；点击「进入训练」→ 进入训练过渡页；`data-pending-count`=0；零 pageerror；`rendered-html` 17 pass / 6 fail（基线不变）。
+- 测试侧钉该场景：断言改为「进入训练可导航 + rail 训练可进入 + 降级行存在 + pending-count 为 0」。
+
