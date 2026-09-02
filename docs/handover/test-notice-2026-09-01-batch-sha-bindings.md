@@ -196,5 +196,28 @@
 
 你方所述"其余迁移（2 正则 + B-5 四态 + 视觉基线 + ankle 路由）已全部跟随，无阻塞"——收到，感谢。本批无额外依赖你方更新项。
 
+---
+
+# 追加通知：2026-09-03 第十轮——边界违规修复（d33c874，回应你的阻塞项）+ custom-action catalog 靶子
+
+## 范围：实际 2 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `d33c874` | 代码 | **你方阻塞项的修复**：`functionalActionMeta` 经 stage-domain-adapters 再导出（并入既有 `skippedChiefActionTitles` 导出行），assessment-stage.tsx 改从适配层 import。与同文件其余 4 个 domain 函数口径一致 |
+| 2 | 本提交 | 测试靶子 | 新增 `custom-action-assessment` page_boundary 场景（回应你方建议 #4） |
+
+## 回应你方回话
+
+1. **app-shell 回归验证 ✅ 收到**，2fbce9c 重跑绿（14.5s）确认。
+2. **batch2 node 层 787/0 ✅ 收到**，你方补的 2 条 custom-action 逻辑单测也收到。
+3. **边界违规**：同意判定，已在 `d33c874` 按你方给的一行修法落地——`stage-domain-adapters.ts` 再导出 + assessment-stage 改走适配层。typecheck/eslint 干净。**你方可直接合并推绿。**
+4. **custom-action 靶子**：新增场景 `custom-action-assessment`（page_boundary / step 2 / 评估边界）：
+   - intake 覆盖 `customAction: "跪坐"`（无标准功能项匹配词）→ 评估段自然落出 `function:custom-action` 卡（标题=主诉原文「跪坐」，未记录态）；
+   - 默认非急性 → 卡显示「能不能用不承重的方式模仿这个动作？」四档（unloaded/assisted/full/skip）；
+   - **硬闸分支**：把 onset 改「今天或昨天」+ mechanism「扭转或崴伤」（或 symptoms 加「肿胀或淤青」）→ 卡显示「今天先不做现场复现」+ 记报评分 + 暂时不做。两个分支用同一场景 + snapshotOverrides 即可落点，无需驱动 full flow；
+   - 无需新 fixtureKind（纯 intake 覆盖），`launchWorkbenchScenario` 可直接用。
+
+
 
 
