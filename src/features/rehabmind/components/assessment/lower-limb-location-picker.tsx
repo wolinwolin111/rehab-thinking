@@ -289,6 +289,7 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
     <header className="rm-location-picker-head">
       <div><span>{copy.eyebrow}</span><strong>{copy.title}</strong></div>
       <b>{activeSide ? `${activeSide} · ${area.label}` : "先选择左腿或右腿"}</b>
+      {!compact ? <span className="rm-location-scope">目前开放大腿、膝盖、小腿、脚踝和足部；骨盆、臀部、腹股沟和髋关节暂未开放。</span> : null}
     </header>
 
     <nav className="rm-compact-atlas-nav" aria-label="选择左右侧和部位">
@@ -354,6 +355,5 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
     </section> : <p className="rm-location-empty">{copy.empty}</p>}
     {selectionNotice ? <p className="rm-location-limit" role="status">{selectionNotice}</p> : null}
 
-    {!compact ? <footer>目前开放大腿、膝盖、小腿、脚踝和足部；骨盆、臀部、腹股沟和髋关节暂未开放。</footer> : null}
-  </section>;
+    </section>;
 }

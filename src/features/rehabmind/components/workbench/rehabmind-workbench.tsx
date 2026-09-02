@@ -6790,13 +6790,13 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
     <header className="rm-topbar">
-      <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></button>
+      <span className="rm-brand" data-rehabmind-tutorial="brand"><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></span>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
       <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于悦舒运动康复</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">
-      <OnceHint id="case-code" className="rm-floating-hint" autoDismissMs={3200} active={!testContext && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
+      <OnceHint id="case-code" className="rm-floating-hint" autoDismissMs={3200} active={!testContext && !onboardingOpen && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
     </div>
     {snapshotFreshness ? <SnapshotFreshnessBanner
       freshness={snapshotFreshness}
