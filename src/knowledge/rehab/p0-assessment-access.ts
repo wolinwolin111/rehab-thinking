@@ -27,6 +27,11 @@ export const P0_ASSESSMENT_ACCESS_RULES: P0AssessmentAccessRule[] = [
   { reviewId: "K-P0-03", assessmentIds: ["motion:knee-extension"], kind: "passive", ordinary: "hidden", professionalCapability: "passiveRange" },
   { reviewId: "K-P0-04", assessmentIds: ["motion:knee-extension"], kind: "end-feel", ordinary: "hidden", professionalCapability: "endFeel" },
   { reviewId: "K-P0-05", assessmentIds: ["motion:knee-extension"], kind: "muscle-comparison", ordinary: "self-light", professionalCapability: "palpation" },
+  // K-P0-06 = 膝后与小腿后侧区域比较（区别于 K-P0-05 大腿前侧与外侧），来源：
+  // outputs/.../RehabMind-膝踝P0检查权限审核表.xlsx。本表按评估项粒度，无法表达同一
+  // 评估内"前侧 vs 后侧"两区域项，故两条都挂到 motion:knee-extension（授权相同：
+  // 普通用户 self-light 轻按比较，专业需触诊能力）。后侧深压的"避开腘窝"约束由
+  // knee-posterior-calf-muscle 处理卡文案兜住。勿删此行——它是独立评审覆盖。
   { reviewId: "K-P0-06", assessmentIds: ["motion:knee-extension"], kind: "muscle-comparison", ordinary: "self-light", professionalCapability: "palpation" },
   { reviewId: "K-P0-07", assessmentIds: ["response:knee-proximal-fibula"], kind: "joint-check", ordinary: "hidden", professionalCapability: "jointMobilization" },
   { reviewId: "A-P0-01", assessmentIds: ["motion:ankle-dorsiflexion"], kind: "active", ordinary: "self", professionalCapability: "none" },
