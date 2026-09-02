@@ -806,6 +806,7 @@
     "priority": "P0",
     "layer": "L0",
     "evidenceType": "command",
+    "gateId": "fast",
     "script": "npm run test:fast",
     "titlePattern": "test:fast",
     "tags": [

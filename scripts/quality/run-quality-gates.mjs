@@ -67,6 +67,8 @@ const gates = [
   { id: "migration-compatibility", layer: "release", command: ["run", "test:migrations:compat"] },
   { id: "dependencies", layer: "release", command: ["run", "test:dependencies"] },
   { id: "performance", layer: "release", command: ["run", "test:performance"] },
+  { id: "docs-links", layer: "release", command: ["run", "check:docs"] },
+  { id: "asset-manifest", layer: "release", command: ["run", "check:assets"] },
   { id: "lint", layer: "release", command: ["run", "lint"] },
 ];
 if (process.argv.includes("--include-browser")) {

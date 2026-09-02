@@ -67,7 +67,7 @@ node scripts/quality/run-test-regression.mjs --only=full,mobile --workers=2 --al
 node scripts/quality/run-test-regression.mjs --skip=fast,knowledge                          # 逻辑层刚跑过时
 
 # 手动分步（runner 不可用或需单步排查时）：
-npm.cmd run test:fast            # check:boundaries + typecheck + build + unit/workflow/component（EXITCODE 0 为准）
+npm.cmd run test:fast            # check:boundaries + cycles + structure + registry + typecheck + build + unit/workflow/component（EXITCODE 0 为准）
 npm.cmd run check:knowledge      # 知识一致性：cases=8/episodes=11/findings=22/treatments=14/retests=14
 npm.cmd run test:browser:full    # 全量浏览器（edge-full，已含 overall/ 全部 spec）
 npm.cmd run test:browser:mobile-preview  # pixel-5 + iphone-13（唯一视口/引擎，非 full 子集）
@@ -178,6 +178,7 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ## 8. 注意事项
 
+- **测试只断言行为与结构，不断言用户可见文案（2026-09-02 立）**：不新增「源码里某句中文文案存在」这类 `assert.match(源码, /文案/)` 锁——文案漂移不是正确性缺陷，锁它只会在每次改名时产生迁移税。dev 改名撞到既有文案锁时，**删除该断言而非迁移**；例外：安全/合规文案（转介、停止处理、同意）与结构不变量（区域缺席、共享常量复用、安全早退顺序、id+label 混合锁）保留。存量文案锁不批量删（逐条混着安全/结构，批量删会误伤覆盖），随触碰自然衰减。
 - **活文档白名单（测试侧，2026-09-01 立）**：只有这 5 份是「当前口径」，新知识只进这里 + 当期主题档——① `test-workflow-continuation-handoff.md`（本档：环境/命令/基线/协议）② `docs/quality/rehabmind-test-plan.md`（分层与门禁）③ `docs/quality/real-browser-coverage-matrix.md`（场景↔证据）④ `tests/workflow/scenario-registry.json`（纯指针索引）⑤ `tests/README.md`。其余 `test-session-handoff-*`/`defect-*`/批次档均为**冻结证据链**，只追加不改写、不再当现行标准检索源。
 - **文档所有权**：docs/quality 测试相关文档 + docs/handover `test-*` 归测试侧；`development-to-test-*` 归 dev（测试侧只读）；`docs/README.md`（文档中心）、`HANDOVER.md`、`project-status.md` 归产品/dev，测试侧不改。dev 工作区 `tests/` 与 docs/quality 旧副本禁止提交进 main（会踩踏测试侧现行版）。
 - **powershell 中文乱码**：一切含中文的读/写走 Read/Write/Edit 工具或 node UTF-8 脚本，别在 PowerShell 里 grep 中文。
