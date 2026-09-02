@@ -60,6 +60,7 @@ type FunctionActionIntake = ChiefActionIntake & {
 /** 功能动作的负荷顺序：只用于同一批动作的渐进排序，不代表临床严重程度。 */
 export const FUNCTION_LOAD_ORDER: Record<string, number> = {
   "ankle-weight-bearing": 1,
+  "custom-action": 1,
   "thigh-walk": 1,
   "calf-walk": 1,
   "knee-gait": 1,
@@ -108,6 +109,7 @@ const FUNCTION_ACTION_META: Record<string, FunctionalActionMeta> = {
   "knee-single-leg-squat": { kind: "balance-control", stage: "progression" },
   "knee-hop-landing": { kind: "return-to-sport", stage: "return-to-sport" },
   "ankle-squat": { kind: "task-performance", stage: "baseline" },
+  "custom-action": { kind: "task-performance", stage: "baseline" },
   "ankle-weight-bearing": { kind: "task-performance", stage: "baseline", baseline: true },
   "ankle-knee-wall": { kind: "functional-rom", stage: "baseline" },
   "ankle-step-down": { kind: "task-performance", stage: "progression" },
@@ -244,6 +246,14 @@ export function chiefFunctionAssessmentIds(intake: FunctionActionIntake, regionI
     if (includesAny(source, ["单腿", "足弓", "不稳"])) ids.push("function:calf-single-leg");
     if (includesAny(source, ["跑", "跳", "落地"])) ids.push("function:calf-jog");
   }
+  // 自定义动作：匹配不到任何标准功能项时，占位一条 custom-action 评估卡。
+  // 该卡产生的 finding 因 tags 不匹配任何处理候选（候选不带 function-symptom 标签），
+  // 不会进入 painfulFunctionTargets 生成独立处理目标。
+  // 自定义动作的处理/复测走 target:chief 链（chiefActionLabel），不依赖此卡。
+  const customLabels = chiefFunctionActionLabels(intake, regionId);
+  if (customLabels.length && !ids.some((id) => id.startsWith("function:"))) {
+    ids.push("function:custom-action");
+  }
   return [...new Set(ids)];
 }
 
@@ -274,6 +284,7 @@ export function functionActionIsRelevant(regionId: string, itemId: string, intak
   if (chiefIds.has(itemId)) {
     if (functionalActionMeta(itemId).stage !== "return-to-sport") return true;
   }
+  if (itemId === "custom-action") return true;
   if (regionId === "thigh-local") {
     if (itemId === "thigh-jog") return (intake.goal ?? 0) >= 4 && !isAcuteTrauma(intake) && hasExplicitSportDemand(intake, "run");
     if (itemId === "thigh-sit-stand") return includesAny(source, ["坐下", "起身", "坐站"]);
