@@ -14,7 +14,10 @@ const artifactsDir = process.env.QUALITY_ARTIFACTS_DIR?.trim() || "artifacts/qua
 export default defineConfig({
   testDir: "./tests/browser",
   testMatch: /.*\.spec\.ts/,
-  timeout: 45_000,
+  // 超时留冷编译余量：vite dev 按需编译，全新 server 首个 goto/交互可能 >8s/30s，
+  // 撞小超时→假失败（flake）。调高只影响「失败速度」不影响「失败判定」（断言照旧），
+  // 故不削弱兜底能力。全局 test timeout 须 > navigationTimeout，否则先被 test 级超时杀。
+  timeout: 90_000,
   expect: { timeout: 6_000 },
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
@@ -31,8 +34,8 @@ export default defineConfig({
     headless: true,
     locale: "zh-CN",
     viewport: { width: 1440, height: 1000 },
-    actionTimeout: 8_000,
-    navigationTimeout: 30_000,
+    actionTimeout: 20_000,
+    navigationTimeout: 60_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

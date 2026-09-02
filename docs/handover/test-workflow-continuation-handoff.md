@@ -143,6 +143,11 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ⚠️ 环境陷阱：playwright 全量回归时禁止并行手动 dev server（3001 抢编译→goto 超时假失败）。
 
+**回归流程瘦身（2026-09-02，两批）**：
+- 每批回归走一键编排器 `node scripts/quality/run-test-regression.mjs`（链 fast→knowledge→full→mobile，紧凑 UTF-8 verdict + 日志落盘），不再手动 `full|Out-File|Select-String` 啃乱码。overall 已从链中移除（edge-full 已含）。
+- 冷启动 flake 已治本：playwright 超时 actionTimeout 8→20s、navigationTimeout 30→60s、全局 test timeout 45→90s（吸收 vite 冷编译；只影响失败速度不影响判定）。冷跑 full 实测 69 passed 无 flake。
+- `test:fast` 现含 check:boundaries+cycles+structure+registry（+~8s）；`test:release` 现含 docs-links+asset-manifest。registry 校验上线即修掉一处 rot（BUILD-TYPE-01 缺 gateId）。
+
 上一轮 Phase 4.1、outcome-slim 两轮、批 G/H/G修复/I/J-1 绑定不变。批 A 裁定已关闭「有效处理行标签」开放问题（肌肉行=肌群名、控制行=动作名，OP-1 正确）。
 
 ### 6.1 已关闭
