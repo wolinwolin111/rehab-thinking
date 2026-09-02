@@ -22,14 +22,15 @@
 | 12 | `test-session-handoff-ux-direction-sg2-2026-09-02.md` | `f3ae2c9`（agent/dev-20260901 tip：UX 6258424 + 方向续测 c66b21d/55c726f + 双侧种子 778a7ac） | UX 品牌迁移 6 处 + 视觉基线 2 张；方向续测源码契约；reg 91；基线 68+0 保持 | UX 品牌统一（悦舒运动康复）+ 目标文案模式一致；方向续测旁路源码契约 + C-1 行为网；SG-2 二次诊断：queue 仍空，buildTrialTargets 候选在 P0 证据门槛被滤，等 dev 挂牌定位 |
 | 13 | `test-session-handoff-sg2-ledger-2026-09-02.md` | `08f3e5a`（agent/dev-20260901 tip：f605270 渲染修复 + 975cbc9 能力位最小化 + 08f3e5a 口径定稿） | SG-2 新增；reg 92；基线 68+0→69+0 | SG-2 双侧逐侧复测台账落定（owner 授权专业模式口径）：中文触诊标签 + passiveRange/palpation 能力位 → 处理单元生成 → 台账渲染；断言含左右 pending + confirm 门控交互；自助逐侧复测降级独立条目（非阻塞） |
 | 14 | （无主题档，记录在 continuation §6） | `e661641`（agent/dev-20260901 tip：dd43ec6 mobile batch1 + 79cbec6/b37d5a0 batch1.5 + e661641 ankle） | 2 正则迁移 + B-5 四态 + 视觉基线 2 张 + ankle 路由 2 单测；reg 93；基线 68+1红 | mobile UI batch1/1.5 + ankle-step-down 绑定：症状标题拆词→first-use/rendered-html 正则迁移；ChiefOutcomeSummary 四态→SG-2/C-3 正则扩；logo/密度→视觉基线重生成；ankle 下楼→step-down 路由补逻辑测。**🔴 app-shell 真回归**（brand span + 浮动提示拦截移动端 stagebar 按钮点击）报 dev 未掩盖 |
+| 15 | （无主题档，记录在 continuation §6） | `cfb2dbd`（agent/dev-20260901 tip：e2a00f8 batch2②③④ + 2fbce9c app-shell 修复 + a2b264a 通知 + d33c874 边界修复 + 0e9cc34/1b55396 custom-action 靶子 + cfb2dbd 通知） | CA-1/CA-2 新增；app-shell 转绿；边界转绿；reg 96；基线 68+1红→**71+0** | dev batch2 custom-action 绑定闭环：app-shell 真回归经 dev 2fbce9c（pointer-events:none）修复重跑绿；e2a00f8 引入的 assessment-stage 直连 domain 边界违规经 d33c874（走 stage-domain-adapters）修复转绿；custom-action 卡两分支（默认四档负荷 / 急性+肿胀硬闸抑制现场复现）用 dev catalog 靶子 0e9cc34/1b55396 + launchWorkbenchScenario 稳定覆盖（探针实测落 step2 即聚焦卡）；干净全绿 run reg-20260902210613-27712 |
 
-## 提交历史线（agent/testing，当前 tip `d6fe867`；docs 提交持续前移，权威绑定见 continuation-handoff §6）
+## 提交历史线（agent/testing，当前 tip `55b8a91`（merge dev cfb2dbd）；docs 提交持续前移，权威绑定见 continuation-handoff §6）
 
 主干（旧→新）：`知识重构批次1(8150b06..126c7f5)` → `工作台批次1(effeb36)` → `工作台批次2(d558c08)` → `最近一次出现(1806d9f/663c6c8)` → `区域清理(46cf0dc/7c3e734)` → `疼痛对比+恐动(e5cdf85/2069385/fef2886)` → `outcome-slim 两轮(bb5da7e/54b2b8e+7d5cc7e)` → `Phase 4.1 fixme 转化(6136281)` → `批 G/H/G修复/I/J-1 绑定(f5be546→merge 35c405a→b355f90→0ed74d1)` → `文档整理(d6fe867)` → `③靶子修复绑定(dc01a10→merge c42a529→OP-1 重写+契约改名)`。
 
 ## 全量基线说明
 
-- **当前基线以 `test-workflow-continuation-handoff.md` §6 为唯一权威**（当前：Edge full 68 passed + 0 skipped、overall 10/10、mobile 2/2、registry 90 条）。本索引不再维护平行计数，避免漂移。
+- **当前基线以 `test-workflow-continuation-handoff.md` §6 为唯一权威**（当前：Edge full 71 passed + 0 failed、mobile 2/2、registry 96 条、run `reg-20260902210613-27712`）。本索引不再维护平行计数，避免漂移。
 - 每个主题档对应一份独立的 dev 合并基线（见上表「dev 基线」列）；测试分支 `agent/testing` 逐次 merge。
 - 各档均附本主题的回归结果（fast EXITCODE 0、browser full、overall、mobile-preview），档内「回归记录」段为该轮历史快照，不代表当前计数。
 

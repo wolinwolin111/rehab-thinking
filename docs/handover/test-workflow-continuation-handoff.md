@@ -133,17 +133,14 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ---
 
-## 6. 当前测试验收基线（mobile UI batch1/1.5 + ankle-step-down 绑定轮，2026-09-03）
+## 6. 当前测试验收基线（dev batch2 custom-action + app-shell 修复 + 边界修复 + custom-action 卡覆盖轮，2026-09-03）
 
-全量（edge-full）：**68 passed + 1 failed**（唯一红 = `app-shell-layout`，**真回归**，见下）；test:fast EXITCODE 0（含新增 2 条 ankle 路由单测）；check:knowledge ok。registry **93 条**。
+全量（edge-full）：**71 passed + 0 failed**（run `reg-20260902210613-27712`，verdict=passed，commit `55b8a91`）；test:fast EXITCODE 0；check:knowledge ok；mobile 2 passed。registry **96 条**。
 
-**状态**：dev 分支 `agent/dev-20260901` tip `e661641`（merge `e7d6cd6`；含 dd43ec6 mobile batch1 + 79cbec6/b37d5a0 batch1.5 + e661641 ankle）。测试侧迁移：
-- **契约破坏批 1.5（dev 明列必改）**：症状输入标题拆成分词 `<span>`，`first-use-entry-contract:43` + `rendered-html:136` 字面正则→`[\s\S]*·[\s\S]*`。
-- **B-5 四态**：ChiefOutcomeSummary「主诉动作已复查」拆为四态（新增「本次未单独复查」），SG-2/C-3 完成面板 h2 正则已扩。
-- **视觉基线**：logo/密度/布局改动 → critical-home 桌面+移动 2 张重生成。
-- **ankle-step-down 新行为**：下楼/下台阶 chief 从 ankle-knee-wall 改路由到 ankle-step-down，补 2 条逻辑单测（`function-assessment-plan-core.test.mjs`）+ registry 指针。
-
-🔴 **app-shell-layout 真回归（报 dev，未掩盖）**：批 1.5 C-1 把 `.rm-brand` 从 `<button>` 改成 `<span>` 但**无 `pointer-events:none`**，加上 B-2/C-2 浮动案例编号提示（`position:fixed`），二者在移动端**拦截 stagebar「查看阶段」按钮的点击**（playwright hit-test 证实 topbar brand 盖住按钮点击点）。信息性浮层/非交互 brand 不应挡住控件——建议 `.rm-brand`/`.rm-floating-hint` 加 `pointer-events:none` 或修层叠。测试保持诚实红，不加 workaround 掩盖。
+**状态**：dev 分支 `agent/dev-20260901` tip `cfb2dbd`（merge `55b8a91`；含 e2a00f8 batch2②③④ + 2fbce9c app-shell 修复 + a2b264a 通知 + d33c874 边界修复 + 0e9cc34/1b55396 custom-action catalog 靶子 + cfb2dbd 通知）。测试侧绑定：
+- **app-shell 真回归已修复**（dev `2fbce9c`）：`.rm-brand`/`.rm-floating-hint` 加 `pointer-events:none`，移动端 stagebar「查看阶段」点击不再被拦截；`app-shell-layout.spec.ts` 重跑绿（14.5s）。诚实红→绿闭环。
+- **架构边界违规已修复**（dev `d33c874`，测试侧一行修法）：`assessment-stage.tsx` 的 `functionalActionMeta` 改经 `stage-domain-adapters` 再导出，不再直连 domain；`check:boundaries` 转绿。
+- **custom-action 卡片渲染 + 安全闸门两分支**（dev catalog 靶子 `0e9cc34`/`1b55396`，`assessment-stage.tsx:766-788`）：新增 `tests/browser/scenarios/custom-action-card.spec.ts`——CA-1 未匹配动作落占位卡 + 四档负荷 + 选档互斥；CA-2 急性+肿胀硬闸抑制现场复现（无 is-four + 评分滑杆 + 单「暂时不做，照常记录」出口）。探针实测两场景落 step 2 即聚焦该卡（header=跪坐、cardCount=1），无需导航。逻辑层路由仍由 CUSTOM-ACTION-01 单测覆盖。
 
 ⚠️ 环境陷阱：playwright 全量回归时禁止并行手动 dev server（3001 抢编译→goto 超时假失败）。
 
@@ -164,6 +161,8 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 - Phase 4.1 fixme 转化（6 转真 + 3 删壳转缺口）✅
 - **批 G/H/G修复/I/J-1 绑定（含 4 打包祖先，契约迁移 6 处）✅**
 - **种子缺口③ 处理完成态靶子修复绑定（a2fcaf7；OP-1 重写为训练交接四靶心断言）✅**
+- **mobile UI batch1/1.5 + ankle-step-down 绑定（e661641；正则迁移 + B-5 四态 + 视觉基线 + ankle 路由）✅**
+- **dev batch2 custom-action（e2a00f8）绑定：app-shell 修复（2fbce9c）+ 边界修复（d33c874）+ custom-action 卡两分支浏览器覆盖（CA-1/CA-2，靶子 0e9cc34/1b55396）✅**
 
 ### 6.2 待办 / 回退点
 - **种子缺口（Phase 4.2）**：① ✅ SG-1（treatment-worse-stop）已挂；② ✅ SG-2（bilateral-per-side-retest）已挂（专业模式口径，owner 授权）；~~③~~ ✅ `a2fcaf7` 已修复并绑定。
