@@ -194,6 +194,7 @@ const PROFESSIONAL_ASSESSMENT_TITLES: Record<string, string> = {
   "ankle-single-leg": "踝足单腿稳定检查",
   "ankle-heel-raise": "提踵功能检查",
   "ankle-knee-wall": "膝碰墙背屈活动度检查",
+  "ankle-step-down": "踝足下台阶控制检查",
   "ankle-great-toe-extension": "第一跖趾关节背伸检查",
   "ankle-toe-flexion": "足趾屈伸主动控制检查",
   "thigh-front-length": "股四头肌与股直肌拉长检查",

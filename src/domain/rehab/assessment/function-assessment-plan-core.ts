@@ -69,6 +69,7 @@ export const FUNCTION_LOAD_ORDER: Record<string, number> = {
   "knee-sit-stand": 2,
   "thigh-sit-stand": 2,
   "ankle-knee-wall": 2,
+  "ankle-step-down": 2,
   "ankle-squat": 2,
   "ankle-heel-raise": 3,
   "calf-heel-raise": 3,
@@ -109,6 +110,7 @@ const FUNCTION_ACTION_META: Record<string, FunctionalActionMeta> = {
   "ankle-squat": { kind: "task-performance", stage: "baseline" },
   "ankle-weight-bearing": { kind: "task-performance", stage: "baseline", baseline: true },
   "ankle-knee-wall": { kind: "functional-rom", stage: "baseline" },
+  "ankle-step-down": { kind: "task-performance", stage: "progression" },
   "ankle-heel-raise": { kind: "strength-endurance", stage: "progression" },
   "ankle-single-leg": { kind: "balance-control", stage: "progression" },
   "ankle-hop": { kind: "return-to-sport", stage: "return-to-sport" },
@@ -161,11 +163,11 @@ const STRUCTURED_ACTION_ASSESSMENTS: Record<string, Partial<Record<string, strin
   "ankle-foot": {
     "functional-walk": ["function:ankle-weight-bearing"],
     "functional-squat": ["function:ankle-squat"],
-    "functional-step-down": ["function:ankle-knee-wall"],
+    "functional-step-down": ["function:ankle-step-down"],
     "functional-single-leg-stand": ["function:ankle-single-leg"],
     "functional-run": ["function:ankle-hop"],
     "functional-jump-landing": ["function:ankle-hop"],
-    "functional-stairs": ["function:ankle-knee-wall"],
+    "functional-stairs": ["function:ankle-step-down"],
     "functional-single-leg": ["function:ankle-single-leg"],
     "functional-run-jump": ["function:ankle-hop"],
   },
@@ -222,7 +224,8 @@ export function chiefFunctionAssessmentIds(intake: FunctionActionIntake, regionI
   if (regionId === "ankle-foot") {
     if (includesAny(source, ["走路", "步行", "承重"])) ids.push("function:ankle-weight-bearing");
     if (includesAny(source, ["下蹲", "蹲起", "深蹲"])) ids.push("function:ankle-squat");
-    if (includesAny(source, ["膝碰墙", "背屈", "踝前卡", "下楼"])) ids.push("function:ankle-knee-wall");
+    if (includesAny(source, ["膝碰墙", "背屈", "踝前卡"])) ids.push("function:ankle-knee-wall");
+    if (includesAny(source, ["下楼", "下台阶"])) ids.push("function:ankle-step-down");
     if (includesAny(source, ["提踵", "踮脚", "蹬地"])) ids.push("function:ankle-heel-raise");
     if (includesAny(source, ["单腿", "单脚站"])) ids.push("function:ankle-single-leg");
     if (includesAny(source, ["跑", "跳", "落地"])) ids.push("function:ankle-hop");
@@ -300,7 +303,8 @@ export function functionActionIsRelevant(regionId: string, itemId: string, intak
     if (itemId === "ankle-hop") return (intake.goal ?? 0) >= 4 && !isAcuteTrauma(intake) && hasExplicitSportDemand(intake, "run-or-jump");
     if (itemId === "ankle-heel-raise") return !isAcuteTrauma(intake) || includesAny(source, ["提踵", "蹬地", "跑", "跟腱"]);
     if (itemId === "ankle-single-leg") return !isAcuteTrauma(intake) || includesAny(source, ["单脚", "不稳", "平衡"]);
-    if (itemId === "ankle-knee-wall") return !intake.symptoms?.includes("肿胀或淤青") && includesAny(source, ["蹲", "楼", "踝前", "活动受限", "走"]);
+    if (itemId === "ankle-knee-wall") return !intake.symptoms?.includes("肿胀或淤青") && includesAny(source, ["蹲", "踝前", "活动受限", "走"]) && !includesAny(source, ["楼"]);
+    if (itemId === "ankle-step-down") return !intake.symptoms?.includes("肿胀或淤青") && includesAny(source, ["下楼", "下台阶", "楼"]);
     if (itemId === "ankle-squat") return includesAny(source, ["蹲", "下楼", "下台阶"]);
     return itemId === "ankle-weight-bearing" && (!hasClearChiefAction(intake) || includesAny(source, ["走路", "步行", "承重"]));
   }

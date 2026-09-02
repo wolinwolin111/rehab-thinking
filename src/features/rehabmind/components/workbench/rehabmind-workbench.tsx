@@ -5563,7 +5563,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   function applyIntakeChange(
     nextOrUpdater: IntakeState | ((current: IntakeState) => IntakeState),
-    options: { preservePriorProblem?: boolean } = {},
+    options: { preservePriorProblem?: boolean; preserveConfirmation?: boolean } = {},
   ) {
     const next = typeof nextOrUpdater === "function" ? nextOrUpdater(intakeRef.current) : nextOrUpdater;
     const hasDownstreamFacts = Object.keys(assessmentResultsRef.current).length > 0
@@ -5597,10 +5597,14 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     setIntake(next);
     setReviewStep(null);
     setTransitionTarget(null);
-    setSafety({});
-    setSafetyStage(0);
-    setBoneRisk({});
-    setImaging(inferImagingFromDescription(next.description));
+    // 手术三题属于本次确认流程内部的答案，改动它不应清空安全信号/骨性风险/影像
+    // 选择或跳回第一步；只有真正改动主诉（描述、区域等）时才重置这些确认答案。
+    if (!options.preserveConfirmation) {
+      setSafety({});
+      setSafetyStage(0);
+      setBoneRisk({});
+      setImaging(inferImagingFromDescription(next.description));
+    }
     assessmentResultsRef.current = {};
     setAssessmentResults({});
     setAssessmentIndex(0);
@@ -6413,9 +6417,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         surgeryTimings={SURGERY_TIMINGS}
         postopRouting={postopRouting}
         consultationUrl={`${REHABGUIDE_BASE}/consultation`}
-        onSurgeryHad={(value) => applyIntakeChange((current) => ({ ...current, surgeryHad: value as "no" | "yes" | "unsure", surgeryProcedure: value === "yes" ? current.surgeryProcedure ?? "" : "", surgeryTiming: value === "yes" ? current.surgeryTiming ?? "" : "" }))}
-        onSurgeryProcedure={(value) => applyIntakeChange((current) => ({ ...current, surgeryProcedure: value }))}
-        onSurgeryTiming={(value) => applyIntakeChange((current) => ({ ...current, surgeryTiming: value }))}
+        onSurgeryHad={(value) => applyIntakeChange((current) => ({ ...current, surgeryHad: value as "no" | "yes" | "unsure", surgeryProcedure: value === "yes" ? current.surgeryProcedure ?? "" : "", surgeryTiming: value === "yes" ? current.surgeryTiming ?? "" : "" }), { preserveConfirmation: true })}
+        onSurgeryProcedure={(value) => applyIntakeChange((current) => ({ ...current, surgeryProcedure: value }), { preserveConfirmation: true })}
+        onSurgeryTiming={(value) => applyIntakeChange((current) => ({ ...current, surgeryTiming: value }), { preserveConfirmation: true })}
         onSaveReferral={() => saveRecord("术后转介专项指导站")}
         backLabel={safetyStage === 0 ? "返回症状信息" : "上一步"}
         continueLabel={safetyStage === 0 ? hasSafetySignal ? "继续填写医生结论" : needsBoneQuestions ? "继续确认骨性风险" : "继续填写影像结论" : safetyStage === 1 ? "继续填写影像结论" : "开始评估检查"}
@@ -6786,13 +6790,13 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
     <header className="rm-topbar">
-      <button type="button" className="rm-brand" data-rehabmind-tutorial="brand" onClick={resetDemo}><b>RM</b><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></button>
+      <span className="rm-brand" data-rehabmind-tutorial="brand"><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></span>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
       <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于悦舒运动康复</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
     </header>
     <div className="rm-context-hints">
-      <OnceHint id="case-code" active={!testContext && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
+      <OnceHint id="case-code" className="rm-floating-hint" autoDismissMs={3200} active={!testContext && !onboardingOpen && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
     </div>
     {snapshotFreshness ? <SnapshotFreshnessBanner
       freshness={snapshotFreshness}

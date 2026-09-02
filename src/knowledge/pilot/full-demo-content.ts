@@ -396,6 +396,7 @@ const ankleFoot: FullRegion = {
     functional("ankle-squat", "下蹲", "双脚自然站立，扶住固定物，慢慢下蹲到舒适深度再站起。", "两边膝盖高度、膝盖方向和脚跟是否提前抬起。", ["squat", "dorsiflexion", "lower-chain"]),
     functional("ankle-weight-bearing", "走路与患侧承重", "在可扶持环境下走一小段。先看患侧能否承重，再观察脚跟着地、身体经过支撑脚和脚尖蹬地是否连贯。", "记录能否承重、是否跛行、哪一步出现症状，以及左右步幅是否明显不同。", ["weight-bearing", "gait", "rocker", "push-off"], "明显错位或足部持续发白、发凉、麻木时不测试；急性疼痛明显时不用硬走。"),
     functional("ankle-knee-wall", "膝碰墙背屈", "脚跟不离地，膝盖向墙移动；从容易距离开始，左右比较最远可控距离。", "脚跟、足弓和膝方向，踝前卡痛或小腿牵扯。", ["weight-bearing-dorsiflexion", "squat"], "急性明显肿胀或不能稳定负重时暂不测试。"),
+    functional("ankle-step-down", "下台阶", "扶住栏杆，站在固定高度台阶上，患侧支撑，健侧脚跟慢慢点地再回起。", "患侧承重阶段、踝足方向与足弓稳定、下降控制和0～10分。", ["step-down", "eccentric", "stairs", "ankle-control"], "急性明显肿胀、不能稳定负重或走路仍明显疼时暂不测试。"),
     functional("ankle-heel-raise", "提踵", "先双脚同步提踵10个，再根据耐受做单脚提踵。", "高度、节奏、足弓、跟腱/小腿症状和高质量次数。", ["heel-raise", "push-off"]),
     functional("ankle-single-leg", "单腿站", "靠近墙，先做健侧，再用患侧单腿站立20秒，必要时手指轻扶。", "身体是否明显晃动，患侧是否明显更难站稳。", ["balance", "single-leg"]),
     functional("ankle-hop", "小跳与落地", "只在步态、提踵和单腿站稳定后，完成双脚小跳，再考虑单脚。", "落地疼痛、不稳、缓冲和再次起跳能力。", ["hop", "landing", "sport"], "急性损伤、肿胀、走路仍疼或提踵明显不足时不测试。"),

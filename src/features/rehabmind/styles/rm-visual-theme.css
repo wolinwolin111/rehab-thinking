@@ -320,6 +320,9 @@ body:has(.rm-app) {
 .rm-training-warning,
 .rm-no-response-note { border-radius: 14px; }
 .rm-route-note.is-clear { background: var(--rm-visual-mint-soft); }
+/* 转介/警示卡里的次级按钮：complete-demo.css 的 `.rm-route-note button` 强制白字，
+   而视觉主题把背景改浅却没重置文字色 → 白字浅底看不见。这里显式给深色字+白底+可见描边。 */
+.rm-route-note .rm-page-actions > button:not(.rm-primary) { color: var(--rm-visual-ink); background: #fff; border-color: var(--rm-visual-line); }
 
 .rm-workbench-stage-grid { gap: 10px; }
 .rm-workbench-stage {
@@ -978,6 +981,7 @@ body:has(.rm-app) {
   .rm-heading h1 { letter-spacing: 0; }
   .rm-mobile-stagebar { top: 58px; }
   .rm-context-hints { width: auto; margin: 8px 10px; position: static; }
+  .rm-context-hints .rm-floating-hint { position: fixed; top: 68px; left: 10px; right: 10px; z-index: 160; box-shadow: 0 10px 30px rgba(28, 55, 78, .18); }
   .rm-mobile-summary { min-height: 56px; width: calc(100% - 20px); right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); padding: 8px 16px; border-radius: 8px; }
   .rm-problem-strip > div,
   .rm-score-history > div { display: grid; grid-template-columns: minmax(0, 1fr); overflow-x: visible; }

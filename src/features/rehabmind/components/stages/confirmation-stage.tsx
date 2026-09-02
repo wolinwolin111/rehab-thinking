@@ -87,7 +87,15 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
 
     {safetyStage === 2 ? <div className="rm-form-block"><div className="rm-label"><span>已有影像或医生结论</span><b>不要求粘贴报告原文</b></div><div className="rm-imaging">{imagingOptions.map((option) => <button type="button" key={option} className={imaging.includes(option) ? "is-selected" : ""} onClick={() => onImagingToggle(option)}>{option}</button>)}</div></div> : null}
 
-    {showSurgeryQuestion ? <section className="rm-form-block" data-rehabmind-test="surgery-question">
+    {showSurgeryQuestion ? (() => {
+      const hadLabel = surgeryHad === "yes" ? "做过" : surgeryHad === "no" ? "没做过" : surgeryHad === "unsure" ? "不确定" : "";
+      const procedureLabel = surgeryProcedures.find((item) => item.id === surgeryProcedure)?.label ?? "";
+      const timingLabel = surgeryTimings.find((item) => item.id === surgeryTiming)?.label ?? "";
+      const fullyAnswered = surgeryHad === "no" || surgeryHad === "unsure" || (surgeryHad === "yes" && Boolean(surgeryProcedure) && Boolean(surgeryTiming));
+      if (fullyAnswered) return <section className="rm-form-block" data-rehabmind-test="surgery-question">
+        <div className="rm-surgery-confirmed"><span>这个部位做过手术吗？</span><strong>{surgeryHad === "yes" ? `做过 · ${procedureLabel} · ${timingLabel}` : hadLabel}</strong><button type="button" data-rehabmind-test="surgery-edit" onClick={() => onSurgeryHad("")}>修改</button></div>
+      </section>;
+      return <section className="rm-form-block" data-rehabmind-test="surgery-question">
       <div className="rm-label"><span>这个部位做过手术吗？</span><b>术后恢复以手术医生的方案为先</b></div>
       <div className="rm-imaging">{([["no", "没做过"], ["yes", "做过"], ["unsure", "不确定"]] as const).map(([value, label]) => <button type="button" key={value} data-rehabmind-test={`surgery-had-${value}`} className={surgeryHad === value ? "is-selected" : ""} onClick={() => onSurgeryHad(value)}>{label}</button>)}</div>
       {surgeryHad === "yes" ? <>
@@ -96,7 +104,8 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
         <div className="rm-label"><span>距手术多久？</span></div>
         <div className="rm-imaging">{surgeryTimings.map((item) => <button type="button" key={item.id} data-rehabmind-test={`surgery-timing-${item.id}`} className={surgeryTiming === item.id ? "is-selected" : ""} onClick={() => onSurgeryTiming(item.id)}>{item.label}</button>)}</div>
       </> : null}
-    </section> : null}
+    </section>;
+    })() : null}
     {postopRouting.action === "proceed-recorded" ? <p className="rm-inline-note" data-rehabmind-test="postop-recorded-note">已记录：{postopRouting.procedureLabel}（{postopRouting.timingLabel}）——已过该术式的专项指导期，按普通流程继续；范围内活动仍以医生允许为准。</p> : null}
 
     {safetyStage === 2 && hasSafetySignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>接下来</span><h2>先完成针对性医学评估</h2><p>明显错位、远端感觉或循环异常、力量持续下降以及发热伴快速加重，不适合继续普通检查。本次信息会保存。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && structuralImagingSignal && !hasClearance ? <section className="rm-route-note is-waiting"><span>先确认医生意见</span><h2>影像提示结构异常</h2><p>先明确允许的负重、活动范围和训练时间。获得医生允许后，可以回到本次记录继续评估。</p><button type="button" onClick={onSaveMedicalReview}>保存本次信息</button></section> : safetyStage === 2 && safetyAnswered && boneQuestionsAnswered && imaging.length > 0 ? <section className="rm-route-note is-clear"><span>接下来</span><h2>{boneImagingSuggested && imaging.includes("没有做影像") ? "先做轻柔检查，同时安排影像确认" : "开始本次功能检查"}</h2></section> : null}
