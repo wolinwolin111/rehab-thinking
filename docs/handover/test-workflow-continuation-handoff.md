@@ -46,8 +46,9 @@ $ok=$false; for($i=0;$i -lt 45;$i++){ try { $r=Invoke-WebRequest -Uri "http://lo
 
 ### 1.4 本机（DSH Web 环境）修正（2026-09-01 实测，优先级高于 §1.2）
 
-- **禁止 `Get-Process node | Stop-Process -Force`**：本机 DSH harness 自身以 node 进程运行，全杀会杀掉 agent 运行时与无关进程。清理 dev server 按端口定位：`(Get-NetTCPConnection -LocalPort <port> -State Listen).OwningProcess` → `Stop-Process -Id <pid>`。
-- **端口 3000 常驻开发侧 dev server**（从 `rehab-thinking-demo` worktree 启动，服务 main + 其未提交 src）。测试侧回归一律用 **3001**：`Start-Process cmd.exe -ArgumentList "/c npm.cmd run dev -- --port 3001 > .tmp\dev-server-3001.log 2>&1" -WorkingDirectory <agent/testing worktree>`，跑 playwright 前 `$env:WALKTHROUGH_URL="http://localhost:3001/"`（config 的 reuseExistingServer 会复用）。
+- **禁止 `Get-Process node | Stop-Process -Force`**：本机 DSH harness 自身以 node 进程运行，全杀会杀掉 agent 运行时与无关进程。用一键编排器时其 `stopServer` 已按 PID 自清理，正常**无需手动杀任何 node**；确需清理 dev server 时按端口定位：`(Get-NetTCPConnection -LocalPort <port> -State Listen).OwningProcess` → `Stop-Process -Id <pid>`。
+- **回归优先用一键编排器，别手动起服**：`node scripts/quality/run-test-regression.mjs` 会自管一个 **3001** dev server（`ensureServer` 有则复用、无则起，并注入 `WALKTHROUGH_URL=3001`；跑完 `stopServer` 按 PID 收口），**无需再手动起 3001**。手动起 3001 仅用于交互式 probe 或直跑单条 playwright 排查。
+  - ⚠️ **两条路径别混着并行**：直跑 `npm run test:browser:full`（未设 WALKTHROUGH_URL）时 config webServer 起的是 **3000**；若此时还留着一个手动 3001，= 两个 vite server 抢编译 → 早期用例 goto/click 超时假失败（本会话踩过）。要么走编排器（单 3001），要么直跑前先停掉手动 3001。冷编译超时已由 §6 的超时余量兜住，但仍应避免双 server 争用。
 - **dev server 运行期间不要编辑 worktree 文件**：编辑工具的原子改名写入会让 vinext 文件监视器抛 `EBUSY` 杀死 server（表现为后续用例连片 `ERR_CONNECTION_REFUSED`）。先编辑、后起 server、再跑用例；中途改了文件就重启 server。
 - **origin/main 与本地 main 无共同祖先**（GitHub main 停在 08-23 旧历史）。协作以**本地 main** 为准（两 worktree 共享 `.git`，`git merge main` 即达）；`git fetch` 后不要 merge `origin/main`；origin 仅用于 `push origin agent/testing`。
 - PowerShell 下 `npx.cmd`/`npm.cmd` 的 npm warn 走 stderr 会造成假 exit 1，判绿仍以 `passed/failed` 行为准。
