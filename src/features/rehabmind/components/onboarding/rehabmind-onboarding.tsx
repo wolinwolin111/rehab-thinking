@@ -61,7 +61,7 @@ export function RehabMindOnboarding({
   if (!isFocusMode) {
     return <div ref={dialogRef} className="rm-product-welcome" role="dialog" aria-modal="true" aria-labelledby="rm-welcome-title" tabIndex={-1}>
       <div className="rm-product-welcome-inner">
-        <header><b>RM</b><span>悦舒运动康复</span></header>
+        <header><img className="rm-brand-mark" src="/logo-mark.png" alt="" width="40" height="40" /><span>悦舒运动康复</span></header>
         <section>
           <span>悦舒运动康复</span>
           <h1 id="rm-welcome-title">你的线上康复助手</h1>

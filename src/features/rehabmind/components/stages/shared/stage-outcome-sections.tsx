@@ -20,6 +20,8 @@ export type ChiefOutcomeSummaryProps = {
   hasClearChiefAction: boolean;
   /** 双侧主诉不可比分时显示「已分别记录两侧的整体感受」。 */
   bilateralNoScore?: boolean;
+  /** 本轮是否真的做过主诉复测；没做过时不能谎称「已复查」。 */
+  chiefRetested?: boolean;
   /** 没有固定加重动作时的兜底文案。 */
   noActionCopy: string;
 };
@@ -29,9 +31,13 @@ export type ChiefOutcomeSummaryProps = {
  * 两个完成面板共用，标题只陈述复查结论，不再用主诉动作清单冒充已处理项。
  */
 export function ChiefOutcomeSummary(props: ChiefOutcomeSummaryProps) {
-  const { chiefScoreComparable, chiefImproved, noImmediateTreatmentResponse, baselineScore, lastChiefScore, reportedActions, hasClearChiefAction, bilateralNoScore = false, noActionCopy } = props;
+  const { chiefScoreComparable, chiefImproved, noImmediateTreatmentResponse, baselineScore, lastChiefScore, reportedActions, hasClearChiefAction, bilateralNoScore = false, chiefRetested = false, noActionCopy } = props;
+  const chiefTitle = chiefScoreComparable && noImmediateTreatmentResponse ? "主诉暂无明显变化"
+    : chiefImproved ? "主诉变轻"
+    : chiefRetested ? "主诉动作已复查，没有明显变化"
+    : "主诉动作本次未单独复查";
   return <>
-    <h2>{chiefScoreComparable && noImmediateTreatmentResponse ? "主诉暂无明显变化" : chiefImproved ? "主诉变轻" : "主诉动作已复查"}</h2>
+    <h2>{chiefTitle}</h2>
     {chiefScoreComparable
       ? <div className="rm-final-score"><b>{baselineScore}</b><i>→</i><strong>{lastChiefScore}</strong><small>下降 {Math.max(0, baselineScore - lastChiefScore)} 分</small></div>
       : bilateralNoScore && hasClearChiefAction

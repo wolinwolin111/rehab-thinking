@@ -394,7 +394,7 @@ export function SymptomStage(props: SymptomStageProps) {
     <StepHeading eyebrow="第1步 · 症状信息" title={intake.parsed ? professionalIntake ? "记录主诉与评估条件" : "确认你的问题信息" : "请描述你的问题"} note={intake.parsed ? professionalIntake ? "可一次填写多个字段；患者原话、检查条件和专业判断分开记录。" : undefined : "请说明不适部位、出现时间、受影响的动作和恢复目标。"} tutorialTarget="flow-mobile" />
     {!intake.parsed ? <>
       <div className="rm-hero-input" data-rehabmind-tutorial="symptom-block">
-        <label htmlFor="chief-description">不适部位 · 出现时间 · 受影响动作 · 恢复目标</label>
+        <label htmlFor="chief-description" className="rm-entry-hint">不适部位 · 出现时间 · 受影响动作 · 恢复目标</label>
         <textarea id="chief-description" data-rehabmind-tutorial="symptom-input" value={intake.description} onChange={(event) => setIntake((current) => ({ ...current, description: event.target.value }))} placeholder="例如：右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。" />
         <p className="rm-entry-example">例如：右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。</p>
         <small>不清楚的内容可以写“不清楚”。</small>
@@ -417,7 +417,7 @@ export function SymptomStage(props: SymptomStageProps) {
       </details>
 
       <section className="rm-guided-status">
-        <span>{showAllIntakeFields ? "全部信息" : guidedQuestionReady ? "这一项已完成" : missingFields.length > 5 ? "只补充最关键的信息" : missingFields.length ? `还需 ${missingFields.length} 项` : "信息已完成"}</span>
+        <span>{showAllIntakeFields ? "全部信息" : guidedQuestionReady ? "这一项已完成" : missingFields.length > 5 ? "先补最关键的几项" : missingFields.length ? `还需 ${missingFields.length} 项` : "信息已完成"}</span>
         <h2>{showAllIntakeFields ? "按需要修改" : guidedFieldTitle || "你希望恢复到什么程度？"}</h2>
         <p>{showAllIntakeFields ? "只改需要调整的内容即可。" : missingFields.length || guidedQuestionReady ? "选好后直接点下一步。" : "信息已补充完成。"}</p>
       </section>

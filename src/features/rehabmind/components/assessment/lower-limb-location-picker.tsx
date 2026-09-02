@@ -224,7 +224,7 @@ export default function LowerLimbLocationPicker({ value, initialRegionId, initia
         ? { eyebrow: "先选择左右和部位，再点麻、电或感觉变化的区域", title: "感觉变化到哪里？", selected: "已标记的感觉变化", empty: "先在图上标出麻、电或感觉变化的范围。" }
         : mode === "assessment"
           ? { eyebrow: "直接点图上的位置", title: "刚才哪里不舒服？", selected: "这次动作出现不适的位置", empty: "请在图上点出刚才出现不适的位置。" }
-      : { eyebrow: "一次只评估一个大部位，同一部位可以标记多个具体位置", title: "这次最想解决哪里？", selected: "本次主要问题", empty: "先选择左腿或右腿和部位，再点击图上的具体位置。" };
+      : { eyebrow: "先选一个大部位，可标记多个位置", title: "这次最想解决哪里？", selected: "本次主要问题", empty: "先选择左腿或右腿和部位，再点击图上的具体位置。" };
 
   const toggleZone = (zone: AtlasZone) => {
     if (!activeSide) return;
