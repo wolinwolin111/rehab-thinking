@@ -6,8 +6,12 @@ import path from "node:path";
  * 测试侧一键回归编排器（agent/testing 专用）。
  *
  * 链式执行：test:fast → check:knowledge →（起 3001 dev server）→ browser full
- * → overall → mobile-preview →（收尾停服），从输出提取 passed/failed/skipped
+ * → mobile-preview →（收尾停服），从输出提取 passed/failed/skipped
  * 与 node:test pass/fail 计数，产出紧凑判决 + manifest，绑定当前 commit。
+ *
+ * 注：edge-full 的 testMatch 无 grepInvert，已含 overall/ 目录全部 spec，故 overall
+ * 不再单列（旧版每批原地重跑一遍，纯重复）。需要单独跑 overall 时用
+ * `npm run test:browser:overall`。
  *
  * 纪律内置：
  * - 逻辑层先跑（test:fast 的 build 会重写 release.generated.ts，此时 server 未起，
@@ -16,7 +20,7 @@ import path from "node:path";
  * - 判绿以计数行为准（failed>0 即红），退出码兜底；fixme 计 skipped。
  *
  * 用法：node scripts/quality/run-test-regression.mjs [--workers=N] [--only=a,b] [--skip=a,b] [--all]
- *   套件 id：fast | knowledge | full | overall | mobile。
+ *   套件 id：fast | knowledge | full | mobile。
  *   默认遇红即停（门禁模式）；--all 跑完全部再汇总（摸底模式）。
  */
 
@@ -135,7 +139,7 @@ const suites = [
   { id: "fast", script: "test:fast", needsServer: false },
   { id: "knowledge", script: "check:knowledge", needsServer: false },
   { id: "full", script: "test:browser:full", needsServer: true },
-  { id: "overall", script: "test:browser:overall", needsServer: true },
+  // overall 不列：edge-full 已含 overall/ 全部 spec（见文件头注）。
   { id: "mobile", script: "test:browser:mobile-preview", needsServer: true },
 ].filter((suite) => (!only || only.includes(suite.id)) && !skip.has(suite.id));
 

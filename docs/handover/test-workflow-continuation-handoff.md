@@ -59,18 +59,19 @@ $ok=$false; for($i=0;$i -lt 45;$i++){ try { $r=Invoke-WebRequest -Uri "http://lo
 ## 2. 常用命令（回归顺序）
 
 ```powershell
-# 一键回归（推荐，见 scripts/quality/run-test-regression.mjs）：链式跑 fast→knowledge→(起3001)→full→overall→mobile→(停服)，
+# 一键回归（推荐，见 scripts/quality/run-test-regression.mjs）：链式跑 fast→knowledge→(起3001)→full→mobile→(停服)，
 # 自动提取 passed/failed 判绿、产 manifest、绑定 commit。默认遇红即停；--all 摸底全跑；--workers=2 轮内提速。
+# 读结果只看末尾 `verdict=` 行 + 每套件一行 PASS/FAIL（原始日志已落 artifacts/.../logs/，不必啃）。
 node scripts/quality/run-test-regression.mjs --workers=2
-node scripts/quality/run-test-regression.mjs --only=full,overall,mobile --workers=2 --all   # 只浏览器三套件
+node scripts/quality/run-test-regression.mjs --only=full,mobile --workers=2 --all   # 只浏览器两套件
 node scripts/quality/run-test-regression.mjs --skip=fast,knowledge                          # 逻辑层刚跑过时
 
 # 手动分步（runner 不可用或需单步排查时）：
 npm.cmd run test:fast            # check:boundaries + typecheck + build + unit/workflow/component（EXITCODE 0 为准）
 npm.cmd run check:knowledge      # 知识一致性：cases=8/episodes=11/findings=22/treatments=14/retests=14
-npm.cmd run test:browser:full    # 全量浏览器（edge-full）
-npm.cmd run test:browser:overall # overall 双侧组
-npm.cmd run test:browser:mobile-preview  # pixel-5 + iphone-13
+npm.cmd run test:browser:full    # 全量浏览器（edge-full，已含 overall/ 全部 spec）
+npm.cmd run test:browser:mobile-preview  # pixel-5 + iphone-13（唯一视口/引擎，非 full 子集）
+# overall 不再单列（edge-full 已覆盖）；需单独跑时用：npm.cmd run test:browser:overall
 # 场景内单跑：
 npx.cmd playwright test <spec> --project=edge-full -g "X-1"
 npx.cmd playwright test <spec> --project=edge-full   # 整文件（fixme 会 skip，看 passed/skipped/failed）
@@ -112,6 +113,8 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 **唯一权威清单**在 `docs/handover/test-session-handoff-index-2026-08-31.md`（按 dev 基线由旧到新逐档列出，当前 9 档：知识重构批次1 → 工作台批次1/2 → 最近一次出现时间 → 非生产区域清理 → 疼痛对比+恐动拆分 → outcome-slim → Phase 4.1 fixme 转化 → 批 G/H/G修复/I/J-1 绑定）。本档不再复制该列表（避免漂移）。
 
 每份主题档含：验收结论、场景表、关键知识（DOM/testid/文案）、回归记录、待办。**主题档是冻结证据链，只追加不改写**；当前口径只认 §8 活文档白名单 5 份 + 当期主题档。接手时按需检索具体主题，不必全读。
+
+**2026-09-02 瘦身**：每批验收记录改为「索引表追加一行 + §6 基线更新」，不再每批新建主题档（见 §7 步骤 4）。既有主题档保留为冻结证据链，不追溯删除。
 
 ---
 
@@ -167,7 +170,8 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 1. 先读该批 `docs/handover/development-to-test-<主题>-<日期>.md`（权威输入：批次 SHA、断言对照表=契约迁移说明、新场景与靶子 id、可判定不变式、非阻塞范围、已知坑），再按通报 SHA 核对：`git log --oneline <sha> -3` 确认在 main 线上 + `git merge <sha>`（读 diff/stat 与 dev 随附的契约迁移说明，先理解改动；勿用 `merge main`，main 可能已推进到下一批）。
 2. 读 dev 提交的关键实现（`git show <sha> -- <file>`）确认 UI 文案/DOM/字段。
 3. **probe 先行**：写临时 `tests/browser/scenarios/_probeNN.spec.ts` 用 `launchWorkbenchScenario` 或 driver 实探实际渲染（按钮/文案/testid），确认断言点后再写正式场景。
-4. 写正式场景（一个主题归档为一个 spec），跑通 → 更新 registry → 写/更新交接文档 → 全量回归 → 提交推送。
+4. 写正式场景（一个主题归档为一个 spec），跑通 → 更新 registry → **记录**（见下）→ 全量回归（用一键 runner，读 `verdict=` 行）→ 提交推送。
+   - **记录口径（2026-09-02 瘦身）**：每批**不再新建 `test-session-handoff-*` 主题档**。每批只在 `test-session-handoff-index-2026-08-31.md` 表格**追加一行**（dev 基线 / 关联场景 / 一句话结论）+ 更新本档 §6 基线 + registry。仅当一批引入**全新主题、值得独立证据链**（如整块新工作台）才破例开主题档。理由：主题档不抓 bug，每批新建是纯 token 开销；索引行 + §6 已足够追溯。
 5. 整理「可转开发」回复。
 
 ---
