@@ -13,6 +13,8 @@ async function render() {
 const SIX_STEPS = ["症状信息", "关键确认", "评估检查", "处理复测", "训练居家", "康复总结"];
 
 const coreSource = await readFile(new URL("../../src/domain/rehab/treatment/build-trial-targets-core.ts", import.meta.url), "utf8");
+const tensionCore = await readFile(new URL("../../src/domain/rehab/assessment/muscle-tension-assessment-core.ts", import.meta.url), "utf8");
+const p0AccessSource = await readFile(new URL("../../src/knowledge/rehab/p0-assessment-access.ts", import.meta.url), "utf8");
 
 // 运行时知识面只含已验证知识合同：4 个生产区域；7 个非生产区域从 FULL_REGIONS 移除，
 // 名称由 UNSUPPORTED_REGION_NAMES 表提供（「暂不支持」提示不再依赖知识数据）。
@@ -493,6 +495,16 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   );
   assert.match(demo, /directionIsRelevant\(region\.id, item\.id, intake\) \|\| continuationRoundIds\.includes\(`motion:\$\{item\.id\}`\)/);
   assert.match(demo, /strengthIsRelevant\(region\.id, item\.id, intake\) \|\| continuationRoundIds\.includes\(`strength:\$\{item\.id\}`\)/);
+
+  // 触诊"没差别"哨兵统一（138e2b1，C1 潜在 bug 修复）：TENSION_NO_DIFFERENCE_LABELS
+  // 单一定义（3 项），buildTrialTargets 两处过滤（selectedTensionLocations /
+  // buildMotionTarget.selectedTension）必须复用该常量，禁止局部硬编码 2/1 项漏滤
+  // 生成空泛「XX轻柔松解」候选。K-P0-06 注释保留（独立评审项，纯注释无行为）。
+  assert.match(tensionCore, /TENSION_NO_DIFFERENCE_LABELS = \["没有明显差别", "两侧感觉接近", "暂不判断"\]/);
+  assert.match(coreSource, /import \{ TENSION_NO_DIFFERENCE_LABELS \} from "@\/src\/domain\/rehab\/assessment\/muscle-tension-assessment-core"/);
+  assert.equal((coreSource.match(/TENSION_NO_DIFFERENCE_LABELS\.includes\(location/g) ?? []).length, 2);
+  // K-P0-06 注释保留（独立评审项，勿删——见 138e2b1 提交说明）。
+  assert.match(p0AccessSource, /K-P0-06.*膝后与小腿后侧/);
 
   // Later workflow stages stay locked until the required prior work is complete.
   for (const gate of [
