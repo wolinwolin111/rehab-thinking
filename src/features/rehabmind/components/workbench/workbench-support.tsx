@@ -1217,6 +1217,7 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:ankle-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
   "function:ankle-weight-bearing": ["走路明显一瘸一拐", "不敢让不舒服的一边踩实", "需要扶着才能走", "脚步明显变短"],
   "function:ankle-knee-wall": ["脚跟提前抬起", "膝盖向内或向外偏", "足弓塌下", "踝前卡住或小腿牵扯"],
+  "function:ankle-step-down": ["脚踝向内或向外晃", "足弓塌下", "不敢让支撑脚完全承重", "下降时突然掉下去", "需要扶住栏杆"],
   "function:ankle-hop": ["落地不敢承重", "脚踝向内或向外晃", "落地时膝盖明显内扣", "无法连续完成"],
   "function:thigh-walk": ["迈步时跛行", "患侧支撑时间变短", "身体向一侧偏", "蹬地时症状明显"],
   "function:thigh-sit-stand": ["起身时偏向另一侧", "膝盖向内偏", "需要用手撑", "坐下时突然掉下去"],
@@ -2266,6 +2267,7 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "ankle-single-leg": { title: "单脚站立", how: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。", observe: "哪边更容易晃、站不住或引起不适。" },
   "ankle-heel-raise": { title: "踮脚", how: "扶住墙，双脚慢慢踮起再落下，做5次。", observe: "两边脚跟抬起的高度是否接近；哪里不舒服；身体是否明显偏向一边。" },
   "ankle-knee-wall": { title: "脚跟不抬，膝盖向前碰墙", how: "面对墙站立，脚跟贴地，膝盖慢慢向前靠近墙。左右脚使用相同距离各做一次。", observe: "哪边更难碰到墙；脚跟是否抬起；踝前或小腿哪里不舒服。" },
+  "ankle-step-down": { title: "下台阶（脚踝）", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑脚踝是否向内或向外晃；哪边更难控制。" },
 };
 
 export function assessmentTitle(id: string, title: string) {
@@ -2283,6 +2285,7 @@ export function assessmentTitle(id: string, title: string) {
     "ankle-intrinsic": "足弓主动控制",
     "ankle-gait": "走路时脚跟到脚尖的过渡",
     "ankle-knee-wall": "脚跟不抬的屈膝碰墙",
+    "ankle-step-down": "下台阶（脚踝）",
     "ankle-weight-bearing": "不舒服这边承重和走路",
     "ankle-anterior-drawer": "脚踝外侧稳定性检查（专业人员操作）",
     "ankle-thompson": "跟腱连续性检查（小腿挤压）",
