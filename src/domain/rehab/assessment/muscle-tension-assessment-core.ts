@@ -20,8 +20,11 @@ export function needsMuscleTensionCheck(input: TensionMotionInput) {
   return true;
 }
 
+/** 触诊/比较类答案里"没有差别"的哨兵词；所有过滤处必须共用这一份，防止漏滤生成空泛候选。 */
+export const TENSION_NO_DIFFERENCE_LABELS = ["没有明显差别", "两侧感觉接近", "暂不判断"] as const;
+
 export function buildMuscleTensionFindings(input: { assessmentId: string; assessmentTitle: string; locations: string[]; professional?: boolean }) {
-  const locations = [...new Set(input.locations.filter((location) => !["没有明显差别", "两侧感觉接近", "暂不判断"].includes(location)))];
+  const locations = [...new Set(input.locations.filter((location) => !TENSION_NO_DIFFERENCE_LABELS.includes(location as (typeof TENSION_NO_DIFFERENCE_LABELS)[number])))];
   return locations.map((location) => {
     const sideMatch = location.match(/^(左侧|右侧)[｜|·](.+)$/);
     const side = sideMatch?.[1] as "左侧" | "右侧" | undefined;

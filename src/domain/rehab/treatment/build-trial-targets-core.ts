@@ -39,6 +39,7 @@ import {
   limitedPatellaDirections,
   patellaMobilityUnitTitle,
 } from "@/src/domain/rehab/assessment/patella-mobility-core";
+import { TENSION_NO_DIFFERENCE_LABELS } from "@/src/domain/rehab/assessment/muscle-tension-assessment-core";
 import { consolidateTrialTargetsByTreatment } from "@/src/domain/rehab/treatment/trial-target-core";
 import {
   normalizePilotMuscleRegion,
@@ -368,7 +369,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     const abnormalMotionFindings = findings.filter((finding) => finding.priority === "support" && finding.id.startsWith("motion:"));
     const abnormalMotionIds = abnormalMotionFindings.map(motionIdFromFinding);
     const selectedTensionLocations = [...new Set((assessmentResults[SHARED_TENSION_ASSESSMENT_ID]?.tensionLocations ?? [])
-      .filter((location) => !["没有明显差别", "两侧感觉接近"].includes(location)))];
+      .filter((location) => !TENSION_NO_DIFFERENCE_LABELS.includes(location as (typeof TENSION_NO_DIFFERENCE_LABELS)[number])))];
     // 处理单位按区域建立，而不是按“区域 × 每个受限方向”建立。
     // 同一区域只出现一次，并只携带该区域直接影响的异常活动平面。
     const directTensionCandidates: FullCandidateInput[] = selectedTensionLocations.flatMap((location) => {
@@ -505,7 +506,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
     const buildMotionTarget = (finding: FindingInput): TrialTargetOutput | null => {
       const record = assessmentResults[finding.id];
       const directionId = motionIdFromFinding(finding);
-      const selectedTension = sharedTensionLocationsForMotion(finding.id, record ?? {}, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]).filter((location) => location !== "没有明显差别");
+      const selectedTension = sharedTensionLocationsForMotion(finding.id, record ?? {}, assessmentResults[SHARED_TENSION_ASSESSMENT_ID]).filter((location) => !TENSION_NO_DIFFERENCE_LABELS.includes(location as (typeof TENSION_NO_DIFFERENCE_LABELS)[number]));
       const patellaDirection = isPatellaDirectionId(`motion:${directionId}`);
       const ankleP0Direction = region.id === "ankle-foot" && [
         "ankle-dorsiflexion",
