@@ -1412,5 +1412,20 @@
       "ankle",
       "function-plan"
     ]
+  },
+  {
+    "scenarioId": "CUSTOM-ACTION-01-custom-action-placeholder-routing",
+    "ruleIds": [
+      "CUSTOM-ACTION-01"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/function-assessment-plan-core.test.mjs",
+    "titlePattern": "batch2②: a custom action matching no standard function adds a custom-action placeholder card",
+    "notes": "批 e2a00f8 新行为：自定义动作匹配不到任何标准功能项时，chiefFunctionAssessmentIds 追加占位 function:custom-action（评估卡走 4 档负荷 unloaded/assisted/full/skip + 评分，写 customActionLoadTier；硬闸门 急性/肿胀 时改「今天先不做现场复现」+评分）。逻辑层断言两条：抱孩子转身→含 custom-action；下楼→含 knee-step-down 且不含 custom-action。浏览器卡片走查待 dev 加 catalog 靶子后用 launchWorkbenchScenario 稳定覆盖（现无 fixture，驱动整条 full flow 太脆）",
+    "tags": [
+      "custom-action",
+      "function-plan"
+    ]
   }
 ]

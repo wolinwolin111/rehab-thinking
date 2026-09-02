@@ -109,3 +109,14 @@ test("ankle 踝前卡/背屈 chief still routes to ankle-knee-wall (unaffected b
   assert.equal(front.some((item) => item.id === "ankle-knee-wall"), true);
   assert.equal(front.some((item) => item.id === "ankle-step-down"), false);
 });
+
+test("batch2②: a custom action matching no standard function adds a custom-action placeholder card", () => {
+  const ids = core.chiefFunctionAssessmentIds({ ...base, regionId: "knee", customAction: "抱孩子转身时不舒服" }, "knee");
+  assert.equal(ids.includes("function:custom-action"), true);
+});
+
+test("batch2②: a custom action that matches a standard item uses that item, not the placeholder", () => {
+  const ids = core.chiefFunctionAssessmentIds({ ...base, regionId: "knee", customAction: "下楼时不舒服" }, "knee");
+  assert.equal(ids.includes("function:knee-step-down"), true);
+  assert.equal(ids.includes("function:custom-action"), false);
+});
