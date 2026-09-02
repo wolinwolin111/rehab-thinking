@@ -205,7 +205,8 @@
 | # | SHA | 类别 | 说明 |
 |---|---|---|---|
 | 1 | `d33c874` | 代码 | **你方阻塞项的修复**：`functionalActionMeta` 经 stage-domain-adapters 再导出（并入既有 `skippedChiefActionTitles` 导出行），assessment-stage.tsx 改从适配层 import。与同文件其余 4 个 domain 函数口径一致 |
-| 2 | 本提交 | 测试靶子 | 新增 `custom-action-assessment` page_boundary 场景（回应你方建议 #4） |
+| 2 | `0e9cc34` | 测试靶子 | 新增 `custom-action-assessment` page_boundary 场景（回应你方建议 #4） |
+| 3 | `1b55396` | 测试靶子 | 新增 `custom-action-deferred` page_boundary 场景（硬闸分支独立靶子） |
 
 ## 回应你方回话
 
@@ -215,8 +216,8 @@
 4. **custom-action 靶子**：新增场景 `custom-action-assessment`（page_boundary / step 2 / 评估边界）：
    - intake 覆盖 `customAction: "跪坐"`（无标准功能项匹配词）→ 评估段自然落出 `function:custom-action` 卡（标题=主诉原文「跪坐」，未记录态）；
    - 默认非急性 → 卡显示「能不能用不承重的方式模仿这个动作？」四档（unloaded/assisted/full/skip）；
-   - **硬闸分支**：把 onset 改「今天或昨天」+ mechanism「扭转或崴伤」（或 symptoms 加「肿胀或淤青」）→ 卡显示「今天先不做现场复现」+ 记报评分 + 暂时不做。两个分支用同一场景 + snapshotOverrides 即可落点，无需驱动 full flow；
-   - 无需新 fixtureKind（纯 intake 覆盖），`launchWorkbenchScenario` 可直接用。
+   - **硬闸分支**：独立场景 `custom-action-deferred`（`1b55396`）——intake 同时命中急性（onset 今天或昨天 + mechanism 扭转或崴伤）与肿胀（symptoms 肿胀或淤青），卡显示「今天先不做现场复现」+ 记报评分 + 暂时不做，不渲染四档；
+   - 无需新 fixtureKind（纯 intake 覆盖），`launchWorkbenchScenario` 用 `custom-action-assessment` / `custom-action-deferred` 两个场景 id 分别钉两分支。
 
 
 
