@@ -56,7 +56,7 @@ test("SG-2 双侧处理段逐侧复测：台账渲染 + 左右复测交互 + 汇
   await confirm.click();
   await expect(runtime.locator('[data-testid="bilateral-retest-ledger"]')).toHaveCount(0);
   await expect(runtime.locator(".rm-complete-panel")).toHaveCount(1);
-  await expect(runtime.locator(".rm-complete-panel h2")).toContainText(/主诉动作已复查|主诉变轻|主诉暂无明显变化/);
+  await expect(runtime.locator(".rm-complete-panel h2")).toContainText(/主诉动作已复查|主诉变轻|主诉暂无明显变化|主诉动作本次未单独复查/);
   await assertNoHorizontalOverflow(page);
   await assertNoRuntimeErrors(runtimeErrors);
 });

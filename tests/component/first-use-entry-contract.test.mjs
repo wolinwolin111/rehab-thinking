@@ -40,7 +40,7 @@ test("first-use pages use the approved patient-facing copy", async () => {
   ]) {
     expectSourceContains(symptom, { file: "symptom-stage.tsx", snippet }, "首发文案表");
   }
-  assert.match(symptom, /不适部位 · 出现时间 · 受影响动作 · 恢复目标/);
+  assert.match(symptom, /不适部位[\s\S]*·[\s\S]*出现时间[\s\S]*·[\s\S]*受影响动作[\s\S]*·[\s\S]*恢复目标/);
 
   const allCopy = `${welcome}\n${source}\n${consent}\n${symptom}`;
   for (const forbidden of ["按你自己的话说就行", "帮助你看清哪些方向值得继续", "检查、处理、复测和训练"]) {

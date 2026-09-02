@@ -133,14 +133,17 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ---
 
-## 6. 当前测试验收基线（SG-2 双侧逐侧复测台账落定轮，2026-09-02）
+## 6. 当前测试验收基线（mobile UI batch1/1.5 + ankle-step-down 绑定轮，2026-09-03）
 
-全量（edge-full）：**69 passed + 0 skipped**（68+SG-2）；overall 10/10；mobile-preview 2/2；test:fast EXITCODE 0；check:knowledge ok。registry **92 条**。
+全量（edge-full）：**68 passed + 1 failed**（唯一红 = `app-shell-layout`，**真回归**，见下）；test:fast EXITCODE 0（含新增 2 条 ankle 路由单测）；check:knowledge ok。registry **93 条**。
 
-**状态**：dev 分支 `agent/dev-20260901` tip `08f3e5a`（merge `4a07242`）。SG-2（bilateral-per-side-retest）台账已落定：
-- 语义口径（owner 授权）：**专业模式**（康复思路·给别人，能力位仅 passiveRange+palpation）——自助模式膝伸直走 released P0 结构性拿不到处理单元，逐侧复测台账不可达，属产品设计；自助覆盖降级独立条目（非阻塞）。
-- 关键修复根因（dev 挂牌实测）：① 夹具共享触诊英文 id → 生产中文标签「大腿前侧」，`anteriorThighEvidence` 中文匹配；② P0 lineage 门槛 `passive:"limited"` vs 自助剥离 passive。
-- SG-2 断言含台账渲染 + 左右 pending + confirm 门控（未记完 disabled/记全 enabled）+ 确认后台账收敛进完成面板。
+**状态**：dev 分支 `agent/dev-20260901` tip `e661641`（merge `e7d6cd6`；含 dd43ec6 mobile batch1 + 79cbec6/b37d5a0 batch1.5 + e661641 ankle）。测试侧迁移：
+- **契约破坏批 1.5（dev 明列必改）**：症状输入标题拆成分词 `<span>`，`first-use-entry-contract:43` + `rendered-html:136` 字面正则→`[\s\S]*·[\s\S]*`。
+- **B-5 四态**：ChiefOutcomeSummary「主诉动作已复查」拆为四态（新增「本次未单独复查」），SG-2/C-3 完成面板 h2 正则已扩。
+- **视觉基线**：logo/密度/布局改动 → critical-home 桌面+移动 2 张重生成。
+- **ankle-step-down 新行为**：下楼/下台阶 chief 从 ankle-knee-wall 改路由到 ankle-step-down，补 2 条逻辑单测（`function-assessment-plan-core.test.mjs`）+ registry 指针。
+
+🔴 **app-shell-layout 真回归（报 dev，未掩盖）**：批 1.5 C-1 把 `.rm-brand` 从 `<button>` 改成 `<span>` 但**无 `pointer-events:none`**，加上 B-2/C-2 浮动案例编号提示（`position:fixed`），二者在移动端**拦截 stagebar「查看阶段」按钮的点击**（playwright hit-test 证实 topbar brand 盖住按钮点击点）。信息性浮层/非交互 brand 不应挡住控件——建议 `.rm-brand`/`.rm-floating-hint` 加 `pointer-events:none` 或修层叠。测试保持诚实红，不加 workaround 掩盖。
 
 ⚠️ 环境陷阱：playwright 全量回归时禁止并行手动 dev server（3001 抢编译→goto 超时假失败）。
 

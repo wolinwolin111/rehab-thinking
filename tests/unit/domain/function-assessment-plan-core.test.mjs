@@ -95,3 +95,17 @@ test("M-06: 提取被跳过的主诉动作标题（剥离占位后缀）", () =>
   assert.deepEqual(core.skippedChiefActionTitles(findings), ["下楼"]);
   assert.deepEqual(core.skippedChiefActionTitles([]), []);
 });
+
+test("ankle 下楼/下台阶 chief routes to ankle-step-down, not the knee-wall substitute", () => {
+  const down = plan({ regionId: "ankle-foot", reportedActions: [{ raw: "下楼" }] }, ["ankle-step-down", "ankle-knee-wall"]);
+  assert.equal(down.some((item) => item.id === "ankle-step-down"), true);
+  assert.equal(down.some((item) => item.id === "ankle-knee-wall"), false);
+  const stair = plan({ regionId: "ankle-foot", reportedActions: [{ raw: "下台阶" }] }, ["ankle-step-down", "ankle-knee-wall"]);
+  assert.equal(stair.some((item) => item.id === "ankle-step-down"), true);
+});
+
+test("ankle 踝前卡/背屈 chief still routes to ankle-knee-wall (unaffected by step-down add)", () => {
+  const front = plan({ regionId: "ankle-foot", reportedActions: [{ raw: "踝前卡" }] }, ["ankle-step-down", "ankle-knee-wall"]);
+  assert.equal(front.some((item) => item.id === "ankle-knee-wall"), true);
+  assert.equal(front.some((item) => item.id === "ankle-step-down"), false);
+});

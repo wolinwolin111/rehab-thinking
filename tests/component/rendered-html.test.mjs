@@ -133,7 +133,7 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /const PILOT_REGION_IDS = \["thigh-local", "knee", "calf-local", "ankle-foot"\] as const satisfies readonly FullRegionId\[\]/);
   assert.match(demo, /<LowerLimbLocationPicker/);
   assert.match(demo, /请说明不适部位、出现时间、受影响的动作和恢复目标。/);
-  assert.match(demo, /不适部位 · 出现时间 · 受影响动作 · 恢复目标/);
+  assert.match(demo, /不适部位[\s\S]*·[\s\S]*出现时间[\s\S]*·[\s\S]*受影响动作[\s\S]*·[\s\S]*恢复目标/);
   assert.match(demo, /右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。/);
   assert.match(demo, /不清楚的内容可以写“不清楚”。/);
   assert.doesNotMatch(demo, /按你自己的话说就行/);

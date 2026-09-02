@@ -63,7 +63,7 @@ test("C-3 收敛：反复接受补查直到查无可查，卡片消失且完成�
   // 活动范围变化等以一张清单表渲染（类别 | 名称 | 状态行），不再有 article 卡壳结构。
   const outcomePanel = main.locator(".rm-complete-panel").filter({ hasText: "本轮处理已完成" });
   await expect(outcomePanel.locator("h2")).toHaveCount(1);
-  await expect(outcomePanel.locator("h2")).toContainText(/主诉暂无明显变化|主诉变轻|主诉动作已复查/);
+  await expect(outcomePanel.locator("h2")).toContainText(/主诉暂无明显变化|主诉变轻|主诉动作已复查|主诉动作本次未单独复查/);
   await expect(outcomePanel.locator("h2")).not.toContainText("蹲起");
   await expect(outcomePanel.locator(".rm-final-score")).toHaveCount(1);
   const outcomeTable = outcomePanel.locator(".rm-stage-outcome-table");

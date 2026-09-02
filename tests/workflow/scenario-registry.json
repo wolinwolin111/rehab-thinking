@@ -1397,5 +1397,20 @@
       "scenario",
       "seed-gaps"
     ]
+  },
+  {
+    "scenarioId": "ANK-STEPDOWN-01-ankle-stair-routing",
+    "ruleIds": [
+      "ANK-STEPDOWN-01"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/function-assessment-plan-core.test.mjs",
+    "titlePattern": "ankle 下楼/下台阶 chief routes to ankle-step-down, not the knee-wall substitute",
+    "notes": "批 e661641 行为变更：踝区主诉含「下楼/下台阶」时评估队列由 ankle-knee-wall（膝碰墙代换）改指 ankle-step-down（下台阶直接复现）；「踝前卡/背屈/膝碰墙」仍走 ankle-knee-wall；膝区不受影响。逻辑层 selectFunctionAssessmentPlan 断言两条路由（下楼/下台阶→step-down 且不含 knee-wall；踝前卡→knee-wall 且不含 step-down）",
+    "tags": [
+      "ankle",
+      "function-plan"
+    ]
   }
 ]
