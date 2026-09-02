@@ -146,3 +146,55 @@
 3. **验证**：typecheck 干净；纯核心探针 5 项断言全过；组件/契约测试与批次 1.5 末态一致（first-use:43 批次 1.5 已知红 + rendered-html 6 条预存红），本批 0 新失败。
 4. **第二批其余**：自定义动作复现项(a′)、C-2 功能分问法、A-3 对应主诉标注——后续单开。
 
+---
+
+# 追加通知：2026-09-03 第八轮——第二批②③④（功能分问法 / 自定义动作复现 / A-3 结论）
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | 本提交 | 代码 | ② 自定义动作复现项(a′，含安全闸) + ③ C-2 功能分问法 + ④ A-3 结论 |
+
+## 要点（详见 development-to-test-function-questions-and-custom-action-2026-09-03.md）
+
+1. **③ 行为契约变化**：`ankle-knee-wall`（膝碰墙背屈）功能卡问法由「能做完吗/稳不稳/会不舒服」改为「和另一侧相比，最大可控幅度」（接近另一侧/差一些/差很多/说不清），并隐藏该类「稳不稳」。其余功能卡（下蹲/下台阶/单腿站/提踵等）问法不变。
+2. **② 新行为**：自定义动作（匹配不到标准功能项时）新增 `function:custom-action` 评估卡：3 档负荷选择（完全不承重/需承重但可扶/只能原样负重，附锐痛即停提示）+ 评分；硬闸（急性外伤或肿胀淤青）时显示「今天先不做现场复现」+ 记报评分。「稳不稳」对该卡隐藏。
+3. **安全闸口径**：`isAcuteTrauma(intake) || symptoms含「肿胀或淤青」`——与 ankle-step-down/ankle-hop 现有闸门同源。负荷依赖型疼痛（只有负重才疼）**必须**复现，不被闸门拦。自定义动作处理/复测走 target:chief 链（chiefActionLabel），不依赖此卡。
+4. **④ A-3 关闭**：①②③ 落地后动作名已自然对齐，无需显式标注。
+5. **验证**：typecheck 干净；纯核心探针 6 项断言全过（跪坐→custom-action、起身→knee-sit-stand 不产生 custom-action、下楼→knee-step-down 不受影响、meta/relevance/rank 正确）；组件/契约测试基线 18/7 不变（0 新失败）；子代理挑刺复核无阻塞项、snapshot 兼容（customActionLoadTier 为可选字符串，validateAssessmentResults 不拒未知字段）。
+6. **契约提示**：若测试侧钉过膝碰墙三问，需迁移为幅度比较四选项。
+
+
+# 追加通知：2026-09-03 第九轮——回应测试侧 app-shell-layout 移动端回归（pointer-events 修复）
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `2fbce9c` | 代码 | app-shell-layout 移动端 hit-test 拦截修复：`.rm-brand` + `.rm-floating-hint` 加 `pointer-events:none` |
+
+## 回应测试侧反馈（app-shell-layout 移动端回归）
+
+确认你方 Playwright hit-test 判定：批 1.5 C-1 把 `.rm-brand` 从 `<button>` 改成 `<span>` 后**未加 `pointer-events:none`**，配合 B-2/C-2 的浮动案例编号提示（`position:fixed; top:68px; z-index:160`），两者在移动端拦截 stagebar「查看阶段」按钮点击（20s 超时）。这是真实回归，同意你方判定。
+
+## 修复做法
+
+`src/features/rehabmind/styles/complete-demo.css` 两处：
+
+1. `.rm-brand` 加 `pointer-events: none`——C-1 后它已是非交互品牌（span），不再承担点击，不该挡控件。
+2. `.rm-floating-hint` 加 `pointer-events: none`（信息性浮层不挡控件），**并单独保留内部关闭按钮可点**（`.rm-floating-hint > button { pointer-events: auto }`），避免把「关闭」按钮一起失效。
+
+## 验证
+
+- typecheck 干净。
+- 影响面：纯 CSS（`.rm-brand` 在 C-1 后已无 onClick；`.rm-floating-hint` 只在移动端 top:68 悬浮）。桌面端 `.rm-context-hints` 非 fixed 位置不受影响。
+- 请求测试侧：重新跑 app-shell-layout 移动端回归，确认「查看阶段」按钮可点、brand/hint 不再拦截。
+- **未用 workaround 掩盖**：无测试侧 workaround 被依赖；本修复直接消除拦截层。
+
+## 测试侧已跟随迁移（确认收到）
+
+你方所述"其余迁移（2 正则 + B-5 四态 + 视觉基线 + ankle 路由）已全部跟随，无阻塞"——收到，感谢。本批无额外依赖你方更新项。
+
+
+

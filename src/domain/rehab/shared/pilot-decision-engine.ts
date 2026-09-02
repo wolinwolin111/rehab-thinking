@@ -159,6 +159,7 @@ function taskPriority(id: string, input: PilotIntakeInput) {
   if (/弯膝|屈膝|膝弯曲/.test(task) && id === "motion:knee-flexion") return 84;
   if (/下楼|下台阶/.test(task) && id === "function:knee-step-down") return 80;
   if (/下楼|下台阶/.test(task) && id === "function:ankle-step-down") return 80;
+  if (id === "function:custom-action") return 70;
   if (/上楼|上台阶/.test(task) && id === "function:knee-step-up") return 80;
   if (/蹲|坐站|起身/.test(task) && id === "function:knee-squat") return 75;
   if (/走|承重/.test(task) && id === "function:ankle-weight-bearing") return 75;

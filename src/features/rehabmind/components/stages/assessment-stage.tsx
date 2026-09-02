@@ -16,6 +16,7 @@ import { functionCompletionValue, functionControlValue, functionDiscomfortValue 
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { functionalActionMeta } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -421,6 +422,10 @@ export function AssessmentStage(props: AssessmentStageProps) {
   const functionCompletion = item.kind === "function" ? functionCompletionValue(effectiveRecord) : undefined;
   const functionControl = item.kind === "function" ? functionControlValue(effectiveRecord) : undefined;
   const functionDiscomfort = item.kind === "function" ? functionDiscomfortValue(effectiveRecord) : undefined;
+  const functionMeta = item.kind === "function" ? functionalActionMeta(item.id.replace(/^function:/, "")) : undefined;
+  const isRangeFunction = item.kind === "function" && functionMeta?.kind === "functional-rom";
+  const isCustomAction = item.id === "function:custom-action";
+  const customActionBlocked = isCustomAction && (isAcuteTrauma(intake) || (intake.symptoms ?? []).includes("肿胀或淤青"));
   const updateFunctionAssessment = (patch: Partial<AssessmentRecord>) => {
     // 主诉重合动作只把已知疼痛作为默认值，不应在每次点击时重新写入整份
     // 默认记录。否则用户选择“做不完”后再选原因，默认的“可以做完”会把
@@ -759,16 +764,62 @@ export function AssessmentStage(props: AssessmentStageProps) {
           {strengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{strengthFallback.action}</p><small>{strengthFallback.fallback}</small></div> : null}
          </section> : null}</> : <div className="rm-function-result-stack">
         <section className="rm-motion-answer-block">
-          <h3>这个动作能做完吗？</h3>
-          <div className="rm-result-grid is-three">{([
-            ["complete", "可以做完"],
-            ["unable", "做不完或不敢继续"],
-            ["skip", "暂时不做"],
-          ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
-            ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
-            : value === "unable"
-               ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
-              : { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
+          {isCustomAction ? (
+            customActionBlocked
+              ? <>
+                <h3>今天先不做这个动作的现场复现</h3>
+                <p className="rm-choice-hint">急性外伤或明显肿胀淤青时，今天不额外负重刺激。原动作照常记录、进入处理；处理完恢复后按原动作复测比较。</p>
+                <ScoreSlider compact value={record.symptomScore ?? 0} selected={typeof record.symptomScore === "number"} onChange={(symptomScore) => updateFunctionAssessment({ symptomScore })} label="现在估计做这个动作有多不舒服？" />
+                <div className="rm-result-grid is-two">{([["skip", "暂时不做，照常记录"]] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({ functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
+              </>
+              : <>
+                <h3>能不能用不承重的方式模仿这个动作？</h3>
+                <div className="rm-result-grid is-four">{([
+                  ["unloaded", "能，完全不承重"],
+                  ["assisted", "需要承重，但能扶着或减轻"],
+                  ["full", "只有按原样负重才会出现"],
+                  ["skip", "暂时不做"],
+                ] as Array<[string, string]>).map(([value, label]) => {
+                  const isSelected = value === "skip" ? functionCompletion === "skip" : record.customActionLoadTier === value;
+                  return <button type="button" key={value} className={isSelected ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "skip"
+                    ? { functionCompletion: "skip", functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, customActionLoadTier: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined }
+                    : { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: undefined, functionUnableReason: undefined, customActionLoadTier: value, symptomScore: undefined })}>{label}</button>;
+                })}</div>
+                <p className="rm-choice-hint">选「只有按原样负重才会出现」时，先小负荷试一次，出现锐痛或加重立即停。</p>
+              </>
+          ) : isRangeFunction
+            ? <>
+              <h3>和另一侧相比，最大可控幅度怎么样？</h3>
+              <div className="rm-result-grid is-four">{([
+                ["complete-stable", "接近另一侧"],
+                ["complete-compensated", "差一些"],
+                ["unable", "差很多"],
+                ["skip", "说不清"],
+              ] as Array<[string, string]>).map(([value, label]) => {
+                const isSelected = value === "complete-stable" ? functionCompletion === "complete" && functionControl === "stable"
+                  : value === "complete-compensated" ? functionCompletion === "complete" && functionControl === "compensated"
+                  : functionCompletion === value;
+                return <button type="button" key={value} className={isSelected ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete-stable"
+                  ? { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined }
+                  : value === "complete-compensated"
+                    ? { functionCompletion: "complete", functionControl: "compensated", functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined }
+                    : value === "unable"
+                      ? { functionCompletion: "unable", functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
+                      : { functionCompletion: "skip", functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>;
+              })}</div>
+            </>
+            : <>
+              <h3>这个动作能做完吗？</h3>
+              <div className="rm-result-grid is-three">{([
+                ["complete", "可以做完"],
+                ["unable", "做不完或不敢继续"],
+                ["skip", "暂时不做"],
+              ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
+                ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
+                : value === "unable"
+                   ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
+                  : { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, worseSide: undefined })}>{label}</button>)}</div>
+            </>}
         </section>
         {functionCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>主要是什么原因停下来？</h3>
@@ -783,7 +834,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
               familiarSymptom: value === "pain" ? effectiveRecord.familiarSymptom : undefined,
             })}>{label}</button>)}</div>
         </section> : null}
-        {functionCompletion === "complete" ? <section className="rm-motion-answer-block">
+        {functionCompletion === "complete" && !isRangeFunction && !isCustomAction ? <section className="rm-motion-answer-block">
           <h3>做的时候稳不稳？</h3>
           <div className="rm-result-grid is-three">{([
             ["stable", "动作基本稳定"],

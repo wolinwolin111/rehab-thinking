@@ -1410,7 +1410,11 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       regionId: region.id,
       goal: intake.goal,
       isGuided: workflowProfile.isGuided,
-      candidates: region.functions.map((item) => ({ id: item.id, title: item.title, tags: item.tags })),
+      candidates: [
+        ...region.functions.map((item) => ({ id: item.id, title: item.title, tags: item.tags })),
+        ...(chiefFunctionAssessmentIds(intake, region.id).includes("function:custom-action")
+          ? [{ id: "custom-action", title: chiefActionLabel(intake), tags: [] as string[] }] : []),
+      ],
       firstResults: Object.fromEntries(region.functions.map((item) => [
         `function:${item.id}`,
         functionSimpleAnswer(assessmentResults[`function:${item.id}`] ?? {}),
@@ -1425,7 +1429,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       return !twin || !plannedFunctionIds.has(twin) || continuationRoundIds.includes(item.id);
     });
     const selectedFunctionEntries = functionPlan
-      .map((plan) => region.functions.find((item) => item.id === plan.id))
+      .map((plan) => plan.id === "custom-action"
+        ? { id: "custom-action", title: chiefActionLabel(intake), kind: "function" as const, access: "self" as const, how: "尝试用不承重的方式模仿这个动作，注意哪里出现不适。", observe: "记录是否能安全模仿、哪里不舒服，以及不适程度。", tags: [] as string[] }
+        : region.functions.find((item) => item.id === plan.id))
       .filter((item): item is FullRegion["functions"][number] => Boolean(item))
       .map((item) => ({ item }));
     const makeFunctionAssessment = (item: FullRegion["functions"][number]): AssessmentItem => {

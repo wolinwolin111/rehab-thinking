@@ -298,6 +298,8 @@ export type AssessmentRecord = {
   functionControl?: FunctionControl;
   functionDiscomfort?: YesNo;
   functionUnableReason?: FunctionUnableReason;
+  /** 自定义动作复现时的负荷档：unloaded / assisted / full。仅自定义动作卡写入。 */
+  customActionLoadTier?: string;
   discomfort?: YesNo;
   discomfortLocation?: string;
   discomfortLocations?: LowerLimbLocationSelection[];
@@ -1218,6 +1220,7 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:ankle-weight-bearing": ["走路明显一瘸一拐", "不敢让不舒服的一边踩实", "需要扶着才能走", "脚步明显变短"],
   "function:ankle-knee-wall": ["脚跟提前抬起", "膝盖向内或向外偏", "足弓塌下", "踝前卡住或小腿牵扯"],
   "function:ankle-step-down": ["脚踝向内或向外晃", "足弓塌下", "不敢让支撑脚完全承重", "下降时突然掉下去", "需要扶住栏杆"],
+  "function:custom-action": ["需要扶着或借力才能做", "做的时候动作走形", "做到一半不敢继续"],
   "function:ankle-hop": ["落地不敢承重", "脚踝向内或向外晃", "落地时膝盖明显内扣", "无法连续完成"],
   "function:thigh-walk": ["迈步时跛行", "患侧支撑时间变短", "身体向一侧偏", "蹬地时症状明显"],
   "function:thigh-sit-stand": ["起身时偏向另一侧", "膝盖向内偏", "需要用手撑", "坐下时突然掉下去"],
