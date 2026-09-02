@@ -1625,7 +1625,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 
 /* 下肢症状定位：先点大区域，再选普通人能说清的具体位置。 */
 .rm-lower-limb-picker { margin-top: 18px; border: 1px solid #bfcfca; background: #f9fbfa; box-shadow: 0 18px 44px rgba(23, 38, 44, .07); }
-.rm-location-picker-head { min-height: 76px; padding: 16px 18px 14px 22px; border-bottom: 1px solid #d6e0dd; background: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.rm-location-picker-head { min-height: 76px; padding: 16px 18px 14px 22px; border-bottom: 1px solid #d6e0dd; background: white; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 20px; }
 .rm-location-picker-head > div { display: grid; gap: 3px; }
 .rm-location-picker-head span { color: var(--rm-green); font-size: 12px; font-weight: 900; letter-spacing: .04em; }
 .rm-location-picker-head strong { font-size: 22px; }
@@ -1758,10 +1758,10 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-compact-atlas-nav button.is-active { color: white; border-color: var(--rm-blue); background: var(--rm-blue); }
 .rm-entry-hint { color: var(--rm-muted); font-weight: 700; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 5px; }
 .rm-entry-hint > span { white-space: nowrap; }
-.rm-location-scope { margin-top: 6px; color: #6b7a8c; font-size: 12.5px; line-height: 1.55; flex: 1 1 100%; text-align: left; }
+.rm-location-picker-head .rm-location-scope { width: 100%; margin-top: 4px; color: #6b7a8c; font-size: 12.5px; font-weight: 500; line-height: 1.55; letter-spacing: normal; text-align: left; }
 @media (max-width: 560px) {
   .rm-entry-hint { font-size: 13px; line-height: 1.5; gap: 1px 4px; }
-  .rm-location-scope { font-size: 12px; }
+  .rm-location-picker-head .rm-location-scope { font-size: 12px; }
   .rm-atlas-nav-row { gap: 8px 10px; }
   .rm-atlas-nav-row > .rm-atlas-nav-label { min-width: 0; }
   .rm-compact-atlas-nav button { min-height: 40px; padding: 7px 13px; font-size: 13px; }
@@ -1782,13 +1782,11 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-familiar-symptom-question h3 { font-size: 16px; }
   .rm-familiar-symptom-question p { font-size: 12px; }
   .rm-shared-tension-check .rm-result-grid { padding: 12px 14px 14px; }
-  .rm-options, .rm-check-grid { gap: 7px; }
   .rm-score { padding: 14px; }
   .rm-score-head strong { font-size: 15px; }
   .rm-score output { font-size: 34px; }
   .rm-score-scale { gap: 5px; font-size: 11px; }
   .rm-score-scale span { padding: 6px; }
-  .rm-label { padding: 12px 14px; }
   .rm-label > span { font-size: 15px; }
   .rm-question-navigation button, .rm-question-pager > footer button { min-height: 44px; font-size: 15px; }
 }

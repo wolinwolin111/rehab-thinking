@@ -11,9 +11,9 @@
 |---|---|---|---|
 | C-1 | 品牌不可点 | `rehabmind-workbench.tsx` + `complete-demo.css` | `.rm-brand` 由 `<button onClick={resetDemo}>` 改为 `<span>`（保留 `data-rehabmind-tutorial="brand"` 供教程定位，去 `cursor:pointer`）。`resetDemo` 仍由 onboarding「开始康复」使用，开新案例入口保留在「开始康复/康复记录→新建案例」。品牌不再承担"一键清空重来" |
 | C-2 | 案例编号提示时机 | `rehabmind-workbench.tsx` | 提示 `active` 条件加 `!onboardingOpen`：只在引导页关闭后（且已有案例编号）出现，不再与引导页同屏 |
-| C-3 | 图3：部位范围提示上移 | `lower-limb-location-picker.tsx` + `complete-demo.css` | 页脚「目前开放大腿、膝盖、小腿、脚踝和足部…」移到顶部 `.rm-location-picker-head` 内 `.rm-location-scope`（flex 独立一行，整行文本，不再与侧别胶囊挤在同一行） |
+| C-3 | 图3：部位范围提示上移 | `lower-limb-location-picker.tsx` + `complete-demo.css` | 页脚「目前开放大腿、膝盖、小腿、脚踝和足部…」移到顶部 `.rm-location-picker-head` 内 `.rm-location-scope`（header 加 `flex-wrap:wrap`，scope `width:100%` 独立整行，不挤侧别胶囊）。**复核修正**：首版用 `flex:1 1 100%` 但 header 无 `flex-wrap`（nowrap 会挤压），且既有 `.rm-location-picker-head span`（绿色 eyebrow 样式，特异性更高）会盖掉 scope 配色——本批复查时改为 `width:100%` + 特异性提升 + 显式 `font-weight/letter-spacing`，修复两处 |
 | C-4 | 图2：atlas 两行按钮统一高度 | `complete-demo.css` | 第一行（左/右侧）按钮 `min-height 46px` → `42px`（与第二行一致）；≤560px 两行统一 `40px`（修正原 560 规则特异性不足、第一行仍被 46px 覆盖的问题） |
-| C-5 | 图4：移动端密度收紧 | `complete-demo.css` | 新增 ≤560px 密度块：`rm-hero-input`（label 14px / textarea 170px min-height / 内边距 12px）、`rm-collected` 卡、`rm-assessment-feeling`（肌肉紧张度题 select 46px/14px）、`rm-familiar-symptom-question`、`rm-shared-tension-check`、`rm-score`（output 34px/scale 11px）、`rm-label`、分页按钮（44px）统一收紧 |
+| C-5 | 图4：移动端密度收紧 | `complete-demo.css` | 新增 ≤560px 密度块：`rm-hero-input`（label 14px / textarea 170px min-height / 内边距 12px）、`rm-collected` 卡、`rm-assessment-feeling`（肌肉紧张度题 select 46px/14px）、`rm-familiar-symptom-question`、`rm-shared-tension-check`、`rm-score`（output 34px/scale 11px）、分页按钮（44px）统一收紧。**复核修正**：首版误给 `.rm-label` 加 `padding:12px 14px`（`.rm-label` 是问句标签行非卡片，会破坏全局问句布局，已移除），并删除对 `.rm-options` 的无效规则（其 base 已是 7px） |
 | C-6 | 图5：症状输入标题→不可断词单元 | `symptom-stage.tsx` + `complete-demo.css` | label 由单文本改为 flex 结构：`不适部位` `·` `出现时间` `·` `受影响动作` `·` `恢复目标` 各为 `<span>`（`white-space:nowrap`），`flex-wrap` 只在分隔符处整齐换行，任何单个词不被切断 |
 
 ## 2. 契约测试影响（重要，需测试侧同步）
