@@ -166,3 +166,35 @@
 6. **契约提示**：若测试侧钉过膝碰墙三问，需迁移为幅度比较四选项。
 
 
+# 追加通知：2026-09-03 第九轮——回应测试侧 app-shell-layout 移动端回归（pointer-events 修复）
+
+## 范围：实际 1 个提交
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `2fbce9c` | 代码 | app-shell-layout 移动端 hit-test 拦截修复：`.rm-brand` + `.rm-floating-hint` 加 `pointer-events:none` |
+
+## 回应测试侧反馈（app-shell-layout 移动端回归）
+
+确认你方 Playwright hit-test 判定：批 1.5 C-1 把 `.rm-brand` 从 `<button>` 改成 `<span>` 后**未加 `pointer-events:none`**，配合 B-2/C-2 的浮动案例编号提示（`position:fixed; top:68px; z-index:160`），两者在移动端拦截 stagebar「查看阶段」按钮点击（20s 超时）。这是真实回归，同意你方判定。
+
+## 修复做法
+
+`src/features/rehabmind/styles/complete-demo.css` 两处：
+
+1. `.rm-brand` 加 `pointer-events: none`——C-1 后它已是非交互品牌（span），不再承担点击，不该挡控件。
+2. `.rm-floating-hint` 加 `pointer-events: none`（信息性浮层不挡控件），**并单独保留内部关闭按钮可点**（`.rm-floating-hint > button { pointer-events: auto }`），避免把「关闭」按钮一起失效。
+
+## 验证
+
+- typecheck 干净。
+- 影响面：纯 CSS（`.rm-brand` 在 C-1 后已无 onClick；`.rm-floating-hint` 只在移动端 top:68 悬浮）。桌面端 `.rm-context-hints` 非 fixed 位置不受影响。
+- 请求测试侧：重新跑 app-shell-layout 移动端回归，确认「查看阶段」按钮可点、brand/hint 不再拦截。
+- **未用 workaround 掩盖**：无测试侧 workaround 被依赖；本修复直接消除拦截层。
+
+## 测试侧已跟随迁移（确认收到）
+
+你方所述"其余迁移（2 正则 + B-5 四态 + 视觉基线 + ankle 路由）已全部跟随，无阻塞"——收到，感谢。本批无额外依赖你方更新项。
+
+
+
