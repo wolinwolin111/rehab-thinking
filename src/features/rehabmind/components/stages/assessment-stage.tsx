@@ -15,8 +15,7 @@ import { buildFindingGroups } from "@/src/features/rehabmind/components/workbenc
 import { functionCompletionValue, functionControlValue, functionDiscomfortValue } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { assessmentRecordComplete } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { functionalActionMeta } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
+import { assessmentRecordComplete, functionalActionMeta } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";

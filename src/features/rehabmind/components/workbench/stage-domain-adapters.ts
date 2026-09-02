@@ -24,7 +24,7 @@ export { tissueReferralAdvice } from "@/src/domain/rehab/safety/tissue-pathway-c
 export { summarizeTreatmentCoverage } from "@/src/domain/rehab/treatment/treatment-coverage-core";
 export { chiefChangeExplanation } from "@/src/domain/rehab/retest/chief-change-explanation-core";
 export { assessmentGapActionLabel } from "@/src/domain/rehab/assessment/assessment-gap-core";
-export { skippedChiefActionTitles } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
+export { functionalActionMeta, skippedChiefActionTitles } from "@/src/domain/rehab/assessment/function-assessment-plan-core";
 export type { AssessmentGap } from "@/src/domain/rehab/assessment/assessment-gap-core";
 export { nextRangeCandidateType } from "@/src/domain/rehab/retest/retest-routing-core";
 export { candidateTreatmentKey, candidateTreatmentName } from "@/src/domain/rehab/treatment/candidate-treatment-core";
