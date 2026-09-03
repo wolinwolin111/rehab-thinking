@@ -8,6 +8,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type ViewSpec = { id: string; label: string; asset: string; viewBox: string; w: number; h: number };
 
 const VIEWS: ViewSpec[] = [
+  { id: "thigh-anterior", label: "大腿前侧", asset: "/rehabmind-lower-limb-front-v1.png", viewBox: "150 350 480 640", w: 1024, h: 1536 },
+  { id: "thigh-posterior", label: "大腿后侧", asset: "/rehabmind-lower-limb-back-v1.png", viewBox: "410 350 480 640", w: 1024, h: 1536 },
+  { id: "thigh-medial", label: "大腿内侧", asset: "/rehabmind-lower-limb-medial-v3.png", viewBox: "250 150 500 650", w: 1024, h: 1536 },
+  { id: "thigh-lateral", label: "大腿外侧", asset: "/rehabmind-lower-limb-lateral-v2.png", viewBox: "270 350 500 650", w: 1024, h: 1536 },
   { id: "front", label: "小腿前侧", asset: "/rehabmind-lower-limb-front-v1.png", viewBox: "150 650 480 640", w: 1024, h: 1536 },
   { id: "back", label: "小腿后侧", asset: "/rehabmind-lower-limb-back-v1.png", viewBox: "410 650 480 640", w: 1024, h: 1536 },
   { id: "medial", label: "小腿后内侧", asset: "/rehabmind-lower-limb-medial-v3.png", viewBox: "240 560 560 760", w: 1024, h: 1536 },

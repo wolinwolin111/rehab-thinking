@@ -98,9 +98,15 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "150 350 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M305 466 C335 448 417 447 450 464 C465 500 466 540 458 575 C451 604 440 628 425 642 C399 654 360 653 334 641 C317 620 305 594 299 561 C292 523 293 489 305 466 Z",
+    // 股四头肌群：owner 亲手描摹三笔（股直肌内线/中线 + 股外侧头），
+    // 湖蓝/0.8/笔宽70。
+    strokes: [
+      { d: "M326 404 L345 549", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M363 379 L370 553", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M428 388 L395 574", width: 70, color: "#3565c4", opacity: 0.8 },
+    ],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "thigh-posterior": {
     view: "back",
@@ -108,9 +114,14 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "410 350 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M566 480 C598 458 681 458 712 478 C725 511 724 548 717 582 C710 611 700 635 687 650 C661 663 624 663 598 650 C581 630 569 604 560 570 C550 532 551 501 566 480 Z",
+    // 腘绳肌群：owner 亲手描摹两笔（内侧头 616,466→631,632；外侧头
+    // 677,466→656,625），湖蓝/0.8/笔宽70。
+    strokes: [
+      { d: "M616 466 L631 632", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M677 466 L656 625", width: 70, color: "#3565c4", opacity: 0.8 },
+    ],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "thigh-lateral": {
     view: "lateral",
@@ -118,10 +129,15 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "270 350 500 650",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M430 491 C466 465 575 466 616 493 C632 529 632 568 623 603 C615 632 603 657 588 675 C558 690 514 689 484 673 C462 646 446 614 435 578 C424 542 422 514 430 491 Z",
+    // 外侧链：owner 亲手描摹两笔（阔筋膜张肌前束 + 髂胫束主线），
+    // 湖蓝/0.8/笔宽70。
+    strokes: [
+      { d: "M500 397 L540 617", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M565 380 L562 606", width: 70, color: "#3565c4", opacity: 0.8 },
+    ],
     anatomyLandmarks: ["右腿外侧", "外侧膝线", "外踝", "第五跖骨侧"],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "thigh-medial": {
     view: "medial",
@@ -129,12 +145,18 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "250 150 500 650",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 纯内侧正侧位上的内收肌群表面区：从短裤下缘向膝内侧收窄，
-    // 止于膝关节线上方，不覆盖髌骨、膝关节或小腿。
-    path: "M357 255 C397 232 514 235 548 266 C552 315 546 365 535 410 C525 451 507 488 481 515 C448 518 411 504 388 478 C372 434 362 386 357 334 C354 302 354 274 357 255 Z",
+    // 内收肌群：owner 亲手描摹五笔（前束/中线/后束/股薄肌/大收肌），
+    // 湖蓝/0.8/笔宽70，从短裤下缘向膝内侧收窄。
+    strokes: [
+      { d: "M360 167 L398 446", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M407 172 L417 389", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M482 191 L447 442", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M444 183 L436 280", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M510 194 L481 434", width: 70, color: "#3565c4", opacity: 0.8 },
+    ],
     anatomyLandmarks: ["右腿纯内侧正侧位", "内侧膝线", "内踝", "内侧足弓与拇趾侧"],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "calf-anterior": {
     view: "front",
