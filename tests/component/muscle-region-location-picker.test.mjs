@@ -59,3 +59,19 @@ test("首次评估、后续复查和真实走读共用定位选项", () => {
   assert.doesNotMatch(demo, /treatmentActionVisuals/);
   if (walkthrough) assert.match(walkthrough, /\.rm-muscle-location-card/);
 });
+
+test("C-3 小腿四圈解剖复核签署 reviewed（data-overlay-review 透出 overlayReviewStatus）", () => {
+  // b67ee5e/228a9aa：纯视觉叠加（MUSCLE_ZONE_PATHS path 几何），不改选择逻辑/选项文案/数据字段。
+  // 唯一机器可校验契约：figure 把 overlayReviewStatus 透出到 data-overlay-review（选择/文案不变）。
+  expectSourceContains(picker, { file: "muscle-region-location-picker.tsx", snippet: "data-overlay-review={spec.overlayReviewStatus}" }, "overlay 复核状态透出");
+  // C-3 解剖复核签署：四个小腿圈肌腹范围 reviewed（前侧嵴外移+下收 59%、后侧止跟腱上方、外侧 63%、后内侧窄带）。
+  // 只锁 calf（本批交付），不锁 thigh=pending（下批复核大腿会翻转，避免迁移税）。path 几何不做像素断言（§8）。
+  // 搜索域限定到 MUSCLE_ZONE_PATHS 对象内（"calf-anterior" 等键在别处 map 也出现，跨块会误抓 thigh 的 pending）。
+  const zoneStart = picker.indexOf("const MUSCLE_ZONE_PATHS");
+  assert.ok(zoneStart >= 0, "MUSCLE_ZONE_PATHS 常量必须存在");
+  const zoneSrc = picker.slice(zoneStart, picker.indexOf("\n};", zoneStart));
+  for (const region of ["calf-anterior", "calf-posterior", "calf-lateral", "calf-medial"]) {
+    const m = zoneSrc.match(new RegExp(`"${region}"[\\s\\S]*?overlayReviewStatus:\\s*"([a-z]+)"`));
+    assert.equal(m?.[1], "reviewed", `${region} overlayReviewStatus 应为 reviewed（C-3 解剖复核签署）`);
+  }
+});

@@ -1458,5 +1458,22 @@
       "custom-action",
       "safety-gate"
     ]
+  },
+  {
+    "scenarioId": "C3-CALF-OVERLAY-ANATOMY-REVIEW",
+    "ruleIds": [
+      "C3-CALF-OVERLAY"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/component/muscle-region-location-picker.test.mjs",
+    "titlePattern": "C-3 小腿四圈解剖复核签署 reviewed（data-overlay-review 透出 overlayReviewStatus）",
+    "notes": "批 b67ee5e/228a9aa：纯视觉叠加（MUSCLE_ZONE_PATHS path 几何——前侧嵴外移15px+下收59%、后侧止跟腱起点上方+边缘平滑、外侧63%、后内侧窄带不动），不改选择逻辑/选项文案/数据字段。唯一机器可校验契约：figure 把 overlayReviewStatus 透出到 data-overlay-review（源码接线）+ 四个小腿圈签署 reviewed（搜索域限定 MUSCLE_ZONE_PATHS 对象内，避免跨块误抓 thigh pending）。只锁 calf 不锁 thigh=pending（下批复核大腿会翻转，避免迁移税）。path 几何不做像素断言（§8）；渲染无错由既有全量流 decision-gates（进入肌肉紧张度对比页 + assertNoRuntimeErrors）兜底。dev 视觉验收走无头渲染 PNG 逐卡判读闭环，不依赖人工截图",
+    "tags": [
+      "unit",
+      "contract",
+      "muscle-overlay",
+      "anatomy-review"
+    ]
   }
 ]

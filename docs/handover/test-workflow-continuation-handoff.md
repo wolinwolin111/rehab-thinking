@@ -133,14 +133,13 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 
 ---
 
-## 6. 当前测试验收基线（dev batch2 custom-action + app-shell 修复 + 边界修复 + custom-action 卡覆盖轮，2026-09-03）
+## 6. 当前测试验收基线（C-3 小腿圈解剖复核绑定轮，2026-09-03）
 
-全量（edge-full）：**71 passed + 0 failed**（run `reg-20260902210613-27712`，verdict=passed，commit `55b8a91`）；test:fast EXITCODE 0；check:knowledge ok；mobile 2 passed。registry **96 条**。
+全量（edge-full）：**71 passed + 0 failed**（run `reg-20260903033829-16244`，verdict=passed，commit `80921ed`）；test:fast EXITCODE 0（node 788/0）；check:knowledge ok；mobile 2 passed。registry **97 条**。
 
-**状态**：dev 分支 `agent/dev-20260901` tip `cfb2dbd`（merge `55b8a91`；含 e2a00f8 batch2②③④ + 2fbce9c app-shell 修复 + a2b264a 通知 + d33c874 边界修复 + 0e9cc34/1b55396 custom-action catalog 靶子 + cfb2dbd 通知）。测试侧绑定：
-- **app-shell 真回归已修复**（dev `2fbce9c`）：`.rm-brand`/`.rm-floating-hint` 加 `pointer-events:none`，移动端 stagebar「查看阶段」点击不再被拦截；`app-shell-layout.spec.ts` 重跑绿（14.5s）。诚实红→绿闭环。
-- **架构边界违规已修复**（dev `d33c874`，测试侧一行修法）：`assessment-stage.tsx` 的 `functionalActionMeta` 改经 `stage-domain-adapters` 再导出，不再直连 domain；`check:boundaries` 转绿。
-- **custom-action 卡片渲染 + 安全闸门两分支**（dev catalog 靶子 `0e9cc34`/`1b55396`，`assessment-stage.tsx:766-788`）：新增 `tests/browser/scenarios/custom-action-card.spec.ts`——CA-1 未匹配动作落占位卡 + 四档负荷 + 选档互斥；CA-2 急性+肿胀硬闸抑制现场复现（无 is-four + 评分滑杆 + 单「暂时不做，照常记录」出口）。探针实测两场景落 step 2 即聚焦该卡（header=跪坐、cardCount=1），无需导航。逻辑层路由仍由 CUSTOM-ACTION-01 单测覆盖。
+**状态**：dev 分支 `agent/dev-20260901` tip `228a9aa`（merge `80921ed`；本批 b67ee5e + 228a9aa C-3 小腿圈解剖复核；上一批 cfb2dbd custom-action/边界/app-shell 已随 `55b8a91`/`4bffae6` 合并推绿）。测试侧绑定：
+- **C-3 小腿四圈解剖复核（b67ee5e/228a9aa）**：纯视觉叠加（`MUSCLE_ZONE_PATHS` path 几何——前侧嵴外移 15px+下收 59%、后侧止跟腱起点上方+边缘平滑、外侧 63%、后内侧窄带不动），不改选择逻辑/文案/字段。唯一机器可校验契约已钉：`picker.test.mjs` 新增源码契约——`figure` 把 `overlayReviewStatus` 透出到 `data-overlay-review`（接线）+ 四小腿圈签署 `reviewed`（搜索域限定 `MUSCLE_ZONE_PATHS` 对象内，防跨块误抓 thigh pending；只锁 calf 不锁 thigh，避免下批复核迁移税）。path 几何不做像素断言（§8）；渲染无错由既有全量流 `decision-gates`（进入肌肉紧张度对比页 + `assertNoRuntimeErrors`）兜底。dev 视觉验收走无头渲染 PNG 逐卡判读闭环。
+- **上一批（custom-action batch2）已闭环**：app-shell 修复（2fbce9c）+ 边界修复（d33c874，`functionalActionMeta` 走 `stage-domain-adapters`）+ custom-action 卡两分支浏览器覆盖（CA-1/CA-2，靶子 0e9cc34/1b55396，`custom-action-card.spec.ts`）。
 
 ⚠️ 环境陷阱：playwright 全量回归时禁止并行手动 dev server（3001 抢编译→goto 超时假失败）。
 
@@ -163,6 +162,7 @@ tests/workflow/scenario-registry.json   # 场景登记表（当前 90 条纯指�
 - **种子缺口③ 处理完成态靶子修复绑定（a2fcaf7；OP-1 重写为训练交接四靶心断言）✅**
 - **mobile UI batch1/1.5 + ankle-step-down 绑定（e661641；正则迁移 + B-5 四态 + 视觉基线 + ankle 路由）✅**
 - **dev batch2 custom-action（e2a00f8）绑定：app-shell 修复（2fbce9c）+ 边界修复（d33c874）+ custom-action 卡两分支浏览器覆盖（CA-1/CA-2，靶子 0e9cc34/1b55396）✅**
+- **C-3 小腿四圈解剖复核（b67ee5e/228a9aa）绑定：data-overlay-review 接线 + calf reviewed 源码契约；path 几何运行时由 decision-gates 兜底 ✅**
 
 ### 6.2 待办 / 回退点
 - **种子缺口（Phase 4.2）**：① ✅ SG-1（treatment-worse-stop）已挂；② ✅ SG-2（bilateral-per-side-retest）已挂（专业模式口径，owner 授权）；~~③~~ ✅ `a2fcaf7` 已修复并绑定。
