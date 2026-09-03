@@ -134,9 +134,11 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "150 650 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M326 758 C344 744 366 746 379 765 C386 812 383 864 378 919 C373 974 370 1030 365 1082 C361 1121 354 1147 344 1158 C334 1146 330 1122 330 1088 C330 1038 332 985 329 933 C326 878 318 808 326 758 Z",
+    // 胫骨前肌肌腹限于小腿上 1/2～2/3，位于胫骨嵴外側；下段为肌腱移行与
+    // 骨面，不画入。
+    path: "M311 758 C329 744 351 746 364 765 C371 812 368 864 363 919 C360 954 354 992 344 1016 C338 1029 330 1031 325 1022 C317 1006 315 970 314 933 C311 878 303 808 311 758 Z",
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "calf-posterior": {
     view: "back",
@@ -144,11 +146,11 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "410 650 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 腓肠肌和比目鱼肌作为一个连续产品区域：覆盖完整小腿肚，向
-    // 下逐渐收窄并止于跟腱肌腱交界上方，不拆内外侧头或上下段。
-    path: "M553 762 C583 730 680 728 714 760 C739 797 742 851 731 909 C720 966 700 1015 689 1062 C679 1105 671 1146 655 1176 C637 1159 624 1127 616 1088 C607 1046 596 1006 581 961 C562 905 538 821 553 762 Z",
+    // 腓肠肌和比目鱼肌作为一个连续产品区域：覆盖完整小腿肚，向下收窄
+    // 止于三头肌腱移行部（跟腱起点）上方，不拆内外侧头或上下段，不压跟腱。
+    path: "M553 762 C583 730 680 728 714 760 C739 797 742 851 731 909 C725 949 717 992 706 1028 C694 1056 676 1070 658 1070 C640 1068 614 1032 596 996 C590 982 586 972 581 961 C562 905 538 821 553 762 Z",
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "calf-lateral": {
     view: "lateral",
@@ -156,10 +158,12 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "270 650 500 700",
     imageWidth: 1024,
     imageHeight: 1536,
-    path: "M500 770 C526 746 568 753 590 786 C603 832 601 883 592 934 C583 988 570 1041 561 1090 C554 1131 548 1170 533 1198 C516 1187 507 1154 506 1112 C505 1062 510 1008 506 955 C502 899 486 819 500 770 Z",
+    // 腓骨长肌（上 1/2）与腓骨短肌（中下）肌腹：下端止于肌腹移行腱处，
+    // 不包外踝后方肌腱段。
+    path: "M500 770 C526 746 568 753 590 786 C603 832 601 883 592 934 C587 968 580 1002 571 1032 C563 1058 556 1076 545 1088 C534 1078 522 1060 515 1036 C508 1010 507 982 506 955 C502 899 486 819 500 770 Z",
     anatomyLandmarks: ["外侧腓骨头下方", "腓骨长短肌肌腹", "外踝上方", "第五跖骨侧"],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   "calf-medial": {
     view: "medial",
@@ -172,7 +176,7 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     path: "M360 690 C378 677 402 681 414 704 C420 764 416 834 410 910 C404 985 399 1056 396 1122 C394 1155 390 1178 384 1190 C374 1172 372 1146 374 1114 C378 1048 380 982 378 914 C376 834 361 754 360 690 Z",
     anatomyLandmarks: ["右腿纯内侧正侧位", "胫骨内侧缘后方", "内踝后上方", "内侧足弓与拇趾侧"],
     assetReviewStatus: "reviewed",
-    overlayReviewStatus: "pending",
+    overlayReviewStatus: "reviewed",
   },
   plantar: {
     view: "sole",
