@@ -792,7 +792,8 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
         {treatmentComplete && continuationSuggestions.length ? (
           <section className="rm-outcome-unexplained">
             <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
-            <span>处理和复查都完成了，但原来的不适还在。还可以检查：{continuationSuggestions.map((item) => item.title).join("、")}</span>
+            <span>处理和复查都完成了，但原来的不适还在。还可以检查：</span>
+            <ul className="rm-outcome-unexplained-list">{continuationSuggestions.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
             <div className="rm-page-actions">
               <button type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
               <small>也可以先进入训练或保存记录；这些方向以后仍然可以补查。</small>

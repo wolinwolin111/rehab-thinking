@@ -46,6 +46,10 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-brand { width: max-content; padding: 0; border: 0; color: white; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; cursor: default; user-select: none; pointer-events: none; }
 .rm-brand > b { width: 40px; height: 40px; color: white; background: var(--rm-blue); display: grid; place-items: center; font: 800 19px/1 "Roboto Condensed", ui-monospace, monospace; transform: rotate(-3deg); }
 .rm-brand-mark { width: 40px; height: 40px; border-radius: 9px; object-fit: contain; display: block; }
+/* 视觉主题的 .rm-app img 通配（width/height:auto）会以更高特异性把 LOGO
+   顶回 160px 自然尺寸，在移动端撑破顶栏并压住 stagebar（图1 回归）。
+   此处用同源嵌套提升特异性钉回固定尺寸。 */
+.rm-app .rm-brand-mark { width: 40px; height: 40px; }
 .rm-brand > span { display: grid; line-height: 1.15; }
 .rm-brand strong { font-size: 19px; letter-spacing: -.02em; }
 .rm-brand small { margin-top: 4px; color: #b8c6c8; font-size: 12px; font-weight: 600; }
@@ -758,6 +762,8 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-outcome-unexplained { margin-top: 16px; padding: 14px 16px; border: 1px solid #d8e7df; border-radius: 14px; background: #f7fbf9; display: grid; gap: 7px; }
 .rm-outcome-unexplained strong { color: #173e31; font-size: 14px; }
 .rm-outcome-unexplained span { color: #3d4443; font-size: 13px; line-height: 1.6; }
+.rm-outcome-unexplained-list { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.rm-outcome-unexplained-list li { color: #3d4443; font-size: 13px; line-height: 1.55; }
 .rm-outcome-unexplained small { color: #61746c; font-size: 12px; }
 .rm-outcome-unexplained .rm-page-actions { margin-top: 8px; }
 .rm-stage-outcome-effective, .rm-stage-outcome-range, .rm-stage-outcome-track { padding: 12px 2px; border-bottom: 1px solid #e3ece8; display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; }
@@ -1310,7 +1316,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   body { font-size: 16px; }
   .rm-topbar { height: 60px; padding: 0 12px; grid-template-columns: 1fr auto; }
   .rm-brand > b { width: 34px; height: 34px; font-size: 16px; }
-  .rm-brand-mark { width: 34px; height: 34px; }
+  .rm-app .rm-brand-mark { width: 34px; height: 34px; }
   .rm-brand strong { font-size: 17px; }
   .rm-brand small { display: none; }
   .rm-top-context { display: none; }
