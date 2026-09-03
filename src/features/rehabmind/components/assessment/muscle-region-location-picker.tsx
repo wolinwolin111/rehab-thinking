@@ -145,14 +145,12 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "250 150 500 650",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 内收肌群：owner 亲手描摹五笔（前束/中线/后束/股薄肌/大收肌），
-    // 湖蓝/0.8/笔宽70，从短裤下缘向膝内侧收窄。
+    // 内收肌群：owner 重描三笔（前束 377,188→406,489；中线 427,192→425,482；
+    // 后束 471,197→452,444），湖蓝/0.8/笔宽70。
     strokes: [
-      { d: "M360 167 L398 446", width: 70, color: "#3565c4", opacity: 0.8 },
-      { d: "M407 172 L417 389", width: 70, color: "#3565c4", opacity: 0.8 },
-      { d: "M482 191 L447 442", width: 70, color: "#3565c4", opacity: 0.8 },
-      { d: "M444 183 L436 280", width: 70, color: "#3565c4", opacity: 0.8 },
-      { d: "M510 194 L481 434", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M377 188 L406 489", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M427 192 L425 482", width: 70, color: "#3565c4", opacity: 0.8 },
+      { d: "M471 197 L452 444", width: 70, color: "#3565c4", opacity: 0.8 },
     ],
     anatomyLandmarks: ["右腿纯内侧正侧位", "内侧膝线", "内踝", "内侧足弓与拇趾侧"],
     assetReviewStatus: "reviewed",
