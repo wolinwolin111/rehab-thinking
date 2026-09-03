@@ -286,6 +286,7 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 | 1 | `49df605` | 资源 | public/logo-mark.png 换 owner 选定素材（黑底转透明+居中裁方 160×160，Playwright canvas 像素处理）；旧版含烘焙文字噪点 |
 | 2 | `16c80c6` | 修复 | 顶栏移除副标题「康复思路工作台」（只留品牌名）；转介卡新增 highIrritabilityReferral 分支（能完成但疼痛≥7 不再误显示「无法完成」）；新增测试场景 high-irritability-completed-painful |
 | 3 | `e196817` | 修复 | 转介卡再补 specialSafetyReferral 独立分支（结构性筛查阳性不再落「无法完成」兜底）；stop-and-refer 面板区分神经 vs 持续加重两分支；清理 .rm-brand > span / .rm-brand small 死 CSS |
+| 4 | `016096b` | 文案 | 转介/stop-and-refer 文案口语化：去掉泄露的内部阈值「7 分及以上」→「疼得比较厉害」；「结构性筛查/异常信号/加强刺激」→「针对骨骼或肌腱的检查/需要重视的情况/加压」；去公文腔。**测试侧勿钉这些字面**（按「不断言用户可见字面」原则） |
 
 ## HDUEYFGS 根因（owner 报「每项都选能完成却显示无法完成」）
 
@@ -300,7 +301,7 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 待测试侧补场景覆盖（dev 未构造，逻辑已审查+tsc+high 分支 E2E 回归过）
 
 - specialSafety 独立触发文案：需 operationTarget=other + specialTest 能力 + 踝区 ankle-thompson（access=coach，safety 类）阳性，且无 neural/sharp/high。构造成本高，交你方场景注册表。
-- stop-and-refer 两分支：neuralOrWeakness=yes → 「停止后出现新的麻、电感或无力」；persistentIncrease && afterScore>=7 → 「停止后仍持续加重，疼痛达到 7 分及以上」。
+- stop-and-refer 两分支：neuralOrWeakness=yes → 「停止后出现新的麻、电感或无力」；persistentIncrease && afterScore>=7 → 「停下来仍持续加重」（016096b 口语化，勿钉旧「7 分及以上」字面）。
 
 ## 验证（dev 侧）
 
