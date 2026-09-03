@@ -43,10 +43,12 @@ const REGION_ALIASES: Array<[PilotMuscleRegionId, RegExp]> = [
   ["thigh-lateral", /大腿外|外侧链|股外侧肌|阔筋膜张肌/],
   ["thigh-medial", /大腿内|内收肌/],
   ["thigh-posterior", /大腿后|腘绳肌/],
+  // calf-medial 必须先于 calf-posterior：「小腿后内侧」含「小腿后」，
+  // 若 posterior 的宽匹配先命中会把后内侧误标成后侧水滴图（C-3 图2 根因）。
+  ["calf-medial", /小腿后内|小腿内侧|胫骨后肌|后内侧定位/],
   ["calf-anterior", /小腿前|胫骨前|趾伸/],
   ["calf-posterior", /小腿后|小腿肚|腓肠|比目鱼/],
   ["calf-lateral", /小腿外|腓骨长肌|腓骨短肌|腓骨肌群/],
-  ["calf-medial", /^小腿内侧$|小腿后内|胫骨后肌|后内侧定位/],
   ["plantar", /足底|足弓|脚底/],
 ];
 
