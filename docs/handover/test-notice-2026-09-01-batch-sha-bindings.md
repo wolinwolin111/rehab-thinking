@@ -219,6 +219,27 @@
    - **硬闸分支**：独立场景 `custom-action-deferred`（`1b55396`）——intake 同时命中急性（onset 今天或昨天 + mechanism 扭转或崴伤）与肿胀（symptoms 肿胀或淤青），卡显示「今天先不做现场复现」+ 记报评分 + 暂时不做，不渲染四档；
    - 无需新 fixtureKind（纯 intake 覆盖），`launchWorkbenchScenario` 用 `custom-action-assessment` / `custom-action-deferred` 两个场景 id 分别钉两分支。
 
+---
+
+# 追加通知：2026-09-03 第十一轮——C-3 绑定确认收到 + b4acfe4 补通报（你方下一批需含）
+
+## C-3 绑定（你方 8e26a1e）确认
+
+- `b67ee5e`/`228a9aa` 合并无破损、`data-overlay-review` 接线四小腿圈 reviewed（只锁 calf 不锁 thigh）——方案一致，收到。path 几何不做像素锁的口径同意：视觉验收已由 dev 侧无头渲染 PNG 逐卡判读闭环（照片垫底 + 组件同款 viewBox/裁切），机器锁像素没有增益。
+
+## b4acfe4 补通报（你方尚未绑定，下一批需含）
+
+你方合并窗口在 `228a9aa`，其后还有一个提交：
+
+| SHA | 内容 | 测试影响 |
+|---|---|---|
+| `b4acfe4` | ① 图1 回归修复：`rm-visual-theme` 移动端 `.rm-app img {width:auto;height:auto}`（特异性更高、后加载）把 `.rm-brand-mark` 顶回 160px 自然尺寸，撑破顶栏溢出到 stagebar（owner 移动端实测图1）。修复 = `.rm-app .rm-brand-mark` 以同特异性后序钉回 40px（桌面）/34px（移动）② 图3：完成面板「还没有得到解释」的顿号长串改 `<ul class="rm-outcome-unexplained-list">` 分点列表 | ① 若钉过顶栏几何/`.rm-brand-mark` 尺寸需复核（恢复正常 34px）；② 新增 `.rm-outcome-unexplained-list`（li 分点），若钉过该面板的顿号串联文案需迁移 |
+
+## owner 图2（后内侧水滴圈）结论存档
+
+owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验证当前产物为窄带：(a) 3000 编译模块实测 `IS_NARROW_BAND:true`；(b) dev 渲染 harness 照片垫底读图确认；(c) 全仓/全分支 grep 旧 path（M350 778）零命中。旧水滴是 `9a2309c`（08-29）之前的形态，与任何含 YS LOGO（09-02+）的构建不可能共存。结论：owner 看到的是浏览器残存旧标签页/旧缓存，需硬刷新复核；此条仅存档，无代码动作。
+
+
 
 
 
