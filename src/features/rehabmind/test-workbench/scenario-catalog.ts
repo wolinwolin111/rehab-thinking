@@ -674,6 +674,31 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
     },
   },
   {
+    id: "high-irritability-completed-painful",
+    title: "能完成但疼痛高分转介",
+    description: "功能动作都能完成但完成时疼痛 8 分，评估总结应显示疼痛转介（而非无法完成）并给出保存出口。",
+    mode: "page_boundary",
+    target: "评估边界",
+    initialProblem: "左膝弯曲、上下楼和下蹲时髌骨下方疼。",
+    step: 2,
+    snapshotOverrides: {
+      intake: {
+        customAction: "上楼或上台阶、下楼或下台阶、下蹲",
+        reproduction: "上楼或上台阶、下楼或下台阶、下蹲",
+        actionSelectionConfirmed: true,
+      },
+      assessmentResults: {
+        ...KNEE_PAGE_ASSESSMENTS,
+        // 留一个半答的主动屈曲：恢复落点推导会停在评估队列里，
+        // 验证脚本沿真实用户路径补答后进入评估总结。
+        "motion:knee-flexion": { active: "limited" },
+        "function:knee-step-up": { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "yes", discomfortLocation: "膝关节前侧", discomfortType: "刺痛", symptomScore: 8 },
+        "function:knee-step-down": { functionCompletion: "complete", functionControl: "compensated", functionDiscomfort: "yes", discomfortLocation: "膝关节前侧", discomfortType: "刺痛", symptomScore: 8, compensations: ["身体或骨盆歪向一边"] },
+        "function:knee-squat": { functionCompletion: "complete", functionControl: "stable", functionDiscomfort: "yes", discomfortLocation: "膝关节前侧", discomfortType: "刺痛", symptomScore: 8 },
+      },
+    },
+  },
+  {
     id: "assessment-all-normal",
     title: "评估全正常空态",
     description: "直接检查评估全正常、无固定主诉动作时处理段的空态出口。",

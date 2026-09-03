@@ -110,6 +110,7 @@ export type AssessmentStageProps = {
   assessmentNeuralReferral: boolean;
   sharpSpecialReferral: boolean;
   assessmentNeedsReferral: boolean;
+  highIrritabilityReferral: boolean;
   adverseResolution: AdverseResolution | null;
   trialRecords: TrialRecord[];
   exercises: FullExercise[];
@@ -180,6 +181,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     assessmentNeuralReferral,
     sharpSpecialReferral,
     assessmentNeedsReferral,
+    highIrritabilityReferral,
     adverseResolution,
     trialRecords,
     exercises,
@@ -403,8 +405,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
       ].filter(Boolean).join("；")}</h2></section> : null}
       {assessmentNeedsReferral ? <section className="rm-route-note is-waiting">
         <span>先不要继续自助处理</span>
-        <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
-        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
+        <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : highIrritabilityReferral ? "多项检查出现明显疼痛" : "多项检查因明显疼痛无法完成"}</h2>
+        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : highIrritabilityReferral ? "刚才的动作虽然能完成，但疼痛达到 7 分及以上。建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
       </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
       <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
     </section>;
