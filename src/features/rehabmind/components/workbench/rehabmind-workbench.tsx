@@ -6474,8 +6474,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           hasSpecialPositive={hasSpecialPositive}
           assessmentNeuralReferral={assessmentNeuralReferral}
           sharpSpecialReferral={sharpSpecialReferral}
+          specialSafetyReferral={specialSafetyReferral}
           assessmentNeedsReferral={assessmentNeedsReferral}
-          highIrritabilityReferral={highIrritabilityReferral && !assessmentNeuralReferral && !sharpSpecialReferral}
+          highIrritabilityReferral={highIrritabilityReferral && !assessmentNeuralReferral && !sharpSpecialReferral && !specialSafetyReferral}
           adverseResolution={adverseResolution}
           trialRecords={trialRecords}
           exercises={exercises}

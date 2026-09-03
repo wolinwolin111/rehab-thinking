@@ -50,9 +50,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
    顶回 160px 自然尺寸，在移动端撑破顶栏并压住 stagebar（图1 回归）。
    此处用同源嵌套提升特异性钉回固定尺寸。 */
 .rm-app .rm-brand-mark { width: 40px; height: 40px; }
-.rm-brand > span { display: grid; line-height: 1.15; }
 .rm-brand strong { font-size: 19px; letter-spacing: -.02em; }
-.rm-brand small { margin-top: 4px; color: #b8c6c8; font-size: 12px; font-weight: 600; }
 .rm-top-context { display: flex; align-items: center; gap: 10px; color: #d7e0e1; font-size: 14px; }
 .rm-top-context b { color: white; }
 .rm-top-context i { color: #6f8186; font-style: normal; }
@@ -1332,7 +1330,6 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-brand > b { width: 34px; height: 34px; font-size: 16px; }
   .rm-app .rm-brand-mark { width: 34px; height: 34px; }
   .rm-brand strong { font-size: 17px; }
-  .rm-brand small { display: none; }
   .rm-top-context { display: none; }
   .rm-top-actions .rm-records-trigger { min-width: 44px; padding: 0 8px; font-size: 0; }
   .rm-current-case-code { max-width: 82px; font-size: 10px; }
