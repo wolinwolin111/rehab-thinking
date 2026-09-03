@@ -793,7 +793,12 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           <section className="rm-outcome-unexplained">
             <strong>{chiefComplaintLabel(intake)}还没有得到解释</strong>
             <span>处理和复查都完成了，但原来的不适还在。还可以检查：</span>
-            <ul className="rm-outcome-unexplained-list">{continuationSuggestions.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
+            <ul className="rm-outcome-unexplained-list">{continuationSuggestions.map((item) => {
+              // 渲染层把「主词（括号注）」拆成主副两级：主词是要查的动作，
+              // 括号里是肌群说明。title 是通用投影，不在数据层拆。
+              const bracket = item.title.match(/^(.*?)[（(]([^）)]+)[）)]$/);
+              return <li key={item.id}><i>{continuationSuggestions.indexOf(item) + 1}</i><span className="rm-outcome-unexplained-text"><b>{bracket ? bracket[1] : item.title}</b>{bracket ? <small>（{bracket[2]}）</small> : null}</span></li>;
+            })}</ul>
             <div className="rm-page-actions">
               <button type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
               <small>也可以先进入训练或保存记录；这些方向以后仍然可以补查。</small>
