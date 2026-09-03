@@ -74,11 +74,17 @@ type MuscleMapSpec = {
   viewBox: string;
   imageWidth: number;
   imageHeight: number;
-  path: string;
+  /** 轮廓制（fill）：保留给未迁移的条目（大腿四区、足底）。 */
+  path?: string;
+  /** 笔画制（stroke + 羽化）：owner 亲手描摹的高亮，优先于 path。 */
+  strokes?: Array<{ d: string; width: number; color?: string; opacity?: number }>;
   anatomyLandmarks?: string[];
   assetReviewStatus?: "reviewed" | "pending";
   overlayReviewStatus?: "reviewed" | "pending";
 };
+
+/** 羽化滤镜默认参数：模糊半径与笔画软边统一，全画布坐标避免区域裁切。 */
+const BRUSH_FILTER = { stdDeviation: 15 };
 
 /* 足底示意图是纯 SVG 手绘（无照片素材），高亮区为足弓范围。 */
 const PLANTAR_ZONE_PATH = "M134 77 C145 67 160 64 178 66 C195 63 214 68 226 80 L234 119 C225 135 209 145 191 149 L158 143 C142 136 130 124 126 109 Z";
@@ -136,9 +142,9 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "150 650 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 胫骨前肌肌腹限于小腿上 1/2～2/3，位于胫骨嵴外側；下段为肌腱移行与
-    // 骨面，不画入。
-    path: "M311 758 C329 744 351 746 364 765 C371 812 368 864 363 919 C360 954 354 992 344 1016 C338 1029 330 1031 325 1022 C317 1006 315 970 314 933 C311 878 303 808 311 758 Z",
+    // 胫骨前肌：owner 亲手描摹（湖蓝/0.8/笔宽40），中轴线自肌腹上段
+    // 至中下 1/3 肌腱移行处。
+    strokes: [{ d: "M307 820 L317 1065", width: 40, color: "#3565c4", opacity: 0.8 }],
     assetReviewStatus: "reviewed",
     overlayReviewStatus: "reviewed",
   },
@@ -148,12 +154,12 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "410 650 480 640",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 腓肠肌和比目鱼肌作为一个连续产品区域：覆盖完整小腿肚，向下收窄
-    // 止于三头肌腱移行部（跟腱起点）上方，不拆内外侧头或上下段，不压跟腱。
-    // 腓肠肌和比目鱼肌作为一个连续产品区域：覆盖小腿肚肌腹（照片中
-    // 迎面骨/跟腱约在 x≈720，肌腹在左 x≈640–760），向下止于跟腱起点
-    // （y≈1050）上方，不压跟腱。
-    path: "M612 776 C640 750 728 748 756 776 C778 810 780 856 771 908 C765 946 758 986 747 1018 C737 1044 721 1058 705 1058 C689 1056 668 1026 653 994 C647 981 643 972 639 962 C620 910 598 830 612 776 Z",
+    // 小腿三头肌：owner 亲手描摹两笔（内侧头一线 x643、外侧 x696-703），
+    // 覆盖小腿肚 y795-1054，止于跟腱起点上方。
+    strokes: [
+      { d: "M643 808 L650 1054", width: 60, color: "#3565c4", opacity: 0.8 },
+      { d: "M696 795 L695 1046", width: 60, color: "#3565c4", opacity: 0.8 },
+    ],
     assetReviewStatus: "reviewed",
     overlayReviewStatus: "reviewed",
   },
@@ -163,11 +169,12 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "270 650 500 700",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 腓骨长肌（上 1/2）与腓骨短肌（中下）肌腹：下端止于肌腹移行腱处，
-    // 不包外踝后方肌腱段。
-    // 腓骨长肌（上 1/2）与腓骨短肌（中下）肌腹：从腓骨头下方（照片
-    // y≈860）起，到外踝上方肌腱移行处（y≈1090）止，不爬膝外侧骨点。
-    path: "M498 868 C520 850 554 856 572 884 C584 924 583 968 576 1012 C571 1042 566 1070 558 1092 C551 1084 542 1070 536 1048 C529 1024 527 998 526 974 C524 928 494 872 498 868 Z",
+    // 腓骨肌：owner 亲手描摹两笔（腓骨肌腹 y840-1201、比目鱼外缘
+    // y847-1211），止于外踝上方。
+    strokes: [
+      { d: "M580 840 L582 1201", width: 40, color: "#3565c4", opacity: 0.8 },
+      { d: "M611 847 L583 1211", width: 40, color: "#3565c4", opacity: 0.8 },
+    ],
     anatomyLandmarks: ["外侧腓骨头下方", "腓骨长短肌肌腹", "外踝上方", "第五跖骨侧"],
     assetReviewStatus: "reviewed",
     overlayReviewStatus: "reviewed",
@@ -178,9 +185,8 @@ const MUSCLE_ZONE_PATHS: Partial<Record<PilotMuscleRegionId, MuscleMapSpec>> = {
     viewBox: "240 560 560 760",
     imageWidth: 1024,
     imageHeight: 1536,
-    // 胫骨后肌位于深后间室，因此这里只标示可用于表面定位的窄带：
-    // 沿胫骨内侧缘后方下行并止于内踝后上方，不画成表浅宽大肌腹。
-    path: "M360 690 C378 677 402 681 414 704 C420 764 416 834 410 910 C404 985 399 1056 396 1122 C394 1155 390 1178 384 1190 C374 1172 372 1146 374 1114 C378 1048 380 982 378 914 C376 834 361 754 360 690 Z",
+    // 胫骨后肌定位带：owner 亲手描摹（膝下沿胫骨内缘后方 → 内踝后上）。
+    strokes: [{ d: "M413 663 L404 1055", width: 40, color: "#3565c4", opacity: 0.8 }],
     anatomyLandmarks: ["右腿纯内侧正侧位", "胫骨内侧缘后方", "内踝后上方", "内侧足弓与拇趾侧"],
     assetReviewStatus: "reviewed",
     overlayReviewStatus: "reviewed",
@@ -225,11 +231,18 @@ function MuscleAnatomyMap({ regionId, side }: { regionId: PilotMuscleRegionId; s
       <clipPath id={`muscle-photo-clip-${regionId}-${spec.view}`}>
         <rect x="0" y="0" width={spec.imageWidth} height={spec.imageHeight} rx="18" />
       </clipPath>
+      {spec.strokes?.length ? <filter id={`muscle-brush-blur-${regionId}`} filterUnits="userSpaceOnUse" x="0" y="0" width={spec.imageWidth} height={spec.imageHeight}>
+        <feGaussianBlur stdDeviation={BRUSH_FILTER.stdDeviation} />
+      </filter> : null}
     </defs>
     <g clipPath={`url(#muscle-photo-clip-${regionId}-${spec.view})`}>
       <g transform={mirrored ? `translate(${spec.imageWidth} 0) scale(-1 1)` : undefined}>
         <image href={spec.asset} x="0" y="0" width={spec.imageWidth} height={spec.imageHeight} className="rm-muscle-location-figure__photo" preserveAspectRatio="xMidYMid meet" />
-        <path d={spec.path} className="rm-muscle-location-figure__highlight" />
+        {spec.strokes?.length
+          ? spec.strokes.map((stroke, index) => <path key={index} d={stroke.d} fill="none"
+            stroke={stroke.color ?? "rgba(65,158,133,.8)"} strokeOpacity={stroke.opacity ?? 0.8}
+            strokeWidth={stroke.width} strokeLinecap="round" filter={`url(#muscle-brush-blur-${regionId})`} />)
+          : <path d={spec.path} className="rm-muscle-location-figure__highlight" />}
       </g>
     </g>
   </svg>;
