@@ -239,6 +239,44 @@
 
 owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验证当前产物为窄带：(a) 3000 编译模块实测 `IS_NARROW_BAND:true`；(b) dev 渲染 harness 照片垫底读图确认；(c) 全仓/全分支 grep 旧 path（M350 778）零命中。旧水滴是 `9a2309c`（08-29）之前的形态，与任何含 YS LOGO（09-02+）的构建不可能共存。结论：owner 看到的是浏览器残存旧标签页/旧缓存，需硬刷新复核；此条仅存档，无代码动作。
 
+---
+
+# 追加通知：2026-09-03 第十二轮——C-3 终态（owner 亲手描摹笔画制全区落地）+ 图2 真因更正 + 契约迁移
+
+## 范围：实际 7 个提交（你方已绑 `228a9aa`，以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `b4acfe4` | 修复 | 图1 回归：`rm-visual-theme` 移动端 `.rm-app img` 通配把 LOGO 顶回 160px（撑破顶栏/压 stagebar）→ `.rm-app .rm-brand-mark` 同特异性后序钉回 34px；图3 完成面板顿号长串改分点 `<ul>` |
+| 2 | `2999181` | 样式 | complete-panel 头部居中保留、内容卡（力量交接/待解释方向）左对齐 |
+| 3 | `f490361` | 样式 | 待解释方向三方向升级为序号条目卡（主词加粗+肌群注次级灰），渲染层拆 title 不改数据 |
+| 4 | `df4613c` | 修复 | **图2 真因**：`resolveRegionId` 返回第一个 alias 命中，`calf-posterior` 的 `/小腿后/` 先于 `calf-medial` 的 `/小腿后内/`，label「小腿后内侧」被误解析为 posterior → 渲染后侧水滴图。修复 = calf-medial alias 条目前移（具体优先于宽泛） |
+| 5 | `0bafb04` | 修复 | 后侧/外侧两圈按网格校准重新锚定（照片实测腿中轴 x~720/腓骨头 (500,850)） |
+| 6 | `d7a0bc3` | **架构** | **肌肉高亮改 owner 亲手描摹笔画制**：`MUSCLE_ZONE_PATHS` 增可选 `strokes`（d/width/color/opacity），渲染层 stroke+共享 feGaussianBlur（userSpaceOnUse 全画布）；无 strokes 条目回落 fill 轮廓。四个小腿区落地 owner 笔迹；新增 `/c3-trace` 描摹工作台（保留） |
+| 7 | `95ca239` + `9bd2fbf` | **架构** | **大腿四区全部迁移 owner 笔迹**（前侧3/后侧2/内侧3(重描)/外侧2 笔），八区 17 条笔画；内侧 5→3 重描为 owner 二次修正 |
+
+## 图2 结论更正（撤销第十一轮的"旧缓存"判断）
+
+第十一轮存档的"owner 看到旧缓存"**判断错误**。真因是 `df4613c` 所述的 alias 优先级 bug——owner 截图正是该 bug 的真实渲染（"小腿后内侧"标题 + 后侧水滴图）。`/c3-probe` 临时诊断路由已用于复现并修复，验证后删除。
+
+## ⚠️ 契约迁移（muscle-region-location-picker.test.mjs，你方所有）
+
+1. 八个区域条目断言 `new RegExp(`"${id}":[\\s\\S]*?path:`)` → 大腿后侧、小腿四区现为 **`strokes:`**；大腿前侧也是 `strokes:`；仅 `thigh-medial`……**全部八区均为 `strokes:`**（`path:` 字段仅存于 `plantar` 与回落渲染分支）。建议断言改为 `"${id}":[\\s\\S]*?(path|strokes):`。
+2. `styles` 断言 `rgba(91, 170, 146, .32)`（is-selected 高亮填充色）——笔画制下 is-selected 改为笔画透明度提升（`.rm-floating-hint` 无关），该样式断言需按新选中态更新。
+3. `walkthrough` 依赖的 `scripts/legacy-browser/real-browser-walkthrough.mjs` 仍缺失（文件级 ENOENT 基线红），与本批无关。
+
+## 建议测试点（非阻塞）
+
+- 紧张度页/处理卡八区笔画渲染存在（`svg path[stroke='#3565c4']` 计 17）。
+- 「小腿后内侧」卡标题与图内容一致（窄定位带，非水滴）——图2 回归哨兵。
+- 完成面板「还没有得到解释」分点列表渲染。
+- 移动端顶栏 LOGO 34px 不溢出（图1 回归哨兵）。
+
+## 当前阻塞
+
+**无**。C-3 全区闭环（owner 描摹 → dev 落地 → 双端渲染验证）。描摹工作台 `/c3-trace` 保留（后续换照片/调区域 owner 自助）。
+
+
 
 
 
