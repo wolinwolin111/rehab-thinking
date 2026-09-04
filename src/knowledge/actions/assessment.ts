@@ -14,7 +14,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "高度、节奏、膝是否弯曲及患侧能完成的高质量个数。",
     },
     optionSet: "strength",
-    dose: { plain: { both: 5 }, pro: { both: 10, each: 10 } },
+    dose: { plain: { both: 10 }, pro: { both: 10, each: 10 } },
   },
   {
     id: "knee-heel-raise", region: "knee", kind: "function", access: "self",
@@ -44,7 +44,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "提踵高度、节奏、膝是否弯曲和患侧耐力。",
     },
     optionSet: "strength",
-    dose: { plain: { both: 5 }, pro: { both: 10, each: 10 } },
+    dose: { plain: { both: 10 }, pro: { both: 10, each: 10 } },
   },
   {
     id: "ankle-heel-raise", region: "ankle-foot", kind: "function", access: "self",
@@ -59,7 +59,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "高度、节奏、足弓、跟腱/小腿症状和高质量次数。",
     },
     optionSet: "function",
-    dose: { plain: { both: 5 }, pro: { both: 10 } },
+    dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
     id: "calf-heel-raise-strength", region: "calf-local", kind: "strength", access: "self",

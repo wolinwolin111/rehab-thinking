@@ -4,13 +4,13 @@
  * 与「当时界面长什么样」的存证。
  */
 export const GOLDEN_OUTPUTS: Record<string, string> = {
-  "assessment.how:knee-calf": "扶住墙，双脚慢慢踮起再落下，做5次。两边都能稳定完成时，再分别用单脚试做。",
+  "assessment.how:knee-calf": "扶住墙，双脚慢慢踮起再落下，做10次。两边都能稳定完成时，再分别用单脚试做。",
   "assessment.pro:knee-calf": "双脚踮脚尖10个；允许时再左右单脚各做最多10个。",
   "assessment.how:knee-heel-raise": "扶住墙面，双脚同时缓慢抬起脚跟，再慢慢落下，完成10次。",
   "assessment.pro:knee-heel-raise": "扶住墙面，双脚同时缓慢抬起脚跟，再慢慢落下，完成10次。",
-  "assessment.how:ankle-calf": "扶住墙，双脚慢慢踮起再落下，做5次。能稳定完成时，再分别用单脚试做。",
+  "assessment.how:ankle-calf": "扶住墙，双脚慢慢踮起再落下，做10次。能稳定完成时，再分别用单脚试做。",
   "assessment.pro:ankle-calf": "先双脚提踵10个；稳定后扶墙做单脚提踵，最多记录10个高质量次数。",
-  "assessment.how:ankle-heel-raise": "扶住墙，双脚慢慢踮起再落下，做5次。",
+  "assessment.how:ankle-heel-raise": "扶住墙，双脚慢慢踮起再落下，做10次。",
   "assessment.pro:ankle-heel-raise": "先双脚同步提踵10个，再根据耐受做单脚提踵。",
   "assessment.how:calf-heel-raise-strength": "扶墙做10次双脚提踵；稳定时再分别单脚尝试。",
   "assessment.pro:calf-heel-raise-strength": "扶墙做10次双脚提踵；稳定时再分别单脚尝试。",
