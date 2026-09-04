@@ -69,10 +69,22 @@ src/knowledge/
 | `renderTraining(id, mode)` | `{ title, how, purpose, observe, easier, harder, sets, reps, position }` | exercise 字段直出 |
 | `renderRetest(id, mode)` | `{ title, options }`（指向评估库同 id） | `kneeRetestInstruction` ＋ `retestPlans.userAction` ＋ summary-stage 复测选项手写 |
 | `assessmentTitle(id, mode)` | 成品标题 | `professionalAssessmentTitle` 映射表 |
-| `renderOptions(id, kind, mode)` | `Array<[value, label]>`；kind=`answer`（评估作答）/`retest`（复测结论） | `activeMotionRangeOptions` 等 8 组共享函数＋summary/treatment-retest 的复测选项手写。**值契约固定**（决策层输入），**标签按动作特异定制**（owner 2026-09-04：尤其评估和复测）——条目级 `options.labels` / `retestOptions.labels` 覆盖 base，未覆盖处落回通用标签 |
+| `renderOptions(id, kind, mode)` | `Array<[value, label]>`；kind=`answer`（评估作答）/`retest`（复测结论）等 | `activeMotionRangeOptions` 等 8 组共享函数＋summary/treatment-retest 的复测选项手写。**值契约固定**（决策层输入），**标签分层定制**（见 §4.1） |
 | `customHint(kind, ctx)` | 自定义动作模板成品 | 散落在 assessment-stage/custom-action 分支的提示句 |
 | `regionEntries(regionId)` | 该部位的条目 id 清单（评估/处理/训练） | FULL_REGIONS 里嵌套的完整内容对象 |
 | `lookup(id)` | 跨库条目查询（处理 retestOf、训练 tags、词根） | 各处自行查找 |
+
+### 4.1 选项定制分层（owner 2026-09-04：有选项的地方全部纳入，尤其评估和复测）
+
+全应用所有选项组进同一套 option-sets 机制（base 提供值契约＋默认标签；条目级 `labels` 覆盖；校验器锁值契约）。定制深度分三档：
+
+| 档 | 选项组 | 定制深度 |
+|---|---|---|
+| 动作特异 | 评估作答、复测结论、处理后复测 | **每动作定制标签**——观察方式因动作而异（提踵看高度、下蹲看深度方向、走路看步态承重），通用标签在这些动作上是废话 |
+| 族级定制 | 双侧活动度、力量/特殊检查作答、训练第一组反馈 | 按**类别**一套标签，不按动作——类别内观察方式一致 |
+| 有意通用 | 安全红旗（有/没有）、两侧对比结论（哪侧更差）、加重处置问句、影像/医生结论、自定义动作模仿方式、训练进退档选择 | 保留 base 通用标签，**登记为有意不定制**——判断维度本身与动作无关，强行定制是伪工作 |
+
+规则：base 标签是兜底而非目标；每迁移一个条目时回答一次"它的观察方式是否因动作而异"，是则写 labels，否则维持 base 并在 option-sets.ts 的登记表里记一笔"有意通用"及理由。
 
 ## 5. 引用结构总图
 
