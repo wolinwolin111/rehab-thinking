@@ -18,7 +18,7 @@ export type FullCandidateType = "muscle" | "joint" | "control" | "neural" | "swe
 export type FullExerciseStage = 1 | 2 | 3 | 4 | 5;
 
 import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "@/src/knowledge/pilot/local-limb-regions";
-import { assessmentPro, trainingCopy } from "@/src/knowledge/actions/bridge";
+import { assessmentPro, trainingCopy, treatmentDo } from "@/src/knowledge/actions/bridge";
 import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type FullAssessment = {
@@ -564,7 +564,7 @@ const ankleFoot: FullRegion = {
       candidates: [
         candidate("ankle-medial-muscles", "检查胫骨后肌、屈趾肌与足底组织", "muscle", "coach", "比较内翻抗阻、提踵和内踝后方/足底触诊，选择一组反应试验。", "不直接重压内踝后方神经血管区域。", "复测相同提踵、走路或足弓负重。", ["tibialis-posterior", "plantar", "medial-ankle"]),
         candidate("ankle-medial-joints", "检查足舟骨与第一跖趾活动", "joint", "therapist", "主动被动活动均受限时，由专业人员检查足舟骨、距骨和第一跖趾关节。", "不凭静态足弓高低诊断问题。", "复测活动、足弓控制和原功能。", ["navicular", "great-toe", "joint-mobility"]),
-        candidate("ankle-medial-control", "足弓与提踵控制练习", "control", "self", "坐着，用脚趾把地上的毛巾一点点抓向自己，做 5 次；再扶墙做 5 个双脚踮脚尖。", "脚跟垂直抬起，不向内外偏。", "重新比较走路、提踵或单腿站。", ["arch", "heel-raise", "lower-chain"]),
+        candidate("ankle-medial-control", "足弓与提踵控制练习", "control", "self", treatmentDo("ankle-medial-control"), "脚跟垂直抬起，不向内外偏。", "重新比较走路、提踵或单腿站。", ["arch", "heel-raise", "lower-chain"]),
       ],
     },
     {
@@ -585,7 +585,7 @@ const ankleFoot: FullRegion = {
       note: "先排除急性撕裂线索；非急性负荷问题才进入渐进提踵路径。",
       candidates: [
         candidate("ankle-achilles-muscles", "小腿后侧轻柔松解", "muscle", "self", "用手或泡沫轴轻柔放松小腿肌肉，每个紧张区域30～60秒。", "不压跟腱疼痛点，不做强力拉伸。", "重新比较固定个数提踵或原来的走路动作。", ["calf", "achilles", "dorsiflexion"]),
-        candidate("ankle-achilles-load", "双脚提踵起步", "control", "self", "先确认没有突然断裂的感觉、也没有踩不实的情况，再扶墙做一组5～8个双脚踮脚尖。", "疼痛不逐个明显上升；第二天没有持续加重。", "记录提踵高度、个数和次日反应。", ["tendon-loading", "heel-raise"]),
+        candidate("ankle-achilles-load", "双脚提踵起步", "control", "self", treatmentDo("ankle-achilles-load"), "疼痛不逐个明显上升；第二天没有持续加重。", "记录提踵高度、个数和次日反应。", ["tendon-loading", "heel-raise"]),
       ],
     },
     {
