@@ -21,6 +21,19 @@ export const ACTION_TERMS = {
   "hip-extension": { plain: "把腿向身后伸", pro: "髋关节伸展" },
   "hip-abduction": { plain: "把腿向外打开", pro: "髋关节外展" },
   "hip-adduction": { plain: "把腿向身体中线靠拢", pro: "髋关节内收" },
+
+  "knee-straighten": { plain: "把膝盖压向床面", pro: "膝伸直" },
+  "knee-bend": { plain: "弯膝盖", pro: "膝屈曲" },
+  "patella-glide-up": { plain: "把髌骨向上推", pro: "髌骨向上活动" },
+  "patella-glide-down": { plain: "把髌骨向下推", pro: "髌骨向下活动" },
+  "patella-glide-medial": { plain: "把髌骨向内推", pro: "髌骨向内活动" },
+  "patella-glide-lateral": { plain: "把髌骨向外推", pro: "髌骨向外活动" },
+  "ankle-dorsiflex": { plain: "把脚背向小腿靠近", pro: "踝背屈" },
+  "ankle-plantarflex": { plain: "把脚背向下压", pro: "踝跖屈" },
+  "ankle-invert": { plain: "把脚掌转向身体中间", pro: "足踝内翻" },
+  "ankle-evert": { plain: "把脚掌向外转", pro: "足踝外翻" },
+  "great-toe-extend": { plain: "把大脚趾向上抬", pro: "第一跖趾背伸" },
+  "toe-flex": { plain: "抬起再弯曲脚趾", pro: "足趾屈曲与伸展" },
 } as const;
 
 export type ActionTermKey = keyof typeof ACTION_TERMS;
