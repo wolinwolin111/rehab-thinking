@@ -68,7 +68,7 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     id: "knee-lateral-control", region: "knee", type: "control", access: "self",
     title: { plain: "单腿站稳练习", pro: "单腿站稳练习" },
     actions: ["single-leg-stand"],
-    doText: "扶墙做 {dose.reps} 次重心左右转移，或单腿站 {dose.hold} 秒；站的时候脚掌踩实、脚内侧别塌下去。",
+    doText: "扶墙单腿站 {dose.hold} 秒，再换另一边；站的时候脚掌踩实、脚内侧别塌下去。",
     retestOf: "knee-squat", dose: { reps: "5～8", hold: 10 },
   },
   {

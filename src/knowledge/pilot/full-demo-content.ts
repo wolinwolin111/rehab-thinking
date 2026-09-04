@@ -321,7 +321,7 @@ const knee: FullRegion = {
       candidates: [
         candidate("knee-lateral-muscles", "大腿外侧与后外侧轻柔松解", "muscle", "self", "用手或泡沫轴轻柔放松大腿外侧和后外侧，每个紧张区域30～60秒。", "避开膝外侧骨点和腘窝，不直接重压疼痛中心。", "重复原来的走路、跑步或下蹲动作。", ["lateral-chain", "popliteus"]),
         candidate("knee-lateral-fibula", "腓骨近端辅助反应试验", "joint", "therapist", "由专业人员轻柔固定或辅助腓骨近端一个方向，保持同样条件重复原来的膝盖动作。", "不要求用户判断微动、末端感觉或是否错位；只记录原动作是否出现可重复变化。", "只复测原来的膝盖动作和相关活动范围；没有变化就结束这一项。", ["proximal-fibula", "response-test"], { retestIds: ["knee-extension", "knee-flexion"] }),
-        candidate("knee-lateral-control", "单腿站稳练习", "control", "self", "扶墙做 5～8 次重心左右转移，或单腿站 10 秒；站的时候脚掌踩实、脚内侧别塌下去。", "不憋气，不让膝盖突然内外晃。", "重复原来的走路或下蹲动作。", ["hip-control", "foot-support"]),
+        candidate("knee-lateral-control", "单腿站稳练习", "control", "self", "扶墙单腿站 10 秒，再换另一边；站的时候脚掌踩实、脚内侧别塌下去。", "不憋气，不让膝盖突然内外晃。", "重复原来的走路或下蹲动作。", ["hip-control", "foot-support"]),
       ],
     },
     {
