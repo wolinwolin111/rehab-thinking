@@ -20,6 +20,7 @@ import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/as
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
 import { termText } from "@/src/knowledge/actions/resolve";
+import { assessmentTitle as catalogAssessmentTitle } from "@/src/knowledge/actions/index";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -2277,6 +2278,8 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
 };
 
 export function assessmentTitle(id: string, title: string) {
+  const catalogResult = catalogAssessmentTitle(id, "guided");
+  if (catalogResult) return catalogResult;
   const friendly: Record<string, string> = {
     "ankle-dorsiflexion": "脚背向上勾",
     "ankle-plantarflexion": "脚背向下压",
