@@ -66,6 +66,15 @@ export const OPTION_BASES: Record<string, OptionBase> = {
       instruction: "不知道动作怎么做",
     },
   },
+  "range-function": {
+    values: ["complete-stable", "complete-compensated", "unable", "skip"],
+    labels: {
+      "complete-stable": "接近另一侧",
+      "complete-compensated": "差一些",
+      unable: "差很多",
+      skip: "说不清",
+    },
+  },
   "unable-reason-strength": {
     values: ["pain", "weak", "fear", "instruction"],
     labels: {

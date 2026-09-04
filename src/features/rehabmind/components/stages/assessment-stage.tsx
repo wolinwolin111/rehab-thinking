@@ -784,12 +784,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           ) : isRangeFunction
             ? <>
               <h3>和另一侧相比，最大可控幅度怎么样？</h3>
-              <div className="rm-result-grid is-four">{([
-                ["complete-stable", "接近另一侧"],
-                ["complete-compensated", "差一些"],
-                ["unable", "差很多"],
-                ["skip", "说不清"],
-              ] as Array<[string, string]>).map(([value, label]) => {
+              <div className="rm-result-grid is-four">{renderOptions<"complete-stable" | "complete-compensated" | "unable" | "skip">(item.id.replace(/^function:/, ""), "range-function", isThinkingMode ? "thinking" : "guided").map(({ value, label }) => {
                 const isSelected = value === "complete-stable" ? functionCompletion === "complete" && functionControl === "stable"
                   : value === "complete-compensated" ? functionCompletion === "complete" && functionControl === "compensated"
                   : functionCompletion === value;
