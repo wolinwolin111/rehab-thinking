@@ -124,8 +124,5 @@ export function exerciseMuscleLabels(tags: string[], title = ""): string[] {
     const rule = EXERCISE_MUSCLE_RULES.find(([pattern]) => pattern.test(tag));
     if (rule) labels.push(rule[1]);
   }
-  for (const [pattern, label] of EXERCISE_MUSCLE_RULES) {
-    if (pattern.test(title)) labels.push(label);
-  }
   return [...new Set(labels)];
 }
