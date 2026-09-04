@@ -33,7 +33,7 @@
 | 一层·作答按钮 | 27 条评估的按动作标签（9 组功能动作＋力量提踵组） | ✅ 数据已入库（批次 2），UI 未接线 | 旧：`activeMotionRangeOptions` 等 8 组＋力量卡 9 组字面 → 新：`option-sets.ts` + 条目 `options` |
 | 一层·通用组 | 复测结论五方向词（有好转/差不多/加重/说不清/做不了） | ✅ 已入库（`retest-outcome` base） | 旧：`summary-stage:709/711` 等 → 新：已收 |
 | 一层·有意通用 | 红旗、两侧对比、影像医嘱、自定义模仿方式、训练反馈、进退档 | ✅ 已登记"有意不定制"及理由（`GENERIC_REGISTRY` 7 条） | 留在组件 |
-| 二层·原因按钮 | 4 套值契约：motion(pain/fear/instruction)、function(pain/weak/fear)、strength(pain/weak/control/no-helper/fear)、special(pain/fear/safety-signal) | 🔜 批次 3（T3-0b） | `assessment-stage:637-641`、`training-stage:202`、`summary-stage:514`、`treatment-retest:368`、力量卡 `:687-692` |
+| 二层·原因按钮 | 4 套值契约：motion(pain/fear/instruction)、function(pain/weak/fear/instruction)、strength(pain/weak/control/no-helper/fear)、special(pain/fear/safety-signal) | 🔜 批次 3（T3-0b） | `assessment-stage:637-641`、`training-stage:202`、`summary-stage:514`、`treatment-retest:368`、力量卡 `:687-692` |
 | 二层·提示句 | 「如果是因为疼所以不敢继续，选"疼痛或不适"。」 | 🔜 批次 3 随 base 走 | `assessment-stage:636` |
 | 二层·引导框 | 现状 motion 3 套＋strength 5 套；**裁定后仅存 no-helper 1 条**（见 §3.2） | 🔜 批次 3（含 `{how}` 注入） | `workbench-support:2577-2595`（motion）、`:2597-2619`（strength）——7 套删除 |
 | 三层·疼痛记录 | 位置图、0～10 分、熟悉的不适 | ⛔ 明确不收——数据采集控件不是文案 | 留在组件（`renderSymptomDetails`） |

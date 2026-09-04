@@ -58,11 +58,12 @@ export const OPTION_BASES: Record<string, OptionBase> = {
     hint: "如果是因为疼所以不敢继续，选“疼痛或不适”。",
   },
   "unable-reason-function": {
-    values: ["pain", "weak", "fear"],
+    values: ["pain", "weak", "fear", "instruction"],
     labels: {
       pain: "疼或不舒服",
       weak: "没力或撑不住",
       fear: "担心继续会加重",
+      instruction: "不知道动作怎么做",
     },
   },
   "unable-reason-strength": {

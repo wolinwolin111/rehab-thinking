@@ -16,6 +16,7 @@ import { functionCompletionValue, functionControlValue, functionDiscomfortValue 
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete, functionalActionMeta } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { renderOptions, unableFollowUp } from "@/src/knowledge/actions/index";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -816,11 +817,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
             </>
             : <>
               <h3>这个动作能做完吗？</h3>
-              <div className="rm-result-grid is-three">{([
-                ["complete", "可以做完"],
-                ["unable", "做不完或不敢继续"],
-                ["skip", "暂时不做"],
-              ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
+              <div className="rm-result-grid is-three">{renderOptions<FunctionCompletion>(item.id.replace(/^function:/, ""), "function-completion", isThinkingMode ? "thinking" : "guided").map(({ value, label }) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
                 ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
                 : value === "unable"
                    ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
@@ -829,9 +826,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
         </section>
         {functionCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>主要是什么原因停下来？</h3>
-          <div className="rm-result-grid is-two">{([[
-            "pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"], ["instruction", "不知道动作怎么做"]] as Array<[FunctionUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
-              functionUnableReason: value,
+          <div className="rm-result-grid is-two">{unableFollowUp("function", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
+              functionUnableReason: value as FunctionUnableReason,
               functionDiscomfort: value === "pain" ? "yes" : "no",
               discomfortLocation: value === "pain" ? effectiveRecord.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? effectiveRecord.discomfortLocations : undefined,
