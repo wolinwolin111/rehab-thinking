@@ -1795,7 +1795,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           items.push({
             id: `track:${item.id}`,
             title: hasDiscomfort ? `${item.title}出现了其他感觉` : `${item.title}暂时没判断清楚`,
-            detail: hasDiscomfort ? "不是平时困扰你的那种感觉，本次只记录" : "不用反复尝试，本次不据此安排处理",
+            detail: hasDiscomfort ? "不是平时困扰你的那种感觉，本次只记录" : "不用反复尝试，本次不凭这个安排处理",
             priority: "track",
             score: result.symptomScore,
             tags: item.tags ?? [],
@@ -1868,7 +1868,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           side: intake.side === "双侧/中间" ? bilateralComparisonToSide(bilateralComparison) : result.worseSide,
         });
       } else if (item.kind === "strength" && result.simple === "skip") {
-        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不据此安排处理", priority: "track", tags: item.tags ?? [] });
+        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不凭这个安排处理", priority: "track", tags: item.tags ?? [] });
       }
       const functionalResult = item.kind === "function" ? functionSimpleAnswer(result) : undefined;
       const functionEvidence = item.kind === "function" ? functionEvidenceFromRecord(item.id, result) : undefined;
@@ -1908,7 +1908,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       } else if (item.kind === "function" && (functionalResult === "skip" || functionControlValue(result) === "unsure")) {
         // M-06：主诉上下文的功能动作被跳过时打标记，供评估结果页给出中性提醒。
         const chiefSkipped = region ? chiefFunctionAssessmentIds(intake, region.id).includes(item.id) : false;
-        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不据此安排处理", priority: "track", tags: [...(item.tags ?? []), ...(chiefSkipped ? ["chief-skip"] : [])] });
+        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不凭这个安排处理", priority: "track", tags: [...(item.tags ?? []), ...(chiefSkipped ? ["chief-skip"] : [])] });
       }
       if (item.kind === "special" && result.simple === "positive") {
         items.push({ id: item.id, title: `${item.title}出现阳性线索`, detail: item.next ?? "提高结构排查优先级", priority: "track", tags: item.tags ?? [] });

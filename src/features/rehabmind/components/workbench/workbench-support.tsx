@@ -1282,19 +1282,19 @@ export const BILATERAL_OBSERVE: Record<string, string> = {
 
 export const bilateralMotionOptions: Array<[BilateralMotionAnswer | "same" | "unable" | "unsure", string]> = [
   ["same", "两侧接近｜与平时范围相近"],
-  ["left-limited", "左侧偏小｜左侧更差"],
-  ["right-limited", "右侧偏小｜右侧更差"],
-  ["both-limited", "两侧偏小｜两侧都受限"],
+  ["left-limited", "左侧偏小"],
+  ["right-limited", "右侧偏小"],
+  ["both-limited", "两侧偏小"],
   ["unable", "无法完成｜疼痛或其他原因"],
-  ["unsure", "暂不判断｜无法比较"],
+  ["unsure", "暂不判断"],
 ];
 
 export const bilateralComparisonOptions: Array<[BilateralComparison, string]> = [
-  ["左侧更差", "左侧更差｜右侧相对较好"],
-  ["右侧更差", "右侧更差｜左侧相对较好"],
-  ["两侧异常", "两侧都有问题｜可分别轻重不同"],
-  ["两侧接近", "两侧接近｜暂未见明确差异"],
-  ["暂不判断", "暂不判断｜无法安全比较"],
+  ["左侧更差", "左侧更差"],
+  ["右侧更差", "右侧更差"],
+  ["两侧异常", "两侧都有问题"],
+  ["两侧接近", "两侧接近"],
+  ["暂不判断", "暂不判断"],
 ];
 
 export function motionAnswerIsLimited(value?: AssessmentRecord["active"]) {
@@ -2238,7 +2238,7 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "hip-external-rotation": { title: "小腿向内摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向内摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
 
   "knee-extension": { title: "把膝盖绷直", how: "仰卧，两条腿放平，脚跟位置保持一致。先绷紧一侧大腿前侧，把膝盖后方向床面压，再换另一侧。", observe: "比较两侧膝后离床面的空隙，以及哪一侧更难向下压。" },
-  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
+  "knee-flexion": { title: "慢慢弯膝盖", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢弯另一边膝盖。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
   "knee-quadriceps": { title: "把膝盖伸直的力量", how: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。", observe: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。" },
   "knee-hamstring": { title: "脚跟向后拉的力量", how: "坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。", observe: "哪边更难发力；大腿后侧是否容易抽筋；用力时哪里不舒服。" },
   "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
@@ -2310,8 +2310,8 @@ export function assessmentCopy(id: string, how: string, observe: string) {
     .replaceAll("末端", "能到的位置")
     .replaceAll("代偿", "跟着帮忙")
     .replaceAll("抗阻", "对抗轻微阻力")
-    .replaceAll("等长", "保持不动发力")
-    .replaceAll("没受伤的那边", "健侧");
+    .replaceAll("等长", "保持不动发力");
+
   return FRIENDLY_ASSESSMENT_COPY[id] ?? { title: "", how: plain(how), observe: plain(observe) };
 }
 
@@ -2466,27 +2466,27 @@ export function activeMotionRangeQuestion(itemId: string, bilateral = false, pas
 
 export function activeMotionRangeOptions(mode: MotionComparison = "contralateral", spinal = false, assessmentMode: SpineAssessmentMode = "guided", professional = false): Array<[MotionAnswer, string]> {
   if (spinal && assessmentMode === "reference") return [
-    ["same", "角度基本正常｜接近参考范围"],
-    ["limited", "角度偏小｜低于参考范围"],
-    ["excessive", "角度偏大｜高于参考范围"],
+    ["same", "角度基本正常｜和平时差不多"],
+    ["limited", "角度偏小｜比平时小"],
+    ["excessive", "角度偏大｜比平时大"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法测量或比较"],
+    ["unsure", "暂不判断"],
   ];
   if (spinal && mode === "opposite-direction") return [
-    ["same", "与另一方向接近｜幅度差不明显"],
-    ["limited", "该方向偏小｜明显受限"],
+    ["same", "与另一方向接近"],
+    ["limited", "该方向偏小"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
+    ["unsure", "暂不判断"],
   ];
   if (spinal) return [
-    ["same", "可以完成｜动作顺畅"],
-    ["limited", "范围偏小｜动作受限"],
+    ["same", "可以完成"],
+    ["limited", "范围偏小"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
+    ["unsure", "暂不判断"],
   ];
   const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
+    ["same", "接近健侧"],
+    ["limited", "患侧偏小"],
     ["unable", "无法完成｜疼痛、担心或不会做"],
     ["unsure", "暂不判断｜今天先跳过"],
   ];
@@ -2496,8 +2496,8 @@ export function activeMotionRangeOptions(mode: MotionComparison = "contralateral
 
 export function localLimbMotionRangeOptions(professional = false): Array<[MotionAnswer, string]> {
   const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
+    ["same", "接近健侧"],
+    ["limited", "患侧偏小"],
     ["unable", "无法完成｜疼痛、担心或不会做"],
     ["unsure", "暂不判断｜今天先跳过"],
   ];
@@ -2685,10 +2685,10 @@ export function rangeRetestOptions(mode: MotionComparison = "contralateral", can
     ["worse", "变差｜被动活动幅度减小或不适加重"],
   ];
   if (!canAssessPassive) return [
-    ["both-match", `接近目标｜主动活动幅度与${target}接近`],
-    ["better-passive-limited", `有所改善｜幅度增加但仍小于${target}`],
-    ["passive-limited", `仍受限｜主动活动幅度仍小于${target}`],
-    ["worse", "变差｜幅度减小或不适加重"],
+    ["both-match", `接近目标｜自己动也能到${target}`],
+    ["better-passive-limited", `有所改善｜比之前多了，但还没到${target}`],
+    ["passive-limited", `仍受限｜自己动还是到不了${target}`],
+    ["worse", "变差｜比之前少了，或者更不舒服"],
   ];
   return [
     ["both-match", `均接近目标｜主动和被动范围都接近${target}`],

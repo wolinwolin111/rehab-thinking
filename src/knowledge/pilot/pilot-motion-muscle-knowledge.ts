@@ -85,7 +85,7 @@ export const PILOT_MOTION_KNOWLEDGE: Record<PilotMotionId, PilotMotionKnowledge>
   "knee-flexion": {
     id: "knee-flexion",
     professionalTitle: "膝关节主动屈曲（AROM）",
-    userAction: "把脚跟滑向臀部",
+    userAction: "慢慢弯膝盖",
     relations: [
       { regionId: "thigh-posterior", role: "agonist" },
       { regionId: "thigh-anterior", role: "antagonist" },
@@ -94,7 +94,7 @@ export const PILOT_MOTION_KNOWLEDGE: Record<PilotMotionId, PilotMotionKnowledge>
       { regionId: "thigh-medial", role: "stabilizer" },
     ],
     controlTitle: "主动屈膝控制",
-    controlInstruction: "仰卧，脚跟贴着床面，缓慢把脚跟滑向臀部，再主动控制着回到起点。",
+    controlInstruction: "仰卧，脚跟贴着床面，缓慢把膝盖弯起来，再主动控制着回到起点。",
     controlRepetitions: "只在能接受的范围做5～8次",
     anatomySource: "膝屈肌—伸肌功能解剖与主动/拮抗协调",
     clinicalPrioritySourceCases: ["KNEE-002", "KNEE-003"],

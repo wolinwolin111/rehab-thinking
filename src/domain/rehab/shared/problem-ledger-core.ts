@@ -83,6 +83,6 @@ export function emptyTreatmentMessage(entries: LedgerEntry[]) {
   return {
     title: "本次没有发现明确异常",
     detail: "保持舒适活动；症状仍存在时返回补充描述或检查。",
-    action: "查看低刺激基础活动",
+    action: "查看低强度活动",
   };
 }

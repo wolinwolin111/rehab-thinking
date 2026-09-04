@@ -603,7 +603,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
       if (!pool.length && releasedP0Direction) return null;
       if (!pool.length) pool = [{
           id: `gentle-motion:${directionId}`,
-          title: `${assessmentTitle(directionId, finding.title)}温和活动`,
+          title: `${assessmentTitle(directionId, finding.title)}`,
           type: "control",
           access: "self",
           do: `在不明显增加不适的范围内，缓慢完成${assessmentTitle(directionId, finding.title)}5～8次。`,
@@ -612,7 +612,7 @@ export function buildTrialTargets(ctx: DecisionContext): TrialTargetOutput[] {
           tags: [...finding.tags, "gentle-motion"],
           retestIds: [directionId],
           siteLabel: region.shortName,
-          actionLabel: "温和活动",
+          actionLabel: "轻轻活动",
         }];
       const relationEntries = relationsForFinding(finding);
       const ordered = pool

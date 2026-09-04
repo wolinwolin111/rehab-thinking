@@ -71,7 +71,7 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
     <nav className="rm-safety-stages"><span className={safetyStage === 0 ? "is-current" : safetyAnswered ? "is-done" : ""}>1 安全信号</span>{needsBoneQuestions ? <span className={safetyStage === 1 ? "is-current" : safetyStage > 1 ? "is-done" : ""}>2 骨性风险</span> : null}<span className={safetyStage === 2 ? "is-current" : ""}>{needsBoneQuestions ? "3" : "2"} 影像结论</span></nav>
     {priorCare.length ? <details className="rm-prior-care-note">
       <summary><span>已记录既往处理</span><strong>{priorCare.join("、")}</strong></summary>
-      {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要粘贴报告原文。</p> : priorCare.includes("看过医生") && imaging.includes("医生有限制") ? <p>已记录医生限制；后续只在医生允许的负重、活动范围和时间内进行。</p> : priorCare.includes("看过医生") && imaging.includes("医生已允许按建议康复") ? <p>已记录医生允许按建议康复；后续仍以最新医嘱为准。</p> : priorCare.includes("看过医生") ? <p>看过医生不等于一定存在活动限制。请在下方选择医生是否允许康复；不清楚时先不进行高负荷训练。</p> : null}
+      {imaging.includes("未见骨折") ? <p>描述中提到拍片未见骨折，已经带入影像结论；最后一步仍可修改。</p> : priorCare.includes("拍过片") ? <p>请在影像结论中选择报告写明的情况，不需要贴报告原文。</p> : priorCare.includes("看过医生") && imaging.includes("医生有限制") ? <p>已记录医生限制；后续只在医生允许的负重、活动范围和时间内进行。</p> : priorCare.includes("看过医生") && imaging.includes("医生已允许按建议康复") ? <p>已记录医生允许按建议康复；后续仍以最新医嘱为准。</p> : priorCare.includes("看过医生") ? <p>看过医生不等于一定存在活动限制。请在下方选择医生是否允许康复；不清楚时先不进行高负荷训练。</p> : null}
       {priorCare.includes("用过冰敷") ? <p>冰敷不作为恢复必做项；目前证据不能确认它能改善急性踝扭伤的肿胀、活动度或恢复。</p> : null}
     </details> : null}
     {safetyStage === 0 && activeSafetyItems.length ? <div className="rm-safety-list">
@@ -85,7 +85,7 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       {boneQuestionsAnswered ? <div className={boneImagingSuggested ? "is-review" : "is-clear"}><strong>{boneImagingSuggested ? "建议优先结合影像确认" : "目前没有明显的拍片优先线索"}</strong><span>{boneImagingSuggested ? "这不等于骨折。没有明显错位或其他危险信号时，可以先做轻柔检查；暂不跳跃、不强压。" : "疼痛或承重能力持续变差时重新评估。"}</span></div> : null}
     </section> : null}
 
-    {safetyStage === 2 ? <div className="rm-form-block"><div className="rm-label"><span>已有影像或医生结论</span><b>不要求粘贴报告原文</b></div><div className="rm-imaging">{imagingOptions.map((option) => <button type="button" key={option} className={imaging.includes(option) ? "is-selected" : ""} onClick={() => onImagingToggle(option)}>{option}</button>)}</div></div> : null}
+    {safetyStage === 2 ? <div className="rm-form-block"><div className="rm-label"><span>已有影像或医生结论</span><b>不要求贴报告原文</b></div><div className="rm-imaging">{imagingOptions.map((option) => <button type="button" key={option} className={imaging.includes(option) ? "is-selected" : ""} onClick={() => onImagingToggle(option)}>{option}</button>)}</div></div> : null}
 
     {showSurgeryQuestion ? (() => {
       const hadLabel = surgeryHad === "yes" ? "做过" : surgeryHad === "no" ? "没做过" : surgeryHad === "unsure" ? "不确定" : "";

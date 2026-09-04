@@ -323,7 +323,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     const adverseIsNeural = adverseResponse.neuralOrWeakness === "yes";
     return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="异常反应" title="本次先停止" />
-    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>{adverseIsNeural ? "停止后出现新的麻、电感或无力" : "停止后仍持续加重，疼痛达到 7 分及以上"}</h2><p>{adverseIsNeural ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : "停下来仍没有缓解、疼痛还在升高，本次不继续增加处理或训练，保存当前记录并安排专业评估。"}</p><div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
+    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>{adverseIsNeural ? "停止后出现新的麻、电感或无力" : "停止后仍持续加重，疼痛还在升高"}</h2><p>{adverseIsNeural ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : "停下来仍没有缓解、疼痛还在升高，本次不继续增加处理或训练，保存当前记录并安排专业评估。"}</p><div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
   </section>;
   }
   if (adverseResponse && adverseResolution === "regress-training") return <section className="rm-page rm-adverse-page">
@@ -411,7 +411,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       {assessmentNeedsReferral ? <section className="rm-route-note is-waiting">
         <span>先不要继续自助处理</span>
         <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : specialSafetyReferral ? "特殊筛查出现异常信号" : highIrritabilityReferral ? "多项检查出现明显疼痛" : "多项检查因明显疼痛无法完成"}</h2>
-        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : specialSafetyReferral ? "其中一项结构性筛查出现异常信号。本次不继续加强刺激或负重，建议先由专业人员确认，再决定是否适合继续处理。" : highIrritabilityReferral ? "刚才的动作虽然能完成，但疼痛达到 7 分及以上。建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
+        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : specialSafetyReferral ? "其中一项结构性筛查出现异常信号。本次不继续加强刺激或负重，建议先由专业人员确认，再决定是否适合继续处理。" : highIrritabilityReferral ? "刚才的动作你能做完，但疼痛已经很重。建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
       </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
       <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
     </section>;
@@ -558,18 +558,18 @@ export function AssessmentStage(props: AssessmentStageProps) {
   }
 
   const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = canAssessResistance
-    ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
+    ? [["normal", "抗阻接近"], ["weak", "患侧偏弱｜加一点阻力就撑不住"], ["painful", "抗阻不适"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
   const options: Array<[SimpleAnswer, string]> = item.kind === "strength"
     ? ["thigh-local", "calf-local"].includes(region?.id ?? "")
       ? localLimbStrengthOptions
       : item.comparison === "midline"
-      ? [["normal", "完成质量正常｜动作可稳定完成"], ["weak", "控制偏弱｜耐力或保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+      ? [["normal", "完成质量正常"], ["weak", "控制偏弱｜耐力或保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
       : intake.side === "双侧/中间"
-        ? [["normal", "两侧接近｜完成质量都正常"], ["weak", "一侧或两侧偏弱｜保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
-        : [["normal", "力量接近｜两侧完成质量相近"], ["weak", "患侧偏弱｜不舒服这侧更差"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+        ? [["normal", "两侧接近"], ["weak", "一侧或两侧偏弱｜保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+        : [["normal", "力量接近"], ["weak", "患侧偏弱｜不舒服这侧更差"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
     : item.kind === "special"
-      ? [["normal", "未见异常反应｜没有出现提示信号"], ["positive", "出现提示反应｜需要结合其他结果"], ["painful", "只有疼痛｜暂不能判断"], ["skip", "暂不检查｜不会做或暂不做"]]
+      ? [["normal", "未见异常反应"], ["positive", "出现提示反应｜需要结合其他结果"], ["painful", "只有疼痛｜暂不能判断"], ["skip", "暂不检查｜不会做或暂不做"]]
       : [];
   const pairedCheckUsesResistance = canAssessResistance;
   const isSelfKneeExtension = item.id === "motion:knee-extension" && !pairedCheckUsesResistance && intake.side !== "双侧/中间";
@@ -578,7 +578,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     && (intake.symptoms.includes("肿胀或淤青") || (intake.baselineScoreConfirmed && intake.baselineScore >= 6))
     || record.active === "unable";
   const pairedCheckOptions: Array<[SimpleAnswer, string]> = pairedCheckUsesResistance
-    ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
+    ? [["normal", "抗阻接近"], ["weak", "患侧偏弱｜加一点阻力就撑不住"], ["painful", "抗阻不适"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
   const motionFallback = item.kind === "motion" ? motionUnableGuidance(item, record.unableReason) : null;
   const pairedStrengthFallback = item.pairedStrengthId ? strengthUnableGuidance(item, record.pairedStrengthUnableReason, pairedCheckUsesResistance) : null;
@@ -877,7 +877,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     {hasSpecialPositive ? <section className="rm-route-note is-waiting">
       <span>建议补充确认</span>
       <h2>{specialPositiveFindings.map((entry) => entry.title).join("、")}出现了异常反应</h2>
-      <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
+      <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
     </section> : null}
     <div className="rm-page-actions split"><button type="button" onClick={() => {
       if (focusedReassessmentActive) {

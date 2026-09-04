@@ -345,7 +345,7 @@ export function SymptomStage(props: SymptomStageProps) {
       </section>
 
       <section className="rm-professional-section">
-        <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的内容保留为空，不代替患者做判断。</p></div></header>
+        <header><span>03</span><div><h2>症状性质与伴随表现</h2><p>可多选；不确定的可以先不选，不替你下结论。</p></div></header>
         <div className="rm-professional-symptom-groups"><div className="rm-label"><span>症状性质</span><b>选择最接近的一项</b></div>{SYMPTOM_TYPE_GROUPS.map((group) => <section key={group.title} className="rm-symptom-group is-flat"><strong>{group.title}</strong><PillOptions options={group.options} value={intake.symptomType} onChange={(symptomType) => invalidateAfterIntake({ ...intake, symptomType, painQualityConfirmed: !["疼痛，性质说不清", "说不清的不适"].includes(symptomType), stabbingSpread: symptomType === "刺痛" ? intake.stabbingSpread : "", stabbingPalpation: (symptomType === "刺痛" || hasTenderness) ? intake.stabbingPalpation : "" })} columns={3} /></section>)}</div>
         {showAllIntakeFields && (intake.symptomType === "疼痛，性质说不清" || intake.symptomType === "说不清的不适") ? null : null}
         <div className="rm-label rm-professional-symptom-label"><span>伴随表现</span><b>可多选；没有就选“没有以上情况”</b></div>
@@ -384,7 +384,7 @@ export function SymptomStage(props: SymptomStageProps) {
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting"><span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion}</h2><p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p></section> : null}
       {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-      {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>普通自助路径不安排神经松动或自行处理。可保存当前信息，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
+      {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>这种情况不适合自己练，也不建议自己松神经。可保存当前信息，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题，可保存当前信息后再继续。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {/* 原先的 disabled={!professionalComplete} 会把缺项藏起来；现在改为点击后高亮并定位缺项。 */}
       <div className="rm-professional-footer"><span>{professionalComplete ? "信息已足够进入关键确认" : `还需补充：${intakeMissingFields.join("、") || "检查条件"}`}</span><div><button type="button" onClick={rewriteIntakeDescription}>重新整理原话</button>{professionalComplete && keyConfirmationReady ? <button type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div></div>
@@ -603,7 +603,7 @@ export function SymptomStage(props: SymptomStageProps) {
 
       {showIntakeQuestion("恢复目标") ? <div className="rm-form-block"><div {...fieldLabel("恢复目标")}><span>你希望最后恢复到什么程度？</span></div><div className="rm-goals">{GOALS.map((goal) => <button type="button" key={goal.level} className={intake.goal === goal.level ? "is-selected" : ""} onClick={() => invalidateAfterIntake({ ...intake, goal: goal.level })}><i>{goal.level}</i><span><strong>{goal.title}</strong><small>{goal.short}</small></span></button>)}</div></div> : null}
 
-      {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>普通自助路径不安排神经松动或自行处理。不必补完其余问题，可以直接保存退出，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
+      {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>这种情况不适合自己练，也不建议自己松神经。不必补完其余问题，可以直接保存退出，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题。不必补完其余问题，可以直接保存退出。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {!unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal ? <div className="rm-page-actions rm-intake-actions"><span>{keyConfirmationReady ? "症状信息已经够用了" : "还需补充："}{!keyConfirmationReady ? intakeMissingFields.slice(0, 6).map((label) => <button key={label} type="button" className="rm-missing-jump" onClick={() => document.getElementById(`field-${label}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>{label}</button>) : null}{!keyConfirmationReady && intakeMissingFields.length > 6 ? `等 ${intakeMissingFields.length} 项` : ""}</span>{keyConfirmationReady ? <button type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div> : null}
     </>}
