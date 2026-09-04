@@ -34,6 +34,7 @@ export const ACTION_TERMS = {
   "ankle-evert": { plain: "把脚掌向外转", pro: "足踝外翻" },
   "great-toe-extend": { plain: "把大脚趾向上抬", pro: "第一跖趾背伸" },
   "toe-flex": { plain: "抬起再弯曲脚趾", pro: "足趾屈曲与伸展" },
+  "pillow-squeeze": { plain: "夹住软枕", pro: "夹枕等长发力" },
 } as const;
 
 export type ActionTermKey = keyof typeof ACTION_TERMS;

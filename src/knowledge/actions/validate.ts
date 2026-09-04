@@ -4,8 +4,14 @@ import { OPTION_BASES } from "./option-sets.ts";
 export type CatalogIssue = { code: string; entryId: string; detail: string };
 
 const DOSE_IN_SENTENCE = /\d+\s*(次|组)|每组|做\s*\d|保持\d+\s*秒/;
-/** 句内数字是动作定义本身、不是处方的例外（等长保持的秒数）。 */
-const DOSE_EXCEPTIONS = new Set(["ankle-achilles-isometric"]);
+/** 句内数字是动作定义本身、不是处方的例外（等长检查/保持类："压住5秒""顶住5秒""夹住5秒"是测量动作的属性）。 */
+const DOSE_EXCEPTIONS = new Set([
+  "ankle-achilles-isometric",
+  "knee-quadriceps", "knee-adductor-pes", "knee-glute",
+  "ankle-dorsiflexor", "ankle-evertor", "ankle-invertor", "ankle-intrinsic",
+  "thigh-front-strength", "thigh-medial-strength", "thigh-lateral-strength",
+  "calf-dorsiflexor-strength", "calf-invertor-strength", "calf-evertor-strength",
+]);
 const ACCESS = new Set(["self", "coach", "therapist"]);
 const REGION = new Set(["knee", "ankle-foot", "thigh-local", "calf-local"]);
 
