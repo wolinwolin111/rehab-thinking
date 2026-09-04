@@ -423,3 +423,43 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 当前阻塞
 
 无。下一批（批次 2 功能动作族）开工前需 owner 答 D2-1（走路评估口径）与 D2-2（症状页选择器措辞）。
+
+
+# 追加通知：2026-09-04 第十六轮——动作库批次 2（功能动作族）落地＋选项定制体系
+
+## 范围：5 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `041b8fc` | 数据 | 评估库 +21 条（功能动作族：走路/下蹲/坐站/上下台阶/单腿站/浅蹲/小跳/慢跑，四部位）；types+option-sets 落地**按动作定制作答标签**（值契约锁死） |
+| 2 | `7479276` | 数据 | 训练库 +6 条（knee-step、站立屈髋×3、ankle-gait-weightshift、ankle-single-leg-step）；terms +9 词根（功能动作＋髋四方向）；custom.ts 模板 |
+| 3 | `b9e572c` | 接线 | 症状页髋四方向标签改词根插值（拼装结果与原文字面逐字一致）；problem-ledger 空态文案改 customHint；workbench-support import termText |
+| 4 | `682e253` | 数据 | golden 锁定至 **68 条**（27 评估×2＋2 处理＋12 训练），gait 48 条与基线逐字锚定 |
+| 5 | `dee001f` | 决策 | D2-1 保留部位差异（走路：膝10米/踝·局部一小段）、D2-2 接受词根叫法 |
+
+## 新增决策落地：选项标签分层定制（owner 2026-09-04）
+
+- **值契约永久锁死**（same/limited/unable/…、better/same/worse/… 为决策层输入），标签文案按动作定制。
+- 批次 2 起功能动作的作答三联按动作写（走路→「能走完/走不了或不敢走」、单腿站→「能站稳/站不稳或不敢单脚站」…）；复测结论五值按动作写（走路→「有改善｜步子和承重比上次稳」…）。
+- 有意通用登记表（option-sets.ts GENERIC_REGISTRY）：安全红旗、两侧对比、加重处置、影像医嘱、自定义模仿方式、训练反馈、进退档——判定为"与动作无关"，不定制。
+- **UI 尚未消费这些定制标签**（数据先行）；评估作答/复测的选项接线在批次 3（renderOptions＋assessment-stage/summary-stage 换源）。届时才可见。
+
+## 剂量漂移登记（未决，待 owner）
+
+- **单腿站时长**：膝专业版 20 秒 vs 膝自助版/踝/大腿/小腿 10 秒——同动作跨模式/跨部位漂移。本批按"逐字保真"保留原样。建议：统一 10 秒（与已批 #2/#5 方向一致），待 owner 一句话。
+- **站立屈髋组次**：膝/踝 每组10个 vs 大腿局部 每组8～10个——同动作跨部位漂移。建议统一 10。
+
+## 断言影响
+
+- 功能动作的评估 how/observe 文字**未变**（逐字保真），仅 kne-squat 等含"3次"的句子改为剂量插值后成品仍逐字一致——理论无断言破坏。FRIENDLY_ASSESSMENT_COPY 中功能类条目（knee-squat/ankle-squat/knee-step-up/knee-step-down/ankle-step-down/knee-single-leg/ankle-single-leg/knee-single-leg-squat/ankle-weight-bearing）已被目录展开替代但值相同；测试若钉这些字面不受影响。
+- 症状页髋四方向标签字面不变（插值=原文）。
+
+## 验证（dev 侧）
+
+- tsc 干净；check:catalog 绿（assessment=27, treatment=2, training=12, golden=68）；check:knowledge/structure ok。
+- 结构快照 before/after **STRUCTURE IDENTICAL**（12 场景）。
+- check:boundaries 3 条 stage 违规均为 4fd593b（08-28）预存，非本批引入。
+
+## 当前阻塞
+
+无。批次 3（活动度方向族）开工前需 owner：**D2-3** 单腿站时长统一（建议 10 秒）；**D2-4** 站立屈髋组次统一（建议 10）；**D3-1** guided 的 AROM 后缀去留（建议保留）。
