@@ -85,7 +85,7 @@
 
 **批次 2 审核新增范围（owner 2026-09-04 确认方向）**：
 - T3-0a **选项接线**：批次 2 已入库的按动作作答标签上屏——`renderOptions` + 评估卡选项换源（首批可见变化）。
-- T3-0b **追问包收拢**：二层"无法完成→原因"结构进 option-sets，4 套 base（`unable-reason-motion`：pain/fear/instruction；`-function`：pain/weak/fear；`-strength`：pain/weak/control/no-helper/fear；`-special`：pain/fear/safety-signal），每组含提示句＋按原因引导模板（`{how}` 注入动作怎么做）；`unableFollowUp(kind, mode, how)` API；5 处硬编码换源（`assessment-stage:636-651`、`workbench-support:2577/2597`、`training-stage:202`、`summary-stage:514`、`treatment-retest:368`）。原因选项为**有意通用**档，不按动作定制（owner 砍复测提示同理）；引导为流程逻辑（instruction→教学缺口补救、no-helper→自助替代测试、weak→无阻力版、fear→分级重试、pain→改良尝试），经流程核实全部保留。
+- T3-0b **追问包收拢**：二层"无法完成→原因"结构进 option-sets，4 套 base（`unable-reason-motion`：pain/fear/instruction；`-function`：pain/weak/fear；`-strength`：pain/weak/control/no-helper/fear；`-special`：pain/fear/safety-signal），每组含提示句＋按原因引导模板（`{how}` 注入动作怎么做）；`unableFollowUp(kind, mode, how)` API；5 处硬编码换源（`assessment-stage:636-651`、`workbench-support:2577/2597`、`training-stage:202`、`summary-stage:514`、`treatment-retest:368`）。原因选项为**有意通用**档，不按动作定制（owner 砍复测提示同理）；pain 分支直进疼痛记录（不再插引导框）。
 - T3-0c **三层追问划界**：pain 后的位置图/0～10 分/熟悉的不适为记录控件，留在组件，不进目录。
 
 **任务**：

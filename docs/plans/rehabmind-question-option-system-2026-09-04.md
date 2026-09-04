@@ -35,7 +35,7 @@
 | 一层·有意通用 | 红旗、两侧对比、影像医嘱、自定义模仿方式、训练反馈、进退档 | ✅ 已登记"有意不定制"及理由（`GENERIC_REGISTRY` 7 条） | 留在组件 |
 | 二层·原因按钮 | 4 套值契约：motion(pain/fear/instruction)、function(pain/weak/fear)、strength(pain/weak/control/no-helper/fear)、special(pain/fear/safety-signal) | 🔜 批次 3（T3-0b） | `assessment-stage:637-641`、`training-stage:202`、`summary-stage:514`、`treatment-retest:368`、力量卡 `:687-692` |
 | 二层·提示句 | 「如果是因为疼所以不敢继续，选"疼痛或不适"。」 | 🔜 批次 3 随 base 走 | `assessment-stage:636` |
-| 二层·引导框 | motion 3 套＋strength 5 套「先这样试＋兜底」 | 🔜 批次 3（含 `{how}` 注入） | `workbench-support:2577-2595`（motion）、`:2597-2619`（strength） |
+| 二层·引导框 | 现状 motion 3 套＋strength 5 套；**裁定后仅存 no-helper 1 条**（见 §3.2） | 🔜 批次 3（含 `{how}` 注入） | `workbench-support:2577-2595`（motion）、`:2597-2619`（strength）——7 套删除 |
 | 三层·疼痛记录 | 位置图、0～10 分、熟悉的不适 | ⛔ 明确不收——数据采集控件不是文案 | 留在组件（`renderSymptomDetails`） |
 | 决策消费 | 原因的**值**驱动：pain≥7→转介、instruction→教学缺口台账、no-helper→缺口补测、weak→力量证据 | ⛔ 值契约锁死，永随决策层 | `assessment-gap-core`、`rehabmind-workbench:3478` 等 |
 
@@ -50,27 +50,20 @@
 | strength | 力量卡「主要卡在哪里？」 | pain / weak / control / no-helper / fear / instruction | 一用力就不适 / 完全使不上力 / （控制） / 不会做或没听懂说明 / 不敢继续 |
 | special | 特殊检查 | pain / fear / safety-signal / cannot-perform | （special-test-record-core） |
 
-### 3.2 引导框逐条（motion 3＋strength 5，全部现状原文）
+### 3.2 引导框处置（owner 裁定 2026-09-04：只留 no-helper 一条）
 
-**motion**（`workbench-support.tsx:2577-2595`）：
+**裁定过程**：先全量保留（流程核实后推翻了"删掉"的第一判断）→ owner 指出 pain 引导无意义 → 核实代码：引导框是纯展示，**零状态/路由/缺口消费** → 按"无不可替代流程功能即删"统一判据处置。
 
-| 原因 | 先这样试 | 兜底说明 |
-|---|---|---|
-| pain | 改成坐稳或躺稳，只做不会明显加重的小幅动作。 | 仍会痛就停止；这次记录为"因不适未完成"，不强行测完整范围。 |
-| fear | 扶住固定物，把动作缩小到你觉得安全的范围，再慢慢试一次。 | 仍不敢做就停止；这次只记为暂时无法判断。 |
-| instruction | 先回到起始姿势，只做一小段：{该动作的怎么做} | 仍不知道怎么做就先跳过；这次不把它算成正常或受限。 |
+| 原因 | 原引导（现状原文） | 处置 | 理由 |
+|---|---|---|---|
+| pain（motion/strength 两处） | 改成坐稳或躺稳，只做不会明显加重的小幅动作…／减小用力，只尝试轻轻保持3秒… | **删除** | 代码零消费；与"如实记录疼痛"的任务相互干扰；改良尝试无 UI 回路兑现 |
+| instruction | 先回到起始姿势，只做一小段：{该动作的怎么做} | **删除** | 「怎么做」折叠在同一卡上方，当场重教冗余；缺口台账（motion-instruction）本就会带回该项 |
+| weak / control | 先不加阻力，在舒适范围找到位置并保持3秒。 | **删除** | 力量卡上方已有"停住不动，看稳不稳"操作说明；信息无增量 |
+| **no-helper** | **改用自助等长：{该动作的怎么做}** | **保留** | **不可替代**——唯一切换测试模式的引导；自助版做法不在当前页面显示，删了检查以"无法判断"结束 |
 
-**strength**（`:2597-2619`）：
+**收拢后 motion/strength 契约形态一致**：pain→直进疼痛记录；instruction→直进缺口台账；fear→直进待确认；仅 strength 的 no-helper 显示引导框（目录中唯一一条 guidance）。
 
-| 原因 | 先这样试 | 兜底说明 |
-|---|---|---|
-| pain | 减小用力，只尝试轻轻保持3秒。 | 仍会痛就停止；记录为发力会引起不适。 |
-| weak / control | 先不加阻力，在舒适范围找到位置并保持3秒。 | 仍保持不住就记录为力量或控制不足，后续安排基础训练。 |
-| no-helper | 改用自助等长：{该动作的怎么做} | 不需要他人按压；仍无法判断就先跳过。 |
-| fear | 把用力减到很轻，先保持3秒，不追求最大力量。 | 仍担心加重就停止；这次不判断强弱。 |
-| 其他 | 先照着动作做一次，不加阻力：{该动作的怎么做}（专业模式为"让对方主动完成"） | 仍不会做就先跳过；这次不把它算成正常或偏弱。 |
-
-**流程核实结论（owner 2026-09-04）**：引导是流程逻辑不是文案——instruction→教学缺口台账回访、no-helper→自助替代测试、weak→无阻力版仍可分级、fear→分级重试允许改答案、pain→改良尝试提升数据质量。全部保留，文字批次 3 暂停点可改。
+**原则（判据统一，供未来新增原因时沿用）**：引导只在"离开它就断路"时存在。
 
 ### 3.3 原因值的下游（为什么值不能动）
 
@@ -87,10 +80,12 @@
 
 ```
 src/knowledge/actions/option-sets.ts（新增 4 个 base）
-  "unable-reason-motion":   { values, labels, hint, guidance: { pain:{action,fallback}, fear:{…}, instruction:{…} } }
-  "unable-reason-function": { values, labels, hint, guidance: {…} }   ← 复测/训练/复查看板 3 处共用
-  "unable-reason-strength": { values, labels, hint, guidance: {…5 套} }
-  "unable-reason-special":  { values, labels, hint, guidance: {…} }
+  "unable-reason-motion":   { values, labels, hint }              // pain/instruction 引导按裁定删除，直进下一层
+  "unable-reason-function": { values, labels, hint }              // 复测/训练/复查看板 3 处共用；无引导
+  "unable-reason-strength": { values, labels, hint,
+                              guidance: { no-helper: { action: "改用自助等长：{how}", fallback: "不需要他人按压；仍无法判断就先跳过。" } } }
+                                            // ↑ 全应用唯一保留的引导（owner 裁定 2026-09-04：判据=离开它就断路）
+  "unable-reason-special":  { values, labels, hint }
 src/knowledge/actions/index.ts（对外 API，批次 3 建立）
   renderOptions(id, kind, mode)          ← 一层标签上屏
   unableFollowUp(kind, mode, how)        ← 二层整包：{hint, reasons:[{value,label}], guidanceFor(reason)}
