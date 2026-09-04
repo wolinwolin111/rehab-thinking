@@ -56,7 +56,6 @@ export function validateActionCatalog(input: {
   for (const entry of input.assessment) {
     checkCommon(entry, "assessment");
     checkOptions(entry.id, entry.options, "options");
-    checkOptions(entry.id, entry.retestOptions, "retestOptions");
     // plain/pro 的 dose 键集合允许不同（自助句式和专业句式引用的数字不同），
     // 完整性由 renderHow/fillTemplate 运行时抛错保证，这里不做键集合比对。
     if (!DOSE_EXCEPTIONS.has(entry.id)) {

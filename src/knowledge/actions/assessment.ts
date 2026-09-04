@@ -11,17 +11,6 @@ export const fn = (complete: string, unable: string, skip = "暂时不做"): Opt
   },
 });
 
-export const rt = (better: string, same: string, worse: string, unknown: string, unable: string): OptionGroup => ({
-  base: "retest-outcome",
-  labels: {
-    better: { plain: better, pro: "有改善" },
-    same: { plain: same, pro: "跟上次差不多" },
-    worse: { plain: worse, pro: "比上次更差" },
-    unknown: { plain: unknown, pro: "看不出来" },
-    unable: { plain: unable, pro: "现在做不了" },
-  },
-});
-
 export const OPT = {
   walk: fn("能走完", "走不了或不敢走", "暂时不走"),
   squat: fn("能蹲下去再站起来", "蹲不下去或不敢蹲", "暂时不蹲"),
@@ -33,19 +22,6 @@ export const OPT = {
   hop: fn("能跳能落地", "跳不了或落地不稳", "暂时不跳"),
   jog: fn("能原地慢跑", "跑不了或不敢跑", "暂时不跑"),
   heelRaise: fn("能连续做完", "踮不上去或不敢踮"),
-};
-
-export const RT = {
-  walk: rt("有改善｜步子和承重比上次稳", "跟上次差不多｜不舒服的步段没变", "更差｜走路更疼或更瘸", "看不出来｜两次状态难比", "这次走不了"),
-  squat: rt("有改善｜蹲得更深更顺", "跟上次差不多｜不舒服的深度没变", "更差｜蹲得更浅或更疼", "看不出来", "这次蹲不了"),
-  sitStand: rt("有改善｜起身更省力", "跟上次差不多", "更差｜起身更疼或更费力", "看不出来", "这次做不了"),
-  stepUp: rt("有改善｜上台阶更稳更省力", "跟上次差不多", "更差｜上台阶更疼或更借力", "看不出来", "这次上不了"),
-  stepDown: rt("有改善｜下台阶刹得住", "跟上次差不多｜不舒服的那段没变", "更差｜下台阶更疼或更打软", "看不出来", "这次下不了"),
-  singleLeg: rt("有改善｜晃动变轻或站得更久", "跟上次差不多｜还是那个时间点开始晃", "更差｜更快晃或更疼", "看不出来", "这次站不了"),
-  singleLegSquat: rt("有改善｜膝盖不往内倒了", "跟上次差不多", "更差｜向内倒更明显或更疼", "看不出来", "这次做不了"),
-  hop: rt("有改善｜落地更轻更稳", "跟上次差不多", "更差｜落地更疼或更不稳", "看不出来", "这次跳不了"),
-  jog: rt("有改善｜局部没有再出现症状", "跟上次差不多", "更差｜慢跑又勾出症状", "看不出来", "这次跑不了"),
-  heelRaise: rt("接近健侧｜踮起高度追上另一边了", "跟上次差不多｜高度和上次一样", "更差｜踮得比上次更少或更疼", "看不出来", "这次踮不了"),
 };
 
 export const STRENGTH_HEEL: OptionGroup = {
@@ -71,8 +47,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "高度、节奏、膝是否弯曲及患侧能完成的高质量个数。",
     },
     optionSet: "strength",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: STRENGTH_HEEL,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10, each: 10 } },
   },
   {
@@ -88,8 +64,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "两侧高度是否接近，身体是否晃动，患侧是否明显更难完成。",
     },
     optionSet: "function",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: OPT.heelRaise,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -105,8 +81,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "提踵高度、节奏、膝是否弯曲和患侧耐力。",
     },
     optionSet: "strength",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: STRENGTH_HEEL,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10, each: 10 } },
   },
   {
@@ -122,8 +98,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "高度、节奏、足弓、跟腱/小腿症状和高质量次数。",
     },
     optionSet: "function",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: OPT.heelRaise,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -139,8 +115,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "比较高度、个数和症状。",
     },
     optionSet: "strength",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: STRENGTH_HEEL,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -156,8 +132,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "局部症状、高度和左右差异。",
     },
     optionSet: "function",
+    retestFocus: { plain: "和上次比：踮起的高度、两边差多少、疼不疼", pro: "和上次比：踮起的高度、两边差多少、疼不疼" },
     options: OPT.heelRaise,
-    retestOptions: RT.heelRaise,
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -173,7 +149,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "跛行阶段、步幅、膝能否伸直及0～10分。",
     },
     optionSet: "function",
-    options: OPT.walk, retestOptions: RT.walk,
+    retestFocus: { plain: "和上次比：步子稳不稳、疼的步段、能走多远", pro: "和上次比：步子稳不稳、疼的步段、能走多远" },
+    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -189,7 +166,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "记录能否承重、是否跛行、哪一步出现症状，以及左右步幅是否明显不同。",
     },
     optionSet: "function",
-    options: OPT.walk, retestOptions: RT.walk,
+    retestFocus: { plain: "和上次比：步子稳不稳、疼的步段、能走多远", pro: "和上次比：步子稳不稳、疼的步段、能走多远" },
+    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -205,7 +183,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "症状出现在迈步、支撑还是蹬地阶段，是否跛行。",
     },
     optionSet: "function",
-    options: OPT.walk, retestOptions: RT.walk,
+    retestFocus: { plain: "和上次比：步子稳不稳、疼的步段、能走多远", pro: "和上次比：步子稳不稳、疼的步段、能走多远" },
+    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -221,7 +200,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "症状出现在落脚、身体前移还是蹬地阶段。",
     },
     optionSet: "function",
-    options: OPT.walk, retestOptions: RT.walk,
+    retestFocus: { plain: "和上次比：步子稳不稳、疼的步段、能走多远", pro: "和上次比：步子稳不稳、疼的步段、能走多远" },
+    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -237,7 +217,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "深度、疼痛阶段、髋膝踝联动、左右承重及膝足方向。",
     },
     optionSet: "function",
-    options: OPT.squat, retestOptions: RT.squat,
+    retestFocus: { plain: "和上次比：能蹲到的深度、不舒服的位置", pro: "和上次比：能蹲到的深度、不舒服的位置" },
+    options: OPT.squat,
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -253,7 +234,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "两边膝盖高度、膝盖方向和脚跟是否提前抬起。",
     },
     optionSet: "function",
-    options: OPT.squat, retestOptions: RT.squat,
+    retestFocus: { plain: "和上次比：能蹲到的深度、不舒服的位置", pro: "和上次比：能蹲到的深度、不舒服的位置" },
+    options: OPT.squat,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -269,7 +251,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "坐下和起身哪个阶段不舒服，是否明显偏向一侧用力。",
     },
     optionSet: "function",
-    options: OPT.sitStand, retestOptions: RT.sitStand,
+    retestFocus: { plain: "和上次比：起身费不费力、疼的阶段", pro: "和上次比：起身费不费力、疼的阶段" },
+    options: OPT.sitStand,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -285,7 +268,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "大腿哪里不舒服，左右用力是否明显不同。",
     },
     optionSet: "function",
-    options: OPT.sitStand, retestOptions: RT.sitStand,
+    retestFocus: { plain: "和上次比：起身费不费力、疼的阶段", pro: "和上次比：起身费不费力、疼的阶段" },
+    options: OPT.sitStand,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -301,7 +285,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "起身阶段、股四头与臀肌发力、疼痛和借力。",
     },
     optionSet: "function",
-    options: OPT.stepUp, retestOptions: RT.stepUp,
+    retestFocus: { plain: "和上次比：迈上去的力度、要不要借手、疼不疼", pro: "和上次比：迈上去的力度、要不要借手、疼不疼" },
+    options: OPT.stepUp,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -317,7 +302,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "患侧承重阶段、下降控制、膝内外偏移和0～10分。",
     },
     optionSet: "function",
-    options: OPT.stepDown, retestOptions: RT.stepDown,
+    retestFocus: { plain: "和上次比：往下踩的控制、疼的深度、打不打软", pro: "和上次比：往下踩的控制、疼的深度、打不打软" },
+    options: OPT.stepDown,
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -333,7 +319,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "患侧承重阶段、踝足方向与足弓稳定、下降控制和0～10分。",
     },
     optionSet: "function",
-    options: OPT.stepDown, retestOptions: RT.stepDown,
+    retestFocus: { plain: "和上次比：往下踩的控制、疼的深度、打不打软", pro: "和上次比：往下踩的控制、疼的深度、打不打软" },
+    options: OPT.stepDown,
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -349,7 +336,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "身体是否明显晃动，患侧是否明显更难站稳。",
     },
     optionSet: "function",
-    options: OPT.singleLeg, retestOptions: RT.singleLeg,
+    retestFocus: { plain: "和上次比：能站多久、晃得多明显", pro: "和上次比：能站多久、晃得多明显" },
+    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -365,7 +353,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "身体是否明显晃动，患侧是否明显更难站稳。",
     },
     optionSet: "function",
-    options: OPT.singleLeg, retestOptions: RT.singleLeg,
+    retestFocus: { plain: "和上次比：能站多久、晃得多明显", pro: "和上次比：能站多久、晃得多明显" },
+    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -381,7 +370,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "比较骨盆是否明显下沉、身体是否侧倒（可手搭两侧胯骨或拍10秒视频回看），以及大腿内外侧是否出现熟悉不适。",
     },
     optionSet: "function",
-    options: OPT.singleLeg, retestOptions: RT.singleLeg,
+    retestFocus: { plain: "和上次比：能站多久、晃得多明显", pro: "和上次比：能站多久、晃得多明显" },
+    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -397,7 +387,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "比较足弓和脚踝是否稳定（可拍10秒视频回看），以及小腿内外侧是否出现熟悉不适。",
     },
     optionSet: "function",
-    options: OPT.singleLeg, retestOptions: RT.singleLeg,
+    retestFocus: { plain: "和上次比：能站多久、晃得多明显", pro: "和上次比：能站多久、晃得多明显" },
+    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -413,7 +404,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "骨盆能否保持稳定，膝盖是否明显向内偏，足弓是否塌下，以及是否出现原来的不适。",
     },
     optionSet: "function",
-    options: OPT.singleLegSquat, retestOptions: RT.singleLegSquat,
+    retestFocus: { plain: "和上次比：膝盖往不往内倒、骨盆稳不稳", pro: "和上次比：膝盖往不往内倒、骨盆稳不稳" },
+    options: OPT.singleLegSquat,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -429,7 +421,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "比较两侧下降控制、骨盆是否歪斜，以及大腿是否出现熟悉不适。",
     },
     optionSet: "function",
-    options: OPT.singleLegSquat, retestOptions: RT.singleLegSquat,
+    retestFocus: { plain: "和上次比：膝盖往不往内倒、骨盆稳不稳", pro: "和上次比：膝盖往不往内倒、骨盆稳不稳" },
+    options: OPT.singleLegSquat,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -445,7 +438,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "落地缓冲、膝髋屈曲、左右受力和不稳。",
     },
     optionSet: "function",
-    options: OPT.hop, retestOptions: RT.hop,
+    retestFocus: { plain: "和上次比：落地轻不轻、稳不稳", pro: "和上次比：落地轻不轻、稳不稳" },
+    options: OPT.hop,
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -461,7 +455,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "落地疼痛、不稳、缓冲和再次起跳能力。",
     },
     optionSet: "function",
-    options: OPT.hop, retestOptions: RT.hop,
+    retestFocus: { plain: "和上次比：落地轻不轻、稳不稳", pro: "和上次比：落地轻不轻、稳不稳" },
+    options: OPT.hop,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -477,7 +472,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "是否再现大腿局部症状。",
     },
     optionSet: "function",
-    options: OPT.jog, retestOptions: RT.jog,
+    retestFocus: { plain: "和上次比：症状有没有再被勾出来", pro: "和上次比：症状有没有再被勾出来" },
+    options: OPT.jog,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -493,7 +489,8 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
       pro: "是否再现局部症状。",
     },
     optionSet: "function",
-    options: OPT.jog, retestOptions: RT.jog,
+    retestFocus: { plain: "和上次比：症状有没有再被勾出来", pro: "和上次比：症状有没有再被勾出来" },
+    options: OPT.jog,
     dose: { plain: {}, pro: {} },
   },
 ];
