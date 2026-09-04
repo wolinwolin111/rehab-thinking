@@ -31,7 +31,6 @@ export type FullAssessment = {
   tags: string[];
   trigger?: string;
   caution?: string;
-  resultOptions?: string[];
   /** 面向普通用户的简短解释，只说明这个结果接下来会怎么用。 */
   explain?: string;
   /**
@@ -134,7 +133,7 @@ const check = (
   how: string,
   observe: string,
   tags: string[],
-  extra: Pick<FullAssessment, "trigger" | "caution" | "resultOptions"> = {},
+  extra: Pick<FullAssessment, "trigger" | "caution"> = {},
 ): FullAssessment => ({
   id,
   title,
@@ -162,8 +161,7 @@ const direction = (
   caution?: string,
 ): FullAssessment =>
   check(id, title, "direction", "self", how, observe, tags, {
-    caution,
-    resultOptions: DIRECTION_RESULTS,
+    caution,
   });
 
 const strength = (
@@ -175,8 +173,7 @@ const strength = (
   caution?: string,
 ): FullAssessment =>
   check(id, title, "strength", "self", how, observe, tags, {
-    caution,
-    resultOptions: STRENGTH_RESULTS,
+    caution,
   });
 
 const functional = (
@@ -188,8 +185,7 @@ const functional = (
   caution?: string,
 ): FullAssessment =>
   check(id, title, "function", "self", how, observe, tags, {
-    caution,
-    resultOptions: DIRECTION_RESULTS,
+    caution,
   });
 
 const special = (
@@ -204,8 +200,7 @@ const special = (
 ): FullAssessment =>
   check(id, title, "special-test", access, how, observe, tags, {
     trigger,
-    caution,
-    resultOptions: SPECIAL_RESULTS,
+    caution,
   });
 
 const candidate = (

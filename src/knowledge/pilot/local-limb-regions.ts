@@ -2,8 +2,7 @@ import type { FullAssessment, FullCandidate, FullExercise, FullRegion } from "@/
 import { assessmentPro, trainingCopy } from "@/src/knowledge/actions/bridge";
 
 const assessment = (id: string, title: string, kind: FullAssessment["kind"], how: string, observe: string, tags: string[], caution?: string): FullAssessment => ({
-  id, title, kind, access: "self", how, observe, tags, caution,
-  resultOptions: kind === "strength" ? ["接近健侧", "患侧较弱或较快疲劳", "发力时出现熟悉的不适", "无法判断", "暂不测试"] : ["接近健侧，没有熟悉的不适", "范围接近健侧，但出现熟悉的不适", "患侧明显更少", "不敢或不能完成", "暂不测试"],
+  id, title, kind, access: "self", how, observe, tags, caution,
 });
 
 const candidate = (id: string, title: string, type: FullCandidate["type"], doText: string, observe: string, retest: string, tags: string[], retestIds: string[] = []): FullCandidate => ({
