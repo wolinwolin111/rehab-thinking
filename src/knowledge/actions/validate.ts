@@ -7,6 +7,7 @@ const DOSE_IN_SENTENCE = /\d+\s*(次|组)|每组|做\s*\d|保持\d+\s*秒/;
 /** 句内数字是动作定义本身、不是处方的例外（等长检查/保持类："压住5秒""顶住5秒""夹住5秒"是测量动作的属性）。 */
 const DOSE_EXCEPTIONS = new Set([
   "ankle-achilles-isometric",
+  "knee-heel-slide-quad-set",
   "knee-quadriceps", "knee-adductor-pes", "knee-glute",
   "ankle-dorsiflexor", "ankle-evertor", "ankle-invertor", "ankle-intrinsic",
   "thigh-front-strength", "thigh-medial-strength", "thigh-lateral-strength",
