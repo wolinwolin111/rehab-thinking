@@ -66,7 +66,7 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
   },
   {
     id: "knee-lateral-control", region: "knee", type: "control", access: "self",
-    title: { plain: "髋与足部稳定练习", pro: "髋与足部稳定练习" },
+    title: { plain: "单腿站稳练习", pro: "单腿站稳练习" },
     actions: ["single-leg-stand"],
     doText: "扶墙做 {dose.reps} 次重心左右转移，或单腿站 {dose.hold} 秒；站的时候脚掌踩实、脚内侧别塌下去。",
     retestOf: "knee-squat", dose: { reps: "5～8", hold: 10 },
@@ -115,10 +115,10 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
   },
   {
     id: "ankle-df-control", region: "ankle-foot", type: "control", access: "self",
-    title: { plain: "训练新范围内胫骨前移", pro: "训练新范围内胫骨前移" },
-    actions: ["knee-straighten"],
-    doText: "在墙前做小幅膝盖碰墙，脚跟不离地、脚内侧别塌下去。",
-    retestOf: "ankle-dorsiflexion", dose: {},
+    title: { plain: "背屈控制练习", pro: "背屈控制练习" },
+    actions: ["ankle-dorsiflex"],
+    doText: "坐稳，脚跟放在地上，把脚背慢慢向小腿靠近，再缓慢放回，{dose.reps}；动作保持轻柔，不追求一次做到最大范围。",
+    retestOf: "ankle-dorsiflexion", dose: { reps: "做5～8次" },
   },
   {
     id: "ankle-plantar-control", region: "ankle-foot", type: "control", access: "self",

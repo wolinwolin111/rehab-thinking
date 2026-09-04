@@ -321,7 +321,7 @@ const knee: FullRegion = {
       candidates: [
         candidate("knee-lateral-muscles", "大腿外侧与后外侧轻柔松解", "muscle", "self", "用手或泡沫轴轻柔放松大腿外侧和后外侧，每个紧张区域30～60秒。", "避开膝外侧骨点和腘窝，不直接重压疼痛中心。", "重复原来的走路、跑步或下蹲动作。", ["lateral-chain", "popliteus"]),
         candidate("knee-lateral-fibula", "腓骨近端辅助反应试验", "joint", "therapist", "由专业人员轻柔固定或辅助腓骨近端一个方向，保持同样条件重复原来的膝盖动作。", "不要求用户判断微动、末端感觉或是否错位；只记录原动作是否出现可重复变化。", "只复测原来的膝盖动作和相关活动范围；没有变化就结束这一项。", ["proximal-fibula", "response-test"], { retestIds: ["knee-extension", "knee-flexion"] }),
-        candidate("knee-lateral-control", "髋与足部稳定练习", "control", "self", "扶墙做 5～8 次重心左右转移，或单腿站 10 秒；站的时候脚掌踩实、脚内侧别塌下去。", "不憋气，不让膝盖突然内外晃。", "重复原来的走路或下蹲动作。", ["hip-control", "foot-support"]),
+        candidate("knee-lateral-control", "单腿站稳练习", "control", "self", "扶墙做 5～8 次重心左右转移，或单腿站 10 秒；站的时候脚掌踩实、脚内侧别塌下去。", "不憋气，不让膝盖突然内外晃。", "重复原来的走路或下蹲动作。", ["hip-control", "foot-support"]),
       ],
     },
     {
@@ -575,7 +575,6 @@ const ankleFoot: FullRegion = {
       candidates: [
         candidate("ankle-df-muscles", "小腿后侧轻柔松解", "muscle", "self", "用手或泡沫轴轻柔放松小腿后侧，每个紧张区域30～60秒。", "不要持续重压踝前刺痛点。", "重新比较勾脚和原来的不适动作。", ["dorsiflexion", "calf", "posterior-chain"]),
         candidate("ankle-df-joint", "检查距骨与踝关节背屈方向", "joint", "therapist", "肌肉处理后被动背屈仍明显受限时，由专业人员检查距骨后滑和踝关节方向。", "出现锐痛、急性肿胀或骨性风险不强推。", "被动背屈 → 主动背屈 → 膝碰墙 / 下蹲。", ["talus", "joint-mobility", "dorsiflexion"]),
-        candidate("ankle-df-control", "训练新范围内胫骨前移", "control", "self", "在墙前做小幅膝盖碰墙，脚跟不离地、脚内侧别塌下去。", "膝盖沿脚趾方向移动，不塌足弓、不抬脚跟。", "复测膝碰墙距离和原下蹲/台阶。", ["weight-bearing-dorsiflexion", "control"]),
       ],
     },
     {
