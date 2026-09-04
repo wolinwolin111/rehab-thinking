@@ -71,10 +71,15 @@
 |---|---|
 | pain（动作＋分≥7） | 高激惹转介（HDUEYFGS 案例） |
 | pain（其他） | finding=painful → 处理安排 |
-| weak / control | finding=weak → 力量缺口 → 训练 |
+| weak / control | finding=weak → 力量缺口 → 训练（**有效终点，无第三层**——owner 2026-09-04 问询确认） |
 | instruction | 缺口 `motion-instruction`/`strength-instruction` → 单项回访 |
 | no-helper | 缺口 `strength-no-helper` → 自助版补测 |
-| fear / 其他 | finding=not-testable / unclear → 待确认 |
+| fear / 其他 | finding=not-testable / unclear → 待确认（fear 全应用无下一层，处置待定：乙方案轻追问 or 甲保持现状） |
+
+**三层追问的两个既有机制（批次 3 收拢时不得误伤）**：
+
+1. **力量卡 pain 的跨卡复用**（`assessment-stage:865-867`）：相关动作卡已记录位置＋性质时，力量卡的疼痛追问只追一个分数滑条（显示「刚才已经标记：{位置} · {性质}」），不重复问位置——这是组件逻辑，留在三层，收拢追问包时只动原因按钮与引导，不动此机制。
+2. **功能卡 pain 的条件追问**（`:874`）：function 完成/无法后仅在「有不适」或「无法完成」时出现记录区；`functionSimpleAnswer`（`:2621`）把 unable+pain→painful、weak→weak、fear/instruction→skip——与力量卡规则同构。
 
 ## 4. 批次 3 收拢后的形态
 
