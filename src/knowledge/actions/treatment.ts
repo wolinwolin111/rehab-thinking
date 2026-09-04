@@ -129,4 +129,38 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
   },
 ];
 
+/**
+ * 膝关节处理指令（源自 knee-workflow-adapter.ts kneeTreatmentInstruction，逐字收进目录）。
+ * 值 = 界面显示的处理卡 do 文字。key = KneeTreatmentUnit.id。
+ */
+export const KNEE_TREATMENT_INSTRUCTIONS: Record<string, string> = {
+  "knee-swelling-management": "休息时垫高小腿，在不增加疼痛的范围内缓慢活动膝盖10～20次；减少当天会让肿胀明显增加的负重。",
+  "knee-medial-soft-tissue": "先在膝内下方的鹅足相关肌肉区域，找到刚才检查时更紧或更酸的位置，用手轻柔按揉30～60秒；避开明确刺痛点。",
+  "knee-medial-adductor": "在大腿内侧找到检查时更紧或更酸的内收肌区域，用手轻柔按揉30～60秒；避开膝内侧明确刺痛点。",
+  "knee-lateral-chain": "在大腿前侧、髋外侧和大腿外侧找到刚才检查时明确更紧或更酸的区域，分别轻柔处理30～60秒；避开髌骨、髌腱和明确刺痛点，不要沿髂胫束整条重压。",
+  "knee-extension-lateral-chain": "在髋外侧和大腿外侧找到刚才检查时更紧或更酸的区域，用手或泡沫轴轻柔处理30～60秒；不要沿髂胫束整条重压。",
+  "knee-extension-anterior-lateral": "先处理检查中明确紧张的区域：大腿前侧/股直肌与外侧链可在同一轮完成，每处轻柔处理30～60秒；避开髌骨、髌腱和明确刺痛点。",
+  "knee-anterior-thigh-rectus-femoris": "在大腿前侧找到检查时明确紧张或按压不舒服的区域，用手或泡沫轴轻柔处理30～60秒；避开髌骨和髌腱。",
+  "knee-posterior-calf-muscle": "在膝后周围和小腿上端找到明确更紧的肌肉区域，轻柔按揉30～60秒；不要直接按压腘窝正中。",
+  "knee-extension-control": "仰卧把腿放松伸直，绷紧大腿前侧，让膝后轻轻向床面下压，保持2秒后放松，先做6～10次。",
+  "knee-flexion-control": "仰卧，脚跟贴着床面，缓慢把膝盖弯起来，再主动控制着回到起点；只做到可以接受的范围，先做6～10次。",
+  "knee-extension-joint": "由专业人员根据伸直受限方向完成低刺激关节松动；出现明显刺痛、硬性阻挡或症状加重时停止。",
+  "knee-proximal-fibula": "由专业人员做一次腓骨近端辅助反应：保持原动作和速度，轻柔辅助后复测；不判断错位，不强推疼痛末端。",
+  "knee-hip-knee-control": "先练较容易的站立屈髋（臀部向后）或扶物浅蹲，让髋、膝和脚尖方向保持一致，再逐步进入台阶动作。",
+  "knee-quadriceps-strength": "从膝后下压或坐位伸膝开始，能稳定完成后再进入坐站和低台阶训练。",
+};
+
+/** 复测指令（源自 kneeRetestInstruction，逐字收进目录）。 */
+export const KNEE_RETEST_INSTRUCTIONS: Record<string, string> = {
+  "knee-extension": "膝盖绷直",
+  "knee-flexion": "弯膝",
+  "step-down": "下台阶",
+  "sit-to-stand": "坐站",
+  "squat": "下蹲",
+  "gait": "走路",
+};
+
+/** 有前侧证据时 knee-lateral-chain 的替代指令（原 hasAnteriorEvidence 分支）。 */
+export const KNEE_LATERAL_CHAIN_ANTERIOR = "在大腿前侧、髋外侧和大腿外侧找到刚才检查时明确更紧或更酸的区域，分别轻柔处理30～60秒；避开髌骨、髌腱和明确刺痛点，不要沿髂胫束整条重压。";
+
 export const TREATMENT_BY_ID = new Map(TREATMENT_ENTRIES.map((entry) => [entry.id, entry]));
