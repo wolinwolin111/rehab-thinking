@@ -650,7 +650,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
   },
   {
     id: "knee-quadriceps", region: "knee", kind: "strength", access: "self",
-    title: { plain: "把膝盖伸直的力量", pro: "把膝盖伸直的力量" },
+    title: { plain: "膝盖伸直力量", pro: "膝盖伸直力量" },
     actions: ["knee-straighten"],
     how: {
       plain: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。",
@@ -706,7 +706,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
   },
   {
     id: "ankle-evertor", region: "ankle-foot", kind: "strength", access: "self",
-    title: { plain: "脚掌向外推的力量（腓骨肌）", pro: "脚掌向外推的力量（腓骨肌）" },
+    title: { plain: "外翻力量（腓骨肌）", pro: "外翻力量（腓骨肌）" },
     actions: ["ankle-evert"],
     how: {
       plain: "坐稳，用另一只脚挡在脚的外侧，再把脚掌向外顶住5秒。两边各做一次。",
@@ -720,7 +720,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
   },
   {
     id: "ankle-invertor", region: "ankle-foot", kind: "strength", access: "self",
-    title: { plain: "脚掌向内推的力量（胫骨后肌）", pro: "脚掌向内推的力量（胫骨后肌）" },
+    title: { plain: "内翻力量（胫骨后肌）", pro: "内翻力量（胫骨后肌）" },
     actions: ["ankle-invert"],
     how: {
       plain: "坐稳，用另一只脚挡在脚的内侧，再把脚掌向内顶住5秒。两边各做一次。",
@@ -734,7 +734,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
   },
   {
     id: "ankle-intrinsic", region: "ankle-foot", kind: "strength", access: "self",
-    title: { plain: "足部小肌群", pro: "足部小肌群" },
+    title: { plain: "踮脚尖力量", pro: "踮脚尖力量" },
     actions: ["heel-raise-standing"],
     how: {
       plain: "站稳，脚趾放松贴地，轻轻踮起脚尖再放下，两边各做5个。",
