@@ -371,3 +371,55 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 当前阻塞
 
 无。
+
+
+# 追加通知：2026-09-04 第十五轮——动作库批次 0＋1（骨架＋提踵族）落地
+
+## 范围：10 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `bcacf65` | 骨架 | src/knowledge/actions/{terms,types}.ts：词根表（5 条提踵族词根）＋三库记录类型 |
+| 2 | `06923b9` | 骨架 | resolve.ts：词根插值＋剂量占位（{dose.*}），语域 plain/pro |
+| 3 | `a93d224` | 骨架 | validate.ts：词根存在/复测指向/access/剂量不进句/例外名单（ankle-achilles-isometric 等长 30 秒） |
+| 4 | `5e968f7` | 数据 | assessment 6 / treatment 2 / training 6 条目（模板=迁移前基线逐字＋{dose.*}）；capture-action-baseline.mjs ESM 化 |
+| 5 | `bf096c8` | 骨架 | bridge.ts（旧形状适配器）＋ golden.ts 20 条成品锁＋ check-action-catalog.ts ＋ npm run check:catalog |
+| 6 | `6b6bd59` | 工具 | snapshot-render.mjs：12 场景 DOM 结构快照（输出仓库外） |
+| 7 | `395fa38` | 接线 | 评估 6 条改 assessmentPro() 取值；FRIENDLY_ASSESSMENT_COPY 删 3 条手写（knee-calf/ankle-calf/ankle-heel-raise）改目录展开供给 |
+| 8 | `e6e024c` | 接线 | 训练 6 条改 trainingCopy() 取值；TrainingEntry.startPosition 定为必填（full-demo 三条记推断值作文档，调用方不传） |
+| 9 | `40b0f72` | 接线 | 处理 2 条候选 do 改 treatmentDo() 取值 |
+| 10 | `16ef35b` | 决策#5 | 评估自助版踮脚尖次数 5→10（knee-calf/ankle-calf/ankle-heel-raise），golden 同步新基线 |
+
+## 剂量收敛落地（全部为 owner 已批决策）
+
+| # | 内容 | 状态 |
+|---|---|---|
+| 1 | ankle-calf 单脚 20→10 | 已落地 |
+| 2 | knee-heel-raise / calf-heel-raise-strength / calf-heel-raise 次数 5→10 | 已落地 |
+| 3 | calf-back-standing-raise / ankle-band-heelraise / calf-medial-arch → 每组10～15 | 已落地 |
+| 4 | 剂量不进句子 | 已落地（a70af60＋本批校验规则 CAT-DOSE-IN-SENTENCE） |
+| 5 | 评估自助版 5→10 | 已落地（16ef35b） |
+
+**有意保留**：calf-back-seated-raise 每组8～12（坐姿低负荷）；ankle-achilles-isometric 保持30秒/保持10秒/每组5次（等长动作属性，校验例外）。
+
+## ⚠️ 断言影响（比照第 14 轮口径继续解钉）
+
+- `rendered-html.test.mjs` / 单测中凡钉下列字面者需更新：`完成5次`（knee-heel-raise）、`扶墙做5次双脚提踵`（calf 两条）、`最多记录20个高质量次数`（ankle-calf）、`每组8～12个`（calf-back-standing-raise）、`每项每组12个`（ankle-band-heelraise）、`每组8～10个`（calf-medial-arch）、`小腿三头肌` 作为 knee-calf 标题出现在自助渲染的（自助标题现为「踮脚力量」，专业仍「小腿三头肌」）。
+- 纯专业模式渲染的 knowledge how/observe 文字未变（pro 逐字保留）——只钉专业字面的断言不受影响。
+
+## 验证（dev 侧）
+
+- `tsc --noEmit` 干净；`check:catalog` 绿（assessment=6, treatment=2, training=6, golden=20）；`check:knowledge` ok；`check:structure` ok。
+- 结构快照 before/after **STRUCTURE IDENTICAL**（12 场景逐字节，含 #5 调整后复验）。
+- 文字实测：12 场景可达屏旧值残留 0。**屏级缺口**：小腿局部评估卡、踝训练卡在现有 page_boundary 场景中不可达，新值上屏未实拍（库层 golden 已逐字锁定该文字）——请测试侧在场景注册表补小腿局部/踝评估场景。
+- `check:boundaries` 报 2 条 stage/forbidden-project-import（summary-stage:32、treatment-retest-stage:9）——经 git log -L 确认为 2026-08-28 `4fd593b` 预存，非本批引入，本批不修，请知悉。
+
+## 架构说明（供后续批次）
+
+- 内容层 `src/knowledge/actions/`：types→terms→resolve→三库→legacy-ids/validate/golden→index（未建）＋bridge（过渡期）。消费方仅 import bridge（过渡期出口，批次 7 删）。
+- 消费方组件零改动；批次 2（功能动作族）将按同口径迁移，基线工具已参数化预留 `--family`。
+- 完整执行方案：docs/plans/rehabmind-action-catalog-execution-master-2026-09-04.md。
+
+## 当前阻塞
+
+无。下一批（批次 2 功能动作族）开工前需 owner 答 D2-1（走路评估口径）与 D2-2（症状页选择器措辞）。
