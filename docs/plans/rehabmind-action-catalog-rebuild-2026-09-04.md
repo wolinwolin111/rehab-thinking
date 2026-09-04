@@ -261,11 +261,31 @@ render(entry, mode):
 | 5 | 大腿后侧发力由"脚跟拖地等长"改为臀桥 | `local-limb-regions.ts:51`（已在 `28fd9ca` 落地） |
 | 6 | "抬起足弓"类不可执行动作统一改为踮脚尖／脚趾抓毛巾 | `full-demo-content.ts:311、566、598`、`local-limb-regions.ts:99、108`（已落地） |
 
-## 13. 待决事项
+## 13. 待决事项（2026-09-04 已全部查清，无遗留）
 
-1. `full-demo-content.ts:266` 膝·腘绳肌评估仍是"脚跟踩地向后拉但不移动"。它是**检查**不是训练，改成臀桥会换测量目标。批次 4 前需 owner 定：保留等长检查但把句子讲清（"像要把脚跟往椅子底下拖，但别真动"），还是换测量动作。
-2. `full-demo-content.ts:262`（术后瘢痕活动）与 `:386`（骰骨与足外侧柱活动）的 `access` 是 `self`，但正文写"由专业人员……"，自助用户会看到自相矛盾的说明。批次 3 前需 owner 定：改 access 还是改正文。
-3. `pilot-knowledge.ts` 的 40 条 `treatmentCandidates.action` 与 `candidateGroups` 的 56 条是否同一批动作的两套真相——需在批次 5 前确认前者是否有任何渲染路径，若无则并入，若有则定优先级。
+原列三项均为本方案撰写时的误判或未知，查证结果如下。
+
+### 13.1 膝·腘绳肌等长检查 —— 不是问题，误判
+
+`full-demo-content.ts:266` 的"脚跟踩地向后拉但不移动"**不会显示给自助用户**。`workbench-support.tsx:2243` 已有 `FRIENDLY_ASSESSMENT_COPY["knee-hamstring"]`，自助模式实际显示的是「坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。」——参照物明确、可执行。`:266` 原文只在专业模式出现，那里是合适的临床简写。
+
+结论：无需 owner 决策。它只是"同一动作第五套真相"的一个实例，批次 4 合并时以 `:2243` 的白话版为 `plain`、`:266` 为 `pro`。
+
+### 13.2 术后瘢痕活动 / 骰骨与足外侧柱活动 —— 不是问题，误判
+
+两条都不是 `self`。`full-demo-content.ts:262` 与 `:386` 均以 `{ ...direction(...), access: "therapist", testMode: "passive" }` 覆盖了 `direction()` 的默认值；`rehabmind-workbench.tsx:1357` 再按 `item.testMode !== "passive" || canAssessPassive` 过滤，自助模式 `canAssessPassive` 为 false → 两条都不进入自助评估队列。`knowledge/rehab/p0-assessment-access.ts:43` 亦明确 `ordinary: "hidden"`。
+
+结论：不存在"自助用户看到'由专业人员…'"的矛盾。撰写本节时只看了 `direction()` 默认值未看覆盖，判断错误。
+
+### 13.3 `pilot-knowledge.ts` 40 条 action 的渲染路径 —— 已查清，仅 14 条可能上屏且只在名称栏
+
+- `knee-workflow-adapter.ts:14-29` 的 `KNEE_CORE_CANDIDATE_IDS` 共 14 个键，与 `kneeTreatmentInstruction`（`:57-78`）的 14 个键**完全一一对应**。
+- `build-trial-targets-core.ts:152-154` 的覆盖只在 `mappedIds.includes(candidate.id)` 时发生，因此 `do: kneeTreatmentInstruction(currentUnit)` 永远命中指令表，**不会回落到 `unit.action`**。
+- 但同处 `:175` 设 `actionLabel: currentUnit.action`，经 `workbench-support.tsx:2106 → 2146` 渲染为处理卡「现在做」标题。即 action 文字确实上屏，位置是**名称栏**。
+- `type === "muscle"` 且有主动控制方案时，`:2122-2124` 会把该标题覆盖成「轻柔松解＋主动控制」，所以实际可见的是 control / joint 类型那几条，例如 `knee-extension-control` → 「练习膝后下压和终末伸膝控制」。
+- 其余 26 条（含 9 条无指令对应的：`knee-flexion-local-muscle`、`knee-fibula-combination`、`knee-hip-control`、`knee-pes-local`、`knee-adductor-local`、`knee-anterior-lower-leg-control`、`knee-toe-extensor-response`、`knee-hip-pelvis-control`、`knee-extension-posterior`）无任何渲染路径，是纯决策元数据。
+
+结论：批次 5 需要合并的是 **14 条**而非 40 条；其中影响可见文案的只有 control / joint 类型的名称栏文字。剩余 26 条保留为元数据，不进内容库。
 
 ## 14. 关联提交
 
