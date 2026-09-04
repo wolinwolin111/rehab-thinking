@@ -74,7 +74,7 @@
 | weak / control | finding=weak → 力量缺口 → 训练（**有效终点，无第三层**——owner 2026-09-04 问询确认） |
 | instruction | 缺口 `motion-instruction`/`strength-instruction` → 单项回访 |
 | no-helper | 缺口 `strength-no-helper` → 自助版补测 |
-| fear / 其他 | finding=not-testable / unclear → 待确认（fear 全应用无下一层，处置待定：乙方案轻追问 or 甲保持现状） |
+| fear / 其他 | finding=not-testable / unclear → 待确认。**fear 并非死胡同**：两个真实消费点——①下次注意事项自动生成「上次担心加重的动作，先从更低负荷试起」（`summary-stage:805`，经 `stoppedFromFear` 谓词 `workbench-support:374`）；②处理复测时降级措辞「上次你担心继续会加重：这次先用更轻的方式试」（`treatment-retest-stage:361`）。**owner 裁定 2026-09-04：维持现状**（曾讨论乙方案"疼过所以怕/没疼过也怕"轻追问，因属新增临床设计＋需加可选存储字段而搁置；结论已登记供未来重启） |
 
 **三层追问的两个既有机制（批次 3 收拢时不得误伤）**：
 
