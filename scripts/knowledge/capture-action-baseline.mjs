@@ -25,6 +25,16 @@ const FAMILIES = {
     T: ["ankle-medial-control", "ankle-achilles-load"],
     X: ["knee-calf-raise", "calf-back-standing-raise", "calf-medial-arch", "calf-back-seated-raise", "ankle-achilles-isometric", "ankle-band-heelraise"],
   },
+  strength: {
+    A: [
+      "knee-quadriceps", "knee-adductor-pes", "knee-glute",
+      "ankle-dorsiflexor", "ankle-evertor", "ankle-invertor", "ankle-intrinsic",
+      "thigh-front-strength", "thigh-medial-strength", "thigh-lateral-strength",
+      "calf-dorsiflexor-strength", "calf-invertor-strength", "calf-evertor-strength",
+    ],
+    T: [],
+    X: [],
+  },
   direction: {
     A: [
       "knee-extension", "knee-flexion", "knee-patella-superior", "knee-patella-inferior", "knee-patella-medial", "knee-patella-lateral",
