@@ -151,7 +151,6 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     optionSet: "function",
     options: OPT.walk,
     retestFocus: { plain: "和上次比：步子稳不稳、疼的步段、能走多远、膝能不能伸直", pro: "和上次比：步子稳不稳、疼的步段、能走多远、膝能不能伸直" },
-    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -169,7 +168,6 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     optionSet: "function",
     options: OPT.walk,
     retestFocus: { plain: "和上次比：不舒服这边踩不踩得实、能走多远", pro: "和上次比：不舒服这边踩不踩得实、能走多远" },
-    options: OPT.walk,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -374,7 +372,6 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     optionSet: "function",
     options: OPT.singleLeg,
     retestFocus: { plain: "和上次比：能站多久、骨盆歪没歪", pro: "和上次比：能站多久、骨盆歪没歪" },
-    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
@@ -392,7 +389,6 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     optionSet: "function",
     options: OPT.singleLeg,
     retestFocus: { plain: "和上次比：能站多久、脚踝翻没翻", pro: "和上次比：能站多久、脚踝翻没翻" },
-    options: OPT.singleLeg,
     dose: { plain: {}, pro: {} },
   },
   {
