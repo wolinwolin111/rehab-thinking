@@ -27,7 +27,7 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     title: { plain: "膝髋踝控制练习", pro: "膝髋踝控制练习" },
     actions: ["sit-to-stand"],
     doText: "扶住固定物做{dose.reps}个小幅坐站或浅蹲，让膝盖朝脚尖方向移动。",
-    retestOf: "knee-squat", dose: { reps: "5～8个" },
+    retestOf: "knee-squat", dose: { reps: "5～8" },
   },
   {
     id: "knee-medial-lateral-chain", region: "knee", type: "muscle", access: "self",
