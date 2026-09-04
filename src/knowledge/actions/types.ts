@@ -4,6 +4,7 @@ export type Register = "plain" | "pro";
 export type LocalizedText = Record<Register, string>;
 export type PilotRegionId = "knee" | "ankle-foot" | "thigh-local" | "calf-local";
 export type ContentAccess = "self" | "coach" | "therapist";
+export type StartPosition = "仰卧" | "坐位" | "站立" | "四点跪" | "侧卧";
 
 export type AssessmentEntry = {
   id: string;
@@ -44,6 +45,6 @@ export type TrainingEntry = {
   harder: string;
   dose: { sets: string; reps: string };
   tags: string[];
-  /** full-demo 的 exercise 没有这个字段（体位由 title+how 正则推断）；local-limb 有显式值。 */
-  startPosition?: string;
+  /** full-demo 的 exercise 没有这个实参（体位由 title+how 正则推断）；local-limb 必须显式传。 */
+  startPosition: StartPosition;
 };

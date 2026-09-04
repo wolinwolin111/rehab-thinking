@@ -18,7 +18,7 @@ export type FullCandidateType = "muscle" | "joint" | "control" | "neural" | "swe
 export type FullExerciseStage = 1 | 2 | 3 | 4 | 5;
 
 import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "@/src/knowledge/pilot/local-limb-regions";
-import { assessmentPro } from "@/src/knowledge/actions/bridge";
+import { assessmentPro, trainingCopy } from "@/src/knowledge/actions/bridge";
 import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type FullAssessment = {
@@ -359,7 +359,7 @@ const knee: FullRegion = {
     exercise("knee-hamstring-isometric", "大腿后侧等长保持", 2, "3组", "每侧每组8～10个，每次保持5秒", "坐稳或仰卧屈膝，脚跟踩稳地面，保持脚不移动，轻轻向后拉地面并保持。", "感受大腿后侧发力，膝内侧和膝后不要出现刺痛。", "减小发力或每组6个。", "增加保持时间，再做臀桥或站立屈髋。", ["hamstring", "knee-flexion", "posterior-chain"], "大腿后侧和前侧是一对配合的肌肉，后侧肯发力，膝盖前侧负担就小。绷住不动，是在不磨损膝盖的前提下练它。"),
     exercise("knee-supine-ankle-press", "仰卧踝跖屈", 2, "3组", "每组10～15个", "仰卧或半躺，用脚掌轻推弹力带向下压，缓慢回到原位。", "小腿后侧发力，脚趾不要抓紧。", "去掉弹力带，只做主动下压。", "进阶到坐姿提踵，再到站立提踵。", ["calf", "heel-raise"], "小腿是走路蹬地的发动机。先躺着用轻阻力找到发力感，膝盖不用承重。"),
     exercise("knee-anterior-lower-leg-control", "踝背屈控制", 2, "3组", "每组10个", "仰卧或坐稳，脚跟放地，缓慢把脚背向小腿方向勾起，再缓慢放下，全程只动脚踝。", "脚背整体抬起，不只抬脚趾；小腿前侧发力，膝盖不跟着转。", "减小范围，每组6个。", "加入轻弹力带，或站立时练习脚跟着地后的缓慢放脚。", ["tibialis-anterior", "dorsiflexion", "knee-weight-bearing"], "小腿前侧失控，走路落脚会“啪叽”砸地，冲击直接传膝盖。练缓慢勾脚、慢慢放脚。"),
-    exercise("knee-calf-raise", "扶墙双脚提踵", 2, "3组", "每组10～15个", "双手轻扶墙，脚跟垂直抬起，停1秒后缓慢落下。", "两侧高度接近，膝盖保持稳定，脚踝不向内外倒。", "坐姿提踵或减少高度。", "单脚提踵或增加轻负重。", ["calf", "heel-raise", "gait"], "小腿力量回来了，走路蹬地才有劲，站立时膝盖也更稳。"),
+    exercise("knee-calf-raise", "扶墙双脚提踵", 2, trainingCopy("knee-calf-raise").sets, trainingCopy("knee-calf-raise").reps, trainingCopy("knee-calf-raise").how, trainingCopy("knee-calf-raise").observe, trainingCopy("knee-calf-raise").easier, trainingCopy("knee-calf-raise").harder, ["calf", "heel-raise", "gait"], trainingCopy("knee-calf-raise").purpose),
     exercise("knee-standing-hip-flexion", "站立屈髋（臀部向后）", 3, "3组", "每组10个", "背对墙站立约一脚距离，膝盖微屈，臀部向后移动轻碰墙面，身体从髋部向前折叠，再用臀腿站起；熟练后离开墙面做。", "髋膝踝方向一致，脚掌稳定，腰部不抢先弯曲；碰不到墙或腰先酸了，说明动作做成了弯腰。", "减小臀部向后幅度，扶支撑。", "增加折髋范围、轻负重或改单腿。", ["hip-hinge", "movement-pattern", "standing-hip-flexion", "stairs"], "练“用髋不用膝”的动作模式——捡东西、坐下、下楼都靠它；碰墙是唯一能自己验证的反馈，膝盖疼的人最该重新学会。"),
     exercise("knee-sit-stand-squat", "坐站与浅蹲", 3, "3组", "每组10个", "从合适高度椅子坐站，进阶到不碰椅子的浅蹲。", "髋膝踝同向、左右承重接近、下降可控。", "提高椅子并扶手。", "降低椅子或手持轻重量。", ["sit-to-stand", "squat", "movement-pattern"], "把前面练的肌肉放进真实动作里：坐站是最安全的下蹲替身，先找回膝盖受控弯曲的感觉。"),
     exercise("knee-step", "低台阶上台与下台", 4, "3组", "每侧每组8个", "先练患侧上台，稳定后练患侧支撑慢慢下台。", "胯稳住，膝盖和脚尖同向，别突然掉下来。", "降低台阶、增加扶持。", "增加高度、连续次数或负重。", ["step-up", "step-down", "stairs"], "下楼梯是多数膝痛最难的一关。慢速下台阶专门练膝盖的“刹车”能力。"),
@@ -602,7 +602,7 @@ const ankleFoot: FullRegion = {
   ],
   exercises: [
     exercise("ankle-four-way-motion", "踝四方向活动", 1, "3组", "每个方向每组10个", "仰卧或半躺，小腿放松，分别缓慢做勾脚、下压、脚掌向内转和向外转。", "小腿不跟着转，不硬顶肿胀或刺痛末端。", "每组6个、减小幅度。", "加入弹力带轻阻力。", ["ankle-rom"], "伤后脚踝最先僵；四个方向都缓慢动一遍，是防粘连、恢复滑利最安全的一步。"),
-    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, "2组", "每组5次，每次保持30秒", "坐稳，前脚掌踩地，缓慢抬起脚跟到可接受高度，保持30秒（均匀呼吸不憋气）再轻轻放下。", "跟腱症状不逐次增加；当天晚些时候和第二天没有持续加重。", "减小抬起高度或保持10秒。", "保持30秒不变，缩短组间休息，再进入双脚慢速提踵。", ["achilles", "tendon-loading", "heel-raise", "isometric"], "跟腱疼痛时静态保持是最安全的负荷：撑满30秒才能真正抑制肌腱痛感，几秒钟只是动一下。"),
+    exercise("ankle-achilles-isometric", "坐姿提踵保持", 1, trainingCopy("ankle-achilles-isometric").sets, trainingCopy("ankle-achilles-isometric").reps, trainingCopy("ankle-achilles-isometric").how, trainingCopy("ankle-achilles-isometric").observe, trainingCopy("ankle-achilles-isometric").easier, trainingCopy("ankle-achilles-isometric").harder, ["achilles", "tendon-loading", "heel-raise", "isometric"], trainingCopy("ankle-achilles-isometric").purpose),
     exercise("ankle-achilles-eccentric-drop", "台阶边缘缓慢下落", 2, "3组", "每组8～12个", "前脚掌踩在台阶边缘，扶稳后缓慢把脚跟降到台阶面以下（心里数3秒），用健侧脚帮忙回到起点；直腿做一组、弯膝做一组交替进行。", "跟腱有酸胀的用力感但不出现锐痛；第二天没有持续加重。", "先在平地上慢慢轻轻踮脚尖，再落下。", "在专业人员指导下增加下落深度或手持轻负重。", ["achilles", "eccentric", "heel-raise", "tendon-loading"], "跟腱病康复里证据最扎实的负荷动作：慢慢落下，让肌腱在受力里一点点变强，比静态保持更接近走路蹬地的真实需求。"),
     exercise("ankle-bridge", "臀桥", 2, "3组", "每组10个", "仰卧屈膝，双脚稳定踩地，轻收腹后抬起臀部，停1秒再缓慢落下。", "两侧胯保持一样高（可对镜子看），臀部和大腿后侧发力，脚踝保持稳定。", "减小抬起高度或每组6个。", "能够稳定完成后进阶单腿臀桥。", ["glute-max", "hamstring", "posterior-chain", "pelvic-stability"], "臀和腿后侧有力，走路蹬地时脚踝分担的压力就小——恢复链从最上游开始。"),
     exercise("ankle-single-leg-bridge", "单腿臀桥", 3, "3组", "每侧每组6～10个", "先完成双脚臀桥，再抬起一只脚，用另一侧臀部抬起骨盆。", "两侧胯高度一致（可拍10秒回看），支撑脚稳定，不用腰部顶起。", "继续双脚臀桥，或只把一只脚轻轻离地。", "进阶站立屈髋（臀部向后）和重心转移。", ["glute-max", "hamstring", "posterior-chain", "single-leg", "pelvic-stability"], "练一条腿承重时骨盆和支撑踝一起稳住，这是跑跳前的必经台阶。"),
@@ -610,7 +610,7 @@ const ankleFoot: FullRegion = {
     exercise("ankle-dorsiflexion-control", "背屈控制（勾脚）", 2, "3组", "每组10～15个", "仰卧或半躺，小腿放松，主动把脚背向小腿方向勾起；需要增加负荷时再加入轻弹力带。", "脚踝带动，不只抬脚趾；小腿不向外转。", "先做无阻力，每组6～8个。", "进阶到坐位弹力带，再到站立脚跟走的短距离控制。", ["tibialis-anterior", "dorsiflexion", "ankle-dorsiflexor"], "勾脚没劲会拖步绊脚；先把主动勾脚的控制找回来，迈步才利索。"),
     exercise("ankle-plantarflexion-control", "跖屈控制（下压脚背）", 2, "3组", "每组10～15个", "仰卧或半躺，脚掌轻推弹力带做向下压脚背；能稳定完成后再进阶坐姿提踵。", "动作来自脚踝，脚趾不过度抓地。", "去掉弹力带，只做主动下压。", "进阶到坐姿、扶墙双脚提踵，再到单脚提踵。", ["calf", "plantarflexion", "heel-raise", "ankle-calf"], "下压脚背练的是蹬地发动机——走路最后那一下推进全靠它。"),
     exercise("ankle-eversion-control", "外翻控制", 2, "3组", "每组10～15个", "仰卧或半躺，小腿不动，先做脚掌向外转；能稳定完成后再加入轻弹力带。", "动作来自脚踝，不用膝盖或整条小腿向外转。", "去掉弹力带，只做小幅主动外翻。", "进阶到坐位弹力带，再进入单腿站和侧向控制。", ["peroneal", "eversion", "ankle-evertor"], "外翻肌是脚踝的“防崴弹簧”；崴脚后它最先偷懒，也最该先练回来。"),
-    exercise("ankle-band-heelraise", "踝四方向弹力带抗阻与提踵", 2, "3组", "每项每组12个", "按力量缺口选1～2个弹力带方向，再做双脚提踵。", "动作来自踝足，膝和脚趾不过度代偿。", "改为保持不动发力，或扶墙轻轻踮脚尖。", "单脚提踵或加轻负重。", ["ankle-strength", "calf", "peroneal"], "把弹力带抗阻和提踵拼在一节课里，一次补齐查出来的力量缺口。"),
+    exercise("ankle-band-heelraise", "踝四方向弹力带抗阻与提踵", 2, trainingCopy("ankle-band-heelraise").sets, trainingCopy("ankle-band-heelraise").reps, trainingCopy("ankle-band-heelraise").how, trainingCopy("ankle-band-heelraise").observe, trainingCopy("ankle-band-heelraise").easier, trainingCopy("ankle-band-heelraise").harder, ["ankle-strength", "calf", "peroneal"], trainingCopy("ankle-band-heelraise").purpose),
     exercise("ankle-gait-weightshift", "重心转移与步态滚动", 3, "3组", "每组10次重心转移 + 10米步行", "先练双脚前后重心转移；慢走时只记两件事：脚跟先着地、脚趾最后离开。", "步幅自然，胯、髋、膝、踝一路连着动。", "扶桌原地转移。", "增加连续步数或不同速度。", ["gait", "weight-shift", "hip-knee-ankle"], "崴脚后人会不自觉避开患侧承重；把重心移回去、把落脚走顺，步态才算回归。"),
     exercise("ankle-single-leg-step", "单腿站、提踵与台阶", 4, "3组", "每项每侧8个", "先单腿站，再单脚提踵和低台阶上下。", "足弓、踝、膝和骨盆稳定，台阶下降可控。", "扶墙、双脚提踵或降低台阶。", "增加高度、连续次数或轻负重。", ["single-leg", "heel-raise", "step"], "单腿承重加台阶高度，把恢复的脚踝送回真实生活场景。"),
     exercise("ankle-split-squat-deceleration", "分腿蹲与减速", 4, "3组", "每侧每组8个", "做分腿蹲和前跨一步后稳定停住，训练下肢协同承重。", "脚内侧别塌，髋、膝、踝一起缓冲，脚踝的练习不能被髋部练习顶替。", "减小幅度并扶墙。", "增加负重或侧向跨步。", ["lower-chain", "deceleration"], "练“前冲之后刹得住”，防止跑步变向时脚踝再次受伤。"),

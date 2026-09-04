@@ -12,6 +12,7 @@ export const TRAINING_ENTRIES: TrainingEntry[] = [
     harder: "单脚提踵或增加轻负重。",
     dose: { sets: "3组", reps: "每组10～15个" },
     tags: ["calf", "heel-raise", "gait"],
+    startPosition: "站立",
   },
   {
     id: "calf-back-standing-raise", region: "calf-local", stage: 2,
@@ -63,6 +64,7 @@ export const TRAINING_ENTRIES: TrainingEntry[] = [
     harder: "保持30秒不变，缩短组间休息，再进入双脚慢速提踵。",
     dose: { sets: "2组", reps: "每组5次" },
     tags: ["achilles", "tendon-loading", "heel-raise", "isometric"],
+    startPosition: "坐位",
   },
   {
     id: "ankle-band-heelraise", region: "ankle-foot", stage: 2,
@@ -75,6 +77,7 @@ export const TRAINING_ENTRIES: TrainingEntry[] = [
     harder: "单脚提踵或加轻负重。",
     dose: { sets: "3组", reps: "每项每组10～15个" },
     tags: ["ankle-strength", "calf", "peroneal"],
+    startPosition: "站立",
   },
 ];
 

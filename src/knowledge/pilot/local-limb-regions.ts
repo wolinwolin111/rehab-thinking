@@ -1,5 +1,5 @@
 import type { FullAssessment, FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
-import { assessmentPro } from "@/src/knowledge/actions/bridge";
+import { assessmentPro, trainingCopy } from "@/src/knowledge/actions/bridge";
 
 const assessment = (id: string, title: string, kind: FullAssessment["kind"], how: string, observe: string, tags: string[], caution?: string): FullAssessment => ({
   id, title, kind, access: "self", how, observe, tags, caution,
@@ -103,10 +103,10 @@ export const CALF_LOCAL_REGION: FullRegion = {
   exercises: [
     exercise("calf-front-active", "主动勾脚", 1, "2组", "每组6～10个", "坐稳，脚跟放地，把脚背向小腿方向勾起，再缓慢放下。", "脚背整体抬起，不只抬脚趾。", "减小范围。", "增加到每组15个。", ["calf-front", "dorsiflexion"], "坐位", "小腿前侧是走路的“抬脚刹车”，它没劲会拖步绊脚，先练主动勾抬。"),
     exercise("calf-front-endurance", "脚跟走耐力", 2, "3组", "每组10～15步", "扶稳后轻抬前脚掌，用脚跟小步向前走。", "脚尖能持续抬起，不拖地。", "原地交替勾脚。", "增加步数。", ["calf-front", "dorsiflexion", "gait"], "站立", "脚跟走把勾脚力量变成耐力，下台阶和落地时不再啪叽砸地。"),
-    exercise("calf-back-seated-raise", "坐姿提踵", 1, "3组", "每组8～12个", "坐稳，前脚掌踩地，缓慢抬起脚跟再放下。", "小腿后侧发力，节奏稳定。", "减小高度或个数。", "膝上增加轻负重。", ["calf-back", "soleus", "heel-raise"], "坐位", "膝盖弯着时比目鱼肌才肯出力——这是伤后最早能做的安全负荷。"),
-    exercise("calf-back-standing-raise", "双脚站姿提踵", 2, "3组", "每组8～12个", "扶墙站立，两侧脚跟同时抬起，再缓慢落下。", "两侧高度接近，不向内外歪。", "回到坐姿提踵。", "进阶单脚提踵。", ["calf-back", "gastrocnemius", "heel-raise"], "站立", "站直提踵练腓肠肌，蹬地推进的力量从这里开始回到走路里。"),
+    exercise("calf-back-seated-raise", "坐姿提踵", 1, trainingCopy("calf-back-seated-raise").sets, trainingCopy("calf-back-seated-raise").reps, trainingCopy("calf-back-seated-raise").how, trainingCopy("calf-back-seated-raise").observe, trainingCopy("calf-back-seated-raise").easier, trainingCopy("calf-back-seated-raise").harder, ["calf-back", "soleus", "heel-raise"], trainingCopy("calf-back-seated-raise").startPosition, trainingCopy("calf-back-seated-raise").purpose),
+    exercise("calf-back-standing-raise", "双脚站姿提踵", 2, trainingCopy("calf-back-standing-raise").sets, trainingCopy("calf-back-standing-raise").reps, trainingCopy("calf-back-standing-raise").how, trainingCopy("calf-back-standing-raise").observe, trainingCopy("calf-back-standing-raise").easier, trainingCopy("calf-back-standing-raise").harder, ["calf-back", "gastrocnemius", "heel-raise"], trainingCopy("calf-back-standing-raise").startPosition, trainingCopy("calf-back-standing-raise").purpose),
     exercise("calf-medial-active", "小幅内翻控制", 1, "2组", "每组6～10个", "坐稳，小腿不动，把脚掌小幅向内转，再缓慢回正。", "动作来自脚踝，膝盖不跟着转。", "减小范围。", "用另一只脚增加轻阻力。", ["calf-medial", "inversion"], "坐位", "内翻控制差，足弓会塌着受力；先小幅无阻力找回脚踝内侧的发力感。"),
-    exercise("calf-medial-arch", "足弓保持与提踵", 2, "3组", "每组8～10个", "站稳，脚趾放松贴地，轻轻踮脚尖再放下。", "脚趾不抠地，脚跟不向外甩，小腿不跟着转。", "扶着墙做，只抬一点点。", "增加提踵高度。", ["calf-medial", "arch", "heel-raise"], "站立", "小腿内侧和足弓一起练回来，走路时力量才不从小腿内侧漏掉。"),
+    exercise("calf-medial-arch", "足弓保持与提踵", 2, trainingCopy("calf-medial-arch").sets, trainingCopy("calf-medial-arch").reps, trainingCopy("calf-medial-arch").how, trainingCopy("calf-medial-arch").observe, trainingCopy("calf-medial-arch").easier, trainingCopy("calf-medial-arch").harder, ["calf-medial", "arch", "heel-raise"], trainingCopy("calf-medial-arch").startPosition, trainingCopy("calf-medial-arch").purpose),
     exercise("calf-lateral-active", "小幅外翻控制", 1, "2组", "每组6～10个", "坐稳，小腿不动，把脚掌小幅向外转，再缓慢回正。", "膝盖不跟着转，动作不靠甩动。", "减小范围。", "增加轻阻力。", ["calf-lateral", "eversion"], "坐位", "外侧腓骨肌是“防崴弹簧”，崴过脚的人必须把它练回来。"),
     exercise("calf-lateral-stability", "单腿外侧稳定", 2, "3组", "每侧20～30秒", "扶稳后单腿站立，保持足底三点支撑和脚踝稳定。", "脚踝不反复向外翻，身体不过度摇晃；可拍10秒视频回看落地侧。", "双手扶稳并缩短时间。", "减少扶持或轻微移动重心。", ["calf-lateral", "eversion", "single-leg"], "站立", "单腿站练脚踝的动态稳定，走不平的路才不心里发虚。"),
     exercise("calf-gait", "重心转移与走路", 3, "3组", "每组10次，再走10米", "先练原地重心转移；走路时只记两件事：脚跟先着地、脚趾最后离开。", "步幅自然，不跛行。", "扶桌小幅转移。", "增加步数或速度。", ["gait"], "站立", "伤后人会不自觉避开患侧承重；把落脚走顺，步态才算真正回归。"),
