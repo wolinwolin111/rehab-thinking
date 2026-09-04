@@ -20,7 +20,7 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     title: { plain: "大腿前外侧轻柔松解", pro: "大腿前外侧轻柔松解" },
     actions: [],
     doText: "用手或泡沫轴轻柔放松大腿前侧和外侧，每个紧张区域{dose.duration}。",
-    retestOf: "knee-extension", dose: { duration: "30～60秒" },
+    retestOf: "knee-extension", dose: { duration: "60～90秒" },
   },
   {
     id: "knee-anterior-control", region: "knee", type: "control", access: "self",
@@ -34,21 +34,21 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     title: { plain: "大腿外侧轻柔松解", pro: "大腿外侧轻柔松解" },
     actions: [],
     doText: "用手或泡沫轴轻柔放松大腿外侧和髋外侧，每个紧张区域{dose.duration}。",
-    retestOf: "knee-extension", dose: { duration: "30～60秒" },
+    retestOf: "knee-extension", dose: { duration: "60～90秒" },
   },
   {
     id: "knee-medial-pes", region: "knee", type: "muscle", access: "self",
     title: { plain: "大腿内侧轻柔松解", pro: "大腿内侧轻柔松解" },
     actions: [],
     doText: "轻柔放松大腿内侧和内侧大腿后方，每个区域{dose.duration}。",
-    retestOf: "knee-extension", dose: { duration: "30～60秒" },
+    retestOf: "knee-extension", dose: { duration: "60～90秒" },
   },
   {
     id: "knee-medial-adductor", region: "knee", type: "muscle", access: "self",
     title: { plain: "大腿内收肌轻柔松解", pro: "大腿内收肌轻柔松解" },
     actions: [],
     doText: "轻柔放松检查中更紧或更酸的大腿内收肌区域{dose.duration}。",
-    retestOf: "knee-extension", dose: { duration: "30～60秒" },
+    retestOf: "knee-extension", dose: { duration: "60～90秒" },
   },
   {
     id: "knee-medial-foot", region: "knee", type: "control", access: "self",
@@ -62,7 +62,7 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     title: { plain: "大腿外侧与后外侧轻柔松解", pro: "大腿外侧与后外侧轻柔松解" },
     actions: [],
     doText: "用手或泡沫轴轻柔放松大腿外侧和后外侧，每个紧张区域{dose.duration}。",
-    retestOf: "knee-extension", dose: { duration: "30～60秒" },
+    retestOf: "knee-extension", dose: { duration: "60～90秒" },
   },
   {
     id: "knee-lateral-control", region: "knee", type: "control", access: "self",
