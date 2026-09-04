@@ -40,7 +40,7 @@ src/knowledge/
 │   ├── treatment.ts                处理库（56候选＋14条 pilot-knowledge 收编）
 │   ├── training.ts                 训练库（53项）
 │   ├── custom.ts                   自定义动作模板 + 通用提示（含「查看低强度活动」等空态文案）
-│   ├── option-sets.ts              结果选项组（AROM/力量/功能/特殊/复测），记录维度不属于动作
+│   ├──   option-sets.ts              结果选项：base 组提供**值契约**；条目级 labels 按动作特异定制标签（owner 2026-09-04：尤其评估和复测）
 │   ├── legacy-ids.ts               id→词根映射；旧标题别名（供 ACTION_ALIASES 类匹配兜底）
 │   ├── validate.ts                 校验规则（词根存在/复测指向/access/剂量不进句/例外名单）
 │   ├── golden.ts                   各语域成品字符串锁（每迁移一批追加一批）
@@ -69,7 +69,7 @@ src/knowledge/
 | `renderTraining(id, mode)` | `{ title, how, purpose, observe, easier, harder, sets, reps, position }` | exercise 字段直出 |
 | `renderRetest(id, mode)` | `{ title, options }`（指向评估库同 id） | `kneeRetestInstruction` ＋ `retestPlans.userAction` ＋ summary-stage 复测选项手写 |
 | `assessmentTitle(id, mode)` | 成品标题 | `professionalAssessmentTitle` 映射表 |
-| `optionSet(name, ctx)` | 结果选项数组 | `activeMotionRangeOptions` 等 8 组（收进 option-sets.ts 统一维护） |
+| `renderOptions(id, kind, mode)` | `Array<[value, label]>`；kind=`answer`（评估作答）/`retest`（复测结论） | `activeMotionRangeOptions` 等 8 组共享函数＋summary/treatment-retest 的复测选项手写。**值契约固定**（决策层输入），**标签按动作特异定制**（owner 2026-09-04：尤其评估和复测）——条目级 `options.labels` / `retestOptions.labels` 覆盖 base，未覆盖处落回通用标签 |
 | `customHint(kind, ctx)` | 自定义动作模板成品 | 散落在 assessment-stage/custom-action 分支的提示句 |
 | `regionEntries(regionId)` | 该部位的条目 id 清单（评估/处理/训练） | FULL_REGIONS 里嵌套的完整内容对象 |
 | `lookup(id)` | 跨库条目查询（处理 retestOf、训练 tags、词根） | 各处自行查找 |
