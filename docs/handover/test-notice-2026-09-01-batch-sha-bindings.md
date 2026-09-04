@@ -592,3 +592,79 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 当前阻塞
 
 无。批次 7（删旧层）待 owner 审核后开工。
+
+
+# 追加通知：2026-09-04 第二十一轮——批次 7（缩减版）落地＋全程复核报告
+
+## 范围：3 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `f3916e7` | 删旧层 | resultOptions 死字段删除（full-demo 3 处 helper 引用＋类型定义＋local-limb 1 处＋3 个常量），全库零消费已核实 |
+| 2 | `1045138` | 数据 | kneeTreatmentInstruction 14 条＋kneeRetestInstruction 6 条**逐字搬进目录**（treatment.ts KNEE_TREATMENT_INSTRUCTIONS/KNEE_RETEST_INSTRUCTIONS）；adapter 原函数保留（knee-lateral-chain 的 hasAnteriorEvidence 条件分支记录在案） |
+| 3 | `8e6ece5` | 架构 | boundaries 新规则：①actions 目录禁止 import 消费方；②domain 层 import actions 仅限 index/bridge/custom 白名单 |
+
+## 缩减说明（哪些没删、为什么）
+
+- `plain()` replaceAll 链、`FRIENDLY_ASSESSMENT_COPY` 手写、`kneeTreatmentInstruction` 函数、`bridge.ts`、`professionalAssessmentCopy` **全部保留**——颈/肩/腰/胸/肘/腕/髋等未来部位（约 20 条 friendly）＋9 条 therapist 候选＋3 条 coach 候选仍依赖它们。未来部位进目录后才能删。
+- 删除范围从"全部旧层"缩减为"零消费旧层"（resultOptions）＋"数据收编"（14 条指令逐字进目录）＋"防再发"（boundaries 规则）。
+
+## 验证
+
+- tsc／check:catalog（assessment=53, treatment=18, training=53, golden=68）／check:knowledge／check:structure 全绿。
+- check:boundaries：action-catalog 规则生效（catalog 反向 import 已锁）；3 条 stage 违规为 4fd593b 预存（非本程序引入）。
+- 结构快照 b4-final/b5-final/b6-final 全部 IDENTICAL。
+
+---
+
+# 全程复核报告（批次 0–7：bug／过度思考／过度编程／规范）
+
+## A. bug 类（发现并修复）
+
+| 批次 | 问题 | 修复 |
+|---|---|---|
+| 0-T2 | resolve.ts 正则缺捕获组（回调收到偏移量） | T2 验证脚本当场暴露，加 `(...)` 修复 |
+| 5-审核 | knee-anterior-control dose「5～8个」＋模板"个"→「5～8个个」 | 审核表生成时暴露，dose 改纯数字 |
+| 6-插入 | 脚本生成 41 条缺逗号/缺 stage/缺体位/region 双逗号 | tsc 逐轮逼出，4 个修复脚本迭代 |
+| 4-标题 | 4 条力量标题与动作脱节（足部小肌群/膝盖伸直的力量/腓骨肌/胫骨后肌） | owner 裁定后落地，assessmentTitle 改目录优先防新旧打架 |
+| 5-内容 | ankle-df-control 标题前提（关节松动后的"新范围"）自助模式不成立 | owner 裁定删除，替换为主动背屈练习（新写句，审核表标注） |
+
+## B. 过度思考类（自我纠正）
+
+| 项 | 纠正过程 |
+|---|---|
+| 复测按钮标签定制 | 初版按动作写了 10 组结果描述 → owner 指出"描述锁死判断" → 改为统一方向词＋按动作 focus 提示 → owner 再裁"提示也没必要分部位" → 最终统一一句。**教训：比较类判断不该预填表现** |
+| pain 引导 | 先判定"改良尝试有数据价值" → owner 质疑 → 核实代码零消费（无重试回路）→ 删除。**教训：先查代码再判断文字价值** |
+| strength 6 值 | 照类型定义建 base → owner 问"为什么一会 4 一会 6" → 实查 UI 只有 4 值（no-helper/control 是 UI 无入口的遗留）→ base 收敛 4 值。**教训：以界面现实为准，不以类型定义为准** |
+| D4-1 工作量 | 原估"等长族需要拆 how/dose 最费人工" → 抓基线后发现 13 条现文已一致 → 无需模板化。**教训：先抓基线再估工** |
+
+## C. 过度编程类（避免或回滚）
+
+| 项 | 处置 |
+|---|---|
+| fear 轻追问（子分类字段） | owner 问下游消费 → 发现 fear 已有两个消费点（下次注意事项+复测降级）→ 方案为新增存储字段属临床设计变更 → owner 裁维持现状，方案归档不实施 |
+| 词根插值 | 批次 1 定了"句子逐字保真、词根 token 不进句"——插值机制建好但数据不用，避免为用而用改字 |
+| 选项标签"三层定制" | owner 两刀砍成"动作特异＋有意通用"两档，未做族级定制（避免为 53 条各写一套） |
+| 批次 7 全量删旧层 | 盘点发现颈/肩/腰等未来部位仍依赖旧层 → 主动缩减为"零消费删除＋数据收编＋boundaries 防再发" |
+
+## D. 规范问题
+
+| 项 | 状态 |
+|---|---|
+| 生成脚本临时文件残留 | 2 处（scan-options/scan-purpose 已删；早期均为跑完即删） |
+| 训练目录 41 条由脚本批量插入 | 插入后人工抽查＋tsc 校验；脚本本身未入库（一次性） |
+| boundaries 规则实现 | 首版嵌套结构错误（domain 检查嵌在 catalog 块内）＋catalogRoot 类型错误（字符串 vs 数组），两轮修正后生效 |
+| Excel 审阅表生成脚本 | 均在仓库外 .docgen/，不污染仓库 |
+| 未推送提交封存 | 批次 3 曾违规先斩后奏，owner 叫停后封存并出裁定清单，此后严格"裁定完再动" |
+
+## E. 最终状态
+
+| 指标 | 值 |
+|---|---|
+| 评估库 | 53 条（方向 13＋力量 13＋功能 21＋提踵 6），双语域 |
+| 处理库 | 18 条（膝 11＋踝 7），含 retestOf 全链接＋14 条 knee 指令逐字收编 |
+| 训练库 | 53 条（全量），体位显式化，D6-1 落地 |
+| 选项库 | 12 组 base（值契约锁死）＋有意通用登记 11 条 |
+| golden 锁 | 68 条成品字符串 |
+| 结构快照 | 批次 3/4/5/6 全部 IDENTICAL |
+| 待未来批次 | 颈/肩/腰/胸/肘/腕/髋部位进目录后删 plain()/FRIENDLY/bridge/professionalAssessmentCopy |
