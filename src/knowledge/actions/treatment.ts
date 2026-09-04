@@ -85,6 +85,48 @@ export const TREATMENT_ENTRIES: TreatmentEntry[] = [
     doText: "休息时垫高小腿；在疼痛允许范围缓慢滑动脚跟、伸屈膝盖{dose.reps}次。",
     retestOf: "knee-extension", dose: { reps: "10～20" },
   },
+  {
+    id: "ankle-df-muscles", region: "ankle-foot", type: "muscle", access: "self",
+    title: { plain: "小腿后侧轻柔松解", pro: "小腿后侧轻柔松解" },
+    actions: [],
+    doText: "用手或泡沫轴轻柔放松小腿后侧，每个紧张区域{dose.duration}。",
+    retestOf: "ankle-dorsiflexion", dose: { duration: "60～90秒" },
+  },
+  {
+    id: "ankle-achilles-muscles", region: "ankle-foot", type: "muscle", access: "self",
+    title: { plain: "小腿后侧轻柔松解", pro: "小腿后侧轻柔松解" },
+    actions: [],
+    doText: "用手或泡沫轴轻柔放松小腿肌肉，每个紧张区域{dose.duration}。",
+    retestOf: "ankle-heel-raise", dose: { duration: "60～90秒" },
+  },
+  {
+    id: "ankle-plantar-muscles", region: "ankle-foot", type: "muscle", access: "self",
+    title: { plain: "足底与足弓轻柔松解", pro: "足底与足弓轻柔松解" },
+    actions: [],
+    doText: "用软球轻滚足底和足弓周围，每个区域{dose.duration}。",
+    retestOf: "ankle-heel-raise", dose: { duration: "60～90秒" },
+  },
+  {
+    id: "ankle-lateral-swelling", region: "ankle-foot", type: "swelling", access: "self",
+    title: { plain: "肿胀管理", pro: "肿胀管理" },
+    actions: [],
+    doText: "休息时垫高患侧小腿；在疼痛允许范围内缓慢勾脚、下压{dose.reps}次。",
+    retestOf: "ankle-dorsiflexion", dose: { reps: "10～20" },
+  },
+  {
+    id: "ankle-df-control", region: "ankle-foot", type: "control", access: "self",
+    title: { plain: "训练新范围内胫骨前移", pro: "训练新范围内胫骨前移" },
+    actions: ["knee-straighten"],
+    doText: "在墙前做小幅膝盖碰墙，脚跟不离地、脚内侧别塌下去。",
+    retestOf: "ankle-dorsiflexion", dose: {},
+  },
+  {
+    id: "ankle-plantar-control", region: "ankle-foot", type: "control", access: "self",
+    title: { plain: "足弓与走路推蹬练习", pro: "足弓与走路推蹬练习" },
+    actions: [],
+    doText: "坐着，脚趾抓毛巾 {dose.grasp} 次；再慢走一小段，感受脚跟着地到前脚掌推地。",
+    retestOf: "ankle-dorsiflexion", dose: { grasp: 5 },
+  },
 ];
 
 export const TREATMENT_BY_ID = new Map(TREATMENT_ENTRIES.map((entry) => [entry.id, entry]));
