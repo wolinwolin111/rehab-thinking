@@ -750,9 +750,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
           : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
         {item.kind === "strength" && record.simple === "unable" ? <section className="rm-motion-answer-block is-followup rm-strength-unable">
           <h3>主要卡在哪里？</h3>
-          <div className="rm-result-grid is-two">{([[
-            "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-              strengthUnableReason: value,
+          <div className="rm-result-grid is-two">{unableFollowUp("strength", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
+              strengthUnableReason: value as StrengthUnableReason,
               discomfortLocation: value === "pain" ? record.discomfortLocation || relatedMotionRecord?.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? record.discomfortLocations || relatedMotionRecord?.discomfortLocations : undefined,
               discomfortType: value === "pain" ? record.discomfortType || relatedMotionRecord?.discomfortType : undefined,

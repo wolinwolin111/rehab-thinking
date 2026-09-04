@@ -15,7 +15,7 @@ export type OptionBase = {
   labels: Record<string, string>;
   /** 追问提示句（可选）。 */
   hint?: string;
-  /** 按原因引导（可选；判据=离开它就断路。owner 2026-09-04：全应用仅存 no-helper 一条）。 */
+  /** 按原因引导（可选；判据=离开它就断路。owner 2026-09-04 终裁：全部删除——现状引导均为纯展示，代码零消费；no-helper 属 UI 无入口的历史遗留）。 */
   guidance?: Record<string, { action: string; fallback: string }>;
 };
 
@@ -67,20 +67,12 @@ export const OPTION_BASES: Record<string, OptionBase> = {
     },
   },
   "unable-reason-strength": {
-    values: ["pain", "weak", "control", "no-helper", "fear", "instruction"],
+    values: ["pain", "weak", "fear", "instruction"],
     labels: {
       pain: "一用力就不适",
       weak: "完全使不上力",
-      control: "控制不住位置",
-      "no-helper": "没有人帮忙按压",
       fear: "不敢继续",
       instruction: "不会做或没听懂说明",
-    },
-    guidance: {
-      "no-helper": {
-        action: "改用自助等长：{how}",
-        fallback: "不需要他人按压；仍无法判断就先跳过。",
-      },
     },
   },
   "unable-reason-special": {
@@ -98,7 +90,7 @@ export const OPTION_BASES: Record<string, OptionBase> = {
 export const GENERIC_REGISTRY: Record<string, string> = {
   "unable-reason-motion": "疼/担心/不会做是普适停止原因，与动作无关——owner 2026-09-04",
   "unable-reason-function": "三联被复测/训练/复看板 4 处共用且字面相同——owner 2026-09-04",
-  "unable-reason-strength": "原因维度普适；引导仅 no-helper 一条（自助版做法不在当前页面显示）——owner 2026-09-04",
+  "unable-reason-strength": "原因维度普适（界面实为 4 值；类型里的 no-helper/control 为历史遗留、UI 无入口，缺口逻辑保留不碰）——owner 2026-09-04",
   "unable-reason-special": "停止原因按检查安全性分类，与动作无关",
   "red-flag": "安全判断（有/没有），语义与动作无关",
   "bilateral-comparison": "两侧对比结论（哪侧更差），语义只关于侧别",
