@@ -139,6 +139,33 @@ export async function checkArchitectureBoundaries({ rootDir = process.cwd(), con
         if (text.includes(symbol)) violations.push({ file, line: 1, boundary: owner.ruleId, code: "duplicate-rule-owner", detail: symbol });
       }
     }
+
+    if (rules.actionCatalogRules && isWithin(file, rules.actionCatalogRules.catalogRoot)) {
+      // 目录内部禁止 import 消费方（features / infrastructure / app / db）
+      violations.push(...checkImports({
+        file, absoluteFile, imports, rootDir,
+        forbiddenPackages: [],
+        forbiddenProjectRoots: rules.actionCatalogRules.catalogForbiddenProjectRoots.filter((root) => root !== "src/domain"),
+        boundary: "action-catalog",
+      }));
+    }
+
+    // domain 层 import actions 目录只允许 index.ts / bridge.ts
+    if (isWithin(file, rules.domainRoots) && rules.actionCatalogRules) {
+      for (const item of imports) {
+        if (!item.value.includes("/knowledge/actions/")) continue;
+        const resolvedTarget = item.value.startsWith("@/")
+          ? normalized(item.value.slice(2))
+          : normalized(path.relative(rootDir, path.resolve(path.dirname(file), item.value)));
+        const isAllowed = Object.keys(rules.actionCatalogRules.allowedExternalImportsFor ?? {}).some((allowedFile) =>
+          resolvedTarget === allowedFile || resolvedTarget.startsWith(allowedFile + "/") || allowedFile.startsWith(resolvedTarget)
+        );
+        if (!isAllowed) {
+          violations.push({ file, line: 1, boundary: "action-catalog", code: "domain-non-index-actions-import", detail: item.value });
+        }
+      }
+    }
+
   }
 
   return violations;
