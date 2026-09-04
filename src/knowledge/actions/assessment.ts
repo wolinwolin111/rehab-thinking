@@ -341,7 +341,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     actions: ["single-leg-stand"],
     how: {
       plain: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。",
-      pro: "靠近墙，先做健侧，再用患侧单腿站立20秒，必要时手指轻扶。",
+      pro: "靠近墙，先做健侧，再用患侧单腿站立10秒，必要时手指轻扶。",
     },
     observe: {
       plain: "哪边更容易晃、站不住或引起不适。",
@@ -357,7 +357,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     actions: ["single-leg-stand"],
     how: {
       plain: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。",
-      pro: "靠近墙，先做健侧，再用患侧单腿站立20秒，必要时手指轻扶。",
+      pro: "靠近墙，先做健侧，再用患侧单腿站立10秒，必要时手指轻扶。",
     },
     observe: {
       plain: "哪边更容易晃、站不住或引起不适。",

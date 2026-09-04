@@ -127,7 +127,7 @@ export const TRAINING_ENTRIES: TrainingEntry[] = [
     observe: "脊柱保持稳定，髋膝踝方向自然；碰不到墙说明做成了弯腰。",
     easier: "减小下移幅度，扶支撑。",
     harder: "增加轻负重。",
-    dose: { sets: "3组", reps: "每组8～10个" },
+    dose: { sets: "3组", reps: "每组10个" },
     tags: ["hip-hinge", "hamstring", "posterior-chain"],
     startPosition: "站立",
   },
