@@ -6,6 +6,12 @@ export type PilotRegionId = "knee" | "ankle-foot" | "thigh-local" | "calf-local"
 export type ContentAccess = "self" | "coach" | "therapist";
 export type StartPosition = "仰卧" | "坐位" | "站立" | "四点跪" | "侧卧";
 
+/** 选项组：base 提供值契约＋默认标签；labels 按动作/语域覆盖标签（值不可改）。 */
+export type OptionGroup = {
+  base: string;
+  labels?: Partial<Record<string, LocalizedText>>;
+};
+
 export type AssessmentEntry = {
   id: string;
   region: PilotRegionId;
@@ -16,6 +22,10 @@ export type AssessmentEntry = {
   how: LocalizedText;
   observe: LocalizedText;
   optionSet: string;
+  /** 作答选项按动作定制：值契约来自 base 组，labels 只覆盖标签文案。 */
+  options?: OptionGroup;
+  /** 复测结论选项按动作定制（复测复用评估条目，一处定义两处生效）。 */
+  retestOptions?: OptionGroup;
   /** plain / pro 两套剂量都必填；模板里引用的键必须存在于对应语域（运行时抛错兜底）。 */
   dose: Record<Register, Record<string, string | number>>;
 };

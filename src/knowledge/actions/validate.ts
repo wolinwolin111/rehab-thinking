@@ -1,4 +1,5 @@
-import type { AssessmentEntry, TreatmentEntry, TrainingEntry } from "./types.ts";
+import type { AssessmentEntry, TreatmentEntry, TrainingEntry, OptionGroup } from "./types.ts";
+import { OPTION_BASES } from "./option-sets.ts";
 
 export type CatalogIssue = { code: string; entryId: string; detail: string };
 
@@ -32,8 +33,30 @@ export function validateActionCatalog(input: {
     seen.add(dedupeKey);
   };
 
+  const checkOptions = (entryId: string, group: OptionGroup | undefined, field: string) => {
+    if (!group) return;
+    const base = OPTION_BASES[group.base];
+    if (!base) {
+      issues.push({ code: "CAT-BAD-OPTION-BASE", entryId, detail: `${field}: ${group.base}` });
+      return;
+    }
+    for (const [value, localized] of Object.entries(group.labels ?? {})) {
+      if (!localized) continue;
+      if (!base.values.includes(value)) {
+        issues.push({ code: "CAT-BAD-OPTION-VALUE", entryId, detail: `${field}: "${value}" 不在 ${group.base} 值契约中` });
+      }
+      for (const register of ["plain", "pro"] as const) {
+        if (localized[register] === undefined) {
+          issues.push({ code: "CAT-OPTION-LABEL-INCOMPLETE", entryId, detail: `${field}.${value}.${register} 缺失` });
+        }
+      }
+    }
+  };
+
   for (const entry of input.assessment) {
     checkCommon(entry, "assessment");
+    checkOptions(entry.id, entry.options, "options");
+    checkOptions(entry.id, entry.retestOptions, "retestOptions");
     // plain/pro 的 dose 键集合允许不同（自助句式和专业句式引用的数字不同），
     // 完整性由 renderHow/fillTemplate 运行时抛错保证，这里不做键集合比对。
     if (!DOSE_EXCEPTIONS.has(entry.id)) {

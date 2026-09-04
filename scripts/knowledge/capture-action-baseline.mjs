@@ -19,9 +19,33 @@ for (const m of block.matchAll(/^\s{2}"([a-z0-9-]+)": \{ title: "([^"]*)", how: 
   if (Object.keys(friendly).length > 300) break;
 }
 
-const A_IDS = ["knee-calf", "knee-heel-raise", "ankle-calf", "ankle-heel-raise", "calf-heel-raise-strength", "calf-heel-raise"];
-const T_IDS = ["ankle-medial-control", "ankle-achilles-load"];
-const X_IDS = ["knee-calf-raise", "calf-back-standing-raise", "calf-medial-arch", "calf-back-seated-raise", "ankle-achilles-isometric", "ankle-band-heelraise"];
+const FAMILIES = {
+  heel: {
+    A: ["knee-calf", "knee-heel-raise", "ankle-calf", "ankle-heel-raise", "calf-heel-raise-strength", "calf-heel-raise"],
+    T: ["ankle-medial-control", "ankle-achilles-load"],
+    X: ["knee-calf-raise", "calf-back-standing-raise", "calf-medial-arch", "calf-back-seated-raise", "ankle-achilles-isometric", "ankle-band-heelraise"],
+  },
+  gait: {
+    A: [
+      "knee-gait", "ankle-weight-bearing", "thigh-walk", "calf-walk",
+      "knee-squat", "ankle-squat",
+      "knee-sit-stand", "thigh-sit-stand",
+      "knee-step-up", "knee-step-down", "ankle-step-down",
+      "knee-single-leg", "ankle-single-leg", "thigh-single-leg", "calf-single-leg",
+      "knee-single-leg-squat", "thigh-single-leg-squat",
+      "knee-hop-landing", "ankle-hop", "thigh-jog", "calf-jog",
+    ],
+    T: [],
+    X: ["knee-step", "knee-standing-hip-flexion", "ankle-standing-hip-flexion", "thigh-hip-hinge", "ankle-gait-weightshift", "ankle-single-leg-step"],
+  },
+};
+
+const familyName = process.argv[2] ?? "heel";
+const family = FAMILIES[familyName];
+if (!family) { console.error("usage: capture-action-baseline.mjs [family]  families=" + Object.keys(FAMILIES).join(",")); process.exit(1); }
+const A_IDS = family.A;
+const T_IDS = family.T;
+const X_IDS = family.X;
 
 const assess = new Map(); // id -> {kind,title,how,observe}
 for (const [file, rex] of [
@@ -50,7 +74,7 @@ for (const file of ["src/knowledge/pilot/full-demo-content.ts", "src/knowledge/p
   for (const m of src.matchAll(/exercise\("([^"]+)", "([^"]+)", (\d+), "([^"]+)", "([^"]+)", "([^"]*)", "([^"]*)", "([^"]*)", "([^"]*)", \[([^\]]*)\], "([^"]*)"(?:, "([^"]*)")?\)/g)) {
     train.set(m[1], {
       title: m[2], stage: m[3], sets: m[4], reps: m[5], how: m[6], observe: m[7],
-      easier: m[8], harder: m[9], tags: m[10].trim(), startPosition: m[11], purpose: m[12] ?? "",
+      easier: m[8], harder: m[9], tags: m[10].trim(), lastLiteral: m[11], purpose: m[12] ?? "",
     });
   }
 }
@@ -67,7 +91,7 @@ for (const id of T_IDS) {
 }
 for (const id of X_IDS) {
   const e = train.get(id);
-  out.push(e ? `TRAIN ${id}\n  title=${e.title} | stage=${e.stage} | sets=${e.sets} | reps=${e.reps} | pos=${e.startPosition}\n  how=${e.how}\n  purpose=${e.purpose}\n  observe=${e.observe}\n  easier=${e.easier}\n  harder=${e.harder}` : `TRAIN ${id} NOT FOUND`);
+  out.push(e ? `TRAIN ${id}\n  title=${e.title} | stage=${e.stage} | sets=${e.sets} | reps=${e.reps} | 末位字面量=${e.lastLiteral}\n  how=${e.how}\n  purpose=${e.purpose}\n  observe=${e.observe}\n  easier=${e.easier}\n  harder=${e.harder}` : `TRAIN ${id} NOT FOUND`);
 }
 
 fs.writeFileSync(path.join("D:" + path.sep + "Study" + path.sep + "codex" + path.sep + "project", "baseline.tmp.txt"), out.join("\n\n"), "utf8");
