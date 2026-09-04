@@ -1,7 +1,8 @@
 import type { AssessmentEntry, OptionGroup } from "./types.ts";
 
 /** 功能动作的作答三联与复测结论：按动作定制标签（值契约固定）。 */
-const fn = (complete: string, unable: string, skip = "暂时不做"): OptionGroup => ({
+/** 功能动作的作答三联与复测结论：按动作定制标签（值契约固定）。供 renderOptions 与审阅工具使用。 */
+export const fn = (complete: string, unable: string, skip = "暂时不做"): OptionGroup => ({
   base: "function-completion",
   labels: {
     complete: { plain: complete, pro: "可以完成" },
@@ -10,7 +11,7 @@ const fn = (complete: string, unable: string, skip = "暂时不做"): OptionGrou
   },
 });
 
-const rt = (better: string, same: string, worse: string, unknown: string, unable: string): OptionGroup => ({
+export const rt = (better: string, same: string, worse: string, unknown: string, unable: string): OptionGroup => ({
   base: "retest-outcome",
   labels: {
     better: { plain: better, pro: "有改善" },
@@ -21,7 +22,7 @@ const rt = (better: string, same: string, worse: string, unknown: string, unable
   },
 });
 
-const OPT = {
+export const OPT = {
   walk: fn("能走完", "走不了或不敢走", "暂时不走"),
   squat: fn("能蹲下去再站起来", "蹲不下去或不敢蹲", "暂时不蹲"),
   sitStand: fn("能坐下再站起", "站不起来或不敢做"),
@@ -34,7 +35,7 @@ const OPT = {
   heelRaise: fn("能连续做完", "踮不上去或不敢踮"),
 };
 
-const RT = {
+export const RT = {
   walk: rt("有改善｜步子和承重比上次稳", "跟上次差不多｜不舒服的步段没变", "更差｜走路更疼或更瘸", "看不出来｜两次状态难比", "这次走不了"),
   squat: rt("有改善｜蹲得更深更顺", "跟上次差不多｜不舒服的深度没变", "更差｜蹲得更浅或更疼", "看不出来", "这次蹲不了"),
   sitStand: rt("有改善｜起身更省力", "跟上次差不多", "更差｜起身更疼或更费力", "看不出来", "这次做不了"),
@@ -47,7 +48,7 @@ const RT = {
   heelRaise: rt("接近健侧｜踮起高度追上另一边了", "跟上次差不多｜高度和上次一样", "更差｜踮得比上次更少或更疼", "看不出来", "这次踮不了"),
 };
 
-const STRENGTH_HEEL: OptionGroup = {
+export const STRENGTH_HEEL: OptionGroup = {
   base: "strength-answer",
   labels: {
     normal: { plain: "力量接近｜两边踮起的高度和节奏接近", pro: "力量接近｜两侧力量差异不明显" },
