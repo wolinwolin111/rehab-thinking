@@ -1,7 +1,8 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = __dirname.replace(/\\/g, "/"); // scripts/knowledge
+const root = path.dirname(fileURLToPath(import.meta.url)).replace(/\\/g, "/"); // scripts/knowledge
 const read = (p) => fs.readFileSync(path.resolve(root, "..", "..", p), "utf8");
 
 const PLAIN_RULES = [
