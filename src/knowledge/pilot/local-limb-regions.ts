@@ -1,4 +1,5 @@
 import type { FullAssessment, FullCandidate, FullExercise, FullRegion } from "@/src/knowledge/pilot/full-demo-content";
+import { assessmentPro } from "@/src/knowledge/actions/bridge";
 
 const assessment = (id: string, title: string, kind: FullAssessment["kind"], how: string, observe: string, tags: string[], caution?: string): FullAssessment => ({
   id, title, kind, access: "self", how, observe, tags, caution,
@@ -87,11 +88,11 @@ export const CALF_LOCAL_REGION: FullRegion = {
   ],
   strengths: [
     assessment("calf-dorsiflexor-strength", "小腿前侧发力", "strength", "坐稳，把脚背向上勾并保持5秒，不需要别人施加强阻力。", "比较保持和熟悉症状。", ["calf-front", "dorsiflexion"]),
-    assessment("calf-heel-raise-strength", "小腿后侧发力", "strength", "扶墙做5次双脚提踵；稳定时再分别单脚尝试。", "比较高度、个数和症状。", ["calf-back", "heel-raise"]),
+    assessment("calf-heel-raise-strength", assessmentPro("calf-heel-raise-strength").title, "strength", assessmentPro("calf-heel-raise-strength").how, assessmentPro("calf-heel-raise-strength").observe, ["calf-back", "heel-raise"]),
     assessment("calf-invertor-strength", "小腿内侧发力", "strength", "用另一只脚轻挡在脚掌内侧，当前脚掌向内轻推并保持5秒。", "比较保持和熟悉症状。", ["calf-medial", "inversion"]),
     assessment("calf-evertor-strength", "小腿外侧发力", "strength", "用另一只脚轻挡在脚掌外侧，当前脚掌向外轻推并保持5秒。", "比较保持和熟悉症状。", ["calf-lateral", "eversion"]),
   ],
-  functions: [assessment("calf-walk", "走路", "function", "以平时速度走一小段。", "症状出现在落脚、身体前移还是蹬地阶段。", ["gait"]), assessment("calf-heel-raise", "提踵", "function", "扶墙做5次双脚提踵。", "局部症状、高度和左右差异。", ["heel-raise"]), assessment("calf-single-leg", "单腿足踝稳定检查", "function", "扶住固定物，左右分别单腿站立10秒。", "比较足弓和脚踝是否稳定（可拍10秒视频回看），以及小腿内外侧是否出现熟悉不适。", ["single-leg", "arch", "ankle-stability"]), assessment("calf-jog", "慢跑准备", "function", "只有走路和提踵稳定时，原地小步慢跑10秒。", "是否再现局部症状。", ["run"], "急性拉伤或走路疼痛时不测试。")],
+  functions: [assessment("calf-walk", "走路", "function", "以平时速度走一小段。", "症状出现在落脚、身体前移还是蹬地阶段。", ["gait"]), assessment("calf-heel-raise", assessmentPro("calf-heel-raise").title, "function", assessmentPro("calf-heel-raise").how, assessmentPro("calf-heel-raise").observe, ["heel-raise"]), assessment("calf-single-leg", "单腿足踝稳定检查", "function", "扶住固定物，左右分别单腿站立10秒。", "比较足弓和脚踝是否稳定（可拍10秒视频回看），以及小腿内外侧是否出现熟悉不适。", ["single-leg", "arch", "ankle-stability"]), assessment("calf-jog", "慢跑准备", "function", "只有走路和提踵稳定时，原地小步慢跑10秒。", "是否再现局部症状。", ["run"], "急性拉伤或走路疼痛时不测试。")],
   specialTests: [assessment("calf-local-palpation", "小腿局部轻按定位", "special-test", "沿图上标记的肌肉区域轻按一次，不按胫骨骨面。", "是否伴快速加重的肿胀、发热或颜色变化。", ["tenderness", "local-calf"], "没有明确受伤却单侧小腿肿、热、红、痛，或同时胸痛气短时，不进入松解训练流程。")],
   candidateGroups: [
     { id: "calf-front-local", title: "小腿前侧局部问题", match: { locations: ["小腿前", "胫骨前"], feelings: ["酸", "紧", "胀", "痛", "无力"], actions: ["勾脚", "走", "跑", "抬脚"] }, note: "不展开踝四方向。", candidates: [candidate("calf-front-release", "小腿前侧轻柔松解", "muscle", "在肌肉区域轻柔松解30～60秒。", "避开胫骨骨面、肿胀中心和刺痛点。", "复测勾脚、发力和原动作。", ["calf-front", "tibialis-anterior"], frontCalf), candidate("calf-front-control", "小腿前侧主动控制", "control", "主动勾脚，保持1～2秒，做2组，每组6～10次。", "不只抬脚趾。", "记录走路抬脚反应。", ["calf-front", "dorsiflexion"], frontCalf)] },

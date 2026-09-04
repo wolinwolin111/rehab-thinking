@@ -18,6 +18,7 @@ export type FullCandidateType = "muscle" | "joint" | "control" | "neural" | "swe
 export type FullExerciseStage = 1 | 2 | 3 | 4 | 5;
 
 import { THIGH_LOCAL_REGION, CALF_LOCAL_REGION } from "@/src/knowledge/pilot/local-limb-regions";
+import { assessmentPro } from "@/src/knowledge/actions/bridge";
 import { type KnowledgeEvidenceLineage } from "@/src/knowledge/rehab/knee-p0-runtime";
 
 export type FullAssessment = {
@@ -267,14 +268,14 @@ const knee: FullRegion = {
     strength("knee-posterior-chain", "臀部与大腿后侧基础力量", "仰卧屈膝做臀桥，左右脚均匀踩地，抬起臀部并保持5秒；能够稳定完成时，再分别让一侧承担更多重量进行比较。", "臀部和大腿后侧是否能共同发力，骨盆是否歪斜，是否由腰部顶起或大腿后侧容易抽筋。", ["glute-max", "hamstring", "posterior-chain", "pelvic-stability"]),
     strength("knee-adductor-pes", "大腿内侧力量", "仰卧屈膝，在两膝之间夹软枕5秒，分别侧重一侧发力进行比较。", "大腿内侧发力和膝内侧症状。", ["adductor", "medial-knee"]),
     strength("knee-glute", "臀肌与骨盆稳定", "用侧向推墙或单腿站比较两侧臀部参与。", "骨盆是否下沉、躯干侧倾和患侧承重感。", ["glute", "pelvic-stability"]),
-    strength("knee-calf", "小腿三头肌", "双脚踮脚尖10个；允许时再左右单脚各做最多10个。", "高度、节奏、膝是否弯曲及患侧能完成的高质量个数。", ["calf", "heel-raise"]),
+    strength("knee-calf", assessmentPro("knee-calf").title, assessmentPro("knee-calf").how, assessmentPro("knee-calf").observe, ["calf", "heel-raise"]),
     strength("knee-foot-arch", "胫骨后肌与足弓控制", "站稳，脚趾放松贴地，轻轻踮起脚尖再放下，左右各做5个。", "足弓、胫骨后肌发力和脚趾是否抓地代偿。", ["tibialis-posterior", "arch"]),
   ],
   functions: [
     functional("knee-gait", "走路", "自然走10米，记录脚着地、患侧承重、身体越过支撑脚和蹬地。", "跛行阶段、步幅、膝能否伸直及0～10分。", ["gait", "daily"]),
     functional("knee-squat", "下蹲", "双脚固定位置，以相同速度下蹲到舒适深度再站起。", "深度、疼痛阶段、髋膝踝联动、左右承重及膝足方向。", ["squat", "lower-chain"]),
     functional("knee-sit-stand", "坐下再站起", "从同一把稳固椅子慢慢坐下再站起3次；需要时可以轻扶。", "坐下和起身哪个阶段不舒服，是否明显偏向一侧用力。", ["sit-to-stand", "daily"]),
-    functional("knee-heel-raise", "双脚提踵", "扶住墙面，双脚同时缓慢抬起脚跟，再慢慢落下，完成5次。", "两侧高度是否接近，身体是否晃动，患侧是否明显更难完成。", ["heel-raise", "calf", "balance"]),
+    functional("knee-heel-raise", assessmentPro("knee-heel-raise").title, assessmentPro("knee-heel-raise").how, assessmentPro("knee-heel-raise").observe, ["heel-raise", "calf", "balance"]),
     functional("knee-step-up", "上楼 / 上台阶", "用固定高度台阶，患侧先上，轻扶栏杆，完成3次。", "起身阶段、股四头与臀肌发力、疼痛和借力。", ["step-up", "stairs"]),
     functional("knee-step-down", "下楼 / 下台阶", "站在固定高度台阶上，患侧支撑，健侧脚跟慢慢点地再回起。", "患侧承重阶段、下降控制、膝内外偏移和0～10分。", ["step-down", "eccentric", "stairs"]),
     functional("knee-single-leg", "单腿站", "靠近墙，先做健侧，再用患侧单腿站立20秒，必要时手指轻扶。", "身体是否明显晃动，患侧是否明显更难站稳。", ["single-leg", "balance"]),
@@ -389,7 +390,7 @@ const ankleFoot: FullRegion = {
     strength("ankle-dorsiflexor", "勾脚力量", "坐着主动勾脚，用另一只脚或手在脚背轻轻向下压，保持5秒。", "和健侧比较力量，留意脚趾有没有使劲代替脚踝发力。", ["tibialis-anterior", "dorsiflexion"]),
     strength("ankle-evertor", "脚掌向外推的力量（腓骨肌）", "坐稳。把另一只脚挡在不舒服这只脚的外侧，再用不舒服这只脚向外顶住5秒；两边各做一次。", "比较哪边更容易被挡住；同时留意外踝会不会不舒服。", ["peroneal", "eversion"]),
     strength("ankle-invertor", "脚掌向内推的力量（胫骨后肌）", "坐稳。把另一只脚挡在不舒服这只脚的内侧，再用不舒服这只脚向内顶住5秒；两边各做一次。", "比较哪边更容易被挡住；同时留意内踝后方会不会不舒服。", ["tibialis-posterior", "inversion", "arch"]),
-    strength("ankle-calf", "小腿三头肌 / 提踵", "先双脚提踵10个；稳定后扶墙做单脚提踵，最多记录20个高质量次数。", "提踵高度、节奏、膝是否弯曲和患侧耐力。", ["calf", "heel-raise"]),
+    strength("ankle-calf", assessmentPro("ankle-calf").title, assessmentPro("ankle-calf").how, assessmentPro("ankle-calf").observe, ["calf", "heel-raise"]),
     strength("ankle-intrinsic", "足部小肌群", "站立保持脚趾放松，尝试缩短脚掌、轻抬足弓5秒。", "足弓是否可控，脚趾是否抓地或卷曲。", ["foot-intrinsic", "arch"]),
   ],
   functions: [
@@ -397,7 +398,7 @@ const ankleFoot: FullRegion = {
     functional("ankle-weight-bearing", "走路与患侧承重", "在可扶持环境下走一小段。先看患侧能否承重，再观察脚跟着地、身体经过支撑脚和脚尖蹬地是否连贯。", "记录能否承重、是否跛行、哪一步出现症状，以及左右步幅是否明显不同。", ["weight-bearing", "gait", "rocker", "push-off"], "明显错位或足部持续发白、发凉、麻木时不测试；急性疼痛明显时不用硬走。"),
     functional("ankle-knee-wall", "膝碰墙背屈", "脚跟不离地，膝盖向墙移动；从容易距离开始，左右比较最远可控距离。", "脚跟、足弓和膝方向，踝前卡痛或小腿牵扯。", ["weight-bearing-dorsiflexion", "squat"], "急性明显肿胀或不能稳定负重时暂不测试。"),
     functional("ankle-step-down", "下台阶", "扶住栏杆，站在固定高度台阶上，患侧支撑，健侧脚跟慢慢点地再回起。", "患侧承重阶段、踝足方向与足弓稳定、下降控制和0～10分。", ["step-down", "eccentric", "stairs", "ankle-control"], "急性明显肿胀、不能稳定负重或走路仍明显疼时暂不测试。"),
-    functional("ankle-heel-raise", "提踵", "先双脚同步提踵10个，再根据耐受做单脚提踵。", "高度、节奏、足弓、跟腱/小腿症状和高质量次数。", ["heel-raise", "push-off"]),
+    functional("ankle-heel-raise", assessmentPro("ankle-heel-raise").title, assessmentPro("ankle-heel-raise").how, assessmentPro("ankle-heel-raise").observe, ["heel-raise", "push-off"]),
     functional("ankle-single-leg", "单腿站", "靠近墙，先做健侧，再用患侧单腿站立20秒，必要时手指轻扶。", "身体是否明显晃动，患侧是否明显更难站稳。", ["balance", "single-leg"]),
     functional("ankle-hop", "小跳与落地", "只在步态、提踵和单腿站稳定后，完成双脚小跳，再考虑单脚。", "落地疼痛、不稳、缓冲和再次起跳能力。", ["hop", "landing", "sport"], "急性损伤、肿胀、走路仍疼或提踵明显不足时不测试。"),
   ],

@@ -18,6 +18,7 @@ import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialReco
 import { makeLowerLimbLocationSelection, type LowerLimbAreaId, type LowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
+import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -2244,7 +2245,6 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
   "knee-adductor-pes": { title: "夹枕头的力量", how: "仰卧屈膝，在两膝之间放一个软枕，轻轻夹住5秒。两边分别侧重发力，比较哪边更难保持。", observe: "比较哪边大腿内侧更难发力；留意膝内侧会不会出现平时的不适。" },
   "knee-glute": { title: "单腿支撑时臀部能不能稳住", how: "扶住墙，一只脚站立10秒，再换另一边。", observe: "哪边更容易晃；骨盆是否明显歪向一边；膝盖是否跟着向内倒。" },
-  "knee-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。两边都能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
   "knee-squat": { title: "下蹲", how: "扶住稳固的桌面，慢慢下蹲到舒服的深度，再站起来，做3次。", observe: "哪一段不舒服；膝盖有没有明显向内倒；脚跟是否提前抬起。" },
   "knee-step-up": { title: "上台阶", how: "扶住栏杆，用一侧腿先踏上低台阶并站起，做3次，再换另一边。", observe: "哪边更难站起；是否明显借助手臂；哪里不舒服。" },
   "knee-step-down": { title: "下台阶", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑腿膝盖是否向内倒；哪边更难控制。" },
@@ -2264,13 +2264,15 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "ankle-dorsiflexor": { title: "勾脚力量", how: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。", observe: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。" },
   "ankle-evertor": { title: "脚掌向外推的力量", how: "坐稳，用另一只脚挡在脚的外侧，再把脚掌向外顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；外踝或小腿外侧是否不舒服。" },
   "ankle-invertor": { title: "脚掌向内推的力量", how: "坐稳，用另一只脚挡在脚的内侧，再把脚掌向内顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；内踝后方或足弓是否不舒服。" },
-  "ankle-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
   "ankle-weight-bearing": { title: "走几步看看", how: "在能扶住的地方自然走几步，不用故意走快。", observe: "不舒服这边能不能踩地；哪一步会不舒服；有没有明显一瘸一拐。" },
   "ankle-squat": { title: "扶着下蹲", how: "双脚自然站立，扶住固定物，慢慢下蹲到舒服的深度，再站起来。", observe: "脚跟会不会提前抬起；哪边脚踝更难向前弯；哪里不舒服。" },
   "ankle-single-leg": { title: "单脚站立", how: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。", observe: "哪边更容易晃、站不住或引起不适。" },
-  "ankle-heel-raise": { title: "踮脚", how: "扶住墙，双脚慢慢踮起再落下，做5次。", observe: "两边脚跟抬起的高度是否接近；哪里不舒服；身体是否明显偏向一边。" },
   "ankle-knee-wall": { title: "脚跟不抬，膝盖向前碰墙", how: "面对墙站立，脚跟贴地，膝盖慢慢向前靠近墙。左右脚使用相同距离各做一次。", observe: "哪边更难碰到墙；脚跟是否抬起；踝前或小腿哪里不舒服。" },
   "ankle-step-down": { title: "下台阶（脚踝）", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑脚踝是否向内或向外晃；哪边更难控制。" },
+  ...Object.fromEntries(
+    ["knee-calf", "knee-heel-raise", "ankle-calf", "ankle-heel-raise", "calf-heel-raise-strength", "calf-heel-raise"]
+      .map((id) => [id, assessmentFriendly(id)]),
+  ),
 };
 
 export function assessmentTitle(id: string, title: string) {
