@@ -648,6 +648,188 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "direction", dose: { plain: {}, pro: {} },
   },
+  {
+    id: "knee-quadriceps", region: "knee", kind: "strength", access: "self",
+    title: { plain: "把膝盖伸直的力量", pro: "把膝盖伸直的力量" },
+    actions: ["knee-straighten"],
+    how: {
+      plain: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。",
+      pro: "先仰卧，把膝后侧向床面压住5秒；再坐好，把小腿慢慢抬到能到的位置并保持5秒。",
+    },
+    observe: {
+      plain: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。",
+      pro: "和健侧比较下压和抬腿的力量；留意不舒服的一侧是否明显抖动，或因为疼痛不敢用力。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "knee-adductor-pes", region: "knee", kind: "strength", access: "self",
+    title: { plain: "大腿内侧力量", pro: "大腿内侧力量" },
+    actions: ["pillow-squeeze"],
+    how: {
+      plain: "仰卧屈膝，在两膝之间放一个软枕，轻轻夹住5秒。两边分别侧重发力，比较哪边更难保持。",
+      pro: "仰卧屈膝，在两膝之间夹软枕5秒，分别侧重一侧发力进行比较。",
+    },
+    observe: {
+      plain: "比较哪边大腿内侧更难发力；留意膝内侧会不会出现平时的不适。",
+      pro: "大腿内侧发力和膝内侧症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "knee-glute", region: "knee", kind: "strength", access: "self",
+    title: { plain: "臀肌与骨盆稳定", pro: "臀肌与骨盆稳定" },
+    actions: ["single-leg-stand"],
+    how: {
+      plain: "扶住墙，一只脚站立10秒，再换另一边。",
+      pro: "用侧向推墙或单腿站比较两侧臀部参与。",
+    },
+    observe: {
+      plain: "哪边更容易晃；骨盆是否明显歪向一边；膝盖是否跟着向内倒。",
+      pro: "骨盆是否下沉、躯干侧倾和患侧承重感。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 10 }, pro: {} },
+  },
+  {
+    id: "ankle-dorsiflexor", region: "ankle-foot", kind: "strength", access: "self",
+    title: { plain: "勾脚力量", pro: "勾脚力量" },
+    actions: ["ankle-dorsiflex"],
+    how: {
+      plain: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。",
+      pro: "坐着主动勾脚，用另一只脚或手在脚背轻轻向下压，保持5秒。",
+    },
+    observe: {
+      plain: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。",
+      pro: "和健侧比较力量，留意脚趾有没有使劲代替脚踝发力。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "ankle-evertor", region: "ankle-foot", kind: "strength", access: "self",
+    title: { plain: "脚掌向外推的力量（腓骨肌）", pro: "脚掌向外推的力量（腓骨肌）" },
+    actions: ["ankle-evert"],
+    how: {
+      plain: "坐稳，用另一只脚挡在脚的外侧，再把脚掌向外顶住5秒。两边各做一次。",
+      pro: "坐稳。把另一只脚挡在不舒服这只脚的外侧，再用不舒服这只脚向外顶住5秒；两边各做一次。",
+    },
+    observe: {
+      plain: "哪边更容易被挡住；外踝或小腿外侧是否不舒服。",
+      pro: "比较哪边更容易被挡住；同时留意外踝会不会不舒服。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "ankle-invertor", region: "ankle-foot", kind: "strength", access: "self",
+    title: { plain: "脚掌向内推的力量（胫骨后肌）", pro: "脚掌向内推的力量（胫骨后肌）" },
+    actions: ["ankle-invert"],
+    how: {
+      plain: "坐稳，用另一只脚挡在脚的内侧，再把脚掌向内顶住5秒。两边各做一次。",
+      pro: "坐稳。把另一只脚挡在不舒服这只脚的内侧，再用不舒服这只脚向内顶住5秒；两边各做一次。",
+    },
+    observe: {
+      plain: "哪边更容易被挡住；内踝后方或足弓是否不舒服。",
+      pro: "比较哪边更容易被挡住；同时留意内踝后方会不会不舒服。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "ankle-intrinsic", region: "ankle-foot", kind: "strength", access: "self",
+    title: { plain: "足部小肌群", pro: "足部小肌群" },
+    actions: ["heel-raise-standing"],
+    how: {
+      plain: "站稳，脚趾放松贴地，轻轻踮起脚尖再放下，两边各做5个。",
+      pro: "站稳，脚趾放松贴地，轻轻踮起脚尖再放下，两边各做5个。",
+    },
+    observe: {
+      plain: "两侧踮起的高度是否接近；脚趾有没有抠地。",
+      pro: "足弓是否可控，脚趾是否抓地或卷曲。",
+    },
+    optionSet: "strength", dose: { plain: { both: 5 }, pro: { both: 5 } },
+  },
+  {
+    id: "thigh-front-strength", region: "thigh-local", kind: "strength", access: "self",
+    title: { plain: "大腿前侧发力", pro: "大腿前侧发力" },
+    actions: ["sit-to-stand"],
+    how: {
+      plain: "坐稳，把小腿慢慢抬起并保持5秒；普通用户只比较两侧，不额外施加强阻力。",
+      pro: "坐稳，把小腿慢慢抬起并保持5秒；普通用户只比较两侧，不额外施加强阻力。",
+    },
+    observe: {
+      plain: "比较保持、抖动和熟悉症状。",
+      pro: "比较保持、抖动和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "thigh-medial-strength", region: "thigh-local", kind: "strength", access: "self",
+    title: { plain: "大腿内侧发力", pro: "大腿内侧发力" },
+    actions: ["pillow-squeeze"],
+    how: {
+      plain: "仰卧屈膝，在两膝之间放软枕，轻轻夹住5秒。",
+      pro: "仰卧屈膝，在两膝之间放软枕，轻轻夹住5秒。",
+    },
+    observe: {
+      plain: "比较发力感和熟悉症状。",
+      pro: "比较发力感和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "thigh-lateral-strength", region: "thigh-local", kind: "strength", access: "self",
+    title: { plain: "大腿外侧发力", pro: "大腿外侧发力" },
+    actions: ["hip-abduction"],
+    how: {
+      plain: "侧卧或扶墙站立，把腿小幅向外抬起并保持5秒，身体不要侧倒。",
+      pro: "侧卧或扶墙站立，把腿小幅向外抬起并保持5秒，身体不要侧倒。",
+    },
+    observe: {
+      plain: "比较保持能力和熟悉症状。",
+      pro: "比较保持能力和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "calf-dorsiflexor-strength", region: "calf-local", kind: "strength", access: "self",
+    title: { plain: "小腿前侧发力", pro: "小腿前侧发力" },
+    actions: ["ankle-dorsiflex"],
+    how: {
+      plain: "坐稳，把脚背向上勾并保持5秒，不需要别人施加强阻力。",
+      pro: "坐稳，把脚背向上勾并保持5秒，不需要别人施加强阻力。",
+    },
+    observe: {
+      plain: "比较保持和熟悉症状。",
+      pro: "比较保持和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "calf-invertor-strength", region: "calf-local", kind: "strength", access: "self",
+    title: { plain: "小腿内侧发力", pro: "小腿内侧发力" },
+    actions: ["ankle-invert"],
+    how: {
+      plain: "用另一只脚轻挡在脚掌内侧，当前脚掌向内轻推并保持5秒。",
+      pro: "用另一只脚轻挡在脚掌内侧，当前脚掌向内轻推并保持5秒。",
+    },
+    observe: {
+      plain: "比较保持和熟悉症状。",
+      pro: "比较保持和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
+  {
+    id: "calf-evertor-strength", region: "calf-local", kind: "strength", access: "self",
+    title: { plain: "小腿外侧发力", pro: "小腿外侧发力" },
+    actions: ["ankle-evert"],
+    how: {
+      plain: "用另一只脚轻挡在脚掌外侧，当前脚掌向外轻推并保持5秒。",
+      pro: "用另一只脚轻挡在脚掌外侧，当前脚掌向外轻推并保持5秒。",
+    },
+    observe: {
+      plain: "比较保持和熟悉症状。",
+      pro: "比较保持和熟悉症状。",
+    },
+    optionSet: "strength", dose: { plain: { hold: 5 }, pro: { hold: 5 } },
+  },
 ];
 
 export const ASSESSMENT_BY_ID = new Map(ASSESSMENT_ENTRIES.map((entry) => [entry.id, entry]));
