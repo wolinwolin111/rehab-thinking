@@ -33,10 +33,10 @@ export const THIGH_LOCAL_REGION: FullRegion = {
     assessment("thigh-lateral-load", "大腿外侧拉长检查（跨体收腿）", "direction", "仰卧，把一条腿缓慢向身体中线靠近，骨盆保持不动；左右各做一次。", "比较范围，大腿外侧是否出现熟悉的牵扯或疼痛。", ["thigh-lateral", "hip-adduction", "tfl"]),
   ],
   strengths: [
-    assessment("thigh-front-strength", "大腿前侧发力", "strength", "坐稳，把小腿慢慢抬起并保持5秒；普通用户只比较两侧，不额外施加强阻力。", "比较保持、抖动和熟悉症状。", ["thigh-front", "quadriceps", "knee-extension"]),
+    assessment("thigh-front-strength", assessmentPro("thigh-front-strength").title, "strength", assessmentPro("thigh-front-strength").how, assessmentPro("thigh-front-strength").observe, ["thigh-front", "quadriceps", "knee-extension"]),
     assessment("thigh-back-strength", "大腿后侧发力", "strength", "坐稳，脚跟踩地，像要把脚跟向椅子下面拖但不移动，保持5秒。", "比较发力、抽筋和熟悉症状。", ["thigh-back", "hamstring", "knee-flexion"]),
-    assessment("thigh-medial-strength", "大腿内侧发力", "strength", "仰卧屈膝，在两膝之间放软枕，轻轻夹住5秒。", "比较发力感和熟悉症状。", ["thigh-medial", "adductor"]),
-    assessment("thigh-lateral-strength", "大腿外侧发力", "strength", "侧卧或扶墙站立，把腿小幅向外抬起并保持5秒，身体不要侧倒。", "比较保持能力和熟悉症状。", ["thigh-lateral", "glute-med", "tfl"]),
+    assessment("thigh-medial-strength", assessmentPro("thigh-medial-strength").title, "strength", assessmentPro("thigh-medial-strength").how, assessmentPro("thigh-medial-strength").observe, ["thigh-medial", "adductor"]),
+    assessment("thigh-lateral-strength", assessmentPro("thigh-lateral-strength").title, "strength", assessmentPro("thigh-lateral-strength").how, assessmentPro("thigh-lateral-strength").observe, ["thigh-lateral", "glute-med", "tfl"]),
   ],
   functions: [
     assessment("thigh-walk", "走路", "function", "以平时速度走一小段。", "症状出现在迈步、支撑还是蹬地阶段，是否跛行。", ["gait", "daily"]),
@@ -87,10 +87,10 @@ export const CALF_LOCAL_REGION: FullRegion = {
     assessment("calf-eversion", "踝外翻检查（小腿外侧）", "direction", "坐稳，小腿不动，把脚掌缓慢向外转。", "比较范围；记录小腿外侧缩短或小腿内侧拉长时是否出现熟悉症状。", ["calf-medial", "calf-lateral", "eversion"]),
   ],
   strengths: [
-    assessment("calf-dorsiflexor-strength", "小腿前侧发力", "strength", "坐稳，把脚背向上勾并保持5秒，不需要别人施加强阻力。", "比较保持和熟悉症状。", ["calf-front", "dorsiflexion"]),
+    assessment("calf-dorsiflexor-strength", assessmentPro("calf-dorsiflexor-strength").title, "strength", assessmentPro("calf-dorsiflexor-strength").how, assessmentPro("calf-dorsiflexor-strength").observe, ["calf-front", "dorsiflexion"]),
     assessment("calf-heel-raise-strength", assessmentPro("calf-heel-raise-strength").title, "strength", assessmentPro("calf-heel-raise-strength").how, assessmentPro("calf-heel-raise-strength").observe, ["calf-back", "heel-raise"]),
-    assessment("calf-invertor-strength", "小腿内侧发力", "strength", "用另一只脚轻挡在脚掌内侧，当前脚掌向内轻推并保持5秒。", "比较保持和熟悉症状。", ["calf-medial", "inversion"]),
-    assessment("calf-evertor-strength", "小腿外侧发力", "strength", "用另一只脚轻挡在脚掌外侧，当前脚掌向外轻推并保持5秒。", "比较保持和熟悉症状。", ["calf-lateral", "eversion"]),
+    assessment("calf-invertor-strength", assessmentPro("calf-invertor-strength").title, "strength", assessmentPro("calf-invertor-strength").how, assessmentPro("calf-invertor-strength").observe, ["calf-medial", "inversion"]),
+    assessment("calf-evertor-strength", assessmentPro("calf-evertor-strength").title, "strength", assessmentPro("calf-evertor-strength").how, assessmentPro("calf-evertor-strength").observe, ["calf-lateral", "eversion"]),
   ],
   functions: [assessment("calf-walk", "走路", "function", "以平时速度走一小段。", "症状出现在落脚、身体前移还是蹬地阶段。", ["gait"]), assessment("calf-heel-raise", assessmentPro("calf-heel-raise").title, "function", assessmentPro("calf-heel-raise").how, assessmentPro("calf-heel-raise").observe, ["heel-raise"]), assessment("calf-single-leg", "单腿足踝稳定检查", "function", "扶住固定物，左右分别单腿站立10秒。", "比较足弓和脚踝是否稳定（可拍10秒视频回看），以及小腿内外侧是否出现熟悉不适。", ["single-leg", "arch", "ankle-stability"]), assessment("calf-jog", "慢跑准备", "function", "只有走路和提踵稳定时，原地小步慢跑10秒。", "是否再现局部症状。", ["run"], "急性拉伤或走路疼痛时不测试。")],
   specialTests: [assessment("calf-local-palpation", "小腿局部轻按定位", "special-test", "沿图上标记的肌肉区域轻按一次，不按胫骨骨面。", "是否伴快速加重的肿胀、发热或颜色变化。", ["tenderness", "local-calf"], "没有明确受伤却单侧小腿肿、热、红、痛，或同时胸痛气短时，不进入松解训练流程。")],
