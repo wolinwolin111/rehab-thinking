@@ -66,14 +66,12 @@ import {
   localLimbMotionRangeOptions,
   locationSelectionsLabel,
   motionActiveAnswerPatch,
-  motionUnableGuidance,
   passiveMotionInstruction,
   passiveMotionOptions,
   professionalFindingLabel,
   professionalPassiveMotionInstruction,
   spinalRangeQuestion,
   strengthRelatedMotionId,
-  strengthUnableGuidance,
   tensionLocationOptions,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
@@ -581,9 +579,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
   const pairedCheckOptions: Array<[SimpleAnswer, string]> = pairedCheckUsesResistance
     ? [["normal", "抗阻接近"], ["weak", "患侧偏弱｜加一点阻力就撑不住"], ["painful", "抗阻不适"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
-  const motionFallback = item.kind === "motion" ? motionUnableGuidance(item, record.unableReason) : null;
-  const pairedStrengthFallback = item.pairedStrengthId ? strengthUnableGuidance(item, record.pairedStrengthUnableReason, pairedCheckUsesResistance) : null;
-  const strengthFallback = item.kind === "strength" ? strengthUnableGuidance(item, record.strengthUnableReason, canAssessResistance) : null;
   return <section className="rm-page">
     <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title={item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)} current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
     {isThinkingMode && !focusedReassessmentActive ? <button type="button" className="rm-workbench-back" onClick={() => setThinkingWorkbenchOpen(true)}>返回阶段工作台</button> : null}
@@ -634,13 +629,9 @@ export function AssessmentStage(props: AssessmentStageProps) {
 
         {record.active === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>是什么让你停下来？</h3>
-          <p className="rm-choice-hint">如果是因为疼所以不敢继续，选“疼痛或不适”。</p>
-          <div className="rm-result-grid is-three">{([
-            ["pain", "疼或不舒服"],
-            ["fear", "担心继续会加重"],
-            ["instruction", "不会做或没听懂说明"],
-          ] as Array<[NonNullable<AssessmentRecord["unableReason"]>, string]>).map(([value, label]) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-            unableReason: value,
+          <p className="rm-choice-hint">{unableFollowUp("motion", isThinkingMode ? "thinking" : "guided").hint}</p>
+          <div className="rm-result-grid is-three">{unableFollowUp("motion", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
+            unableReason: value as NonNullable<AssessmentRecord["unableReason"]>,
             discomfort: value === "pain" ? "yes" : undefined,
             discomfortLocation: value === "pain" ? record.discomfortLocation : undefined,
             discomfortLocations: value === "pain" ? record.discomfortLocations : undefined,
@@ -649,7 +640,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
             pairedStrength: undefined,
             pairedStrengthUnableReason: undefined,
           })}>{label}</button>)}</div>
-          {motionFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{motionFallback.action}</p><small>{motionFallback.fallback}</small></div> : null}
         </section> : null}
 
         {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
@@ -691,7 +681,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
               "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.pairedStrengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
                 pairedStrengthUnableReason: value,
               })}>{label}</button>)}</div>
-            {pairedStrengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{pairedStrengthFallback.action}</p><small>{pairedStrengthFallback.fallback}</small></div> : null}
           </div> : null}
           {strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? <section className="rm-motion-answer-block is-symptom rm-strength-symptom">
             <h3>持续保持时，哪里不舒服？</h3>
@@ -768,7 +757,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
               discomfortLocations: value === "pain" ? record.discomfortLocations || relatedMotionRecord?.discomfortLocations : undefined,
               discomfortType: value === "pain" ? record.discomfortType || relatedMotionRecord?.discomfortType : undefined,
             })}>{label}</button>)}</div>
-          {strengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{strengthFallback.action}</p><small>{strengthFallback.fallback}</small></div> : null}
          </section> : null}</> : <div className="rm-function-result-stack">
         <section className="rm-motion-answer-block">
           {isCustomAction ? (
