@@ -49,6 +49,7 @@
     "check:assets": "node scripts/docs/check-asset-manifest.mjs",
     "check:knowledge": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/knowledge/check-rehab-knowledge.ts",
     "check:catalog": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/knowledge/check-action-catalog.ts",
+    "snapshot:render": "node scripts/knowledge/snapshot-render.mjs",
     "knowledge:inventory": "node scripts/knowledge/inventory-raw-rehab-corpus.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
