@@ -1,3 +1,5 @@
+import { customActionHint } from "@/src/knowledge/actions/custom";
+
 export type ProblemDestination = "treatment" | "training" | "later-review" | "assessment" | "medical-review";
 
 export type LedgerProblem = {
@@ -80,9 +82,5 @@ export function emptyTreatmentMessage(entries: LedgerEntry[]) {
     detail: "已进入处理路径的问题尚未达到目标，请继续完成剩余处理或复测。",
     action: "继续处理",
   };
-  return {
-    title: "本次没有发现明确异常",
-    detail: "保持舒适活动；症状仍存在时返回补充描述或检查。",
-    action: "查看低强度活动",
-  };
+  return customActionHint("no-finding");
 }

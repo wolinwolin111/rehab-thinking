@@ -4,7 +4,9 @@
  * 迁移只换来源不改措辞。
  */
 
-export function customActionHint(kind: "no-finding" | "load-tier-note" | "blocked-note"): { title?: string; detail?: string; action?: string } {
+export function customActionHint(kind: "no-finding"): { title: string; detail: string; action: string };
+export function customActionHint(kind: string): { title?: string; detail?: string; action?: string };
+export function customActionHint(kind: string): { title?: string; detail?: string; action?: string } {
   if (kind === "no-finding") {
     return {
       title: "本次没有发现明确异常",

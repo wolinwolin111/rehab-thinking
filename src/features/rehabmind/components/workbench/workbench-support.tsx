@@ -19,6 +19,7 @@ import { makeLowerLimbLocationSelection, type LowerLimbAreaId, type LowerLimbLoc
 import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
+import { termText } from "@/src/knowledge/actions/resolve";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -1741,10 +1742,10 @@ export function reportedActionOptions(regionId: string): ReportedAction[] {
       { id: "thigh-medial-length", label: "把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
     ],
     "hip-thigh": [
-      { id: "hip-flexion", label: "髋关节屈曲｜把大腿向腹部方向抬", kind: "joint-direction", raw: "抬腿" },
-      { id: "hip-extension", label: "髋关节伸展｜把腿向身后伸", kind: "joint-direction", raw: "腿向后伸" },
-      { id: "hip-abduction", label: "髋关节外展｜把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
-      { id: "hip-adduction", label: "髋关节内收｜把腿向身体中线靠拢", kind: "joint-direction", raw: "夹腿" },
+      { id: "hip-flexion", label: `${termText("hip-flexion", "pro")}｜${termText("hip-flexion", "plain")}`, kind: "joint-direction", raw: "抬腿" },
+      { id: "hip-extension", label: `${termText("hip-extension", "pro")}｜${termText("hip-extension", "plain")}`, kind: "joint-direction", raw: "腿向后伸" },
+      { id: "hip-abduction", label: `${termText("hip-abduction", "pro")}｜${termText("hip-abduction", "plain")}`, kind: "joint-direction", raw: "把腿向外打开" },
+      { id: "hip-adduction", label: `${termText("hip-adduction", "pro")}｜${termText("hip-adduction", "plain")}`, kind: "joint-direction", raw: "夹腿" },
     ],
   };
   const functionalByRegion: Record<string, Set<string>> = {
