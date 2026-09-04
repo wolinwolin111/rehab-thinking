@@ -563,3 +563,32 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 当前阻塞
 
 无。批次 6（训练全量＋体位显式化＋肌肉映射去标题化＋D6-1 3 条负荷词）待 owner 审核后开工。
+
+
+# 追加通知：2026-09-04 第二十轮——动作库批次 6（训练全量＋映射去标题化）落地
+
+## 范围：4 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `2195252` | 数据 | training.ts +41 条（训练全量 53 条完成），体位：fd 推断、ll 显式；D6-1 负荷词改（加练/强度×2） |
+| 2 | `95ce3f5` | 修正 | knee-heel-slide-quad-set 加入剂量例外（停10～15秒＋保持5秒是动作协议） |
+| 3 | `a19b73c` | 架构 | exerciseMuscleLabels 去掉标题匹配（只按 tags）；hip-hinge 3 条补 glute 标签 |
+| 4 | `f523005..c004ef3` | 修复 | 4 条力量族标题（quadriceps/evertor/invertor/intrinsic，owner 裁定） |
+
+## 用户可见变化
+
+1. **ankle-intrinsic** 标题→「踮脚尖力量」＋动作改为踮脚尖（原「缩短脚掌、轻抬足弓」不可执行）。
+2. **4 条力量标题**：膝盖伸直力量／外翻力量（腓骨肌）／内翻力量（胫骨后肌）／踮脚尖力量。
+3. **D6-1 三条负荷词**：ankle-achilles-eccentric-drop「加练动作」；thigh-run-return「一次只加一样强度」；calf-step-single-leg「送回高强度场景」。
+4. **居家放松标题匹配已删**——放松区域由 tags 驱动，hip-hinge 类新增 glute 标签，放松区域不变或增加（glute）。
+5. **其余全部逐字不变**。
+
+## 验证
+
+- tsc／check:catalog（training=53）／check:knowledge／check:structure 全绿。结构快照 IDENTICAL。
+- 体位推断 vs 显式：fd 保留推断（但目录已存显式值作文档），ll 显式直传。
+
+## 当前阻塞
+
+无。批次 7（删旧层）待 owner 审核后开工。
