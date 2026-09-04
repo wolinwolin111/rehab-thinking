@@ -24,8 +24,6 @@ export type AssessmentEntry = {
   optionSet: string;
   /** 作答选项按动作定制：值契约来自 base 组，labels 只覆盖标签文案。 */
   options?: OptionGroup;
-  /** 复测时"和上次比什么"的按动作提示；按钮只承载方向词，避免描述锁死结果。 */
-  retestFocus?: LocalizedText;
   /** plain / pro 两套剂量都必填；模板里引用的键必须存在于对应语域（运行时抛错兜底）。 */
   dose: Record<Register, Record<string, string | number>>;
 };
