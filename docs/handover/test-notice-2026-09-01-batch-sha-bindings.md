@@ -710,3 +710,34 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 对测试侧的意义
 
 当前 `npm run test:fast` 第一道门 check:boundaries 就红（4 条 stage 违规为 4fd593b 预存，非本程序引入，见 21 轮）。node 套件 53 条失败中 52 条预存＋1 条（problem-ledger-core）待测试侧改加载方式。**建议测试侧在收尾 WIP 时一并消化：4 条 stage 违规＋problem-ledger-core 加载＋既有 52 条预存失败。**
+
+---
+
+# 第 23 轮 — C1/C2 续批全部完成（步骤 0–5）
+
+## 提交清单
+
+| commit | 内容 |
+|---|---|
+| d27c4d7 | 步骤 0：GENERIC_REGISTRY 补登 8 组（＋已存的 imaging-conclusion 共 9 组）；删 3 行死代码旧标题 |
+| dd10806 | 步骤 1（C1-1）：代偿选项 20 组逐字入目录（compensations 字段）＋compensation-generic 兜底 base＋三层降级合并；旧 GENERIC_FUNCTION_COMPENSATIONS 删除 |
+| d010059 | 步骤 3（C2-1）：bilateralObserve 15 条逐字入目录（plain=pro）＋helper 三层降级；消费方 2 处换 helper |
+
+## 两步裁定跳过（前提经实测崩塌，owner 2026-09-05 裁定）
+
+- **步骤 2（C1-2 紧张位置 21 组）**：21 个键全是运动知识 id，目录零对应——无可迁对象。TENSION_LOCATION_OPTIONS 留组件文件，未来部位入库时随条目顺带处理。
+- **步骤 4（C2-2 删双侧化链）**：replaceAll 链在全部真实屏幕文本上只产生 3 处机械替换（knee-heel-raise.observe / knee-gait.how / ankle-weight-bearing.observe，均「患侧/不舒服这边→左右两侧」），非方案估的 16 条；且链是未入库部位的兜底不可删。为 3 处改 12 处建队列代码不成立。
+
+## 验收（每步独立跑，全部通过）
+
+- 每步 before/after（stash 法）失败集合**逐条相同**（53 条，零新增）；check:catalog、typecheck 全绿。
+- 等价性脚本：代偿 52/52 键新旧输出逐字相同；bilateralObserve 15 条 plain==pro＋三层降级行为一致。
+- 无新增测试解钉项：record 存储值全部未变（代偿值/双侧观察值逐字相同）。
+
+## 缩减说明（相对方案 Excel）
+
+- 代偿 48→20（28 键属未入库部位，三层降级保行为，未来批次随条目迁移）。
+- bilateralObserve 16→15（knee-posterior-chain 未入库留旧表）。
+- 紧张位置、双侧化链：整体跳过（见上）。
+
+审阅表（owner 私有 outputs/）：RehabMind-C1C2改造方案／C1-1代偿迁移审阅／C2-1双侧观察迁移审阅 三份 xlsx。决策归档见主控方案 §13。
