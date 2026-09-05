@@ -1,10 +1,10 @@
 import { ASSESSMENT_BY_ID } from "./assessment.ts";
-import { COMPENSATION_GENERIC, COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel } from "./compensations.ts";
+import { COMPENSATION_GENERIC, COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel, compensationTagsFor } from "./compensations.ts";
 import { OPTION_BASES } from "./option-sets.ts";
 import { renderHow } from "./resolve.ts";
 import type { Register } from "./types.ts";
 
-export { COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel };
+export { COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel, compensationTagsFor };
 
 /** 一层作答按钮：条目 labels 覆盖 → base 默认标签。值契约来自 base，条目不可改值。 */
 export function renderOptions<T extends string = string>(

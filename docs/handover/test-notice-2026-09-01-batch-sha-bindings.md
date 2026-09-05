@@ -775,3 +775,35 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 测试侧新增解钉项（第 22 轮清单之外）
 
 - **rendered-html.test.mjs:993**：`assert.match(demo, /latestRecord\.compensations\?\.includes\(entry\)/)` —— 编号分离后该行改为 `compensationIds(latestRecord.compensations ?? []).includes(entry.id)`。快速点击合并进最新记录的行为未变（仍读 latestRecord），仅字面表达式变。请测试侧把该钉改为匹配新表达式或改测行为。
+
+---
+
+# 第 25 轮 — 代偿归类接线（编号→标签进词表）＋半空转修复
+
+## 背景
+
+第 24 轮编号分离后审查发现：归类映射藏在 workbench 的 if 链里，且其中 balance/single-leg/stability 三个标签**没有任何候选项认识**（勾了"身体晃动/更难站稳"，决策层收不到），ankle-rom 同样是死标签。owner 裁定走 A 方案（改指向真实存在的臀中肌系标签）。
+
+## 改动
+
+- **compensations.ts**：每个编号加 `tags?: string[]` 字段（归类语义进词表）；新增纯函数 `compensationTagsFor(values)`（归一化→查词表 tags→未入库文字走关键词兜底，与词表同一指向）。
+- **rehabmind-workbench.tsx**：删除整条 if 链，改为一行 `compensationTagsFor(result.compensations ?? [])`。
+- **check-action-catalog.ts**：新增 `CAT-DEAD-COMPENSATION-TAG` 校验——词表 tags 引用的标签若不在候选标签全集（静态扫描 pilot 源码 candidate()/tags 字面量）中，构建失败。根治"半空转"。
+
+## 接线内容（owner 批准）
+
+- 新导向：脚趾抓地→calf、蹬地使不上劲→calf、足弓塌下→arch、骨盆歪/掉→hip-abduction+glute-med。
+- A 修复：身体晃动、更难站稳 → 由死标签 balance/single-leg/stability 改指向 hip-abduction+glute-med。
+- 摘除死标签 ankle-rom（同项 dorsiflexion 已接通，行为不变）。
+- **刻意不接**（待裁定）：knee-inward（膝盖向内偏，无"明显"）、land-knee-inward（落地内扣）——旧规则当年就没命中，补漏需 owner 点头。步态三件套、cannot/afraid/need 系列不接（语义已被上一题承载或无对应候选）。
+
+## 验证
+
+- check:catalog（含新护栏）／typecheck 全绿。
+- 归类行为对照：147 条去重文字，132 条不变，15 条变化全部有意（见编号表 Excel 总览页）。
+- 套件失败集合：与 23c3089 逐条相同（54 条＝53 预存＋rendered-html:993 解钉），零新增。
+- 浏览器冒烟：high-irritability 场景走到评估总结，0 控制台错误，新归类代码路径执行通过。
+
+## 交付物
+
+`outputs/RehabMind-代偿编号表-2026-09-05.xlsx`：46 编号 × {自助措辞, 专业措辞, 旧文字, 归类标签, 用在哪些动作}＋总览页记录本轮接线与待裁定项。
