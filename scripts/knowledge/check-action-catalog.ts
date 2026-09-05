@@ -6,7 +6,7 @@ import { TRAINING_ENTRIES } from "../../src/knowledge/actions/training.ts";
 import { validateActionCatalog } from "../../src/knowledge/actions/validate.ts";
 import { GOLDEN_OUTPUTS } from "../../src/knowledge/actions/golden.ts";
 import { goldenOutputs } from "../../src/knowledge/actions/bridge.ts";
-import { COMPENSATION_OPTIONS } from "../../src/knowledge/actions/compensations.ts";
+import { COMPENSATION_GENERIC, COMPENSATION_OPTIONS } from "../../src/knowledge/actions/compensations.ts";
 
 /** 候选标签全集：从 pilot 知识源码静态扫描 candidate()/tags:[] 的字面量（防代偿归类映射到不存在的标签＝半空转）。 */
 function candidateTagUniverse(): Set<string> {
@@ -28,6 +28,9 @@ function candidateTagUniverse(): Set<string> {
 const tagUniverse = candidateTagUniverse();
 const deadTagIssues = Object.entries(COMPENSATION_OPTIONS)
   .flatMap(([id, option]) => (option.tags ?? []).filter((tag) => !tagUniverse.has(tag)).map((tag) => ({ code: "CAT-DEAD-COMPENSATION-TAG", entryId: id, detail: tag })));
+const genericIssues = COMPENSATION_GENERIC
+  .filter((id) => !COMPENSATION_OPTIONS[id])
+  .map((id) => ({ code: "CAT-BAD-GENERIC-COMPENSATION-ID", entryId: "COMPENSATION_GENERIC", detail: id }));
 
 const issues = [
   ...validateActionCatalog({
@@ -41,6 +44,7 @@ const issues = [
       ? []
       : [{ code: "CAT-GOLDEN-MISMATCH", entryId: id, detail: `${GOLDEN_OUTPUTS[id]} !== ${actual}` }]),
   ...deadTagIssues,
+  ...genericIssues,
 ];
 
 if (issues.length) {

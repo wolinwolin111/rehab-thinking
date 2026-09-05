@@ -1240,7 +1240,7 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:hip-step": ["骨盆偏移", "膝盖内扣", "主要靠另一侧抬起", "下台阶时突然掉下"],
   "function:hip-gait": ["步幅变短", "髋部不能后伸", "骨盆晃动", "蹬地时症状明显"],
 };
-/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ compensation-generic 兜底。返回 {id, label}。 */
+/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ COMPENSATION_GENERIC 兜底。返回 {id, label}。 */
 export function functionCompensationOptions(itemId: string, mode: "guided" | "thinking" = "guided") {
   const catalog = compensationOptions(itemId.replace(/^function:/, ""));
   const raw = catalog.source === "entry" ? catalog.options
