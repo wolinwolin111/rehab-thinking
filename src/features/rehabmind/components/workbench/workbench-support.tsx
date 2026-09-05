@@ -20,7 +20,7 @@ import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/as
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
 import { termText } from "@/src/knowledge/actions/resolve";
-import { assessmentTitle as catalogAssessmentTitle } from "@/src/knowledge/actions/index";
+import { assessmentTitle as catalogAssessmentTitle, compensationOptions } from "@/src/knowledge/actions/index";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -1211,29 +1211,9 @@ export const GOALS_PRO = [
 ];
 export const GOALS = GOALS_SELF;
 export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
-  "function:knee-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:ankle-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:knee-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-single-leg-squat": ["骨盆明显歪斜", "膝盖明显向内偏", "足弓明显塌下", "需要扶持或无法控制下降"],
-  "function:knee-step-down": ["膝盖明显向内偏", "身体或骨盆歪向一边", "下降时突然掉下去", "需要扶住栏杆"],
-  "function:knee-step-up": ["膝盖明显向内偏", "身体明显向前或向一边倒", "主要靠另一条腿蹬起", "需要用手拉栏杆"],
-  "function:ankle-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-weight-bearing": ["走路明显一瘸一拐", "不敢让不舒服的一边踩实", "需要扶着才能走", "脚步明显变短"],
   "function:ankle-knee-wall": ["脚跟提前抬起", "膝盖向内或向外偏", "足弓塌下", "踝前卡住或小腿牵扯"],
-  "function:ankle-step-down": ["脚踝向内或向外晃", "足弓塌下", "不敢让支撑脚完全承重", "下降时突然掉下去", "需要扶住栏杆"],
   "function:custom-action": ["需要扶着或借力才能做", "做的时候动作走形", "做到一半不敢继续"],
-  "function:ankle-hop": ["落地不敢承重", "脚踝向内或向外晃", "落地时膝盖明显内扣", "无法连续完成"],
-  "function:thigh-walk": ["迈步时跛行", "患侧支撑时间变短", "身体向一侧偏", "蹬地时症状明显"],
-  "function:thigh-sit-stand": ["起身时偏向另一侧", "膝盖向内偏", "需要用手撑", "坐下时突然掉下去"],
   "function:thigh-bridge-check": ["骨盆一侧下沉", "腰部代偿顶起", "患侧抬起高度更低", "大腿后侧抽筋"],
-  "function:thigh-single-leg": ["骨盆下沉", "身体明显侧倒", "膝盖向内偏", "无法保持10秒"],
-  "function:thigh-jog": ["落地时疼或不敢承重", "步幅明显变短", "身体上下起伏不稳", "无法连续完成"],
-  "function:calf-walk": ["脚跟落地不稳", "脚步明显变短", "蹬地不足", "走路时小腿症状明显"],
-  "function:calf-heel-raise": ["患侧抬起高度更低", "身体向一侧偏", "脚趾抓地", "无法连续完成"],
-  "function:calf-single-leg": ["足弓塌下", "脚踝反复向内或向外晃", "身体明显晃动", "不舒服的一侧更难站稳"],
-  "function:calf-jog": ["落地或蹬地时出现症状", "步幅明显变短", "不敢连续跑", "无法完成小步慢跑"],
   "function:neck-turn-task": ["用躯干代替转头", "肩膀跟着转", "一侧明显转不到位", "转头时出现麻或电感"],
   "function:neck-screen-task": ["很快需要改变姿势", "回正后仍不缓解", "头部前伸", "症状逐渐增加"],
   "function:neck-arm-lift-task": ["耸肩", "伸颈", "头部偏向一侧", "抬手时出现麻或电感"],
@@ -1260,9 +1240,11 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:hip-step": ["骨盆偏移", "膝盖内扣", "主要靠另一侧抬起", "下台阶时突然掉下"],
   "function:hip-gait": ["步幅变短", "髋部不能后伸", "骨盆晃动", "蹬地时症状明显"],
 };
-export const GENERIC_FUNCTION_COMPENSATIONS = ["左右用力不一样", "身体明显晃动", "动作幅度偏小", "需要扶持或借力"];
+/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ compensation-generic 兜底。 */
 export function functionCompensationOptions(itemId: string) {
-  return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : GENERIC_FUNCTION_COMPENSATIONS;
+  const catalog = compensationOptions(itemId.replace(/^function:/, ""));
+  if (catalog.source === "entry") return catalog.options;
+  return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : catalog.options;
 }
 export const BILATERAL_OBSERVE: Record<string, string> = {
   "ankle-dorsiflexion": "脚背能不能明显靠近小腿？注意看脚背，不要只把脚尖勾起来。",

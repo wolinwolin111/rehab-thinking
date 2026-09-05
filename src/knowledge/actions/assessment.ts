@@ -64,6 +64,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.heelRaise,
+    compensations: [],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -96,6 +97,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.heelRaise,
+    compensations: [],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -128,6 +130,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.heelRaise,
+    compensations: [],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -160,6 +163,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -176,6 +180,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -192,6 +197,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -208,6 +214,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.squat,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -224,6 +231,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.squat,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -256,6 +264,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.sitStand,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -272,6 +281,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepUp,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -288,6 +298,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepDown,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -304,6 +315,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepDown,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -320,6 +332,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -336,6 +349,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -352,6 +366,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -368,6 +383,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -384,6 +400,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLegSquat,
+    compensations: [],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -432,6 +449,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.hop,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -448,6 +466,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.jog,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -464,6 +483,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.jog,
+    compensations: [],
     dose: { plain: {}, pro: {} },
   },
   {

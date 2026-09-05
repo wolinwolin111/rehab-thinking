@@ -27,6 +27,13 @@ export function assessmentTitle(id: string, mode: "guided" | "thinking"): string
   return mode === "guided" ? entry.title.plain : entry.title.pro;
 }
 
+/** 功能动作的代偿观察多选：条目定制 → compensation-generic 兜底（值为自由文本，不接决策）。 */
+export function compensationOptions(id: string): { options: string[]; source: "entry" | "generic" } {
+  const entry = ASSESSMENT_BY_ID.get(id);
+  if (entry?.compensations?.length) return { options: entry.compensations, source: "entry" };
+  return { options: [...OPTION_BASES["compensation-generic"].values], source: "generic" };
+}
+
 export type UnableReasonButton = { value: string; label: string };
 export type UnableGuidance = { action: string; fallback: string };
 
