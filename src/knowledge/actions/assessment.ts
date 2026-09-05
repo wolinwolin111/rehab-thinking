@@ -286,7 +286,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepUp,
-    compensations: ["knee-valgus", "body-fwd-or-side-fall", "push-off-opposite-leg", "need-hand-pull-rail"],
+    compensations: ["knee-valgus", "trunk-fwd-lean", "trunk-side-lean", "push-off-opposite-leg", "need-hand-pull-rail"],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {

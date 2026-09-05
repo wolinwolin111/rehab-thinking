@@ -807,3 +807,35 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 交付物
 
 `outputs/RehabMind-代偿编号表-2026-09-05.xlsx`：46 编号 × {自助措辞, 专业措辞, 旧文字, 归类标签, 用在哪些动作}＋总览页记录本轮接线与待裁定项。
+
+---
+
+# 第 26 轮 — 代偿归类接线全部完成（三组按 owner 批准落地）
+
+## 落地内容
+
+第 25 轮只接了 11/46，本轮把剩余的全部过完并按"宿主卡所在部位的候选池"逐条核实生效性后接线：
+
+- **第一组（12 个）**：knee-inward/land-knee-inward→adductor+hip-abduction+glute-med；body-or-pelvis-lean/pelvis-tilt→跨池组；body-lean-side/body-side-fall/pelvis-drop→hip-abduction+glute-med；descent-give-way/sit-drop→quadriceps；ankle-in-or-out-wobble→inversion+eversion；limp-gait/stride-short/stance-time-short→gait；heel-strike-unstable→dorsiflexion。
+- **第二组（维持不接，理由记录）**：cannot-×3/afraid-×3（完成题已承载）、need-×6（辅助＝进阶信号）、症状×3（走疼痛路由）、通用×2（太泛）。
+- **第三组（owner 让按前后文判断，已给建议并落地）**：lean-to-opposite→quadriceps（坐站主发力肌）；push-off-opposite-leg→quadriceps（**修正**：其宿主在上台阶卡＝膝区，push-off 标签在踝池会空转，改接膝池真实存在的 quadriceps）；body-fwd-or-side-fall **拆分**为 trunk-fwd-lean→hamstring+posterior-chain 与 trunk-side-lean→跨池组（上台阶卡按钮 4→5）；body-bounce 维持不接（跑姿类候选池无对应）。
+- **晃动家族跨池扩展**：body-sway/side-balance-worse/pelvis-tilt/body-or-pelvis-lean 标签从 hip-abduction+glute-med 扩为 +hip-control+foot-support，使膝区卡（单腿站稳练习候选）也能命中，不再只在 thigh 池生效。
+
+## 关键设计发现（供未来多部位扩展参考）
+
+候选打分只在**当前部位池内**做标签交集。故归类标签必须落在该选项宿主卡所属部位的候选池里，否则空转。本轮已逐条按此核实。多部位扩展时，同一概念在不同部位池需要各自标签——词表 tags 未来可升级为按部位分组（`compensationTagsFor(编号, 部位)`），当前结构不挡此路径。
+
+## 验证
+
+- check:catalog（含 CAT-DEAD-COMPENSATION-TAG 护栏，12 个新标签全部通过存在性校验）／typecheck 全绿。
+- 归类行为对照（最初未接线版 vs 最终）：147 条文字，115 条不变，32 条有意变化（全部可追溯到批准方案）。
+- 套件失败集合：与 381207a 逐条相同（54＝53 预存＋rendered-html:993 解钉），拆分按钮零新增。
+- 浏览器实测：上台阶卡拆分后 5 按钮正确显示（膝盖明显向内偏／身体明显向前倾／身体明显向一边倒／主要靠另一条腿蹬起／需要用手拉栏杆），下台阶卡 4 按钮正常，0 控制台错误。
+
+## 一处记录在案的粗粒度
+
+关键词兜底（未入库部位旧表文字）按"晃动"匹配，使肩区「肘部锁死或晃动」也拿到了髋/足标签——旧行为给它 balance 系同样不对且是死的，非回归；肩区入库后会有精确编号取代兜底。
+
+## 交付物
+
+`outputs/RehabMind-代偿编号表-2026-09-05.xlsx`：48 编号（含拆分新增 2 个）× 五列＋总览页。
