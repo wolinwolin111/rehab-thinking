@@ -16,6 +16,7 @@ import { functionCompletionValue, functionControlValue, functionDiscomfortValue 
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete, functionalActionMeta } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
+import { compensationIds, renderOptions, unableFollowUp } from "@/src/knowledge/actions/index";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -38,7 +39,7 @@ import {
   type SimpleAnswer,
   type Step,
   type TransitionTarget,
-  BILATERAL_OBSERVE,
+  bilateralObserveText,
   PASSIVE_END_FEEL_OPTIONS,
   PATELLA_DIRECTION_IDS,
   PATELLA_DIRECTION_LABELS,
@@ -65,14 +66,12 @@ import {
   localLimbMotionRangeOptions,
   locationSelectionsLabel,
   motionActiveAnswerPatch,
-  motionUnableGuidance,
   passiveMotionInstruction,
   passiveMotionOptions,
   professionalFindingLabel,
   professionalPassiveMotionInstruction,
   spinalRangeQuestion,
   strengthRelatedMotionId,
-  strengthUnableGuidance,
   tensionLocationOptions,
 } from "@/src/features/rehabmind/components/workbench/workbench-support";
 
@@ -109,7 +108,9 @@ export type AssessmentStageProps = {
   hasSpecialPositive: boolean;
   assessmentNeuralReferral: boolean;
   sharpSpecialReferral: boolean;
+  specialSafetyReferral: boolean;
   assessmentNeedsReferral: boolean;
+  highIrritabilityReferral: boolean;
   adverseResolution: AdverseResolution | null;
   trialRecords: TrialRecord[];
   exercises: FullExercise[];
@@ -179,7 +180,9 @@ export function AssessmentStage(props: AssessmentStageProps) {
     hasSpecialPositive,
     assessmentNeuralReferral,
     sharpSpecialReferral,
+    specialSafetyReferral,
     assessmentNeedsReferral,
+    highIrritabilityReferral,
     adverseResolution,
     trialRecords,
     exercises,
@@ -315,10 +318,13 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button><button type="button" className="rm-primary" disabled={!adverseCaptureComplete(adverseResponse)} onClick={() => setAdverseConfirmedAssessmentIds(["__capture__"])}>确认并继续</button></div>
     </section>;
   }
-  if (adverseResponse && adverseResolution === "stop-and-refer") return <section className="rm-page rm-adverse-page">
+  if (adverseResponse && adverseResolution === "stop-and-refer") {
+    const adverseIsNeural = adverseResponse.neuralOrWeakness === "yes";
+    return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="异常反应" title="本次先停止" />
-    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>停止后仍明显加重或出现新的感觉、力量变化</h2><p>本次不继续增加处理或训练，保存当前记录并安排专业评估。</p><div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
+    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>{adverseIsNeural ? "停止后出现新的麻、电感或无力" : "停止后仍持续加重，疼痛还在升高"}</h2><p>{adverseIsNeural ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : "停下来仍没有缓解、疼痛还在升高，本次不继续增加处理或训练，保存当前记录并安排专业评估。"}</p><div className="rm-page-actions split"><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
   </section>;
+  }
   if (adverseResponse && adverseResolution === "regress-training") return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="训练调整" title="先降低一个难度变量" />
     <section className="rm-adverse-source"><span>先停止刚才的做法</span><strong>{adverseResponse.sourceLabel}</strong><p>减小范围、减少个数或换成更稳定的姿势，只试一小组。</p></section>
@@ -403,8 +409,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
       ].filter(Boolean).join("；")}</h2></section> : null}
       {assessmentNeedsReferral ? <section className="rm-route-note is-waiting">
         <span>先不要继续自助处理</span>
-        <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : "多项检查因明显疼痛无法完成"}</h2>
-        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
+        <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : specialSafetyReferral ? "特殊筛查出现异常信号" : highIrritabilityReferral ? "多项检查出现明显疼痛" : "多项检查因明显疼痛无法完成"}</h2>
+        <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : specialSafetyReferral ? "其中一项结构性筛查出现异常信号。本次不继续加强刺激或负重，建议先由专业人员确认，再决定是否适合继续处理。" : highIrritabilityReferral ? "刚才的动作你能做完，但疼痛已经很重。建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
       </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
       <div className="rm-page-actions split"><button type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
     </section>;
@@ -487,7 +493,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
         functionCompletion: "complete",
         functionControl: hasLimitedSide ? "compensated" : "stable",
         functionDiscomfort: "no",
-        compensations: hasLimitedSide ? [functionCompensationOptions(item.id)[0]] : undefined,
+        compensations: hasLimitedSide ? [functionCompensationOptions(item.id)[0].id] : undefined,
         bilateralComparison,
         worseSide: bilateralComparisonToSide(bilateralComparison),
       };
@@ -551,18 +557,18 @@ export function AssessmentStage(props: AssessmentStageProps) {
   }
 
   const localLimbStrengthOptions: Array<[SimpleAnswer, string]> = canAssessResistance
-    ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
+    ? [["normal", "抗阻接近"], ["weak", "患侧偏弱｜加一点阻力就撑不住"], ["painful", "抗阻不适"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
   const options: Array<[SimpleAnswer, string]> = item.kind === "strength"
     ? ["thigh-local", "calf-local"].includes(region?.id ?? "")
       ? localLimbStrengthOptions
       : item.comparison === "midline"
-      ? [["normal", "完成质量正常｜动作可稳定完成"], ["weak", "控制偏弱｜耐力或保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+      ? [["normal", "完成质量正常"], ["weak", "控制偏弱｜耐力或保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
       : intake.side === "双侧/中间"
-        ? [["normal", "两侧接近｜完成质量都正常"], ["weak", "一侧或两侧偏弱｜保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
-        : [["normal", "力量接近｜两侧完成质量相近"], ["weak", "患侧偏弱｜不舒服这侧更差"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+        ? [["normal", "两侧接近"], ["weak", "一侧或两侧偏弱｜保持不足"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
+        : [["normal", "力量接近"], ["weak", "患侧偏弱｜不舒服这侧更差"], ["painful", "发力不适｜动作诱发症状"], ["unable", "无法完成｜不会做或不安全"], ["skip", "暂不检查｜今天先跳过"]]
     : item.kind === "special"
-      ? [["normal", "未见异常反应｜没有出现提示信号"], ["positive", "出现提示反应｜需要结合其他结果"], ["painful", "只有疼痛｜暂不能判断"], ["skip", "暂不检查｜不会做或暂不做"]]
+      ? [["normal", "未见异常反应"], ["positive", "出现提示反应｜需要结合其他结果"], ["painful", "只有疼痛｜暂不能判断"], ["skip", "暂不检查｜不会做或暂不做"]]
       : [];
   const pairedCheckUsesResistance = canAssessResistance;
   const isSelfKneeExtension = item.id === "motion:knee-extension" && !pairedCheckUsesResistance && intake.side !== "双侧/中间";
@@ -571,11 +577,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
     && (intake.symptoms.includes("肿胀或淤青") || (intake.baselineScoreConfirmed && intake.baselineScore >= 6))
     || record.active === "unable";
   const pairedCheckOptions: Array<[SimpleAnswer, string]> = pairedCheckUsesResistance
-    ? [["normal", "抗阻接近｜两侧力量差异不明显"], ["weak", "患侧偏弱｜抗阻更容易失去位置"], ["painful", "抗阻不适｜发力诱发症状"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
+    ? [["normal", "抗阻接近"], ["weak", "患侧偏弱｜加一点阻力就撑不住"], ["painful", "抗阻不适"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]]
     : [["normal", "保持稳定｜两侧控制接近"], ["weak", "控制偏弱｜容易掉下或发抖"], ["painful", "持续保持时会疼｜越用力越明显"], ["unable", "无法完成｜暂时不能安全检查"], ["skip", "暂不检查｜今天先跳过"]];
-  const motionFallback = item.kind === "motion" ? motionUnableGuidance(item, record.unableReason) : null;
-  const pairedStrengthFallback = item.pairedStrengthId ? strengthUnableGuidance(item, record.pairedStrengthUnableReason, pairedCheckUsesResistance) : null;
-  const strengthFallback = item.kind === "strength" ? strengthUnableGuidance(item, record.strengthUnableReason, canAssessResistance) : null;
   return <section className="rm-page">
     <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title={item.id === PATELLA_GROUP_PRIMARY_ID ? "髌骨四方向被动活动" : professionalAssessmentTitle(item.id, item.title)} current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
     {isThinkingMode && !focusedReassessmentActive ? <button type="button" className="rm-workbench-back" onClick={() => setThinkingWorkbenchOpen(true)}>返回阶段工作台</button> : null}
@@ -613,7 +616,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <header><i>1</i><div><span>关节活动度检查</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
         {acuteMotionGuidance ? <p className="rm-passive-reminder">急性损伤先轻柔查看活动范围；页面出现保持或发力检查时，如果会明显加重，今天可以跳过。</p> : null}
         <section><b>{isThinkingMode ? "检查方法" : "现在做"}</b><p>{isThinkingMode ? item.professionalHow ?? item.how : item.how}</p></section>
-        {isThinkingMode ? <section><b>记录</b><p>{item.professionalObserve ?? item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^motion:/, "")] ?? "两侧都异常时，记录哪一侧更差；如果一样差就选择两侧都受限。" : item.observe}</p></details>}
+        {isThinkingMode ? <section><b>记录</b><p>{item.professionalObserve ?? item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? "两侧都异常时，记录哪一侧更差；如果一样差就选择两侧都受限。" : item.observe}</p></details>}
         {!item.spinal && !isPilotRegion(intake.regionId) ? intake.side === "双侧/中间" ? <p className="rm-comparison-anchor"><b>左右各做一次</b>，找出更差的一侧；如果两边都差，选择“两侧都受限”。</p> : <p className="rm-comparison-anchor"><b>先做健侧</b>，再用同样姿势做不舒服的一侧。</p> : null}
         <section className="rm-motion-answer-block">
           <h3>{isSelfKneeExtension ? "膝后能不能像另一边一样压向床面？" : isThinkingMode ? `${professionalAssessmentTitle(item.id, item.title)}：主动活动范围` : item.spinal ? spinalRangeQuestion(item.comparison, intake.spineAssessmentMode) : activeMotionRangeQuestion(item.id, intake.side === "双侧/中间")}</h3>
@@ -626,13 +629,9 @@ export function AssessmentStage(props: AssessmentStageProps) {
 
         {record.active === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>是什么让你停下来？</h3>
-          <p className="rm-choice-hint">如果是因为疼所以不敢继续，选“疼痛或不适”。</p>
-          <div className="rm-result-grid is-three">{([
-            ["pain", "疼或不舒服"],
-            ["fear", "担心继续会加重"],
-            ["instruction", "不会做或没听懂说明"],
-          ] as Array<[NonNullable<AssessmentRecord["unableReason"]>, string]>).map(([value, label]) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-            unableReason: value,
+          <p className="rm-choice-hint">{unableFollowUp("motion", isThinkingMode ? "thinking" : "guided").hint}</p>
+          <div className="rm-result-grid is-three">{unableFollowUp("motion", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.unableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
+            unableReason: value as NonNullable<AssessmentRecord["unableReason"]>,
             discomfort: value === "pain" ? "yes" : undefined,
             discomfortLocation: value === "pain" ? record.discomfortLocation : undefined,
             discomfortLocations: value === "pain" ? record.discomfortLocations : undefined,
@@ -641,7 +640,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
             pairedStrength: undefined,
             pairedStrengthUnableReason: undefined,
           })}>{label}</button>)}</div>
-          {motionFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{motionFallback.action}</p><small>{motionFallback.fallback}</small></div> : null}
         </section> : null}
 
         {shouldAskMotionDiscomfort(record.active) ? <section className="rm-motion-answer-block is-symptom">
@@ -683,7 +681,6 @@ export function AssessmentStage(props: AssessmentStageProps) {
               "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.pairedStrengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
                 pairedStrengthUnableReason: value,
               })}>{label}</button>)}</div>
-            {pairedStrengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{pairedStrengthFallback.action}</p><small>{pairedStrengthFallback.fallback}</small></div> : null}
           </div> : null}
           {strengthAnswerResult(record.pairedStrength, record.pairedStrengthUnableReason) === "painful" ? <section className="rm-motion-answer-block is-symptom rm-strength-symptom">
             <h3>持续保持时，哪里不舒服？</h3>
@@ -744,7 +741,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       </div> : <article className="rm-check-card">
       <header><i>{item.kind === "strength" ? "力" : item.kind === "special" ? "测" : "动"}</i><div><span>{item.kind === "strength" ? "肌力与控制检查" : item.kind === "special" ? "特殊检查" : "功能动作检查"}</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
       <section><b>现在做</b><p>{item.how}</p></section>
-      {isThinkingMode ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
+      {isThinkingMode ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
       {item.kind === "special" && item.next ? <p className="rm-special-next"><b>如果出现提示信号：</b>{item.next}</p> : null}
       {item.kind !== "function" ? <><AnswerChoiceGrid options={options} value={record.simple} onChange={(value) => updateAssessment(item.id, value === "painful"
         ? { simple: value, compensations: undefined, discomfortLocation: record.discomfortLocation || relatedMotionRecord?.discomfortLocation, discomfortLocations: record.discomfortLocations || relatedMotionRecord?.discomfortLocations, discomfortType: record.discomfortType || relatedMotionRecord?.discomfortType, familiarSymptom: record.familiarSymptom || relatedMotionRecord?.familiarSymptom, worseSide: record.worseSide }
@@ -753,14 +750,12 @@ export function AssessmentStage(props: AssessmentStageProps) {
           : { simple: value, strengthUnableReason: value === "unable" ? record.strengthUnableReason : undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined, symptomStage: undefined, compensations: undefined, worseSide: value === "weak" ? record.worseSide : undefined })} />
         {item.kind === "strength" && record.simple === "unable" ? <section className="rm-motion-answer-block is-followup rm-strength-unable">
           <h3>主要卡在哪里？</h3>
-          <div className="rm-result-grid is-two">{([[
-            "pain", "一用力就不适"], ["weak", "完全使不上力"], ["fear", "不敢继续"], ["instruction", "不会做或没听懂说明"]] as Array<[StrengthUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
-              strengthUnableReason: value,
+          <div className="rm-result-grid is-two">{unableFollowUp("strength", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.strengthUnableReason === value ? "is-selected" : ""} onClick={() => updateAssessment(item.id, {
+              strengthUnableReason: value as StrengthUnableReason,
               discomfortLocation: value === "pain" ? record.discomfortLocation || relatedMotionRecord?.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? record.discomfortLocations || relatedMotionRecord?.discomfortLocations : undefined,
               discomfortType: value === "pain" ? record.discomfortType || relatedMotionRecord?.discomfortType : undefined,
             })}>{label}</button>)}</div>
-          {strengthFallback ? <div className="rm-unable-guidance"><strong>先这样试</strong><p>{strengthFallback.action}</p><small>{strengthFallback.fallback}</small></div> : null}
          </section> : null}</> : <div className="rm-function-result-stack">
         <section className="rm-motion-answer-block">
           {isCustomAction ? (
@@ -789,12 +784,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
           ) : isRangeFunction
             ? <>
               <h3>和另一侧相比，最大可控幅度怎么样？</h3>
-              <div className="rm-result-grid is-four">{([
-                ["complete-stable", "接近另一侧"],
-                ["complete-compensated", "差一些"],
-                ["unable", "差很多"],
-                ["skip", "说不清"],
-              ] as Array<[string, string]>).map(([value, label]) => {
+              <div className="rm-result-grid is-four">{renderOptions<"complete-stable" | "complete-compensated" | "unable" | "skip">(item.id.replace(/^function:/, ""), "range-function", isThinkingMode ? "thinking" : "guided").map(({ value, label }) => {
                 const isSelected = value === "complete-stable" ? functionCompletion === "complete" && functionControl === "stable"
                   : value === "complete-compensated" ? functionCompletion === "complete" && functionControl === "compensated"
                   : functionCompletion === value;
@@ -809,11 +799,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
             </>
             : <>
               <h3>这个动作能做完吗？</h3>
-              <div className="rm-result-grid is-three">{([
-                ["complete", "可以做完"],
-                ["unable", "做不完或不敢继续"],
-                ["skip", "暂时不做"],
-              ] as Array<[FunctionCompletion, string]>).map(([value, label]) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
+              <div className="rm-result-grid is-three">{renderOptions<FunctionCompletion>(item.id.replace(/^function:/, ""), "function-completion", isThinkingMode ? "thinking" : "guided").map(({ value, label }) => <button type="button" key={value} className={functionCompletion === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment(value === "complete"
                 ? { functionCompletion: value, functionControl: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionControl, functionDiscomfort: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.functionDiscomfort, functionUnableReason: undefined, discomfortLocation: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortLocation, discomfortType: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.discomfortType, symptomScore: effectiveRecord.functionCompletion === "unable" ? undefined : effectiveRecord.symptomScore }
                 : value === "unable"
                    ? { functionCompletion: value, functionControl: undefined, functionDiscomfort: undefined, functionUnableReason: undefined, compensations: undefined, discomfortLocation: undefined, discomfortLocations: undefined, discomfortType: undefined, symptomScore: undefined, familiarSymptom: undefined }
@@ -822,9 +808,8 @@ export function AssessmentStage(props: AssessmentStageProps) {
         </section>
         {functionCompletion === "unable" ? <section className="rm-motion-answer-block is-followup">
           <h3>主要是什么原因停下来？</h3>
-          <div className="rm-result-grid is-two">{([[
-            "pain", "疼或不舒服"], ["weak", "没力或撑不住"], ["fear", "担心继续会加重"], ["instruction", "不知道动作怎么做"]] as Array<[FunctionUnableReason, string]>).map(([value, label]) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
-              functionUnableReason: value,
+          <div className="rm-result-grid is-two">{unableFollowUp("function", isThinkingMode ? "thinking" : "guided").reasons.map(({ value, label }) => <button type="button" key={value} className={record.functionUnableReason === value ? "is-selected" : ""} onClick={() => updateFunctionAssessment({
+              functionUnableReason: value as FunctionUnableReason,
               functionDiscomfort: value === "pain" ? "yes" : "no",
               discomfortLocation: value === "pain" ? effectiveRecord.discomfortLocation : undefined,
               discomfortLocations: value === "pain" ? effectiveRecord.discomfortLocations : undefined,
@@ -862,7 +847,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
        {item.kind === "function" && functionCompletion !== "skip" && (functionControl === "compensated" || functionDiscomfort === "yes") ? <section className="rm-motion-answer-block is-stage">
         {functionControl === "compensated" ? <>
           <h3>你看到了什么？</h3>
-          <div className="rm-result-grid">{functionCompensationOptions(item.id).map((entry) => <button type="button" key={entry} className={record.compensations?.includes(entry) ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => ({ compensations: latestRecord.compensations?.includes(entry) ? latestRecord.compensations.filter((item) => item !== entry) : [...(latestRecord.compensations ?? []), entry] }))}>{entry}</button>)}</div>
+          <div className="rm-result-grid">{functionCompensationOptions(item.id, isThinkingMode ? "thinking" : "guided").map((entry) => <button type="button" key={entry.id} className={compensationIds(record.compensations ?? []).includes(entry.id) ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => { const selected = compensationIds(latestRecord.compensations ?? []); return { compensations: selected.includes(entry.id) ? selected.filter((value) => value !== entry.id) : [...selected, entry.id] }; })}>{entry.label}</button>)}</div>
         </> : null}
          {functionDiscomfort === "yes" || functionCompletion === "unable" ? renderSymptomDetails("做这个动作时有多不舒服？") : null}
       </section> : null}
@@ -870,7 +855,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
     {hasSpecialPositive ? <section className="rm-route-note is-waiting">
       <span>建议补充确认</span>
       <h2>{specialPositiveFindings.map((entry) => entry.title).join("、")}出现了异常反应</h2>
-      <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。不要继续按压、关节刺激或负重进阶，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
+      <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
     </section> : null}
     <div className="rm-page-actions split"><button type="button" onClick={() => {
       if (focusedReassessmentActive) {

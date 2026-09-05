@@ -1,19 +1,78 @@
 {
   "schemaVersion": 1,
   "sourceRoot": "src",
-  "domainRoots": ["src/domain"],
-  "domainForbiddenPackages": ["react", "react-dom", "next"],
-  "domainForbiddenProjectRoots": ["app", "db", "src/features", "src/infrastructure"],
-  "domainForbiddenGlobals": ["fetch", "localStorage", "sessionStorage", "indexedDB", "window", "document", "navigator"],
-  "stageRoots": ["src/features/rehabmind/components/stages"],
-  "stageForbiddenPackages": ["drizzle-orm", "better-sqlite3"],
-  "stageForbiddenProjectRoots": ["app", "db", "src/domain", "src/infrastructure"],
-  "stageForbiddenGlobals": ["fetch", "localStorage", "sessionStorage", "indexedDB"],
+  "domainRoots": [
+    "src/domain"
+  ],
+  "domainForbiddenPackages": [
+    "react",
+    "react-dom",
+    "next"
+  ],
+  "domainForbiddenProjectRoots": [
+    "app",
+    "db",
+    "src/features",
+    "src/infrastructure"
+  ],
+  "domainForbiddenGlobals": [
+    "fetch",
+    "localStorage",
+    "sessionStorage",
+    "indexedDB",
+    "window",
+    "document",
+    "navigator"
+  ],
+  "stageRoots": [
+    "src/features/rehabmind/components/stages"
+  ],
+  "stageForbiddenPackages": [
+    "drizzle-orm",
+    "better-sqlite3"
+  ],
+  "stageForbiddenProjectRoots": [
+    "app",
+    "db",
+    "src/domain",
+    "src/infrastructure"
+  ],
+  "stageForbiddenGlobals": [
+    "fetch",
+    "localStorage",
+    "sessionStorage",
+    "indexedDB"
+  ],
+  "actionCatalogRules": {
+    "catalogRoot": [
+      "src/knowledge/actions"
+    ],
+    "catalogForbiddenProjectRoots": [
+      "app",
+      "db",
+      "src/features",
+      "src/infrastructure",
+      "src/domain"
+    ],
+    "allowedExternalImportsFor": {
+      "src/knowledge/actions/index.ts": [
+        "src/domain"
+      ],
+      "src/knowledge/actions/bridge.ts": [
+        "src/domain"
+      ],
+      "src/knowledge/actions/custom.ts": [
+        "src/domain"
+      ]
+    }
+  },
   "exclusiveRuleOwners": [
     {
       "ruleId": "ARCH-02-WORKFLOW-OWNER",
       "owner": "src/features/rehabmind/workflow/workflow-orchestrator.ts",
-      "forbiddenFiles": ["src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "forbiddenFiles": [
+        "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"
+      ],
       "symbols": [
         "resolveTreatmentQueueAdvance(",
         "resolveDynamicQueueAdvanceForTargets(",
@@ -24,7 +83,9 @@
     {
       "ruleId": "ARCH-A5-SYNC-OWNERS",
       "owner": "src/infrastructure/pilot/persistence/sync-core.ts",
-      "forbiddenFiles": ["src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"],
+      "forbiddenFiles": [
+        "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx"
+      ],
       "symbols": [
         "pilotSaveQueuesRef",
         "setPilotSyncState(\"syncing\")",

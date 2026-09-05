@@ -219,6 +219,644 @@
    - **硬闸分支**：独立场景 `custom-action-deferred`（`1b55396`）——intake 同时命中急性（onset 今天或昨天 + mechanism 扭转或崴伤）与肿胀（symptoms 肿胀或淤青），卡显示「今天先不做现场复现」+ 记报评分 + 暂时不做，不渲染四档；
    - 无需新 fixtureKind（纯 intake 覆盖），`launchWorkbenchScenario` 用 `custom-action-assessment` / `custom-action-deferred` 两个场景 id 分别钉两分支。
 
+---
+
+# 追加通知：2026-09-03 第十一轮——C-3 绑定确认收到 + b4acfe4 补通报（你方下一批需含）
+
+## C-3 绑定（你方 8e26a1e）确认
+
+- `b67ee5e`/`228a9aa` 合并无破损、`data-overlay-review` 接线四小腿圈 reviewed（只锁 calf 不锁 thigh）——方案一致，收到。path 几何不做像素锁的口径同意：视觉验收已由 dev 侧无头渲染 PNG 逐卡判读闭环（照片垫底 + 组件同款 viewBox/裁切），机器锁像素没有增益。
+
+## b4acfe4 补通报（你方尚未绑定，下一批需含）
+
+你方合并窗口在 `228a9aa`，其后还有一个提交：
+
+| SHA | 内容 | 测试影响 |
+|---|---|---|
+| `b4acfe4` | ① 图1 回归修复：`rm-visual-theme` 移动端 `.rm-app img {width:auto;height:auto}`（特异性更高、后加载）把 `.rm-brand-mark` 顶回 160px 自然尺寸，撑破顶栏溢出到 stagebar（owner 移动端实测图1）。修复 = `.rm-app .rm-brand-mark` 以同特异性后序钉回 40px（桌面）/34px（移动）② 图3：完成面板「还没有得到解释」的顿号长串改 `<ul class="rm-outcome-unexplained-list">` 分点列表 | ① 若钉过顶栏几何/`.rm-brand-mark` 尺寸需复核（恢复正常 34px）；② 新增 `.rm-outcome-unexplained-list`（li 分点），若钉过该面板的顿号串联文案需迁移 |
+
+## owner 图2（后内侧水滴圈）结论存档
+
+owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验证当前产物为窄带：(a) 3000 编译模块实测 `IS_NARROW_BAND:true`；(b) dev 渲染 harness 照片垫底读图确认；(c) 全仓/全分支 grep 旧 path（M350 778）零命中。旧水滴是 `9a2309c`（08-29）之前的形态，与任何含 YS LOGO（09-02+）的构建不可能共存。结论：owner 看到的是浏览器残存旧标签页/旧缓存，需硬刷新复核；此条仅存档，无代码动作。
+
+---
+
+# 追加通知：2026-09-03 第十二轮——C-3 终态（owner 亲手描摹笔画制全区落地）+ 图2 真因更正 + 契约迁移
+
+## 范围：实际 7 个提交（你方已绑 `228a9aa`，以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `b4acfe4` | 修复 | 图1 回归：`rm-visual-theme` 移动端 `.rm-app img` 通配把 LOGO 顶回 160px（撑破顶栏/压 stagebar）→ `.rm-app .rm-brand-mark` 同特异性后序钉回 34px；图3 完成面板顿号长串改分点 `<ul>` |
+| 2 | `2999181` | 样式 | complete-panel 头部居中保留、内容卡（力量交接/待解释方向）左对齐 |
+| 3 | `f490361` | 样式 | 待解释方向三方向升级为序号条目卡（主词加粗+肌群注次级灰），渲染层拆 title 不改数据 |
+| 4 | `df4613c` | 修复 | **图2 真因**：`resolveRegionId` 返回第一个 alias 命中，`calf-posterior` 的 `/小腿后/` 先于 `calf-medial` 的 `/小腿后内/`，label「小腿后内侧」被误解析为 posterior → 渲染后侧水滴图。修复 = calf-medial alias 条目前移（具体优先于宽泛） |
+| 5 | `0bafb04` | 修复 | 后侧/外侧两圈按网格校准重新锚定（照片实测腿中轴 x~720/腓骨头 (500,850)） |
+| 6 | `d7a0bc3` | **架构** | **肌肉高亮改 owner 亲手描摹笔画制**：`MUSCLE_ZONE_PATHS` 增可选 `strokes`（d/width/color/opacity），渲染层 stroke+共享 feGaussianBlur（userSpaceOnUse 全画布）；无 strokes 条目回落 fill 轮廓。四个小腿区落地 owner 笔迹；新增 `/c3-trace` 描摹工作台（保留） |
+| 7 | `95ca239` + `9bd2fbf` | **架构** | **大腿四区全部迁移 owner 笔迹**（前侧3/后侧2/内侧3(重描)/外侧2 笔），八区 17 条笔画；内侧 5→3 重描为 owner 二次修正 |
+
+## 图2 结论更正（撤销第十一轮的"旧缓存"判断）
+
+第十一轮存档的"owner 看到旧缓存"**判断错误**。真因是 `df4613c` 所述的 alias 优先级 bug——owner 截图正是该 bug 的真实渲染（"小腿后内侧"标题 + 后侧水滴图）。`/c3-probe` 临时诊断路由已用于复现并修复，验证后删除。
+
+## ⚠️ 契约迁移（muscle-region-location-picker.test.mjs，你方所有）
+
+1. 八个区域条目断言 `new RegExp(`"${id}":[\\s\\S]*?path:`)` → 大腿后侧、小腿四区现为 **`strokes:`**；大腿前侧也是 `strokes:`；仅 `thigh-medial`……**全部八区均为 `strokes:`**（`path:` 字段仅存于 `plantar` 与回落渲染分支）。建议断言改为 `"${id}":[\\s\\S]*?(path|strokes):`。
+2. `styles` 断言 `rgba(91, 170, 146, .32)`（is-selected 高亮填充色）——笔画制下 is-selected 改为笔画透明度提升（`.rm-floating-hint` 无关），该样式断言需按新选中态更新。
+3. `walkthrough` 依赖的 `scripts/legacy-browser/real-browser-walkthrough.mjs` 仍缺失（文件级 ENOENT 基线红），与本批无关。
+
+## 建议测试点（非阻塞）
+
+- 紧张度页/处理卡八区笔画渲染存在（`svg path[stroke='#3565c4']` 计 17）。
+- 「小腿后内侧」卡标题与图内容一致（窄定位带，非水滴）——图2 回归哨兵。
+- 完成面板「还没有得到解释」分点列表渲染。
+- 移动端顶栏 LOGO 34px 不溢出（图1 回归哨兵）。
+
+## 当前阻塞
+
+**无**。C-3 全区闭环（owner 描摹 → dev 落地 → 双端渲染验证）。描摹工作台 `/c3-trace` 保留（后续换照片/调区域 owner 自助）。
+
+
+# 追加通知：2026-09-04 第十三轮——LOGO 透明化 + 评估转介文案准确性（HDUEYFGS 根因）+ specialSafety/stop-and-refer 分支
+
+## 范围：实际 3 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `49df605` | 资源 | public/logo-mark.png 换 owner 选定素材（黑底转透明+居中裁方 160×160，Playwright canvas 像素处理）；旧版含烘焙文字噪点 |
+| 2 | `16c80c6` | 修复 | 顶栏移除副标题「康复思路工作台」（只留品牌名）；转介卡新增 highIrritabilityReferral 分支（能完成但疼痛≥7 不再误显示「无法完成」）；新增测试场景 high-irritability-completed-painful |
+| 3 | `e196817` | 修复 | 转介卡再补 specialSafetyReferral 独立分支（结构性筛查阳性不再落「无法完成」兜底）；stop-and-refer 面板区分神经 vs 持续加重两分支；清理 .rm-brand > span / .rm-brand small 死 CSS |
+| 4 | `016096b` | 文案 | 转介/stop-and-refer 文案口语化：去掉泄露的内部阈值「7 分及以上」→「疼得比较厉害」；「结构性筛查/异常信号/加强刺激」→「针对骨骼或肌腱的检查/需要重视的情况/加压」；去公文腔。**测试侧勿钉这些字面**（按「不断言用户可见字面」原则） |
+
+## HDUEYFGS 根因（owner 报「每项都选能完成却显示无法完成」）
+
+非误判：三个功能项（上/下台阶、下蹲）选「能做完」但追问「会不会不舒服」选「会」+8 分 → 命中 workbench:3480「painful 且 ≥7」→ 3 条 severe → guided 模式 highIrritabilityReferral 转介。转介方向正确，**旧文案只有「无法完成」一个兜底分支**，与「能完成但疼」不匹配。修复=补分支文案，不改阈值。
+
+## ⚠️ 契约变化（AssessmentStage props，你方若渲染该组件需同步）
+
+1. 新增必填 prop `specialSafetyReferral: boolean`（workbench 传 `specialSafetyReferral`）。
+2. 新增必填 prop `highIrritabilityReferral: boolean`（16c80c6 引入；workbench 传 `highIrritabilityReferral && !neural && !sharp && !specialSafety`，语义=「当前生效的是疼痛型转介」）。
+3. 转介卡标题三元链顺序：neural > sharp > specialSafety > high > 兜底「无法完成」。
+
+## 待测试侧补场景覆盖（dev 未构造，逻辑已审查+tsc+high 分支 E2E 回归过）
+
+- specialSafety 独立触发文案：需 operationTarget=other + specialTest 能力 + 踝区 ankle-thompson（access=coach，safety 类）阳性，且无 neural/sharp/high。构造成本高，交你方场景注册表。
+- stop-and-refer 两分支：neuralOrWeakness=yes → 「停止后出现新的麻、电感或无力」；persistentIncrease && afterScore>=7 → 「停下来仍持续加重」（016096b 口语化，勿钉旧「7 分及以上」字面）。
+
+## 验证（dev 侧）
+
+- typecheck 干净。
+- high-irritability-completed-painful 场景 E2E（真实浏览器补答屈曲卡→紧张度→总结）：新 high 标题/正文出现、specialSafety 文案不误触发、旧「无法完成」消失、出口「保存并结束本次」在、`.rm-brand small`=0。
+- LOGO 三场景对比（顶栏/白底/深底）owner 确认。
+
+## 当前阻塞
+
+无。
 
 
 
+
+
+
+
+
+# 追加通知：2026-09-04 第十四轮——自助模式对外文案全阶段口语化（owner 逐档复核后落地）
+
+## 范围：1 个提交（待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `28fd9ca` | 文案 | 14 文件、93 行原地替换（无增删行）。分五组：A 名称栏、B 删冗余副提示、C 解释栏白话、D 死代码、档③ 写坏提示语 |
+
+**本轮无契约变化、无逻辑变化**（`tsc --noEmit` 干净；93+/93- 证明纯行内替换）。
+
+## ⚠️ 会打破的既有断言（9 处，请解钉或改选择器）
+
+| 文件:行 | 旧断言 | 现状 |
+|---|---|---|
+| `tests/browser/divergent/swelling-and-queue.spec.ts:166` | `/接近健侧.*两侧幅度相近/` | 副提示已删 → 用 `/^接近健侧$/` |
+| 同上 `:169` | `/未见异常反应.*没有出现提示信号/` | 同上 → `/^未见异常反应$/` |
+| `tests/browser/p0/decision-gates.spec.ts:120` | `/患侧偏小.*活动范围受限/` | 同上 → `/^患侧偏小$/` |
+| 同上 `:123` | `/未见异常反应.*没有出现提示信号/` | 同上 |
+| 同上 `:128` | `/力量接近.*两侧完成质量相近/` | 同上 → `/^力量接近$/` |
+| `tests/component/rendered-html.test.mjs:258` | `/患侧偏小｜活动范围受限/` | 字面已不存在 |
+| 同上 `:482` | `/普通自助路径不安排神经松动/` | 改为「这种情况不适合自己练，也不建议自己松神经。」 |
+| 同上 `:668` | `/查看低刺激基础活动/` | 改为「查看低强度活动」 |
+| 同上 `:832` | `/温和活动/` | 兜底卡 actionLabel 改「轻轻活动」，title 改纯动作名 |
+
+`decision-combinations.spec.ts:65/69/116`、`swelling-and-queue.spec.ts:105/182`、`safety-bilateral-and-unable.spec.ts:179` 用了 alternation 或名称栏前缀，**未破**，无需改。
+
+## 有意保留（不是漏改，别当 bug 报）
+
+- 选项「｜」**前**的名称全部保留专业说法：接近健侧 / 患侧偏小 / 抗阻接近 / 角度基本正常 / AROM 标题 / roleLabel / controlTitle / 退阶·进阶按钮 / B 类训练动作名（提踵、侧卧髋外展、外翻控制、重心转移与步态滚动、分腿蹲与减速、仰卧夹枕）。
+- 有信息量的副提示保留：`无法完成｜疼痛、担心或不会做`、`暂不判断｜今天先跳过`、`患侧偏弱｜加一点阻力就撑不住`、`接近健侧｜两侧膝后压平程度相近`、`保持稳定｜抬起后膝盖仍笔直`、髋四方向 `髋关节屈曲｜把大腿向腹部方向抬`。
+- 自助不上屏的未动：被动/PROM 选项（`workbench-support.tsx:2646-2650`）、professional 分支（`:2493/2504`）、被动与混合复测（`:2682-2685`、`:2694-2698`）、coach/therapist 候选、`TreatmentActionCard` 不渲染的 observe/retest/note 字段。
+- owner 明确裁定不改：ScoreSlider「拖动后松手即可记录」、居家放松 3/10 与血肿/骨性压痛点/肌腹、自定义动作卡的承重/负重/小负荷/复测提示、松解卡 do、评估 observe 折叠里的跛行/步幅/髋膝踝联动。
+- `站立屈髋（臀部向后）`（`full-demo-content.ts:362`、`:608`）**故意保留括号**：`home-relaxation-core.ts:118` 的 `EXERCISE_MUSCLE_RULES` 会按标题里的「臀」映射肌肉标签，而该动作 tags 无 glute，删括号会静默少一项居家放松。
+- `full-demo-content.ts:266`「坐姿脚跟踩地向后拉但不移动」是**评估项** how（改了会换测量目标），未动，待 owner 定。
+
+## 临床内容变更（不只是文案，回归时请注意）
+
+- `local-limb-regions.ts:51` 大腿后侧发力：等长「脚跟向后轻拉」→ **臀桥**（2 组 ×6～8）。
+- `local-limb-regions.ts:99`、`full-demo-content.ts:311/566/598`、`local-limb-regions.ts:108`：「抬起足弓」→ **踮脚尖 / 脚趾抓毛巾**。
+- `full-demo-content.ts:337`：「在现有被动范围内做…终末伸膝」→「仰卧，腿伸直，绷紧大腿前侧做膝后下压，压到最直的位置停2秒」（保留「膝后下压」字样以免破坏 `canonicalKneeAction` 别名匹配）。
+- 动作改名：`脚跟滑动与膝后下压`→`膝盖弯曲和伸直训练`；`低台阶落地下定`→`低台阶踏下停 2 秒`。`exercise()` 的 `startPosition` 由 `${title} ${how}` 正则推断，how 未变 → 体位推断结果不变（已实测训练卡仍显示「仰卧」）。
+
+## 验证（dev 侧）
+
+- `tsc --noEmit` 干净。
+- Playwright（`http://[::1]:3000/test`，页面定向）12 场景载入 + 7 场景多步走查：新文案按可达路径实测出现，旧文案 0 残留，无空白/报错屏。
+- 局部肢体控制卡与兜底「轻轻活动」卡未实拍到（无对应 page_boundary 场景），但走的是同一 `TreatmentActionCard` 渲染路径，且 `build-trial-targets-core.ts:181` 对 `type !== "muscle"` 跳过区域归一化 → 无逻辑面。
+
+## 当前阻塞
+
+无。
+
+
+# 追加通知：2026-09-04 第十五轮——动作库批次 0＋1（骨架＋提踵族）落地
+
+## 范围：10 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `bcacf65` | 骨架 | src/knowledge/actions/{terms,types}.ts：词根表（5 条提踵族词根）＋三库记录类型 |
+| 2 | `06923b9` | 骨架 | resolve.ts：词根插值＋剂量占位（{dose.*}），语域 plain/pro |
+| 3 | `a93d224` | 骨架 | validate.ts：词根存在/复测指向/access/剂量不进句/例外名单（ankle-achilles-isometric 等长 30 秒） |
+| 4 | `5e968f7` | 数据 | assessment 6 / treatment 2 / training 6 条目（模板=迁移前基线逐字＋{dose.*}）；capture-action-baseline.mjs ESM 化 |
+| 5 | `bf096c8` | 骨架 | bridge.ts（旧形状适配器）＋ golden.ts 20 条成品锁＋ check-action-catalog.ts ＋ npm run check:catalog |
+| 6 | `6b6bd59` | 工具 | snapshot-render.mjs：12 场景 DOM 结构快照（输出仓库外） |
+| 7 | `395fa38` | 接线 | 评估 6 条改 assessmentPro() 取值；FRIENDLY_ASSESSMENT_COPY 删 3 条手写（knee-calf/ankle-calf/ankle-heel-raise）改目录展开供给 |
+| 8 | `e6e024c` | 接线 | 训练 6 条改 trainingCopy() 取值；TrainingEntry.startPosition 定为必填（full-demo 三条记推断值作文档，调用方不传） |
+| 9 | `40b0f72` | 接线 | 处理 2 条候选 do 改 treatmentDo() 取值 |
+| 10 | `16ef35b` | 决策#5 | 评估自助版踮脚尖次数 5→10（knee-calf/ankle-calf/ankle-heel-raise），golden 同步新基线 |
+
+## 剂量收敛落地（全部为 owner 已批决策）
+
+| # | 内容 | 状态 |
+|---|---|---|
+| 1 | ankle-calf 单脚 20→10 | 已落地 |
+| 2 | knee-heel-raise / calf-heel-raise-strength / calf-heel-raise 次数 5→10 | 已落地 |
+| 3 | calf-back-standing-raise / ankle-band-heelraise / calf-medial-arch → 每组10～15 | 已落地 |
+| 4 | 剂量不进句子 | 已落地（a70af60＋本批校验规则 CAT-DOSE-IN-SENTENCE） |
+| 5 | 评估自助版 5→10 | 已落地（16ef35b） |
+
+**有意保留**：calf-back-seated-raise 每组8～12（坐姿低负荷）；ankle-achilles-isometric 保持30秒/保持10秒/每组5次（等长动作属性，校验例外）。
+
+## ⚠️ 断言影响（比照第 14 轮口径继续解钉）
+
+- `rendered-html.test.mjs` / 单测中凡钉下列字面者需更新：`完成5次`（knee-heel-raise）、`扶墙做5次双脚提踵`（calf 两条）、`最多记录20个高质量次数`（ankle-calf）、`每组8～12个`（calf-back-standing-raise）、`每项每组12个`（ankle-band-heelraise）、`每组8～10个`（calf-medial-arch）、`小腿三头肌` 作为 knee-calf 标题出现在自助渲染的（自助标题现为「踮脚力量」，专业仍「小腿三头肌」）。
+- 纯专业模式渲染的 knowledge how/observe 文字未变（pro 逐字保留）——只钉专业字面的断言不受影响。
+
+## 验证（dev 侧）
+
+- `tsc --noEmit` 干净；`check:catalog` 绿（assessment=6, treatment=2, training=6, golden=20）；`check:knowledge` ok；`check:structure` ok。
+- 结构快照 before/after **STRUCTURE IDENTICAL**（12 场景逐字节，含 #5 调整后复验）。
+- 文字实测：12 场景可达屏旧值残留 0。**屏级缺口**：小腿局部评估卡、踝训练卡在现有 page_boundary 场景中不可达，新值上屏未实拍（库层 golden 已逐字锁定该文字）——请测试侧在场景注册表补小腿局部/踝评估场景。
+- `check:boundaries` 报 2 条 stage/forbidden-project-import（summary-stage:32、treatment-retest-stage:9）——经 git log -L 确认为 2026-08-28 `4fd593b` 预存，非本批引入，本批不修，请知悉。
+
+## 架构说明（供后续批次）
+
+- 内容层 `src/knowledge/actions/`：types→terms→resolve→三库→legacy-ids/validate/golden→index（未建）＋bridge（过渡期）。消费方仅 import bridge（过渡期出口，批次 7 删）。
+- 消费方组件零改动；批次 2（功能动作族）将按同口径迁移，基线工具已参数化预留 `--family`。
+- 完整执行方案：docs/plans/rehabmind-action-catalog-execution-master-2026-09-04.md。
+
+## 当前阻塞
+
+无。下一批（批次 2 功能动作族）开工前需 owner 答 D2-1（走路评估口径）与 D2-2（症状页选择器措辞）。
+
+
+# 追加通知：2026-09-04 第十六轮——动作库批次 2（功能动作族）落地＋选项定制体系
+
+## 范围：5 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `041b8fc` | 数据 | 评估库 +21 条（功能动作族：走路/下蹲/坐站/上下台阶/单腿站/浅蹲/小跳/慢跑，四部位）；types+option-sets 落地**按动作定制作答标签**（值契约锁死） |
+| 2 | `7479276` | 数据 | 训练库 +6 条（knee-step、站立屈髋×3、ankle-gait-weightshift、ankle-single-leg-step）；terms +9 词根（功能动作＋髋四方向）；custom.ts 模板 |
+| 3 | `b9e572c` | 接线 | 症状页髋四方向标签改词根插值（拼装结果与原文字面逐字一致）；problem-ledger 空态文案改 customHint；workbench-support import termText |
+| 4 | `682e253` | 数据 | golden 锁定至 **68 条**（27 评估×2＋2 处理＋12 训练），gait 48 条与基线逐字锚定 |
+| 5 | `dee001f` | 决策 | D2-1 保留部位差异（走路：膝10米/踝·局部一小段）、D2-2 接受词根叫法 |
+
+## 新增决策落地：选项标签分层定制（owner 2026-09-04）
+
+- **值契约永久锁死**（same/limited/unable/…、better/same/worse/… 为决策层输入），标签文案按动作定制。
+- 批次 2 起功能动作的作答三联按动作写（走路→「能走完/走不了或不敢走」、单腿站→「能站稳/站不稳或不敢单脚站」…）；复测结论五值按动作写（走路→「有改善｜步子和承重比上次稳」…）。
+- 有意通用登记表（option-sets.ts GENERIC_REGISTRY）：安全红旗、两侧对比、加重处置、影像医嘱、自定义模仿方式、训练反馈、进退档——判定为"与动作无关"，不定制。
+- **UI 尚未消费这些定制标签**（数据先行）；评估作答/复测的选项接线在批次 3（renderOptions＋assessment-stage/summary-stage 换源）。届时才可见。
+
+## 剂量漂移登记（未决，待 owner）
+
+- **单腿站时长**：膝专业版 20 秒 vs 膝自助版/踝/大腿/小腿 10 秒——同动作跨模式/跨部位漂移。本批按"逐字保真"保留原样。建议：统一 10 秒（与已批 #2/#5 方向一致），待 owner 一句话。
+- **站立屈髋组次**：膝/踝 每组10个 vs 大腿局部 每组8～10个——同动作跨部位漂移。建议统一 10。
+
+## 断言影响
+
+- 功能动作的评估 how/observe 文字**未变**（逐字保真），仅 kne-squat 等含"3次"的句子改为剂量插值后成品仍逐字一致——理论无断言破坏。FRIENDLY_ASSESSMENT_COPY 中功能类条目（knee-squat/ankle-squat/knee-step-up/knee-step-down/ankle-step-down/knee-single-leg/ankle-single-leg/knee-single-leg-squat/ankle-weight-bearing）已被目录展开替代但值相同；测试若钉这些字面不受影响。
+- 症状页髋四方向标签字面不变（插值=原文）。
+
+## 验证（dev 侧）
+
+- tsc 干净；check:catalog 绿（assessment=27, treatment=2, training=12, golden=68）；check:knowledge/structure ok。
+- 结构快照 before/after **STRUCTURE IDENTICAL**（12 场景）。
+- check:boundaries 3 条 stage 违规均为 4fd593b（08-28）预存，非本批引入。
+
+## 当前阻塞
+
+无。批次 3（活动度方向族）开工前需 owner：**D2-3** 单腿站时长统一（建议 10 秒）；**D2-4** 站立屈髋组次统一（建议 10）；**D3-1** guided 的 AROM 后缀去留（建议保留）。
+
+
+# 追加通知：2026-09-04 第十七轮——动作库批次 3（方向族＋选项/追问接线）落地
+
+## 范围：9 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `7fbd048` | 数据 | 评估库 +13 条方向族（膝伸直/屈曲/髌骨四向/踝背屈/屈膝位背屈/跖屈/内翻/外翻/跖趾背伸/足趾，双语域逐字保真）；unable-reason 4 套 base；terms +16 词根 |
+| 2 | `9785dfb` | 骨架 | index.ts：`assessmentTitle(id,mode)` 双轨＋`unableFollowUp(kind,mode,how)` 追问包 API |
+| 3 | `0f0fe8d` | 接线 | 功能动作作答三联换 renderOptions（按动作标签首次上屏）；function 原因按钮换 unableFollowUp |
+| 4 | `6c193d0` | 接线 | motion 原因按钮＋提示句换源；**删除全部 3 处引导框**（见下） |
+| 5 | `bdb9fe3` | 修正 | strength base 收敛为界面真实 4 值（no-helper/control 为类型遗留、UI 无入口）；主力量卡原因按钮换源 |
+| 6 | `ea14fcc` | 数据+接线 | range-function 四联（接近另一侧/差一些/差很多/说不清）进 base（族级一套）并接线 |
+| 7 | `20215f2` | 决策落地 | 单腿站 20秒→10秒（D2-3）；站立屈髋 8～10→10（D2-4） |
+| 8 | `dd477f0`/`32c857a`/`fe08597`/`5e3d6c4`/`1786e3a`/`cd74d05`/`9494a1d` | 决策文档 | 引导裁定（删7留1）、fear 下游证据、weak 终点确认等全部归档 |
+
+## ⚠️ 用户可见变化（⑦口径：详列）
+
+1. **功能动作卡作答按钮按动作定制**（走 20 个功能项）：走路→「能走完/走不了或不敢走/暂时不走」；下蹲→「能蹲下去再站起来…」；单腿站→「能站稳/站不稳或不敢单脚站」…（全部对照见《选项定制成果预览》）。旧三联「可以做完/做不完或不敢继续/暂时不做」在这些条目上消失。
+2. **引导框全量消失**（评估动作卡/力量卡/配对力量卡的「先这样试」框不再出现）。删掉的 7 条原文见《提问与选项体系-审阅表-v2》「引导框裁定」sheet。
+3. **pain 原因选中后直进疼痛记录**（位置图+0～10 分），中间不再插引导框。
+4. **单腿站检查时长**：膝专业版 20 秒→10 秒（与自助版统一）。
+5. **其余全部逐字不变**：方向族 13 条（标题/怎么做/观察点双语域）、力量/配对卡原因按钮 4 值、range-function 四联、复测方向词。
+
+## 新增机制（对测试侧的接缝）
+
+- `renderOptions(id, base, mode)`：一层作答按钮统一入口（条目 labels 覆盖→base 默认）。
+- `unableFollowUp(kind, mode, how)`：原因追问包（reasons+hint+guidanceFor）。**guidance 现全空**（唯一历史 no-helper 引导按裁定随 UI 遗留值一并移除；缺口台账逻辑未动）。
+- 值契约新增锁定：unable-reason-motion(pain/fear/instruction)、-function(pain/weak/fear/instruction)、-strength(界面 4 值)、-special、range-function 四联、function-completion 三联、retest-outcome 五值。
+
+## 验证（dev 侧）
+
+- tsc／check:catalog（assessment=40, golden=68）／check:knowledge／check:structure 全绿；check:boundaries 3 条为 4fd593b 预存。
+- 结构快照 before/after **IDENTICAL**（引导框只在交互后渲染，静态快照不含；引导消失已交互实拍确认）。
+- 交互实拍：motion 追问链（原因→疼痛记录）正常、引导框 0 命中；踝走路功能卡新三联上屏、旧文案 0 残留。
+
+## 决策归档（本轮 owner 裁定汇总）
+
+引导删7留1（判据=离开它就断路）；weak 为有效终点无三层；fear 维持现状（下游两消费点已登记）；D3-1 AROM 保留；D2-3 单腿站 10 秒；D2-4 屈髋 10 个；D4-1/2、D5-1、D6-1 均已定（详见主控方案 §10）。
+
+## 当前阻塞
+
+无。批次 4（力量等长族，~14 条＋等长句式统一模板逐条对照）待 owner 暂停点审核后开工。
+
+
+# 追加通知：2026-09-04 第十八轮——动作库批次 4（力量等长族）落地
+
+## 范围：3 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `5c04c3a` | 数据 | 评估库 +13 条力量族（膝3＋踝4＋大腿3＋小腿3，双语域逐字保真）；ankle-intrinsic「缩短脚掌、轻抬足弓」→「轻轻踮起脚尖再放下」（唯一文字变化） |
+| 2 | `efa8529` | 骨架 | terms +1 词根（pillow-squeeze）；validate 例外名单扩展至全部力量检查条目（保持N秒/压住N秒/顶住N秒/夹住N秒属测量动作属性，非处方剂量） |
+| 3 | `32c857a` | 决策 | D4-1 等长句式统一（事实：13 条现文已高度一致，无需模板化）；D4-2 腘绳肌维持；D5-1 折中案；D6-1 3 条负荷词改（归批次 6 执行） |
+
+## 用户可见变化
+
+- **ankle-intrinsic（足部小肌群）作答/检查方式改变**：「尝试缩短脚掌、轻抬足弓」→「轻轻踮起脚尖再放下」。这是临床动作变更（不可执行动作→可执行），非纯文案。
+- **其余 12 条逐字不变**：来源从知识文件换到目录（`assessment.ts`），显示效果一致。
+
+## 例外名单说明（供测试侧理解）
+
+力量族评估的「保持5秒」「顶住5秒」「夹住5秒」等是**检查动作的定义属性**（保持多久是这个检查怎么做的一部分），与训练处方剂量不同。validate 例外名单已覆盖全部 13 条。
+
+## 验证（dev 侧）
+
+- tsc／check:catalog（assessment=53）／check:knowledge／check:structure 全绿。
+- 前后对比表：`outputs/RehabMind-批次4前后对比-2026-09-04.xlsx`。
+
+## 当前阻塞
+
+无。批次 5（处理候选族）待 owner 暂停点审核后开工。
+
+
+# 追加通知：2026-09-04 第十九轮——动作库批次 5（处理候选族前半＋D5-1 兜底折中）落地
+
+## 范围：4 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `478dd41` | 数据 | treatment.ts +11 条膝部 self 候选（muscle 5/control 3/swelling 1/…），逐字保真＋剂量字段提取＋retestOf 映射 |
+| 2 | `d065595` | 修正 | knee-anterior-control dose.reps 去掉单位后缀（防止「5～8个个」叠加） |
+| 3 | `f9721b6` | 决策 | 松解时长 30～60秒→60～90秒（owner 裁定：30-60 太少），影响全部 5 条松解类候选 |
+| 4 | `4c1d34f` | 数据+接线 | treatment.ts +6 条踝部 self 候选（muscle 3/swelling 1/control 2）；D5-1 兜底卡折中案（标签=动作名、how 去重） |
+
+## 用户可见变化
+
+1. **兜底处理卡**（无候选时才出现）：「现在做」标签从「轻轻活动」→ **显示具体动作名**（如「膝关节主动屈曲」）；「怎么做」句去掉重复的动作名→「在不明显增加不适的范围内，缓慢完成5～8次。」
+2. **松解类候选时长**：所有含「30～60秒」的候选 →「60～90秒」（共 5 条松解类）。
+3. **其余候选文字逐字不变**。
+
+## 验证
+
+- tsc／check:catalog（treatment=18）／check:structure 全绿。结构快照 IDENTICAL。
+- 审核表：`outputs/RehabMind-批次5处理候选审核-2026-09-04.xlsx`。
+
+## 当前阻塞
+
+无。批次 6（训练全量＋体位显式化＋肌肉映射去标题化＋D6-1 3 条负荷词）待 owner 审核后开工。
+
+
+# 追加通知：2026-09-04 第二十轮——动作库批次 6（训练全量＋映射去标题化）落地
+
+## 范围：4 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `2195252` | 数据 | training.ts +41 条（训练全量 53 条完成），体位：fd 推断、ll 显式；D6-1 负荷词改（加练/强度×2） |
+| 2 | `95ce3f5` | 修正 | knee-heel-slide-quad-set 加入剂量例外（停10～15秒＋保持5秒是动作协议） |
+| 3 | `a19b73c` | 架构 | exerciseMuscleLabels 去掉标题匹配（只按 tags）；hip-hinge 3 条补 glute 标签 |
+| 4 | `f523005..c004ef3` | 修复 | 4 条力量族标题（quadriceps/evertor/invertor/intrinsic，owner 裁定） |
+
+## 用户可见变化
+
+1. **ankle-intrinsic** 标题→「踮脚尖力量」＋动作改为踮脚尖（原「缩短脚掌、轻抬足弓」不可执行）。
+2. **4 条力量标题**：膝盖伸直力量／外翻力量（腓骨肌）／内翻力量（胫骨后肌）／踮脚尖力量。
+3. **D6-1 三条负荷词**：ankle-achilles-eccentric-drop「加练动作」；thigh-run-return「一次只加一样强度」；calf-step-single-leg「送回高强度场景」。
+4. **居家放松标题匹配已删**——放松区域由 tags 驱动，hip-hinge 类新增 glute 标签，放松区域不变或增加（glute）。
+5. **其余全部逐字不变**。
+
+## 验证
+
+- tsc／check:catalog（training=53）／check:knowledge／check:structure 全绿。结构快照 IDENTICAL。
+- 体位推断 vs 显式：fd 保留推断（但目录已存显式值作文档），ll 显式直传。
+
+## 当前阻塞
+
+无。批次 7（删旧层）待 owner 审核后开工。
+
+
+# 追加通知：2026-09-04 第二十一轮——批次 7（缩减版）落地＋全程复核报告
+
+## 范围：3 个提交（以下全部待绑定）
+
+| # | SHA | 类别 | 说明 |
+|---|---|---|---|
+| 1 | `f3916e7` | 删旧层 | resultOptions 死字段删除（full-demo 3 处 helper 引用＋类型定义＋local-limb 1 处＋3 个常量），全库零消费已核实 |
+| 2 | `1045138` | 数据 | kneeTreatmentInstruction 14 条＋kneeRetestInstruction 6 条**逐字搬进目录**（treatment.ts KNEE_TREATMENT_INSTRUCTIONS/KNEE_RETEST_INSTRUCTIONS）；adapter 原函数保留（knee-lateral-chain 的 hasAnteriorEvidence 条件分支记录在案） |
+| 3 | `8e6ece5` | 架构 | boundaries 新规则：①actions 目录禁止 import 消费方；②domain 层 import actions 仅限 index/bridge/custom 白名单 |
+
+## 缩减说明（哪些没删、为什么）
+
+- `plain()` replaceAll 链、`FRIENDLY_ASSESSMENT_COPY` 手写、`kneeTreatmentInstruction` 函数、`bridge.ts`、`professionalAssessmentCopy` **全部保留**——颈/肩/腰/胸/肘/腕/髋等未来部位（约 20 条 friendly）＋9 条 therapist 候选＋3 条 coach 候选仍依赖它们。未来部位进目录后才能删。
+- 删除范围从"全部旧层"缩减为"零消费旧层"（resultOptions）＋"数据收编"（14 条指令逐字进目录）＋"防再发"（boundaries 规则）。
+
+## 验证
+
+- tsc／check:catalog（assessment=53, treatment=18, training=53, golden=68）／check:knowledge／check:structure 全绿。
+- check:boundaries：action-catalog 规则生效（catalog 反向 import 已锁）；3 条 stage 违规为 4fd593b 预存（非本程序引入）。
+- 结构快照 b4-final/b5-final/b6-final 全部 IDENTICAL。
+
+---
+
+# 全程复核报告（批次 0–7：bug／过度思考／过度编程／规范）
+
+## A. bug 类（发现并修复）
+
+| 批次 | 问题 | 修复 |
+|---|---|---|
+| 0-T2 | resolve.ts 正则缺捕获组（回调收到偏移量） | T2 验证脚本当场暴露，加 `(...)` 修复 |
+| 5-审核 | knee-anterior-control dose「5～8个」＋模板"个"→「5～8个个」 | 审核表生成时暴露，dose 改纯数字 |
+| 6-插入 | 脚本生成 41 条缺逗号/缺 stage/缺体位/region 双逗号 | tsc 逐轮逼出，4 个修复脚本迭代 |
+| 4-标题 | 4 条力量标题与动作脱节（足部小肌群/膝盖伸直的力量/腓骨肌/胫骨后肌） | owner 裁定后落地，assessmentTitle 改目录优先防新旧打架 |
+| 5-内容 | ankle-df-control 标题前提（关节松动后的"新范围"）自助模式不成立 | owner 裁定删除，替换为主动背屈练习（新写句，审核表标注） |
+
+## B. 过度思考类（自我纠正）
+
+| 项 | 纠正过程 |
+|---|---|
+| 复测按钮标签定制 | 初版按动作写了 10 组结果描述 → owner 指出"描述锁死判断" → 改为统一方向词＋按动作 focus 提示 → owner 再裁"提示也没必要分部位" → 最终统一一句。**教训：比较类判断不该预填表现** |
+| pain 引导 | 先判定"改良尝试有数据价值" → owner 质疑 → 核实代码零消费（无重试回路）→ 删除。**教训：先查代码再判断文字价值** |
+| strength 6 值 | 照类型定义建 base → owner 问"为什么一会 4 一会 6" → 实查 UI 只有 4 值（no-helper/control 是 UI 无入口的遗留）→ base 收敛 4 值。**教训：以界面现实为准，不以类型定义为准** |
+| D4-1 工作量 | 原估"等长族需要拆 how/dose 最费人工" → 抓基线后发现 13 条现文已一致 → 无需模板化。**教训：先抓基线再估工** |
+
+## C. 过度编程类（避免或回滚）
+
+| 项 | 处置 |
+|---|---|
+| fear 轻追问（子分类字段） | owner 问下游消费 → 发现 fear 已有两个消费点（下次注意事项+复测降级）→ 方案为新增存储字段属临床设计变更 → owner 裁维持现状，方案归档不实施 |
+| 词根插值 | 批次 1 定了"句子逐字保真、词根 token 不进句"——插值机制建好但数据不用，避免为用而用改字 |
+| 选项标签"三层定制" | owner 两刀砍成"动作特异＋有意通用"两档，未做族级定制（避免为 53 条各写一套） |
+| 批次 7 全量删旧层 | 盘点发现颈/肩/腰等未来部位仍依赖旧层 → 主动缩减为"零消费删除＋数据收编＋boundaries 防再发" |
+
+## D. 规范问题
+
+| 项 | 状态 |
+|---|---|
+| 生成脚本临时文件残留 | 2 处（scan-options/scan-purpose 已删；早期均为跑完即删） |
+| 训练目录 41 条由脚本批量插入 | 插入后人工抽查＋tsc 校验；脚本本身未入库（一次性） |
+| boundaries 规则实现 | 首版嵌套结构错误（domain 检查嵌在 catalog 块内）＋catalogRoot 类型错误（字符串 vs 数组），两轮修正后生效 |
+| Excel 审阅表生成脚本 | 均在仓库外 .docgen/，不污染仓库 |
+| 未推送提交封存 | 批次 3 曾违规先斩后奏，owner 叫停后封存并出裁定清单，此后严格"裁定完再动" |
+
+## E. 最终状态
+
+| 指标 | 值 |
+|---|---|
+| 评估库 | 53 条（方向 13＋力量 13＋功能 21＋提踵 6），双语域 |
+| 处理库 | 18 条（膝 11＋踝 7），含 retestOf 全链接＋14 条 knee 指令逐字收编 |
+| 训练库 | 53 条（全量），体位显式化，D6-1 落地 |
+| 选项库 | 12 组 base（值契约锁死）＋有意通用登记 11 条 |
+| golden 锁 | 68 条成品字符串 |
+| 结构快照 | 批次 3/4/5/6 全部 IDENTICAL |
+| 待未来批次 | 颈/肩/腰/胸/肘/腕/髋部位进目录后删 plain()/FRIENDLY/bridge/professionalAssessmentCopy |
+
+---
+
+# 第 22 轮 — C1/C2 方案步骤 0 落地＋全量失败基线调查结论
+
+## 本次改动（commit d27c4d7）
+
+**C3 有意通用登记**：GENERIC_REGISTRY 新增 8 组（symptom-types/safety-items/goals/prior-care-options/onsets/mechanisms/provocation-types/patella-direction-labels）；imaging-conclusion 此前已登记，合计 C3 的 9 组齐备。纯登记（key→理由），零行为变化。
+
+**R-1~R-3 旧标题残留清理**：删除 assessmentTitle() 的 friendly 兜底表 3 行（ankle-evertor/invertor/intrinsic 的旧标题）。此 3 id 的目录条目（批次 4 已入）在目录优先逻辑下早已接管，删的是死代码。已实测：目录解析返回新标题（外翻力量（腓骨肌）／内翻力量（胫骨后肌）／踮脚尖力量），界面不变。
+
+## 验证
+
+- check:catalog：ok（assessment=53, treatment=18, training=53, golden=68）
+- typecheck：干净（tsc 5.9.3）
+- 失败集合对比（before=stash 掉本次改动 vs after）：**before==after，53 条逐条相同，零新增零消除**
+
+## ⚠ 关键调查结论：批次 0–7 只引入 1 条真回归
+
+用 git worktree 在批次 0 之前基线（80a81f0）跑同一套件对比：
+
+| 指标 | 值 |
+|---|---|
+| 基线（80a81f0）失败数 | 58 |
+| 当前（792b7b1）失败数 | 53 |
+| 文件级新增失败 | **仅 1 个**：tests/unit/domain/problem-ledger-core.test.mjs |
+
+即：**批次 0–7 净减少 5 条失败（58→53），且只引入 1 个文件级回归**——problem-ledger-core.test.mjs。其余 52 条失败全部为基线 80a81f0 就存在的预存失败（测试侧已提交的旧 WIP，早于我开工）。
+
+（此前对比脚本因两次运行输出编码不一致（Out-File 默认编码 vs UTF-8）产生 S-06 等"新增失败"假象，已用一致编码＋文件级对比排除。）
+
+## 批次 2 真回归的根因与修复归属（测试侧）
+
+- **现象**：problem-ledger-core.test.mjs 文件级加载失败。测试用 `transpileModule`＋`data:text/javascript;base64` 单独加载 problem-ledger-core.ts。
+- **根因**：批次 2 接线给 problem-ledger-core.ts 加了 `import { customActionHint } from "@/src/knowledge/actions/custom"`。data URL 无 base，`@/` 别名解析不了（相对路径同理也断）——该测试的加载机制要求 problem-ledger-core.ts **零 import**。
+- **影响**：仅测试加载，产品运行不受影响（真实模块系统能解析 @/）。属纯测试侧问题。
+- **修复归属**：B 类测试文件，dev 不碰。**请测试侧**把该文件的加载方式改成能解析 `@/src/knowledge/actions/custom`（方案：a) 学 build-trial-targets-scenario.test.mjs 的 loadBundle——剥离 import＋按拓扑序捆绑 custom.ts；b) 或加 @/ 别名 resolver）。这是批次 2 漏登记的一个解钉项（此前通知档未列）。
+- 本 commit 与此回归无关（步骤 0 仅 option-sets.ts＋workbench-support.tsx 两文件，均不产生新失败）。
+
+## 对测试侧的意义
+
+当前 `npm run test:fast` 第一道门 check:boundaries 就红（4 条 stage 违规为 4fd593b 预存，非本程序引入，见 21 轮）。node 套件 53 条失败中 52 条预存＋1 条（problem-ledger-core）待测试侧改加载方式。**建议测试侧在收尾 WIP 时一并消化：4 条 stage 违规＋problem-ledger-core 加载＋既有 52 条预存失败。**
+
+---
+
+# 第 23 轮 — C1/C2 续批全部完成（步骤 0–5）
+
+## 提交清单
+
+| commit | 内容 |
+|---|---|
+| d27c4d7 | 步骤 0：GENERIC_REGISTRY 补登 8 组（＋已存的 imaging-conclusion 共 9 组）；删 3 行死代码旧标题 |
+| dd10806 | 步骤 1（C1-1）：代偿选项 20 组逐字入目录（compensations 字段）＋compensation-generic 兜底 base＋三层降级合并；旧 GENERIC_FUNCTION_COMPENSATIONS 删除 |
+| d010059 | 步骤 3（C2-1）：bilateralObserve 15 条逐字入目录（plain=pro）＋helper 三层降级；消费方 2 处换 helper |
+
+## 两步裁定跳过（前提经实测崩塌，owner 2026-09-05 裁定）
+
+- **步骤 2（C1-2 紧张位置 21 组）**：21 个键全是运动知识 id，目录零对应——无可迁对象。TENSION_LOCATION_OPTIONS 留组件文件，未来部位入库时随条目顺带处理。
+- **步骤 4（C2-2 删双侧化链）**：replaceAll 链在全部真实屏幕文本上只产生 3 处机械替换（knee-heel-raise.observe / knee-gait.how / ankle-weight-bearing.observe，均「患侧/不舒服这边→左右两侧」），非方案估的 16 条；且链是未入库部位的兜底不可删。为 3 处改 12 处建队列代码不成立。
+
+## 验收（每步独立跑，全部通过）
+
+- 每步 before/after（stash 法）失败集合**逐条相同**（53 条，零新增）；check:catalog、typecheck 全绿。
+- 等价性脚本：代偿 52/52 键新旧输出逐字相同；bilateralObserve 15 条 plain==pro＋三层降级行为一致。
+- 无新增测试解钉项：record 存储值全部未变（代偿值/双侧观察值逐字相同）。
+
+## 缩减说明（相对方案 Excel）
+
+- 代偿 48→20（28 键属未入库部位，三层降级保行为，未来批次随条目迁移）。
+- bilateralObserve 16→15（knee-posterior-chain 未入库留旧表）。
+- 紧张位置、双侧化链：整体跳过（见上）。
+
+审阅表（owner 私有 outputs/）：RehabMind-C1C2改造方案／C1-1代偿迁移审阅／C2-1双侧观察迁移审阅 三份 xlsx。决策归档见主控方案 §13。
+
+---
+
+# 第 24 轮 — 代偿选项编号分离（含一处回归修复）
+
+## ⚠ 先报一个我此前漏掉的回归（已修）
+
+步骤 1（dd10806）当时用"行内化"脚本把多行 compensations 数组压成单行，正则 `\[([^\]]*)\],,` 误吞了内容，导致 **20 个条目的 compensations 全部变成空数组 `[]`**——即自助端功能动作的代偿按钮当时实际落到了通用 4 条，条目定制没生效。步骤 1 的等价性脚本因"从新位置读旧值"存在循环论证没抓到。本轮编号分离时逐条比对原始表（4a82553）才暴露，已修复：20 数组重新按原表逐字填充，并新增 validate 规则 `CAT-BAD-COMPENSATION-ID` 防孤儿编号。
+
+## 本轮改动：编号分离（owner 裁定）
+
+代偿选项从"文字即存储值"改为"编号存储、文字仅显示"：
+
+- 新增 `src/knowledge/actions/compensations.ts`：`COMPENSATION_OPTIONS`（编号 → {plain/pro 措辞, legacy 旧文字[]}）＋ `COMPENSATION_GENERIC`（通用 4 编号）＋ `compensationIdFor`（旧文字→编号，未入库部位原样透传）＋ `compensationIds`（去重归一）＋ `compensationLabel`（编号→措辞，双轨）。
+- assessment.ts：20 条 compensations 改存编号。
+- index.ts：compensationOptions 返回编号；转发词表 API。
+- option-sets.ts：删除 compensation-generic base（被词表取代）。
+- workbench-support.tsx：functionCompensationOptions 返回 {id,label}，加 mode 参数（guided/thinking 双轨措辞）。
+- assessment-stage.tsx：按钮渲染 label、存储 id、选中判定走 compensationIds 归一（旧记录兼容）。
+- rehabmind-workbench.tsx：代偿归类改为**认编号**（knee-valgus/heel-early-rise/knee-height-diff/body-sway/side-balance-worse/side-raise-lower），保留旧文字 includes 兜底给未入库部位。
+
+## 归类等价性（关键，防改字破坏决策）
+
+对原始表全部 147 个去重文字：旧 includes 规则产出的标签 vs 新"编号优先＋includes 兜底"产出的标签，**逐条相同（0 差异）**。特别地，旧规则只匹配"膝盖明显向内"，故"膝盖向内偏"（无"明显"）和"落地时膝盖明显内扣"当年不命中——本轮拆成独立编号 knee-inward/land-knee-inward 且**不映射标签**，保持不命中（行为不变）。
+
+## 验收
+
+- check:catalog（新增编号校验）／typecheck 全绿。
+- 真实浏览器实测（Playwright，high-irritability 场景走到下台阶卡）：代偿按钮显示条目定制措辞（膝盖明显向内偏／身体或骨盆歪向一边／下降时突然掉下去／需要扶住栏杆），非通用 4 条；场景预置的旧文字"身体或骨盆歪向一边"经归一化正确高亮（旧记录兼容）；点击切换选中正常。
+- 套件失败集合：53→54，新增 1 条为 rendered-html.test.mjs:993 源码文字钉（见下）。
+
+## 测试侧新增解钉项（第 22 轮清单之外）
+
+- **rendered-html.test.mjs:993**：`assert.match(demo, /latestRecord\.compensations\?\.includes\(entry\)/)` —— 编号分离后该行改为 `compensationIds(latestRecord.compensations ?? []).includes(entry.id)`。快速点击合并进最新记录的行为未变（仍读 latestRecord），仅字面表达式变。请测试侧把该钉改为匹配新表达式或改测行为。
+
+---
+
+# 第 25 轮 — 代偿归类接线（编号→标签进词表）＋半空转修复
+
+## 背景
+
+第 24 轮编号分离后审查发现：归类映射藏在 workbench 的 if 链里，且其中 balance/single-leg/stability 三个标签**没有任何候选项认识**（勾了"身体晃动/更难站稳"，决策层收不到），ankle-rom 同样是死标签。owner 裁定走 A 方案（改指向真实存在的臀中肌系标签）。
+
+## 改动
+
+- **compensations.ts**：每个编号加 `tags?: string[]` 字段（归类语义进词表）；新增纯函数 `compensationTagsFor(values)`（归一化→查词表 tags→未入库文字走关键词兜底，与词表同一指向）。
+- **rehabmind-workbench.tsx**：删除整条 if 链，改为一行 `compensationTagsFor(result.compensations ?? [])`。
+- **check-action-catalog.ts**：新增 `CAT-DEAD-COMPENSATION-TAG` 校验——词表 tags 引用的标签若不在候选标签全集（静态扫描 pilot 源码 candidate()/tags 字面量）中，构建失败。根治"半空转"。
+
+## 接线内容（owner 批准）
+
+- 新导向：脚趾抓地→calf、蹬地使不上劲→calf、足弓塌下→arch、骨盆歪/掉→hip-abduction+glute-med。
+- A 修复：身体晃动、更难站稳 → 由死标签 balance/single-leg/stability 改指向 hip-abduction+glute-med。
+- 摘除死标签 ankle-rom（同项 dorsiflexion 已接通，行为不变）。
+- **刻意不接**（待裁定）：knee-inward（膝盖向内偏，无"明显"）、land-knee-inward（落地内扣）——旧规则当年就没命中，补漏需 owner 点头。步态三件套、cannot/afraid/need 系列不接（语义已被上一题承载或无对应候选）。
+
+## 验证
+
+- check:catalog（含新护栏）／typecheck 全绿。
+- 归类行为对照：147 条去重文字，132 条不变，15 条变化全部有意（见编号表 Excel 总览页）。
+- 套件失败集合：与 23c3089 逐条相同（54 条＝53 预存＋rendered-html:993 解钉），零新增。
+- 浏览器冒烟：high-irritability 场景走到评估总结，0 控制台错误，新归类代码路径执行通过。
+
+## 交付物
+
+`outputs/RehabMind-代偿编号表-2026-09-05.xlsx`：46 编号 × {自助措辞, 专业措辞, 旧文字, 归类标签, 用在哪些动作}＋总览页记录本轮接线与待裁定项。
+
+---
+
+# 第 26 轮 — 代偿归类接线全部完成（三组按 owner 批准落地）
+
+## 落地内容
+
+第 25 轮只接了 11/46，本轮把剩余的全部过完并按"宿主卡所在部位的候选池"逐条核实生效性后接线：
+
+- **第一组（12 个）**：knee-inward/land-knee-inward→adductor+hip-abduction+glute-med；body-or-pelvis-lean/pelvis-tilt→跨池组；body-lean-side/body-side-fall/pelvis-drop→hip-abduction+glute-med；descent-give-way/sit-drop→quadriceps；ankle-in-or-out-wobble→inversion+eversion；limp-gait/stride-short/stance-time-short→gait；heel-strike-unstable→dorsiflexion。
+- **第二组（维持不接，理由记录）**：cannot-×3/afraid-×3（完成题已承载）、need-×6（辅助＝进阶信号）、症状×3（走疼痛路由）、通用×2（太泛）。
+- **第三组（owner 让按前后文判断，已给建议并落地）**：lean-to-opposite→quadriceps（坐站主发力肌）；push-off-opposite-leg→quadriceps（**修正**：其宿主在上台阶卡＝膝区，push-off 标签在踝池会空转，改接膝池真实存在的 quadriceps）；body-fwd-or-side-fall **拆分**为 trunk-fwd-lean→hamstring+posterior-chain 与 trunk-side-lean→跨池组（上台阶卡按钮 4→5）；body-bounce 维持不接（跑姿类候选池无对应）。
+- **晃动家族跨池扩展**：body-sway/side-balance-worse/pelvis-tilt/body-or-pelvis-lean 标签从 hip-abduction+glute-med 扩为 +hip-control+foot-support，使膝区卡（单腿站稳练习候选）也能命中，不再只在 thigh 池生效。
+
+## 关键设计发现（供未来多部位扩展参考）
+
+候选打分只在**当前部位池内**做标签交集。故归类标签必须落在该选项宿主卡所属部位的候选池里，否则空转。本轮已逐条按此核实。多部位扩展时，同一概念在不同部位池需要各自标签——词表 tags 未来可升级为按部位分组（`compensationTagsFor(编号, 部位)`），当前结构不挡此路径。
+
+## 验证
+
+- check:catalog（含 CAT-DEAD-COMPENSATION-TAG 护栏，12 个新标签全部通过存在性校验）／typecheck 全绿。
+- 归类行为对照（最初未接线版 vs 最终）：147 条文字，115 条不变，32 条有意变化（全部可追溯到批准方案）。
+- 套件失败集合：与 381207a 逐条相同（54＝53 预存＋rendered-html:993 解钉），拆分按钮零新增。
+- 浏览器实测：上台阶卡拆分后 5 按钮正确显示（膝盖明显向内偏／身体明显向前倾／身体明显向一边倒／主要靠另一条腿蹬起／需要用手拉栏杆），下台阶卡 4 按钮正常，0 控制台错误。
+
+## 一处记录在案的粗粒度
+
+关键词兜底（未入库部位旧表文字）按"晃动"匹配，使肩区「肘部锁死或晃动」也拿到了髋/足标签——旧行为给它 balance 系同样不对且是死的，非回归；肩区入库后会有精确编号取代兜底。
+
+## 交付物
+
+`outputs/RehabMind-代偿编号表-2026-09-05.xlsx`：48 编号（含拆分新增 2 个）× 五列＋总览页。
+
+---
+
+# 第 27 轮 — 全程严格自查结论＋两项裁定归档
+
+## 自查范围与结论
+
+对第 22–26 轮全部提交（d27c4d7→b6f062f）按"遗漏/多改/引入bug/过度编程/过度思考/不规范"六类复核，证据核查（逐条比对 git 基线原始表）结果：
+
+- **数据完整性无损**：20 个代偿数组、15 个 bilateralObserve 值逐条比对原始表 0 失真；套件失败集合与基线逐条相同（54＝53 预存＋rendered-html:993 解钉）；提交零触碰 B 类文件。
+- **已修**：步骤 1 空数组回归（23c3089）；§13 残留被推翻的"52 键等价"结论（e50f381 更正）；通用兜底编号补存在性校验；两处过时注释；过程教训固化进主控方案 §15。
+- **根因教训（最重要）**：步骤 1 的等价性脚本"从新位置读旧值"属循环论证，导致空数组回归漏检——已固化"旧值必须取自 git 基线"的验证纪律（§15 第 1 条）。
+
+## 两项裁定（owner 接受，勿当 bug 修）
+
+1. **拆分按钮的老记录高亮丢失＝接受**：上台阶卡复合钮拆两钮后，拆分前勾过旧值的记录在该卡不再点亮对应格（数据/摘要/归类均不受影响，仅视觉回显缺失；旧值无法区分前倾/侧倒，不做臆测兼容）。
+2. **全局词表范围溢出＝接受**：文字→编号归一化使 3 张未入库但共用同文字的可达卡（ankle-knee-wall/thigh-bridge-check/custom-action）一并获得正确归类与措辞——认"同一现象=同一编号=同一归类"的全局一致性优先于逐卡范围。
+
+## 测试侧影响
+
+本轮无新增代码行为变化（两项裁定均为"维持现状"），解钉清单不变（仍为 rendered-html:993 一条＋批次 2 problem-ledger-core 加载一条＋既有预存失败）。

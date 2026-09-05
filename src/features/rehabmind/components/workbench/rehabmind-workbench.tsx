@@ -86,6 +86,7 @@ import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
 import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { compensationIds, compensationLabel, compensationTagsFor } from "@/src/knowledge/actions/index";
 import { p0AssessmentAccess } from "@/src/knowledge/rehab/p0-assessment-access";
 import { ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS, ankleP1EligiblePlantarflexionExerciseIds, KNEE_P1_SCAR_TREATMENT_ID, kneeP1LineageForTreatment } from "@/src/knowledge/rehab/p1-runtime";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
@@ -1795,7 +1796,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           items.push({
             id: `track:${item.id}`,
             title: hasDiscomfort ? `${item.title}出现了其他感觉` : `${item.title}暂时没判断清楚`,
-            detail: hasDiscomfort ? "不是平时困扰你的那种感觉，本次只记录" : "不用反复尝试，本次不据此安排处理",
+            detail: hasDiscomfort ? "不是平时困扰你的那种感觉，本次只记录" : "不用反复尝试，本次不凭这个安排处理",
             priority: "track",
             score: result.symptomScore,
             tags: item.tags ?? [],
@@ -1868,22 +1869,15 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           side: intake.side === "双侧/中间" ? bilateralComparisonToSide(bilateralComparison) : result.worseSide,
         });
       } else if (item.kind === "strength" && result.simple === "skip") {
-        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不据此安排处理", priority: "track", tags: item.tags ?? [] });
+        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不凭这个安排处理", priority: "track", tags: item.tags ?? [] });
       }
       const functionalResult = item.kind === "function" ? functionSimpleAnswer(result) : undefined;
       const functionEvidence = item.kind === "function" ? functionEvidenceFromRecord(item.id, result) : undefined;
       if (item.kind === "function" && ["present", "painful", "unable", "weak"].includes(functionalResult ?? "")) {
         const stageText = result.symptomStage ? `，${result.symptomStage}阶段最明显` : "";
-        const compensationText = result.compensations?.join("、") ?? "";
-        const compensationTags = (result.compensations ?? []).flatMap((entry) => entry.includes("膝盖明显向内")
-          ? ["adductor", "hip-abduction", "glute-med"]
-          : entry.includes("脚跟提前") || entry.includes("膝盖高度")
-            ? ["dorsiflexion", "ankle-rom"]
-            : entry.includes("晃动") || entry.includes("站稳")
-              ? ["balance", "single-leg", "stability"]
-              : entry.includes("抬起高度")
-                ? ["heel-raise", "calf"]
-                : []);
+        const selectedCompensations = compensationIds(result.compensations ?? []);
+        const compensationText = selectedCompensations.map((id) => compensationLabel(id, "guided")).join("、");
+        const compensationTags = compensationTagsFor(result.compensations ?? []);
         const bilateralComparison = effectiveBilateralComparison(result);
         const sideText = intake.side === "双侧/中间" && bilateralComparison ? `${bilateralComparisonToSide(bilateralComparison) ?? bilateralComparison}：` : "";
         const hasControlIssue = functionControlValue(result) === "compensated";
@@ -1908,7 +1902,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       } else if (item.kind === "function" && (functionalResult === "skip" || functionControlValue(result) === "unsure")) {
         // M-06：主诉上下文的功能动作被跳过时打标记，供评估结果页给出中性提醒。
         const chiefSkipped = region ? chiefFunctionAssessmentIds(intake, region.id).includes(item.id) : false;
-        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不据此安排处理", priority: "track", tags: [...(item.tags ?? []), ...(chiefSkipped ? ["chief-skip"] : [])] });
+        items.push({ id: `track:${item.id}`, title: `${item.title}暂时没判断清楚`, detail: "本次不凭这个安排处理", priority: "track", tags: [...(item.tags ?? []), ...(chiefSkipped ? ["chief-skip"] : [])] });
       }
       if (item.kind === "special" && result.simple === "positive") {
         items.push({ id: item.id, title: `${item.title}出现阳性线索`, detail: item.next ?? "提高结构排查优先级", priority: "track", tags: item.tags ?? [] });
@@ -6474,7 +6468,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
           hasSpecialPositive={hasSpecialPositive}
           assessmentNeuralReferral={assessmentNeuralReferral}
           sharpSpecialReferral={sharpSpecialReferral}
+          specialSafetyReferral={specialSafetyReferral}
           assessmentNeedsReferral={assessmentNeedsReferral}
+          highIrritabilityReferral={highIrritabilityReferral && !assessmentNeuralReferral && !sharpSpecialReferral && !specialSafetyReferral}
           adverseResolution={adverseResolution}
           trialRecords={trialRecords}
           exercises={exercises}
@@ -6796,7 +6792,7 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
 
   return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
     <header className="rm-topbar">
-      <span className="rm-brand" data-rehabmind-tutorial="brand"><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><span><strong>悦舒运动康复</strong><small>康复思路工作台</small></span></span>
+      <span className="rm-brand" data-rehabmind-tutorial="brand"><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><strong>悦舒运动康复</strong></span>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
       <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于悦舒运动康复</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
       <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />

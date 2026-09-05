@@ -98,7 +98,6 @@ body:has(.rm-app) {
   transform: rotate(-4deg);
 }
 .rm-brand strong { letter-spacing: -.035em; }
-.rm-brand small { color: var(--rm-visual-muted); }
 .rm-top-context { color: var(--rm-visual-muted); }
 .rm-top-context b { color: var(--rm-visual-ink); }
 .rm-top-context i { color: #b3bac7; }

@@ -18,6 +18,9 @@ import { type CompletedRangeRetestAnswer, type RangeRetestAnswer, type TrialReco
 import { makeLowerLimbLocationSelection, type LowerLimbAreaId, type LowerLimbLocationSelection } from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
+import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
+import { termText } from "@/src/knowledge/actions/resolve";
+import { assessmentTitle as catalogAssessmentTitle, bilateralObserve as catalogBilateralObserve, compensationIdFor, compensationLabel, compensationOptions } from "@/src/knowledge/actions/index";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -1208,29 +1211,9 @@ export const GOALS_PRO = [
 ];
 export const GOALS = GOALS_SELF;
 export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
-  "function:knee-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:ankle-squat": ["两边膝盖高度不一样", "膝盖明显向内偏", "脚跟提前抬起"],
-  "function:knee-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-single-leg-squat": ["骨盆明显歪斜", "膝盖明显向内偏", "足弓明显塌下", "需要扶持或无法控制下降"],
-  "function:knee-step-down": ["膝盖明显向内偏", "身体或骨盆歪向一边", "下降时突然掉下去", "需要扶住栏杆"],
-  "function:knee-step-up": ["膝盖明显向内偏", "身体明显向前或向一边倒", "主要靠另一条腿蹬起", "需要用手拉栏杆"],
-  "function:ankle-single-leg": ["身体明显晃动", "不舒服的那边明显更难站稳"],
-  "function:knee-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-heel-raise": ["身体明显晃动", "不舒服的那边抬起高度更低"],
-  "function:ankle-weight-bearing": ["走路明显一瘸一拐", "不敢让不舒服的一边踩实", "需要扶着才能走", "脚步明显变短"],
   "function:ankle-knee-wall": ["脚跟提前抬起", "膝盖向内或向外偏", "足弓塌下", "踝前卡住或小腿牵扯"],
-  "function:ankle-step-down": ["脚踝向内或向外晃", "足弓塌下", "不敢让支撑脚完全承重", "下降时突然掉下去", "需要扶住栏杆"],
   "function:custom-action": ["需要扶着或借力才能做", "做的时候动作走形", "做到一半不敢继续"],
-  "function:ankle-hop": ["落地不敢承重", "脚踝向内或向外晃", "落地时膝盖明显内扣", "无法连续完成"],
-  "function:thigh-walk": ["迈步时跛行", "患侧支撑时间变短", "身体向一侧偏", "蹬地时症状明显"],
-  "function:thigh-sit-stand": ["起身时偏向另一侧", "膝盖向内偏", "需要用手撑", "坐下时突然掉下去"],
   "function:thigh-bridge-check": ["骨盆一侧下沉", "腰部代偿顶起", "患侧抬起高度更低", "大腿后侧抽筋"],
-  "function:thigh-single-leg": ["骨盆下沉", "身体明显侧倒", "膝盖向内偏", "无法保持10秒"],
-  "function:thigh-jog": ["落地时疼或不敢承重", "步幅明显变短", "身体上下起伏不稳", "无法连续完成"],
-  "function:calf-walk": ["脚跟落地不稳", "脚步明显变短", "蹬地不足", "走路时小腿症状明显"],
-  "function:calf-heel-raise": ["患侧抬起高度更低", "身体向一侧偏", "脚趾抓地", "无法连续完成"],
-  "function:calf-single-leg": ["足弓塌下", "脚踝反复向内或向外晃", "身体明显晃动", "不舒服的一侧更难站稳"],
-  "function:calf-jog": ["落地或蹬地时出现症状", "步幅明显变短", "不敢连续跑", "无法完成小步慢跑"],
   "function:neck-turn-task": ["用躯干代替转头", "肩膀跟着转", "一侧明显转不到位", "转头时出现麻或电感"],
   "function:neck-screen-task": ["很快需要改变姿势", "回正后仍不缓解", "头部前伸", "症状逐渐增加"],
   "function:neck-arm-lift-task": ["耸肩", "伸颈", "头部偏向一侧", "抬手时出现麻或电感"],
@@ -1257,44 +1240,42 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:hip-step": ["骨盆偏移", "膝盖内扣", "主要靠另一侧抬起", "下台阶时突然掉下"],
   "function:hip-gait": ["步幅变短", "髋部不能后伸", "骨盆晃动", "蹬地时症状明显"],
 };
-export const GENERIC_FUNCTION_COMPENSATIONS = ["左右用力不一样", "身体明显晃动", "动作幅度偏小", "需要扶持或借力"];
-export function functionCompensationOptions(itemId: string) {
-  return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : GENERIC_FUNCTION_COMPENSATIONS;
+/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ COMPENSATION_GENERIC 兜底。返回 {id, label}。 */
+export function functionCompensationOptions(itemId: string, mode: "guided" | "thinking" = "guided") {
+  const catalog = compensationOptions(itemId.replace(/^function:/, ""));
+  const raw = catalog.source === "entry" ? catalog.options
+    : FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId]
+    : catalog.options;
+  return raw.map((value) => {
+    const id = compensationIdFor(value);
+    return { id, label: compensationLabel(id, mode) };
+  });
 }
+/** 双侧观察提示三层降级：目录条目 bilateralObserve → 旧表（未入库条目）→ undefined（消费方兜底）。 */
+export function bilateralObserveText(itemId: string): string | undefined {
+  const bare = itemId.replace(/^(motion|strength|function|special):/, "");
+  return catalogBilateralObserve(bare) ?? BILATERAL_OBSERVE[bare];
+}
+
 export const BILATERAL_OBSERVE: Record<string, string> = {
-  "ankle-dorsiflexion": "脚背能不能明显靠近小腿？注意看脚背，不要只把脚尖勾起来。",
-  "ankle-plantarflexion": "脚背能不能向下压到接近和小腿平直？",
-  "ankle-inversion": "两只脚分别向内转，记录哪一侧范围更小或更不舒服。",
-  "ankle-eversion": "两只脚分别向外转，记录哪一侧范围更小或更不舒服。",
-  "ankle-dorsiflexor": "两侧分别保持勾脚5秒，观察哪一侧更快掉下来或需要脚趾代偿。",
-  "ankle-calf": "能不能连续完成10次标准提踵，不靠脚趾抓地？",
-  "ankle-squat": "下蹲时两侧脚跟能否保持着地，膝盖方向是否一致。",
-  "ankle-single-leg": "左右单腿站能不能各坚持10秒？",
-  "ankle-heel-raise": "左右提踵高度和稳定性是否接近。",
-  "knee-extension": "两侧分别绷直膝盖，记录哪一侧更难压平或更不舒服。",
-  "knee-flexion": "两侧分别弯膝，记录哪一侧更难靠近臀部或更不舒服。",
-  "knee-quadriceps": "两侧分别绷紧大腿保持5秒，记录哪一侧更容易抖或掉力。",
   "knee-posterior-chain": "比较两侧承担重量时的稳定性，记录哪一侧更难保持骨盆平稳或更容易抽筋。",
-  "knee-squat": "下蹲时观察两边膝盖高度和方向是否一致。",
-  "knee-single-leg": "左右单腿站能不能各坚持10秒？",
-  "knee-heel-raise": "左右提踵高度和稳定性是否接近。",
 };
 
 export const bilateralMotionOptions: Array<[BilateralMotionAnswer | "same" | "unable" | "unsure", string]> = [
   ["same", "两侧接近｜与平时范围相近"],
-  ["left-limited", "左侧偏小｜左侧更差"],
-  ["right-limited", "右侧偏小｜右侧更差"],
-  ["both-limited", "两侧偏小｜两侧都受限"],
+  ["left-limited", "左侧偏小"],
+  ["right-limited", "右侧偏小"],
+  ["both-limited", "两侧偏小"],
   ["unable", "无法完成｜疼痛或其他原因"],
-  ["unsure", "暂不判断｜无法比较"],
+  ["unsure", "暂不判断"],
 ];
 
 export const bilateralComparisonOptions: Array<[BilateralComparison, string]> = [
-  ["左侧更差", "左侧更差｜右侧相对较好"],
-  ["右侧更差", "右侧更差｜左侧相对较好"],
-  ["两侧异常", "两侧都有问题｜可分别轻重不同"],
-  ["两侧接近", "两侧接近｜暂未见明确差异"],
-  ["暂不判断", "暂不判断｜无法安全比较"],
+  ["左侧更差", "左侧更差"],
+  ["右侧更差", "右侧更差"],
+  ["两侧异常", "两侧都有问题"],
+  ["两侧接近", "两侧接近"],
+  ["暂不判断", "暂不判断"],
 ];
 
 export function motionAnswerIsLimited(value?: AssessmentRecord["active"]) {
@@ -1740,10 +1721,10 @@ export function reportedActionOptions(regionId: string): ReportedAction[] {
       { id: "thigh-medial-length", label: "把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
     ],
     "hip-thigh": [
-      { id: "hip-flexion", label: "髋关节屈曲｜把大腿向腹部方向抬", kind: "joint-direction", raw: "抬腿" },
-      { id: "hip-extension", label: "髋关节伸展｜把腿向身后伸", kind: "joint-direction", raw: "腿向后伸" },
-      { id: "hip-abduction", label: "髋关节外展｜把腿向外打开", kind: "joint-direction", raw: "把腿向外打开" },
-      { id: "hip-adduction", label: "髋关节内收｜把腿向身体中线靠拢", kind: "joint-direction", raw: "夹腿" },
+      { id: "hip-flexion", label: `${termText("hip-flexion", "pro")}｜${termText("hip-flexion", "plain")}`, kind: "joint-direction", raw: "抬腿" },
+      { id: "hip-extension", label: `${termText("hip-extension", "pro")}｜${termText("hip-extension", "plain")}`, kind: "joint-direction", raw: "腿向后伸" },
+      { id: "hip-abduction", label: `${termText("hip-abduction", "pro")}｜${termText("hip-abduction", "plain")}`, kind: "joint-direction", raw: "把腿向外打开" },
+      { id: "hip-adduction", label: `${termText("hip-adduction", "pro")}｜${termText("hip-adduction", "plain")}`, kind: "joint-direction", raw: "夹腿" },
     ],
   };
   const functionalByRegion: Record<string, Set<string>> = {
@@ -2238,13 +2219,12 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "hip-external-rotation": { title: "小腿向内摆", how: "坐稳，髋膝弯成直角，大腿不动，把小腿慢慢向内摆。", observe: "与另一侧相比；腹股沟或臀部是否不舒服；骨盆有没有动。" },
 
   "knee-extension": { title: "把膝盖绷直", how: "仰卧，两条腿放平，脚跟位置保持一致。先绷紧一侧大腿前侧，把膝盖后方向床面压，再换另一侧。", observe: "比较两侧膝后离床面的空隙，以及哪一侧更难向下压。" },
-  "knee-flexion": { title: "把脚跟滑向臀部", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢把另一边脚跟滑向臀部。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
+  "knee-flexion": { title: "慢慢弯膝盖", how: "仰卧，脚跟贴着床面。先做没有不适的一边，再慢慢弯另一边膝盖。", observe: "只比较两件事：哪边活动范围更小；活动到最大范围时会不会牵拉或卡住。" },
   "knee-quadriceps": { title: "把膝盖伸直的力量", how: "仰卧，把膝盖后面向床面压住5秒。再坐好，把小腿抬起并保持5秒。两边各做一次。", observe: "哪边更难压住或抬住；是否明显发抖；用力时哪里不舒服。" },
   "knee-hamstring": { title: "脚跟向后拉的力量", how: "坐稳，脚跟踩地，像要把脚跟向椅子下面拖，但不要真的移动，保持5秒。两边各做一次。", observe: "哪边更难发力；大腿后侧是否容易抽筋；用力时哪里不舒服。" },
   "knee-posterior-chain": { title: "后侧链力量", how: "先做双腿臀桥并保持5秒。双腿稳定、没有明显不适时，再扶稳身体，左右分别做单腿臀桥；单腿版本做不了就停在双腿版本。", observe: "比较两侧抬起高度、保持时间和骨盆是否歪斜；留意是否主要靠腰顶起或大腿后侧抽筋。" },
   "knee-adductor-pes": { title: "夹枕头的力量", how: "仰卧屈膝，在两膝之间放一个软枕，轻轻夹住5秒。两边分别侧重发力，比较哪边更难保持。", observe: "比较哪边大腿内侧更难发力；留意膝内侧会不会出现平时的不适。" },
   "knee-glute": { title: "单腿支撑时臀部能不能稳住", how: "扶住墙，一只脚站立10秒，再换另一边。", observe: "哪边更容易晃；骨盆是否明显歪向一边；膝盖是否跟着向内倒。" },
-  "knee-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。两边都能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
   "knee-squat": { title: "下蹲", how: "扶住稳固的桌面，慢慢下蹲到舒服的深度，再站起来，做3次。", observe: "哪一段不舒服；膝盖有没有明显向内倒；脚跟是否提前抬起。" },
   "knee-step-up": { title: "上台阶", how: "扶住栏杆，用一侧腿先踏上低台阶并站起，做3次，再换另一边。", observe: "哪边更难站起；是否明显借助手臂；哪里不舒服。" },
   "knee-step-down": { title: "下台阶", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑腿膝盖是否向内倒；哪边更难控制。" },
@@ -2264,16 +2244,20 @@ export const FRIENDLY_ASSESSMENT_COPY: Record<string, { title: string; how: stri
   "ankle-dorsiflexor": { title: "勾脚力量", how: "坐稳，把另一只脚轻轻压在脚背上，再用下面这只脚向上勾住5秒。两边各做一次。", observe: "哪边更容易被压下去；是否只抬脚趾却没有勾起脚背；哪里不舒服。" },
   "ankle-evertor": { title: "脚掌向外推的力量", how: "坐稳，用另一只脚挡在脚的外侧，再把脚掌向外顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；外踝或小腿外侧是否不舒服。" },
   "ankle-invertor": { title: "脚掌向内推的力量", how: "坐稳，用另一只脚挡在脚的内侧，再把脚掌向内顶住5秒。两边各做一次。", observe: "哪边更容易被挡住；内踝后方或足弓是否不舒服。" },
-  "ankle-calf": { title: "踮脚力量", how: "扶住墙，双脚慢慢踮起再落下，做5次。能稳定完成时，再分别用单脚试做。", observe: "哪边抬得更低、更容易累，或用力时会不舒服。" },
   "ankle-weight-bearing": { title: "走几步看看", how: "在能扶住的地方自然走几步，不用故意走快。", observe: "不舒服这边能不能踩地；哪一步会不舒服；有没有明显一瘸一拐。" },
   "ankle-squat": { title: "扶着下蹲", how: "双脚自然站立，扶住固定物，慢慢下蹲到舒服的深度，再站起来。", observe: "脚跟会不会提前抬起；哪边脚踝更难向前弯；哪里不舒服。" },
   "ankle-single-leg": { title: "单脚站立", how: "靠近墙，一只脚站立10秒，再换另一边；需要时用手指轻扶。", observe: "哪边更容易晃、站不住或引起不适。" },
-  "ankle-heel-raise": { title: "踮脚", how: "扶住墙，双脚慢慢踮起再落下，做5次。", observe: "两边脚跟抬起的高度是否接近；哪里不舒服；身体是否明显偏向一边。" },
   "ankle-knee-wall": { title: "脚跟不抬，膝盖向前碰墙", how: "面对墙站立，脚跟贴地，膝盖慢慢向前靠近墙。左右脚使用相同距离各做一次。", observe: "哪边更难碰到墙；脚跟是否抬起；踝前或小腿哪里不舒服。" },
   "ankle-step-down": { title: "下台阶（脚踝）", how: "扶住栏杆，一只脚站在低台阶上，另一只脚跟慢慢点地再回来，做3次，再换边。", observe: "下降到哪一段不舒服；支撑脚踝是否向内或向外晃；哪边更难控制。" },
+  ...Object.fromEntries(
+    ["knee-calf", "knee-heel-raise", "ankle-calf", "ankle-heel-raise", "calf-heel-raise-strength", "calf-heel-raise"]
+      .map((id) => [id, assessmentFriendly(id)]),
+  ),
 };
 
 export function assessmentTitle(id: string, title: string) {
+  const catalogResult = catalogAssessmentTitle(id, "guided");
+  if (catalogResult) return catalogResult;
   const friendly: Record<string, string> = {
     "ankle-dorsiflexion": "脚背向上勾",
     "ankle-plantarflexion": "脚背向下压",
@@ -2282,10 +2266,7 @@ export function assessmentTitle(id: string, title: string) {
     "ankle-great-toe-extension": "大脚趾向上抬",
     "ankle-toe-flexion": "脚趾弯曲和伸直",
     "ankle-dorsiflexor": "勾脚力量（胫骨前肌）",
-    "ankle-evertor": "脚掌向外推的力量（腓骨肌）",
-    "ankle-invertor": "脚掌向内推和足弓支撑（胫骨后肌）",
     "ankle-calf": "提踵力量（小腿后侧）",
-    "ankle-intrinsic": "足弓主动控制",
     "ankle-gait": "走路时脚跟到脚尖的过渡",
     "ankle-knee-wall": "脚跟不抬的屈膝碰墙",
     "ankle-step-down": "下台阶（脚踝）",
@@ -2310,8 +2291,8 @@ export function assessmentCopy(id: string, how: string, observe: string) {
     .replaceAll("末端", "能到的位置")
     .replaceAll("代偿", "跟着帮忙")
     .replaceAll("抗阻", "对抗轻微阻力")
-    .replaceAll("等长", "保持不动发力")
-    .replaceAll("没受伤的那边", "健侧");
+    .replaceAll("等长", "保持不动发力");
+
   return FRIENDLY_ASSESSMENT_COPY[id] ?? { title: "", how: plain(how), observe: plain(observe) };
 }
 
@@ -2466,27 +2447,27 @@ export function activeMotionRangeQuestion(itemId: string, bilateral = false, pas
 
 export function activeMotionRangeOptions(mode: MotionComparison = "contralateral", spinal = false, assessmentMode: SpineAssessmentMode = "guided", professional = false): Array<[MotionAnswer, string]> {
   if (spinal && assessmentMode === "reference") return [
-    ["same", "角度基本正常｜接近参考范围"],
-    ["limited", "角度偏小｜低于参考范围"],
-    ["excessive", "角度偏大｜高于参考范围"],
+    ["same", "角度基本正常｜和平时差不多"],
+    ["limited", "角度偏小｜比平时小"],
+    ["excessive", "角度偏大｜比平时大"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法测量或比较"],
+    ["unsure", "暂不判断"],
   ];
   if (spinal && mode === "opposite-direction") return [
-    ["same", "与另一方向接近｜幅度差不明显"],
-    ["limited", "该方向偏小｜明显受限"],
+    ["same", "与另一方向接近"],
+    ["limited", "该方向偏小"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
+    ["unsure", "暂不判断"],
   ];
   if (spinal) return [
-    ["same", "可以完成｜动作顺畅"],
-    ["limited", "范围偏小｜动作受限"],
+    ["same", "可以完成"],
+    ["limited", "范围偏小"],
     ["unable", "无法完成｜疼痛或其他原因"],
-    ["unsure", "暂不判断｜无法比较"],
+    ["unsure", "暂不判断"],
   ];
   const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
+    ["same", "接近健侧"],
+    ["limited", "患侧偏小"],
     ["unable", "无法完成｜疼痛、担心或不会做"],
     ["unsure", "暂不判断｜今天先跳过"],
   ];
@@ -2496,8 +2477,8 @@ export function activeMotionRangeOptions(mode: MotionComparison = "contralateral
 
 export function localLimbMotionRangeOptions(professional = false): Array<[MotionAnswer, string]> {
   const options: Array<[MotionAnswer, string]> = [
-    ["same", "接近健侧｜两侧幅度相近"],
-    ["limited", "患侧偏小｜活动范围受限"],
+    ["same", "接近健侧"],
+    ["limited", "患侧偏小"],
     ["unable", "无法完成｜疼痛、担心或不会做"],
     ["unsure", "暂不判断｜今天先跳过"],
   ];
@@ -2685,10 +2666,10 @@ export function rangeRetestOptions(mode: MotionComparison = "contralateral", can
     ["worse", "变差｜被动活动幅度减小或不适加重"],
   ];
   if (!canAssessPassive) return [
-    ["both-match", `接近目标｜主动活动幅度与${target}接近`],
-    ["better-passive-limited", `有所改善｜幅度增加但仍小于${target}`],
-    ["passive-limited", `仍受限｜主动活动幅度仍小于${target}`],
-    ["worse", "变差｜幅度减小或不适加重"],
+    ["both-match", `接近目标｜自己动也能到${target}`],
+    ["better-passive-limited", `有所改善｜比之前多了，但还没到${target}`],
+    ["passive-limited", `仍受限｜自己动还是到不了${target}`],
+    ["worse", "变差｜比之前少了，或者更不舒服"],
   ];
   return [
     ["both-match", `均接近目标｜主动和被动范围都接近${target}`],

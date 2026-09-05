@@ -230,8 +230,8 @@ export function TrainingStage(props: TrainingStageProps) {
   return <section className="rm-page">
     <StepHeading eyebrow="第5步 · 训练与居家" title="今天需要做的训练" />
     {tissuePathway.id !== "standard" ? <section className="rm-training-hold"><span>{tissuePathway.title}</span><strong>{tissuePathway.trainingStages[0]}</strong><p>{tissuePathway.trainingStages.join(" → ")}</p></section> : null}
-    {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低刺激基础活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
-    {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低刺激基础活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
+    {noChiefActionAndNoAssessmentProblem ? <section className="rm-training-hold"><span>本次未发现明确异常</span><strong>先做低强度的活动</strong><p>保持舒适活动即可；如果实际症状仍存在，请返回重新描述发生经过、当前位置和会加重的动作。</p></section> : null}
+    {noImmediateTreatmentResponse ? <section className="rm-training-hold"><span>本次先不进阶</span><strong>只做低强度的活动</strong><p>刚才的试处理没有改变主诉。以下动作只用于保持舒适活动和基础控制，不增加速度、阻力或训练量。</p></section> : null}
     {bilateralLowLoadOnly ? <section className="rm-training-hold" data-testid="bilateral-low-load-gate" data-rehabmind-test="bilateral-training-gate"><span>双侧评估尚未全部完成</span><strong>当前只开放低负荷基础活动</strong><p>另一侧未完成针对性评估前，不进入正常训练、不增加阻力或动作难度。完成反馈后可返回处理记录继续另一侧。</p></section> : null}
     <details className="rm-training-path"><summary><span>恢复目标</span><strong>{displayGoals.find((goal) => goal.level === exerciseStage)?.title ?? "当前阶段"}</strong></summary><div className="rm-stage-line" aria-label="训练目标进度">{displayGoals.map((goal) => <div key={goal.level} className={`${goal.level < exerciseStage ? "is-done" : ""} ${goal.level === exerciseStage ? "is-current" : ""} ${goal.level > intake.goal ? "is-outside" : ""}`}><i>{goal.level < exerciseStage ? "✓" : goal.level}</i><span>{goal.title}</span></div>)}</div></details>
     {lowLoadTrainingOnly ? <div className="rm-training-load-badge" role="note"><strong>低负荷基础活动</strong><span>当前只保持舒适活动和基础控制，暂不增加速度、阻力或动作难度。</span></div> : null}
