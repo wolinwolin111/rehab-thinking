@@ -1,4 +1,5 @@
 import type { AssessmentEntry, TreatmentEntry, TrainingEntry, OptionGroup } from "./types.ts";
+import { COMPENSATION_OPTIONS } from "./compensations.ts";
 import { OPTION_BASES } from "./option-sets.ts";
 
 export type CatalogIssue = { code: string; entryId: string; detail: string };
@@ -63,6 +64,9 @@ export function validateActionCatalog(input: {
   for (const entry of input.assessment) {
     checkCommon(entry, "assessment");
     checkOptions(entry.id, entry.options, "options");
+    for (const id of entry.compensations ?? []) {
+      if (!COMPENSATION_OPTIONS[id]) issues.push({ code: "CAT-BAD-COMPENSATION-ID", entryId: entry.id, detail: id });
+    }
     // plain/pro 的 dose 键集合允许不同（自助句式和专业句式引用的数字不同），
     // 完整性由 renderHow/fillTemplate 运行时抛错保证，这里不做键集合比对。
     if (!DOSE_EXCEPTIONS.has(entry.id)) {

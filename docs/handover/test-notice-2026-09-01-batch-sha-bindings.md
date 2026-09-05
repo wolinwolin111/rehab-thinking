@@ -741,3 +741,37 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 - 紧张位置、双侧化链：整体跳过（见上）。
 
 审阅表（owner 私有 outputs/）：RehabMind-C1C2改造方案／C1-1代偿迁移审阅／C2-1双侧观察迁移审阅 三份 xlsx。决策归档见主控方案 §13。
+
+---
+
+# 第 24 轮 — 代偿选项编号分离（含一处回归修复）
+
+## ⚠ 先报一个我此前漏掉的回归（已修）
+
+步骤 1（dd10806）当时用"行内化"脚本把多行 compensations 数组压成单行，正则 `\[([^\]]*)\],,` 误吞了内容，导致 **20 个条目的 compensations 全部变成空数组 `[]`**——即自助端功能动作的代偿按钮当时实际落到了通用 4 条，条目定制没生效。步骤 1 的等价性脚本因"从新位置读旧值"存在循环论证没抓到。本轮编号分离时逐条比对原始表（4a82553）才暴露，已修复：20 数组重新按原表逐字填充，并新增 validate 规则 `CAT-BAD-COMPENSATION-ID` 防孤儿编号。
+
+## 本轮改动：编号分离（owner 裁定）
+
+代偿选项从"文字即存储值"改为"编号存储、文字仅显示"：
+
+- 新增 `src/knowledge/actions/compensations.ts`：`COMPENSATION_OPTIONS`（编号 → {plain/pro 措辞, legacy 旧文字[]}）＋ `COMPENSATION_GENERIC`（通用 4 编号）＋ `compensationIdFor`（旧文字→编号，未入库部位原样透传）＋ `compensationIds`（去重归一）＋ `compensationLabel`（编号→措辞，双轨）。
+- assessment.ts：20 条 compensations 改存编号。
+- index.ts：compensationOptions 返回编号；转发词表 API。
+- option-sets.ts：删除 compensation-generic base（被词表取代）。
+- workbench-support.tsx：functionCompensationOptions 返回 {id,label}，加 mode 参数（guided/thinking 双轨措辞）。
+- assessment-stage.tsx：按钮渲染 label、存储 id、选中判定走 compensationIds 归一（旧记录兼容）。
+- rehabmind-workbench.tsx：代偿归类改为**认编号**（knee-valgus/heel-early-rise/knee-height-diff/body-sway/side-balance-worse/side-raise-lower），保留旧文字 includes 兜底给未入库部位。
+
+## 归类等价性（关键，防改字破坏决策）
+
+对原始表全部 147 个去重文字：旧 includes 规则产出的标签 vs 新"编号优先＋includes 兜底"产出的标签，**逐条相同（0 差异）**。特别地，旧规则只匹配"膝盖明显向内"，故"膝盖向内偏"（无"明显"）和"落地时膝盖明显内扣"当年不命中——本轮拆成独立编号 knee-inward/land-knee-inward 且**不映射标签**，保持不命中（行为不变）。
+
+## 验收
+
+- check:catalog（新增编号校验）／typecheck 全绿。
+- 真实浏览器实测（Playwright，high-irritability 场景走到下台阶卡）：代偿按钮显示条目定制措辞（膝盖明显向内偏／身体或骨盆歪向一边／下降时突然掉下去／需要扶住栏杆），非通用 4 条；场景预置的旧文字"身体或骨盆歪向一边"经归一化正确高亮（旧记录兼容）；点击切换选中正常。
+- 套件失败集合：53→54，新增 1 条为 rendered-html.test.mjs:993 源码文字钉（见下）。
+
+## 测试侧新增解钉项（第 22 轮清单之外）
+
+- **rendered-html.test.mjs:993**：`assert.match(demo, /latestRecord\.compensations\?\.includes\(entry\)/)` —— 编号分离后该行改为 `compensationIds(latestRecord.compensations ?? []).includes(entry.id)`。快速点击合并进最新记录的行为未变（仍读 latestRecord），仅字面表达式变。请测试侧把该钉改为匹配新表达式或改测行为。

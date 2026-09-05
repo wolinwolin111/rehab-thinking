@@ -16,7 +16,7 @@ import { functionCompletionValue, functionControlValue, functionDiscomfortValue 
 import { motionNeedsPassive } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { parseRangeAngle } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { assessmentRecordComplete, functionalActionMeta } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
-import { renderOptions, unableFollowUp } from "@/src/knowledge/actions/index";
+import { compensationIds, renderOptions, unableFollowUp } from "@/src/knowledge/actions/index";
 import { workbenchStageStates } from "@/src/features/rehabmind/workflow/stage-workbench-core";
 import { CaseSummaryBar } from "@/src/features/rehabmind/components/workbench/case-summary-bar";
 import type { BilateralPriorityResolution } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -493,7 +493,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
         functionCompletion: "complete",
         functionControl: hasLimitedSide ? "compensated" : "stable",
         functionDiscomfort: "no",
-        compensations: hasLimitedSide ? [functionCompensationOptions(item.id)[0]] : undefined,
+        compensations: hasLimitedSide ? [functionCompensationOptions(item.id)[0].id] : undefined,
         bilateralComparison,
         worseSide: bilateralComparisonToSide(bilateralComparison),
       };
@@ -847,7 +847,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
        {item.kind === "function" && functionCompletion !== "skip" && (functionControl === "compensated" || functionDiscomfort === "yes") ? <section className="rm-motion-answer-block is-stage">
         {functionControl === "compensated" ? <>
           <h3>你看到了什么？</h3>
-          <div className="rm-result-grid">{functionCompensationOptions(item.id).map((entry) => <button type="button" key={entry} className={record.compensations?.includes(entry) ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => ({ compensations: latestRecord.compensations?.includes(entry) ? latestRecord.compensations.filter((item) => item !== entry) : [...(latestRecord.compensations ?? []), entry] }))}>{entry}</button>)}</div>
+          <div className="rm-result-grid">{functionCompensationOptions(item.id, isThinkingMode ? "thinking" : "guided").map((entry) => <button type="button" key={entry.id} className={compensationIds(record.compensations ?? []).includes(entry.id) ? "is-selected" : ""} onClick={() => updateAssessment(item.id, (latestRecord) => { const selected = compensationIds(latestRecord.compensations ?? []); return { compensations: selected.includes(entry.id) ? selected.filter((value) => value !== entry.id) : [...selected, entry.id] }; })}>{entry.label}</button>)}</div>
         </> : null}
          {functionDiscomfort === "yes" || functionCompletion === "unable" ? renderSymptomDetails("做这个动作时有多不舒服？") : null}
       </section> : null}

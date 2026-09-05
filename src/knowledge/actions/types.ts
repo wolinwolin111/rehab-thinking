@@ -26,7 +26,7 @@ export type AssessmentEntry = {
   optionSet: string;
   /** 作答选项按动作定制：值契约来自 base 组，labels 只覆盖标签文案。 */
   options?: OptionGroup;
-  /** 功能动作完成后的代偿观察多选按钮（整组覆盖式；缺省落 compensation-generic 兜底）。 */
+  /** 功能动作完成后的代偿观察多选按钮。存词表编号（永不改），措辞查 COMPENSATION_OPTIONS；缺省落通用兜底。 */
   compensations?: string[];
   /** plain / pro 两套剂量都必填；模板里引用的键必须存在于对应语域（运行时抛错兜底）。 */
   dose: Record<Register, Record<string, string | number>>;

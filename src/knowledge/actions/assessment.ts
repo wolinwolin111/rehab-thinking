@@ -65,7 +65,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "左右提踵高度和稳定性是否接近。", pro: "左右提踵高度和稳定性是否接近。" },
     optionSet: "function",
     options: OPT.heelRaise,
-    compensations: [],
+    compensations: ["body-sway", "side-raise-lower"],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -100,7 +100,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "左右提踵高度和稳定性是否接近。", pro: "左右提踵高度和稳定性是否接近。" },
     optionSet: "function",
     options: OPT.heelRaise,
-    compensations: [],
+    compensations: ["body-sway", "side-raise-lower"],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -133,7 +133,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.heelRaise,
-    compensations: [],
+    compensations: ["side-raise-lower", "body-lean-side", "toe-grip", "cannot-continue"],
     dose: { plain: { both: 10 }, pro: { both: 10 } },
   },
   {
@@ -166,7 +166,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
-    compensations: [],
+    compensations: ["limp-gait", "afraid-load-side", "need-hold-to-walk", "stride-short"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -183,7 +183,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
-    compensations: [],
+    compensations: ["limp-gait", "stance-time-short", "body-lean-side", "push-off-pain"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -200,7 +200,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.walk,
-    compensations: [],
+    compensations: ["heel-strike-unstable", "stride-short", "push-off-weak", "calf-symptom-walk"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -218,7 +218,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "下蹲时观察两边膝盖高度和方向是否一致。", pro: "下蹲时观察两边膝盖高度和方向是否一致。" },
     optionSet: "function",
     options: OPT.squat,
-    compensations: [],
+    compensations: ["knee-height-diff", "knee-valgus", "heel-early-rise"],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -236,7 +236,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "下蹲时两侧脚跟能否保持着地，膝盖方向是否一致。", pro: "下蹲时两侧脚跟能否保持着地，膝盖方向是否一致。" },
     optionSet: "function",
     options: OPT.squat,
-    compensations: [],
+    compensations: ["knee-height-diff", "knee-valgus", "heel-early-rise"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -269,7 +269,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.sitStand,
-    compensations: [],
+    compensations: ["lean-to-opposite", "knee-inward", "need-hand-push", "sit-drop"],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -286,7 +286,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepUp,
-    compensations: [],
+    compensations: ["knee-valgus", "body-fwd-or-side-fall", "push-off-opposite-leg", "need-hand-pull-rail"],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -303,7 +303,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepDown,
-    compensations: [],
+    compensations: ["knee-valgus", "body-or-pelvis-lean", "descent-give-way", "need-hold-rail"],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -320,7 +320,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.stepDown,
-    compensations: [],
+    compensations: ["ankle-in-or-out-wobble", "arch-collapse", "afraid-full-weight", "descent-give-way", "need-hold-rail"],
     dose: { plain: { reps: "3次" }, pro: {} },
   },
   {
@@ -338,7 +338,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "左右单腿站能不能各坚持10秒？", pro: "左右单腿站能不能各坚持10秒？" },
     optionSet: "function",
     options: OPT.singleLeg,
-    compensations: [],
+    compensations: ["body-sway", "side-balance-worse"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -356,7 +356,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     bilateralObserve: { plain: "左右单腿站能不能各坚持10秒？", pro: "左右单腿站能不能各坚持10秒？" },
     optionSet: "function",
     options: OPT.singleLeg,
-    compensations: [],
+    compensations: ["body-sway", "side-balance-worse"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -373,7 +373,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
-    compensations: [],
+    compensations: ["pelvis-drop", "body-side-fall", "knee-inward", "cannot-hold-10s"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -390,7 +390,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLeg,
-    compensations: [],
+    compensations: ["arch-collapse", "ankle-in-or-out-wobble", "body-sway", "side-balance-worse"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -407,7 +407,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.singleLegSquat,
-    compensations: [],
+    compensations: ["pelvis-tilt", "knee-valgus", "arch-collapse", "need-support-uncontrolled"],
     dose: { plain: { reps: "3次" }, pro: { reps: "3次" } },
   },
   {
@@ -456,7 +456,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.hop,
-    compensations: [],
+    compensations: ["land-afraid-load", "ankle-in-or-out-wobble", "land-knee-inward", "cannot-continue"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -473,7 +473,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.jog,
-    compensations: [],
+    compensations: ["land-pain-afraid", "stride-short", "body-bounce", "cannot-continue"],
     dose: { plain: {}, pro: {} },
   },
   {
@@ -490,7 +490,7 @@ export const ASSESSMENT_ENTRIES: AssessmentEntry[] = [
     },
     optionSet: "function",
     options: OPT.jog,
-    compensations: [],
+    compensations: ["land-or-push-symptom", "stride-short", "afraid-continue-run", "cannot-jog"],
     dose: { plain: {}, pro: {} },
   },
   {

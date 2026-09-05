@@ -86,6 +86,7 @@ import { includesAny } from "@/src/domain/rehab/treatment/candidate-order-core";
 import { buildFindingGroups } from "@/src/domain/rehab/shared/finding-groups-core";
 import { ANKLE_P0_CONTROL_EXERCISE_IDS, ankleP0EligibleControlExerciseIds, ankleP0LineageForTreatment, ankleP0RecordsAfterRangeOutcomes, isAnkleP0CandidateId } from "@/src/knowledge/rehab/ankle-p0-runtime";
 import { kneeP0LineageFromAssessmentRecord, kneeP0UnitIdForTreatmentCandidate } from "@/src/knowledge/rehab/knee-p0-runtime";
+import { compensationIds, compensationLabel } from "@/src/knowledge/actions/index";
 import { p0AssessmentAccess } from "@/src/knowledge/rehab/p0-assessment-access";
 import { ANKLE_P1_PLANTARFLEXION_EXERCISE_IDS, ankleP1EligiblePlantarflexionExerciseIds, KNEE_P1_SCAR_TREATMENT_ID, kneeP1LineageForTreatment } from "@/src/knowledge/rehab/p1-runtime";
 import { specialIsRelevant } from "@/src/domain/rehab/safety/special-test-trigger-core";
@@ -1874,16 +1875,25 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       const functionEvidence = item.kind === "function" ? functionEvidenceFromRecord(item.id, result) : undefined;
       if (item.kind === "function" && ["present", "painful", "unable", "weak"].includes(functionalResult ?? "")) {
         const stageText = result.symptomStage ? `，${result.symptomStage}阶段最明显` : "";
-        const compensationText = result.compensations?.join("、") ?? "";
-        const compensationTags = (result.compensations ?? []).flatMap((entry) => entry.includes("膝盖明显向内")
+        const selectedCompensations = compensationIds(result.compensations ?? []);
+        const compensationText = selectedCompensations.map((id) => compensationLabel(id, "guided")).join("、");
+        const compensationTags = selectedCompensations.flatMap((entry) => entry === "knee-valgus"
           ? ["adductor", "hip-abduction", "glute-med"]
-          : entry.includes("脚跟提前") || entry.includes("膝盖高度")
+          : entry === "heel-early-rise" || entry === "knee-height-diff"
             ? ["dorsiflexion", "ankle-rom"]
-            : entry.includes("晃动") || entry.includes("站稳")
+            : entry === "body-sway" || entry === "side-balance-worse"
               ? ["balance", "single-leg", "stability"]
-              : entry.includes("抬起高度")
+              : entry === "side-raise-lower"
                 ? ["heel-raise", "calf"]
-                : []);
+                : entry.includes("膝盖明显向内")
+                  ? ["adductor", "hip-abduction", "glute-med"]
+                  : entry.includes("脚跟提前") || entry.includes("膝盖高度")
+                    ? ["dorsiflexion", "ankle-rom"]
+                    : entry.includes("晃动") || entry.includes("站稳")
+                      ? ["balance", "single-leg", "stability"]
+                      : entry.includes("抬起高度")
+                        ? ["heel-raise", "calf"]
+                        : []);
         const bilateralComparison = effectiveBilateralComparison(result);
         const sideText = intake.side === "双侧/中间" && bilateralComparison ? `${bilateralComparisonToSide(bilateralComparison) ?? bilateralComparison}：` : "";
         const hasControlIssue = functionControlValue(result) === "compensated";

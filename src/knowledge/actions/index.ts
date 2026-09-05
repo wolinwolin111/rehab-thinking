@@ -1,7 +1,10 @@
 import { ASSESSMENT_BY_ID } from "./assessment.ts";
+import { COMPENSATION_GENERIC, COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel } from "./compensations.ts";
 import { OPTION_BASES } from "./option-sets.ts";
 import { renderHow } from "./resolve.ts";
 import type { Register } from "./types.ts";
+
+export { COMPENSATION_OPTIONS, compensationIdFor, compensationIds, compensationLabel };
 
 /** 一层作答按钮：条目 labels 覆盖 → base 默认标签。值契约来自 base，条目不可改值。 */
 export function renderOptions<T extends string = string>(
@@ -27,11 +30,11 @@ export function assessmentTitle(id: string, mode: "guided" | "thinking"): string
   return mode === "guided" ? entry.title.plain : entry.title.pro;
 }
 
-/** 功能动作的代偿观察多选：条目定制 → compensation-generic 兜底（值为自由文本，不接决策）。 */
+/** 功能动作的代偿观察多选：条目定制 → compensation-generic 兜底。返回编号（存储值），措辞查 compensationLabel。 */
 export function compensationOptions(id: string): { options: string[]; source: "entry" | "generic" } {
   const entry = ASSESSMENT_BY_ID.get(id);
   if (entry?.compensations?.length) return { options: entry.compensations, source: "entry" };
-  return { options: [...OPTION_BASES["compensation-generic"].values], source: "generic" };
+  return { options: [...COMPENSATION_GENERIC], source: "generic" };
 }
 
 /** 双侧模式的观察提示（条目未写返回 undefined，由消费方降级）。 */

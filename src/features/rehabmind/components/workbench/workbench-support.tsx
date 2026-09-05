@@ -20,7 +20,7 @@ import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/as
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
 import { termText } from "@/src/knowledge/actions/resolve";
-import { assessmentTitle as catalogAssessmentTitle, bilateralObserve as catalogBilateralObserve, compensationOptions } from "@/src/knowledge/actions/index";
+import { assessmentTitle as catalogAssessmentTitle, bilateralObserve as catalogBilateralObserve, compensationIdFor, compensationLabel, compensationOptions } from "@/src/knowledge/actions/index";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -1240,11 +1240,16 @@ export const FUNCTION_COMPENSATIONS: Record<string, string[]> = {
   "function:hip-step": ["骨盆偏移", "膝盖内扣", "主要靠另一侧抬起", "下台阶时突然掉下"],
   "function:hip-gait": ["步幅变短", "髋部不能后伸", "骨盆晃动", "蹬地时症状明显"],
 };
-/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ compensation-generic 兜底。 */
-export function functionCompensationOptions(itemId: string) {
+/** 三层降级：目录条目定制 → 旧表（未来部位未入库期间的第二层）→ compensation-generic 兜底。返回 {id, label}。 */
+export function functionCompensationOptions(itemId: string, mode: "guided" | "thinking" = "guided") {
   const catalog = compensationOptions(itemId.replace(/^function:/, ""));
-  if (catalog.source === "entry") return catalog.options;
-  return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : catalog.options;
+  const raw = catalog.source === "entry" ? catalog.options
+    : FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId]
+    : catalog.options;
+  return raw.map((value) => {
+    const id = compensationIdFor(value);
+    return { id, label: compensationLabel(id, mode) };
+  });
 }
 /** 双侧观察提示三层降级：目录条目 bilateralObserve → 旧表（未入库条目）→ undefined（消费方兜底）。 */
 export function bilateralObserveText(itemId: string): string | undefined {

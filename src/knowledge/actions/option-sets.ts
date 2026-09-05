@@ -84,15 +84,6 @@ export const OPTION_BASES: Record<string, OptionBase> = {
       instruction: "不会做或没听懂说明",
     },
   },
-  "compensation-generic": {
-    values: ["左右用力不一样", "身体明显晃动", "动作幅度偏小", "需要扶持或借力"],
-    labels: {
-      "左右用力不一样": "左右用力不一样",
-      "身体明显晃动": "身体明显晃动",
-      "动作幅度偏小": "动作幅度偏小",
-      "需要扶持或借力": "需要扶持或借力",
-    },
-  },
   "unable-reason-special": {
     values: ["pain", "fear", "safety-signal", "cannot-perform"],
     labels: {
