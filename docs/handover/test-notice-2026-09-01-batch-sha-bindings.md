@@ -668,3 +668,45 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 | golden 锁 | 68 条成品字符串 |
 | 结构快照 | 批次 3/4/5/6 全部 IDENTICAL |
 | 待未来批次 | 颈/肩/腰/胸/肘/腕/髋部位进目录后删 plain()/FRIENDLY/bridge/professionalAssessmentCopy |
+
+---
+
+# 第 22 轮 — C1/C2 方案步骤 0 落地＋全量失败基线调查结论
+
+## 本次改动（commit d27c4d7）
+
+**C3 有意通用登记**：GENERIC_REGISTRY 新增 8 组（symptom-types/safety-items/goals/prior-care-options/onsets/mechanisms/provocation-types/patella-direction-labels）；imaging-conclusion 此前已登记，合计 C3 的 9 组齐备。纯登记（key→理由），零行为变化。
+
+**R-1~R-3 旧标题残留清理**：删除 assessmentTitle() 的 friendly 兜底表 3 行（ankle-evertor/invertor/intrinsic 的旧标题）。此 3 id 的目录条目（批次 4 已入）在目录优先逻辑下早已接管，删的是死代码。已实测：目录解析返回新标题（外翻力量（腓骨肌）／内翻力量（胫骨后肌）／踮脚尖力量），界面不变。
+
+## 验证
+
+- check:catalog：ok（assessment=53, treatment=18, training=53, golden=68）
+- typecheck：干净（tsc 5.9.3）
+- 失败集合对比（before=stash 掉本次改动 vs after）：**before==after，53 条逐条相同，零新增零消除**
+
+## ⚠ 关键调查结论：批次 0–7 只引入 1 条真回归
+
+用 git worktree 在批次 0 之前基线（80a81f0）跑同一套件对比：
+
+| 指标 | 值 |
+|---|---|
+| 基线（80a81f0）失败数 | 58 |
+| 当前（792b7b1）失败数 | 53 |
+| 文件级新增失败 | **仅 1 个**：tests/unit/domain/problem-ledger-core.test.mjs |
+
+即：**批次 0–7 净减少 5 条失败（58→53），且只引入 1 个文件级回归**——problem-ledger-core.test.mjs。其余 52 条失败全部为基线 80a81f0 就存在的预存失败（测试侧已提交的旧 WIP，早于我开工）。
+
+（此前对比脚本因两次运行输出编码不一致（Out-File 默认编码 vs UTF-8）产生 S-06 等"新增失败"假象，已用一致编码＋文件级对比排除。）
+
+## 批次 2 真回归的根因与修复归属（测试侧）
+
+- **现象**：problem-ledger-core.test.mjs 文件级加载失败。测试用 `transpileModule`＋`data:text/javascript;base64` 单独加载 problem-ledger-core.ts。
+- **根因**：批次 2 接线给 problem-ledger-core.ts 加了 `import { customActionHint } from "@/src/knowledge/actions/custom"`。data URL 无 base，`@/` 别名解析不了（相对路径同理也断）——该测试的加载机制要求 problem-ledger-core.ts **零 import**。
+- **影响**：仅测试加载，产品运行不受影响（真实模块系统能解析 @/）。属纯测试侧问题。
+- **修复归属**：B 类测试文件，dev 不碰。**请测试侧**把该文件的加载方式改成能解析 `@/src/knowledge/actions/custom`（方案：a) 学 build-trial-targets-scenario.test.mjs 的 loadBundle——剥离 import＋按拓扑序捆绑 custom.ts；b) 或加 @/ 别名 resolver）。这是批次 2 漏登记的一个解钉项（此前通知档未列）。
+- 本 commit 与此回归无关（步骤 0 仅 option-sets.ts＋workbench-support.tsx 两文件，均不产生新失败）。
+
+## 对测试侧的意义
+
+当前 `npm run test:fast` 第一道门 check:boundaries 就红（4 条 stage 违规为 4fd593b 预存，非本程序引入，见 21 轮）。node 套件 53 条失败中 52 条预存＋1 条（problem-ledger-core）待测试侧改加载方式。**建议测试侧在收尾 WIP 时一并消化：4 条 stage 违规＋problem-ledger-core 加载＋既有 52 条预存失败。**
