@@ -34,6 +34,11 @@ export function compensationOptions(id: string): { options: string[]; source: "e
   return { options: [...OPTION_BASES["compensation-generic"].values], source: "generic" };
 }
 
+/** 双侧模式的观察提示（条目未写返回 undefined，由消费方降级）。 */
+export function bilateralObserve(id: string): string | undefined {
+  return ASSESSMENT_BY_ID.get(id)?.bilateralObserve?.plain;
+}
+
 export type UnableReasonButton = { value: string; label: string };
 export type UnableGuidance = { action: string; fallback: string };
 

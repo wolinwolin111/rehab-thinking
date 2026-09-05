@@ -20,7 +20,7 @@ import { MuscleRegionTreatmentMap } from "@/src/features/rehabmind/components/as
 import { FULL_REGIONS, type FullCandidate, type FullExercise, type FullRegionId } from "@/src/knowledge/pilot/full-demo-content";
 import { assessmentFriendly } from "@/src/knowledge/actions/bridge";
 import { termText } from "@/src/knowledge/actions/resolve";
-import { assessmentTitle as catalogAssessmentTitle, compensationOptions } from "@/src/knowledge/actions/index";
+import { assessmentTitle as catalogAssessmentTitle, bilateralObserve as catalogBilateralObserve, compensationOptions } from "@/src/knowledge/actions/index";
 import { type PilotIntakeInput } from "@/src/domain/rehab/shared/pilot-decision-engine";
 
 
@@ -1246,23 +1246,14 @@ export function functionCompensationOptions(itemId: string) {
   if (catalog.source === "entry") return catalog.options;
   return FUNCTION_COMPENSATIONS[itemId]?.length ? FUNCTION_COMPENSATIONS[itemId] : catalog.options;
 }
+/** 双侧观察提示三层降级：目录条目 bilateralObserve → 旧表（未入库条目）→ undefined（消费方兜底）。 */
+export function bilateralObserveText(itemId: string): string | undefined {
+  const bare = itemId.replace(/^(motion|strength|function|special):/, "");
+  return catalogBilateralObserve(bare) ?? BILATERAL_OBSERVE[bare];
+}
+
 export const BILATERAL_OBSERVE: Record<string, string> = {
-  "ankle-dorsiflexion": "脚背能不能明显靠近小腿？注意看脚背，不要只把脚尖勾起来。",
-  "ankle-plantarflexion": "脚背能不能向下压到接近和小腿平直？",
-  "ankle-inversion": "两只脚分别向内转，记录哪一侧范围更小或更不舒服。",
-  "ankle-eversion": "两只脚分别向外转，记录哪一侧范围更小或更不舒服。",
-  "ankle-dorsiflexor": "两侧分别保持勾脚5秒，观察哪一侧更快掉下来或需要脚趾代偿。",
-  "ankle-calf": "能不能连续完成10次标准提踵，不靠脚趾抓地？",
-  "ankle-squat": "下蹲时两侧脚跟能否保持着地，膝盖方向是否一致。",
-  "ankle-single-leg": "左右单腿站能不能各坚持10秒？",
-  "ankle-heel-raise": "左右提踵高度和稳定性是否接近。",
-  "knee-extension": "两侧分别绷直膝盖，记录哪一侧更难压平或更不舒服。",
-  "knee-flexion": "两侧分别弯膝，记录哪一侧更难靠近臀部或更不舒服。",
-  "knee-quadriceps": "两侧分别绷紧大腿保持5秒，记录哪一侧更容易抖或掉力。",
   "knee-posterior-chain": "比较两侧承担重量时的稳定性，记录哪一侧更难保持骨盆平稳或更容易抽筋。",
-  "knee-squat": "下蹲时观察两边膝盖高度和方向是否一致。",
-  "knee-single-leg": "左右单腿站能不能各坚持10秒？",
-  "knee-heel-raise": "左右提踵高度和稳定性是否接近。",
 };
 
 export const bilateralMotionOptions: Array<[BilateralMotionAnswer | "same" | "unable" | "unsure", string]> = [

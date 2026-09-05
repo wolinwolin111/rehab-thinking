@@ -39,7 +39,7 @@ import {
   type SimpleAnswer,
   type Step,
   type TransitionTarget,
-  BILATERAL_OBSERVE,
+  bilateralObserveText,
   PASSIVE_END_FEEL_OPTIONS,
   PATELLA_DIRECTION_IDS,
   PATELLA_DIRECTION_LABELS,
@@ -616,7 +616,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <header><i>1</i><div><span>关节活动度检查</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
         {acuteMotionGuidance ? <p className="rm-passive-reminder">急性损伤先轻柔查看活动范围；页面出现保持或发力检查时，如果会明显加重，今天可以跳过。</p> : null}
         <section><b>{isThinkingMode ? "检查方法" : "现在做"}</b><p>{isThinkingMode ? item.professionalHow ?? item.how : item.how}</p></section>
-        {isThinkingMode ? <section><b>记录</b><p>{item.professionalObserve ?? item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^motion:/, "")] ?? "两侧都异常时，记录哪一侧更差；如果一样差就选择两侧都受限。" : item.observe}</p></details>}
+        {isThinkingMode ? <section><b>记录</b><p>{item.professionalObserve ?? item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? "两侧都异常时，记录哪一侧更差；如果一样差就选择两侧都受限。" : item.observe}</p></details>}
         {!item.spinal && !isPilotRegion(intake.regionId) ? intake.side === "双侧/中间" ? <p className="rm-comparison-anchor"><b>左右各做一次</b>，找出更差的一侧；如果两边都差，选择“两侧都受限”。</p> : <p className="rm-comparison-anchor"><b>先做健侧</b>，再用同样姿势做不舒服的一侧。</p> : null}
         <section className="rm-motion-answer-block">
           <h3>{isSelfKneeExtension ? "膝后能不能像另一边一样压向床面？" : isThinkingMode ? `${professionalAssessmentTitle(item.id, item.title)}：主动活动范围` : item.spinal ? spinalRangeQuestion(item.comparison, intake.spineAssessmentMode) : activeMotionRangeQuestion(item.id, intake.side === "双侧/中间")}</h3>
@@ -741,7 +741,7 @@ export function AssessmentStage(props: AssessmentStageProps) {
       </div> : <article className="rm-check-card">
       <header><i>{item.kind === "strength" ? "力" : item.kind === "special" ? "测" : "动"}</i><div><span>{item.kind === "strength" ? "肌力与控制检查" : item.kind === "special" ? "特殊检查" : "功能动作检查"}</span><strong>{professionalAssessmentTitle(item.id, item.title)}</strong></div></header>
       <section><b>现在做</b><p>{item.how}</p></section>
-      {isThinkingMode ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? BILATERAL_OBSERVE[item.id.replace(/^(strength|function|special):/, "")] ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
+      {isThinkingMode ? <section><b>记录</b><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></section> : <details className="rm-check-help"><summary>怎么做和观察重点</summary><p>{intake.side === "双侧/中间" ? bilateralObserveText(item.id) ?? item.observe.replaceAll("患侧", "更差的一侧").replaceAll("健侧", "另一侧") : item.observe}</p></details>}
       {item.kind === "special" && item.next ? <p className="rm-special-next"><b>如果出现提示信号：</b>{item.next}</p> : null}
       {item.kind !== "function" ? <><AnswerChoiceGrid options={options} value={record.simple} onChange={(value) => updateAssessment(item.id, value === "painful"
         ? { simple: value, compensations: undefined, discomfortLocation: record.discomfortLocation || relatedMotionRecord?.discomfortLocation, discomfortLocations: record.discomfortLocations || relatedMotionRecord?.discomfortLocations, discomfortType: record.discomfortType || relatedMotionRecord?.discomfortType, familiarSymptom: record.familiarSymptom || relatedMotionRecord?.familiarSymptom, worseSide: record.worseSide }

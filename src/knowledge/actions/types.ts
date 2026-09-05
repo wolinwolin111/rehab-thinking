@@ -21,6 +21,8 @@ export type AssessmentEntry = {
   actions: ActionTermKey[];
   how: LocalizedText;
   observe: LocalizedText;
+  /** 双侧模式的观察提示（缺省落 observe；仅双侧确实需要不同说法的条目才写）。 */
+  bilateralObserve?: LocalizedText;
   optionSet: string;
   /** 作答选项按动作定制：值契约来自 base 组，labels 只覆盖标签文案。 */
   options?: OptionGroup;
