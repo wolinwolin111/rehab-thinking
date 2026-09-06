@@ -1,8 +1,27 @@
 # 测试侧回归报告：动作库重构批次 0–7（含 C1/C2/C3 续批）
 
-> 日期：2026-09-06 · 分支 `agent/testing`（合并 dev tip `8f839bb`，merge `3a85ed3`）
-> 范围：dev 95 个提交（批次 0–7 ＋ 第 22–27 轮代偿编号分离/归类接线/自查）
-> 最终门禁：**verdict=passed** run `reg-20260906065010-13516`（fast 28.4s / knowledge / full **74 passed** / mobile 2）· node **796/0** · registry **100 条**
+> 日期：2026-09-06 · 分支 `agent/testing`
+> 范围：dev 95 个提交（批次 0–7 ＋ 第 22–27 轮代偿编号分离/归类接线/自查）＋ **docs/system 批次 2–6 与第 29 轮对齐**
+> 最终门禁：**verdict=passed** run `reg-20260906162214-14236`（fast 27.9s / knowledge / full **74 passed** / mobile 2）· node **796/0** · registry **100 条**
+
+---
+
+## 0. 第 29 轮对齐项执行（docs/system 批次 2–6 合并，merge `a7c7d56`）
+
+dev 第 29 轮回话四项全部对齐：
+
+| 对齐项 | 归属 | 处置 |
+|---|---|---|
+| four-document 测试（rendered-html:990） | 测试侧 | docs 重构为九份 system 现行文档 + archive 追溯 → 测试迁移为**弱断言标题**：断言 docs/README「现行系统文档共 9 份 / system/ 目录 / archive 追溯」+ 9 份 system 文档各存在且标「现行」；旧四文档正文字面钉移除（23/23 绿） |
+| quality 登记册死链 2 条 `../plans/` → `../archive/plans/` | 测试侧 | 已修（另有 2 条归档文档内相对路径一并修，check:docs 173 文件 0 死链） |
+| boundaries type-only 差异（dev 报 5 条 stage import type） | 双方向 | 合并后测试树 `check:boundaries: ok`、fast EXIT 0——无新增红（type-only 违规未在测试树复现，dev 侧独立对齐） |
+| 4 份旧正式文档归档 → `docs/archive/docs-root/` | dev 执行 | 已在 1579161 落地（`-history-2026-08-09` 版本），merge 已含 |
+
+**合并冲突处置**（3 文件）：`rehabmind-test-plan.md`（dev 重写 §9 统一身份，保留测试侧当前基线指针）；`real-browser-coverage-matrix.md`（取 dev 证据索引结构，**保留测试侧 UX-02「8.27 owner 裁定关闭」**，dev 回退为功能缺口属误改）；归档历史文档（取 dev 归档后相对路径）。
+
+**额外修复的预存红**（L2-L3 mutations，测试侧脚本）：`MUT-SCHEMA-01/02` needle 指向 v3 已删除的 `migratePilotSnapshot`/`validateOptionalWorkflowFields` → 重写为 v3 `validatePilotSnapshotV3` 的 schemaVersion/contractRevision 防线变异（补捆 snapshot-contract.ts 依赖）；`MUT-CONSENT-01` v3 下无法构造合法分区快照做行为变异 → 降级为存在性护栏（主防线由 assertAndStamp 拒错误版本覆盖）。mutations 层转绿（L2-L5 全 PASS）。
+
+**full 层 1 次偶发**：OP-1 全量时 `assertNoRuntimeErrors` 失败，单独跑通过、重跑全量绿——判定为并行负载 flake（非 docs 引入，OP-1 路径与 docs 无关）。
 
 ---
 

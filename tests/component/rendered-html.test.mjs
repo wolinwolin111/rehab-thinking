@@ -987,28 +987,30 @@ assert.match(demo, /const pilotTreatmentUnits = decisionEngine\.treatmentUnits/)
   assert.match(content, /ankle-dorsiflexion-control/);
 });
 
-test("keeps one concise four-document source of truth", async () => {
-  const [index, product, decision, knowledge, acceptance] = await Promise.all([
+test("keeps one concise documentation index as source of truth", async () => {
+  // dev 第 28–29 轮（docs/system 批次 2–6）：docs 重构为九份 system 现行文档 + archive 追溯。
+  // 旧「四份正式文档」断言按 dev 口径迁移为弱断言（结构 + 标题，不钉正文字面）。
+  const [index] = await Promise.all([
     readFile(new URL("../../docs/README.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/rehabmind-complete-product-design.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/rehab-decision-framework.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/knee-ankle-pilot-knowledge.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/pilot-scenario-coverage.md", import.meta.url), "utf8"),
   ]);
-
-  assert.match(index, /四份文档的优先级/);
-  assert.match(index, /桌面和 320 至 430px 手机网页都是当前维护范围/);
-  assert.match(index, /Android APK 属于本轮交付，网页确认后构建独立外壳并持续维护/);
-  assert.match(product, /^# RehabMind 产品规范/m);
-  assert.match(product, /当前实现：本地规则引擎，不接入 AI/);
-  assert.match(product, /首发范围：大腿至足部的症状入口，膝与踝足功能模块/);
-  assert.match(product, /骨盆、臀部、腹股沟和髋关节症状入口/);
-  assert.match(decision, /^# RehabMind 决策引擎规范/m);
-  assert.match(decision, /无明确主诉动作时/);
-  assert.match(decision, /双侧或无固定动作保存趋势，不伪造分数/);
-  assert.match(knowledge, /^# 膝关节与踝足首发知识库/m);
-  assert.match(knowledge, /没有脚趾受伤、疼痛或功能主诉时，不自动加入脚趾检查/);
-  assert.match(acceptance, /状态：现行验收规范/);
+  // 现行文档：9 份全部在 system/，以代码实测为准；索引之外过程文档一律进 archive 只作追溯。
+  assert.match(index, /现行系统文档共 9 份/);
+  assert.match(index, /全部在 \[`system\/`\]\(\.\/system\/\)/);
+  assert.match(index, /不得引用为当前标准/);
+  assert.match(index, /01.*产品设计与用户流程/);
+  assert.match(index, /02.*决策引擎/);
+  assert.match(index, /04.*动作内容目录/);
+  assert.match(index, /archive\/\)/);
+  // system 现行文档必须存在（标题弱断言），且 archive 保留历史（可追溯）。
+  for (const file of [
+    "01-product-design", "02-decision-framework", "03-clinical-knowledge-base",
+    "04-content-catalog", "05-session-orchestration", "06-data-and-persistence",
+    "07-architecture-boundaries", "08-design-principles", "09-extension-roadmap",
+  ]) {
+    const src = await readFile(new URL(`../../docs/system/${file}.md`, import.meta.url), "utf8");
+    assert.match(src, /^# /, `${file} 必须存在且以一级标题开头`);
+    assert.match(src, /文档状态：现行/, `${file} 应标注现行状态`);
+  }
 });
 
 test("formal product consumes local limb decisions in first and followup sessions", async () => {

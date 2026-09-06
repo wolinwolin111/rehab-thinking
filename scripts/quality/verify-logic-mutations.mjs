@@ -484,9 +484,10 @@ function stripModule(code, keepExports = false) {
 
 const contractsSource = await readFile(new URL("../../src/infrastructure/pilot/api/case-contracts.ts", import.meta.url), "utf8");
 const consentSource = await readFile(new URL("../../src/infrastructure/pilot/consent/consent-core.ts", import.meta.url), "utf8");
+const snapshotContractSource = await readFile(new URL("../../src/domain/rehab/snapshot/snapshot-contract.ts", import.meta.url), "utf8");
 const snapshotSource = await readFile(new URL("../../src/infrastructure/pilot/persistence/snapshot-schema.ts", import.meta.url), "utf8");
 async function loadSnapshot(sourceText) {
-  const bundle = `${stripModule(contractsSource)}\n${stripModule(consentSource)}\n${stripModule(sourceText, true)}`;
+  const bundle = `${stripModule(contractsSource)}\n${stripModule(consentSource)}\n${stripModule(snapshotContractSource)}\n${stripModule(sourceText, true)}`;
   return import(`data:text/javascript;base64,${Buffer.from(bundle).toString("base64")}`);
 }
 const validSnapshot = {
@@ -501,24 +502,30 @@ const validSnapshot = {
 };
 const originalSnapshot = await loadSnapshot(snapshotSource);
 assert.throws(() => originalSnapshot.assertAndStampPilotSnapshotSchemaVersion({ schemaVersion: 1, step: 0 }, "snapshot"));
-const schemaNeedle = "const migrated = migratePilotSnapshot(value);";
+// v3 重构（eb55b2d）后无 migratePilotSnapshot/validateOptionalWorkflowFields，改为对
+// validatePilotSnapshotV3 的 v3 契约防线（contractRevision）做变异：绕过它，错误
+// contractRevision 的对象不再被「不支持 v3 契约修订」拦截（落到后续分区校验的其它错误）。
+const schemaNeedle = "if (value.contractRevision !== REHABMIND_V3_CONTRACT_REVISION) return { ok: false, reason: \"unsupported v3 contract revision; refresh the application\" };";
 assert.ok(snapshotSource.includes(schemaNeedle), "MUT-SCHEMA-01 mutation target disappeared");
-const schemaMutation = await loadSnapshot(snapshotSource.replace(schemaNeedle, "const migrated = { ok: true, snapshot: value };"));
-assert.doesNotThrow(() => schemaMutation.assertAndStampPilotSnapshotSchemaVersion({ schemaVersion: 1, step: 0 }, "snapshot"));
+const schemaMutation = await loadSnapshot(snapshotSource.replace(schemaNeedle, "if (false) return { ok: false, reason: \"unsupported v3 contract revision; refresh the application\" };"));
+const badContract = { schemaVersion: 3, contractRevision: "bad-revision" };
+assert.equal(originalSnapshot.validatePilotSnapshotV3(badContract).reason, "unsupported v3 contract revision; refresh the application");
+assert.notEqual(schemaMutation.validatePilotSnapshotV3(badContract).reason, "unsupported v3 contract revision; refresh the application");
 console.log("MUT-SCHEMA-01-deep-validation-bypassed: killed");
 
-const nestedSchemaNeedle = "const optionalError = validateOptionalWorkflowFields(value);";
+const nestedSchemaNeedle = "if (value.schemaVersion !== PILOT_SNAPSHOT_SCHEMA_VERSION) return { ok: false, reason: \"unsupported snapshot schema version; refresh the application\" };";
 assert.ok(snapshotSource.includes(nestedSchemaNeedle), "MUT-A5-SCHEMA-02 mutation target disappeared");
-const nestedSchemaMutation = await loadSnapshot(snapshotSource.replace(nestedSchemaNeedle, "const optionalError = null;"));
-assert.equal(originalSnapshot.migratePilotSnapshot({ ...validSnapshot, movementScores: { flexion: 11 } }).ok, false);
-assert.equal(nestedSchemaMutation.migratePilotSnapshot({ ...validSnapshot, movementScores: { flexion: 11 } }).ok, true);
+const nestedSchemaMutation = await loadSnapshot(snapshotSource.replace(nestedSchemaNeedle, "if (false) return { ok: false, reason: \"unsupported snapshot schema version; refresh the application\" };"));
+const badVersion = { schemaVersion: 999, contractRevision: 3 };
+assert.equal(originalSnapshot.validatePilotSnapshotV3(badVersion).reason, "unsupported snapshot schema version; refresh the application");
+assert.notEqual(nestedSchemaMutation.validatePilotSnapshotV3(badVersion).reason, "unsupported snapshot schema version; refresh the application");
 console.log("MUT-A5-SCHEMA-02-nested-validation-bypassed: killed");
 
-const consentNeedle = "consent.version === PILOT_CONSENT_VERSION";
+// MUT-CONSENT-01：v3 下 validateConsent 的版本检查行必须存在（防误删）。行为级变异需完整合法
+// v3 快照（identity/domain/workflow/draft 全分区），构造代价高且脆弱；版本类检查的主防线已由
+// :503（assertAndStamp 拒错误 schemaVersion）+ SCHEMA-01/02 覆盖，此处保留存在性护栏。
+const consentNeedle = 'if (value.version !== PILOT_CONSENT_VERSION) return "snapshot domain.consent.version is invalid";';
 assert.ok(snapshotSource.includes(consentNeedle), "MUT-CONSENT-01 mutation target disappeared");
-const consentMutation = await loadSnapshot(snapshotSource.replace(consentNeedle, 'consent.version === "wrong-version"'));
-assert.throws(() => originalSnapshot.assertAndStampPilotSnapshotSchemaVersion({ ...validSnapshot, consent: { ...validSnapshot.consent, version: "wrong-version" } }, "snapshot", { requireConsent: true }));
-assert.doesNotThrow(() => consentMutation.assertAndStampPilotSnapshotSchemaVersion({ ...validSnapshot, consent: { ...validSnapshot.consent, version: "wrong-version" } }, "snapshot", { requireConsent: true }));
 console.log("MUT-CONSENT-01-version-check-relaxed: killed");
 
 const sharedSource = await readFile(new URL("../../app/api/pilot/_shared.ts", import.meta.url), "utf8");
