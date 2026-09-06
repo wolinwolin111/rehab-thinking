@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadTypeScriptModule } from "../../support/load-typescript-module.mjs";
 
-const source = await readFile(new URL("../../../src/domain/rehab/shared/problem-ledger-core.ts", import.meta.url), "utf8");
-const code = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const core = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+// 批次 2 起 problem-ledger-core.ts 依赖 @/src/knowledge/actions/custom（customActionHint），
+// data URL 直载无法解析 @/ 别名 → 改用真实模块加载器（按拓扑捆绑 import 图）。
+const core = await loadTypeScriptModule("./src/domain/rehab/shared/problem-ledger-core.ts");
 
 test("an empty manual-treatment queue does not erase strength and tracking problems", () => {
   const ledger = core.buildProblemLedger([

@@ -84,7 +84,8 @@ test("D-3 专项检查入队且阳性：转医学评估出口 @scenario", async 
   // 评估结果：safety 类专项阳性 → 「先不要继续自助处理」转介出口（普通处理入口被
   // 「保存并结束本次」替代）；ACL 阳性进入后续跟踪。
   await expect(main).toContainText(/先不要继续自助处理/, { timeout: 10_000 });
-  await expect(main).toContainText(/专业人员线下评估/, { timeout: 10_000 });
+  // 第 13 轮 specialSafety 分支转介文案改为「先由专业人员确认」（原「专业人员线下评估」）；转介行为按「专业人员」弱锚定。
+  await expect(main).toContainText(/专业人员/, { timeout: 10_000 });
   await expect(main).toContainText(/前交叉韧带稳定性检查.*出现阳性线索|出现阳性线索/, { timeout: 10_000 });
   await assertNoHorizontalOverflow(page);
   await assertNoRuntimeErrors(runtimeErrors);

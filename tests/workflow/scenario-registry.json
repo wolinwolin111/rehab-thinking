@@ -1475,5 +1475,55 @@
       "muscle-overlay",
       "anatomy-review"
     ]
+  },
+  {
+    "scenarioId": "B0-7-CATALOG-VALUE-CONTRACTS",
+    "ruleIds": [
+      "B0-7-VALUE-CONTRACT"
+    ],
+    "priority": "P1",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/action-catalog-contracts.test.mjs",
+    "titlePattern": "选项值契约锁死（function-completion 三联 / unable-reason 四套 / range-function 四联 / retest-outcome 五值）",
+    "notes": "批次 0–7 行为契约：值契约永久锁死（决策层输入），标签按动作定制可改。断言走真实模块加载 index.ts+option-sets.ts：renderOptions 对定制/未定制条目值序一致；unableFollowUp 输出与 base 同源且 guidance 全删（owner 裁定引导删 7 留 1 后归零）；strength base 收敛 4 值（no-helper/control 不得回潜）；ankle-intrinsic 临床变更（缩短脚掌→踮脚尖/heel-raise-standing，旧动作零残留）+ assessmentTitle 双轨出裁定新标题；力量族四标题 owner 裁定；boundaries 新护栏实现存在（catalog 反向 import 禁止 + domain 白名单，防静默移除）",
+    "tags": [
+      "unit",
+      "contract",
+      "action-catalog",
+      "value-contract"
+    ]
+  },
+  {
+    "scenarioId": "B0-7-RELAX-TAGS-ONLY",
+    "ruleIds": [
+      "B0-7-RELAX-TAGS"
+    ],
+    "priority": "P2",
+    "evidenceType": "unit",
+    "script": "tests/unit/domain/home-relaxation-core.test.mjs",
+    "titlePattern": "exerciseMuscleLabels 只按 tags 映射 + hip-hinge glute 放松区域增加",
+    "notes": "批次 6（a19b73c）：居家放松肌肉归属去掉标题匹配，只按 tags；标题含肌群词但 tags 全是动作模式词 → 不映射（防标题字面复活）。knee/ankle/thigh 三条站立屈髋补 glute 标签 → 放松区域映射臀部（区域增加非减少）",
+    "tags": [
+      "unit",
+      "contract",
+      "home-relaxation",
+      "action-catalog"
+    ]
+  },
+  {
+    "scenarioId": "B0-7-SCREENS-CALF-ANKLE",
+    "ruleIds": [
+      "B0-7-SCREENS"
+    ],
+    "priority": "P1",
+    "evidenceType": "e2e",
+    "script": "tests/browser/scenarios/action-catalog-screens.spec.ts",
+    "titlePattern": "AC-1/2/3 小腿局部评估卡 + 踝评估卡 + 踝训练卡：新值上屏 + 退役字面零残留",
+    "notes": "dev 第 15 轮申请的屏级补覆盖：三个屏在既有 page_boundary 不可达（小腿局部评估卡/踝评估卡/踝训练卡），新增 catalog 定向场景 calf-local-assessment / ankle-assessment-cards / ankle-training-card（intake 定向 snapshotOverrides，tsc 干净）。断言：产品主区 main 作用域内退役字面零残留（完成5次/扶墙做5次/最多记录20个高质量次数/每项每组12个/每组8～10个/缩短脚掌/先这样试；有意保留例外不入清单：每组8～12个=坐姿提踵、保持5秒=力量测量属性）；踝区队列来自目录（踝足主动外翻/背屈 AROM）；训练页渲染目录训练卡。负断言必须作用域 main——launcher 场景说明文本引用旧字面作对比，全 runtime 匹配会假阳性",
+    "tags": [
+      "scenario",
+      "action-catalog",
+      "screens"
+    ]
   }
 ]

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { openFreshProduct, skipOnboarding, assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, symptomOrganizeButton } from "../support/page-helpers";
+import { clickFunctionCompletion, openFreshProduct, skipOnboarding, assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, symptomOrganizeButton } from "../support/page-helpers";
 import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 async function clickUnselected(locator: Locator, description: string) {
@@ -99,6 +99,18 @@ async function completeNormalAssessment(page: Page) {
     if (/先看清问题，再开始处理/.test(title)) return;
     if (/本阶段成果|评估检查完成/.test(title)) throw new Error(`肿胀场景评估提前结束：${title}`);
 
+    // 功能作答三联按动作定制（批次 3）：命中「这个动作能做完吗？」题块时按值索引点 complete；
+    // 已选中则落到下方控制/不适/下一检查处理，避免重复点击死循环。
+    const completionBlock = page.locator(".rm-motion-answer-block")
+      .filter({ has: page.getByRole("heading", { name: "这个动作能做完吗" }) });
+    if (await completionBlock.count()) {
+      const completeBtn = completionBlock.locator(".rm-result-grid.is-three button").nth(0);
+      if (!((await completeBtn.getAttribute("class")) ?? "").includes("is-selected")) {
+        await completeBtn.click();
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        continue;
+      }
+    }
     if (await clickMatching(page, /^接近健侧|^可以做完|^可以完成|^角度基本正常|^与另一方向接近|^接近平时范围/, "正常活动范围或功能完成")) continue;
     if (await clickMatching(page, /^没有不适$/, "活动没有不适")) continue;
     if (await clickMatching(page, /^软性终末感$/, "正常终末感")) continue;
@@ -161,9 +173,10 @@ test.describe("发散决策组合：肿胀与队列", () => {
 
     await click("打开检查", "打开混合结果评估");
     // v3 队列顺序：功能卡在前——双腿闭链下蹲 → 台阶下降 → 主动伸直 → 主动屈曲 → 力量。
-    await click("暂时不做", "未知的双腿闭链下蹲");
+    // 三联按动作定制 → 按值点击（skip/unable）。
+    await clickFunctionCompletion(page, "skip");
     await click("下一个检查", "进入台阶下降控制检查");
-    await click("做不完或不敢继续", "异常的台阶下降");
+    await clickFunctionCompletion(page, "unable");
     await click("没力或撑不住", "台阶下降无法完成原因");
     await click("下一个检查", "进入膝关节主动伸直");
     await click(/^患侧偏小/, "异常的主动伸直范围");

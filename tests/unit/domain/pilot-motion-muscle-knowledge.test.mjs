@@ -93,7 +93,10 @@ test("assessment uses professional page titles and one shared tension screen", a
 test("functional checks use action-specific observations and guided intake separates scenario from action", async () => {
   const demo = await readRehabMindUiSource();
   const content = await readFile(new URL("../../../src/knowledge/pilot/full-demo-content.ts", import.meta.url), "utf8");
-  assert.match(demo, /function:calf-walk/);
+  // 动作库重构（批次 2）：功能项按动作 id 的观察/选项数据迁入目录（裸 id + kind），工作台不再内联该表。
+  // 按「卡 id 定位」原则：钉目录层的 calf-walk function 条目；shoulder-overhead-task 仍在 workbench 内联表。
+  const catalog = await readFile(new URL("../../../src/knowledge/actions/assessment.ts", import.meta.url), "utf8");
+  assert.match(catalog, /id: "calf-walk", region: "calf-local", kind: "function"/);
   assert.match(demo, /function:shoulder-overhead-task/);
   // v3（对照表 #3）：合并为单题「诱发动作」；旧标签（诱发场景/具体动作）只允许在兼容映射中出现。
   assert.match(demo, /showIntakeQuestion\("诱发动作"\)/);

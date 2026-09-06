@@ -284,8 +284,10 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /接近平时范围/);
   assert.match(demo, /rangeRetestOptions/);
   assert.match(demo, /与对侧相比，患侧的/);
-  assert.match(demo, /患侧偏小｜活动范围受限/);
-  assert.match(demo, /有所改善｜幅度增加但仍小于/);
+  // 动作库批次 3 选项定制：range 复测三联按动作写标签（膝伸直=「膝后仍明显悬空」），
+  // 旧通用标签「患侧偏小｜活动范围受限」退役；改钉值锚定 + 保留「值｜说明」结构。
+  assert.match(demo, /"limited", "患侧偏小｜膝后仍明显悬空"/);
+  assert.match(demo, /有所改善｜被动活动幅度增加但仍小于/);
   assert.match(demo, /pendingKneeAssessmentCheck/);
   assert.match(demo, /还不能结束本次评估/);
   assert.match(demo, /finishRangeBatch/);
@@ -293,7 +295,9 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /部分改善｜主动有改善，被动仍小于/);
   assert.match(demo, /没有明显变化/);
   assert.doesNotMatch(demo, /继续下一组相关肌肉/);
-  assert.match(demo, /有所改善｜幅度增加但仍小于/);
+  // 批次 3 选项定制：better-passive-limited 标签改为「有所改善｜被动活动幅度增加…」（与 :290 同源），
+  // 值 id 锚定 + 标签前缀弱断言。
+  assert.match(demo, /\["better-passive-limited", `有所改善/);
   assert.match(demo, /nextRangeCandidateType\(movementResponse, activeRangeAllowsPassive && canMobilizeJoint\)/);
   assert.match(demo, /finishTrial\(resultWithFunctionRetest\("partial"\), false, nextCandidateType\)/);
   assert.match(styles, /border-radius: 999px/);
@@ -462,7 +466,8 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /pairedStrengthLocations/);
   assert.match(demo, /pairedStrengthUnableReason/);
   assert.match(demo, /strengthUnableReason/);
-  assert.match(demo, /先这样试/);
+  // 批次 3（owner 裁定）：评估/力量/配对力量卡的「先这样试」引导框全部删除，pain 原因直进疼痛记录。
+  assert.doesNotMatch(demo, /先这样试/);
   assert.match(demo, /firstAssessmentGap/);
   assert.match(demo, /openAssessmentItem/);
   assert.match(demo, /shouldRetestChiefNow/);
@@ -528,7 +533,8 @@ test("keeps NRS history, gated steps, local records and repeat-rehab paths", asy
   assert.match(demo, /candidateIsAvailable/);
   assert.match(demo, /candidate-safety-core/);
   assert.match(demo, /stabbingSpread/);
-  assert.match(demo, /普通自助路径不安排神经松动/);
+  // 第 14 轮口语化：神经转介安全文案改为「不适合自己练，也不建议自己松神经」（转介属安全文案，§8 例外保留锁定）。
+  assert.match(demo, /不适合自己练，也不建议自己松神经/);
   assert.match(demo, /FUNCTION_COMPENSATIONS/);
   assert.match(demo, /const ranked = rankPilotAssessmentIds/);
   assert.doesNotMatch(content, /knee-patella-tenderness-self/);
@@ -742,7 +748,9 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /weakStrengthTags/);
   assert.match(demo, /noImmediateTreatmentResponse/);
   assert.match(demo, /刚才的试处理没有改变主诉/);
-  assert.match(demo, /查看低刺激基础活动/);
+  // 动作库批次 5/第 14 轮口径：无即时反应时的训练入口文案改为「查看低强度活动」/「查看轻柔的基础活动」，
+  // 钉行为条件（noImmediateTreatmentResponse 换标签）而非具体文案。
+  assert.match(demo, /\{noImmediateTreatmentResponse \? "查看/);
   assert.match(demo, /if \(currentStage <= 1\)/);
   assert.match(demo, /每个方向5～8个/);
   assert.match(demo, /本次没有新的即时处理/);
@@ -800,7 +808,9 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /这个动作能做完吗/);
   assert.match(demo, /太轻松/);
   assert.match(demo, /做不了/);
-  assert.match(demo, /做不完或不敢继续/);
+  // 批次 3：功能作答三联按动作定制（renderOptions），旧通用标签「做不完或不敢继续」退役；
+  // 钉通用兜底键（custom-action 等未定制条目仍用它）。
+  assert.match(demo, /renderOptions<FunctionCompletion>/);
   assert.match(demo, /训练动作.*后不适更重|做完更不舒服/);
   assert.match(demo, /训练后加重，待重新评估/);
   assert.match(demo, /确认加重后的变化/);
@@ -823,9 +833,13 @@ test("covers the full-positive, bilateral, no-action and extreme-input pilot rul
   assert.match(demo, /这次用力时有多不舒服/);
   assert.match(demo, /与健侧比较/);
   assert.doesNotMatch(demo, /接近没受伤的那边|明显小于没受伤的那边/);
-  assert.match(content, /和健侧比较力量，留意脚趾有没有使劲代替脚踝发力/);
+  // 动作库批次 4：力量族 copy 迁入目录（assessment.ts），full-demo-content 不再持此句；按卡 id 定位改钉目录。
+  const assessmentCatalog = await readFile(new URL("../../src/knowledge/actions/assessment.ts", import.meta.url), "utf8");
+  assert.match(assessmentCatalog, /id: "ankle-dorsiflexor"[\s\S]*pro: "和健侧比较力量，留意脚趾有没有使劲代替脚踝发力。"/);
   assert.doesNotMatch(content, /没受伤的那边/);
-  assert.match(demo, /如果是因为疼所以不敢继续/);
+  // 批次 3：unable-reason 追问包迁入目录（option-sets.ts），pain 原因 hint 按目录定位。
+  const optionSets = await readFile(new URL("../../src/knowledge/actions/option-sets.ts", import.meta.url), "utf8");
+  assert.match(optionSets, /如果是因为疼所以不敢继续/);
   assert.match(demo, /deniesTwist/);
   assert.match(demo, /deniesImpact/);
   assert.match(demo, /candidate-treatment-core/);
@@ -1080,7 +1094,9 @@ test("rapid function answers merge into the latest assessment record", async () 
   assert.doesNotMatch(demo, /isChiefFunctionAssessment \? \["动作不稳定"\] : undefined/);
   assert.match(demo, /compensations: value === "compensated" \? record\.compensations : undefined/);
   assert.match(demo, /const latestLocations = latestRecord\.tensionLocations \?\? \[\]/);
-  assert.match(demo, /latestRecord\.compensations\?\.includes\(entry\)/);
+  // 第 24 轮代偿编号分离：按钮选中判定走 compensationIds 归一（存储值=编号，显示=词表 label）；
+  // 快速点击合并语义不变——toggle 仍读 latestRecord（selected = compensationIds(latestRecord...)）。
+  assert.match(demo, /compensationIds\(latestRecord\.compensations \?\? \[\]\); return \{ compensations: selected\.includes\(entry\.id\)/);
 });
 
 test("assessment progress includes the shared muscle-tension check", async () => {

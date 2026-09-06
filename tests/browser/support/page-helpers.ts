@@ -108,6 +108,21 @@ export async function assertNoHorizontalOverflow(page: Page) {
 }
 
 /**
+ * 功能动作作答三联按值点击（complete/unable/skip）。
+ * 动作库批次 3 起三联标签按动作定制（如「能走完/走不了或不敢走」），旧通用标签
+ * 「可以做完/做不完或不敢继续/暂时不做」在定制条目上消失；值契约锁死为
+ * [complete, unable, skip]（option-sets.ts function-completion），故按索引定位，
+ * 不钉任何标签字面。作用域到「这个动作能做完吗？」题块内的三列网格。
+ */
+export async function clickFunctionCompletion(page: Page, value: "complete" | "unable" | "skip") {
+  const idx = value === "complete" ? 0 : value === "unable" ? 1 : 2;
+  const block = page.locator(".rm-motion-answer-block")
+    .filter({ has: page.getByRole("heading", { name: "这个动作能做完吗" }) })
+    .first();
+  await block.locator(".rm-result-grid.is-three button").nth(idx).click();
+}
+
+/**
  * 通过测试工作台启动定向场景（page_boundary 快速直达，无需走完整流程）。
  * 返回运行时容器（data-scenario-id 已确认匹配、康复流程导航已就绪）。
  * 研发提供基准实现：测试工作台会持续轮询权限与刷新记录，不能用 networkidle 当就绪条件。

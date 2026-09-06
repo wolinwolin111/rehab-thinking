@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoRuntimeErrors, collectRuntimeErrors, launchWorkbenchScenario } from "../support/page-helpers";
+import { assertNoRuntimeErrors, clickFunctionCompletion, collectRuntimeErrors, launchWorkbenchScenario } from "../support/page-helpers";
 import { driveGuidedAcuteAnkleToSafetyConfirmation, prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 // Phase 4.1 fixme 转化：安全边界四条中，踝安全停止与无主诉动作分数已接入；
@@ -117,10 +117,11 @@ test("动作无法完成的不同原因分别保留并阻止误判正常 @scenar
     await page.waitForTimeout(300);
   };
   await click("打开检查", "打开检查");
-  await click("做不完或不敢继续", "下蹲做不完");
+  // 三联按动作定制 → 按值点击 unable（原因标签 weak/fear 仍通用）。
+  await clickFunctionCompletion(page, "unable");
   await click("没力或撑不住", "下蹲没力");
   await click("下一个检查", "下蹲→台阶");
-  await click("做不完或不敢继续", "台阶做不完");
+  await clickFunctionCompletion(page, "unable");
   await click("担心继续会加重", "台阶担心");
   await click("下一个检查", "台阶→伸直");
 

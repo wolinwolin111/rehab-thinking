@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, launchWorkbenchScenario } from "../support/page-helpers";
+import { assertNoHorizontalOverflow, assertNoRuntimeErrors, clickFunctionCompletion, collectRuntimeErrors, launchWorkbenchScenario } from "../support/page-helpers";
 import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 // FR 组：功能复测疼痛对比（e5cdf85）+ 恐动拆分（2069385）+ 清理链（fef2886）。
 //
@@ -41,7 +41,8 @@ test("FR-2 恐动主因：Q2 追问已退役、恐动作主因可提交 @scenari
   await main.getByRole("button", { name: "打开检查", exact: true }).click();
   await page.waitForTimeout(400);
   // 下蹲 unable → 疼：Q2 追问已退役，选疼后不再出现「当时是不是也担心继续会加重？」。
-  await main.getByRole("button", { name: "做不完或不敢继续", exact: true }).first().click();
+  // 三联按动作定制，改按值点击 unable（原因标签 pain/fear 仍通用）。
+  await clickFunctionCompletion(page, "unable");
   await page.waitForTimeout(300);
   await main.getByRole("button", { name: /疼或不舒服/ }).first().click();
   await page.waitForTimeout(300);

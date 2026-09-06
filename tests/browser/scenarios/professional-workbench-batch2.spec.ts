@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow, assertNoRuntimeErrors, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding, launchWorkbenchScenario } from "../support/page-helpers";
+import { assertNoHorizontalOverflow, assertNoRuntimeErrors, clickFunctionCompletion, collectRuntimeErrors, expectUniqueVisible, openFreshProduct, skipOnboarding, launchWorkbenchScenario } from "../support/page-helpers";
 import { prepareProfessionalMultiAction } from "../drivers/pilot-flow";
 
 // B2 组：专业模式批次 2 终态（d558c08）——处理段只读工作台（阶段工作台按钮 + 三列 + 导航）。
@@ -14,19 +14,20 @@ async function driveToTreatmentWorkbench(page: import("@playwright/test").Page) 
   await prepareProfessionalMultiAction(page);
   const main = page.locator("main:visible");
   await main.getByRole("button", { name: "打开检查", exact: true }).click();
-  await main.getByRole("button", { name: "做不完或不敢继续", exact: true }).first().click();
+  // 三联按动作定制（批次 3）→ 按值点击；motion AROM limited 现为通用短标签「患侧偏小」。
+  await clickFunctionCompletion(page, "unable");
   await main.getByRole("button", { name: "没力或撑不住", exact: true }).first().click();
   await main.getByRole("button", { name: "下一个检查", exact: true }).click();
-  await main.getByRole("button", { name: "做不完或不敢继续", exact: true }).first().click();
+  await clickFunctionCompletion(page, "unable");
   await main.getByRole("button", { name: "没力或撑不住", exact: true }).first().click();
   await main.getByRole("button", { name: "下一个检查", exact: true }).click();
   await main.getByRole("button", { name: /患侧偏小.*膝后仍明显悬空/ }).first().click();
   await main.getByRole("button", { name: "没有不适", exact: true }).first().click();
   await main.getByRole("button", { name: "下一个检查", exact: true }).click();
-  await main.getByRole("button", { name: /患侧偏小.*活动范围受限/ }).first().click();
+  await main.getByRole("button", { name: "患侧偏小", exact: true }).first().click();
   await main.getByRole("button", { name: "没有不适", exact: true }).first().click();
   await main.getByRole("button", { name: "下一个检查", exact: true }).click();
-  await main.getByRole("button", { name: /力量接近.*两侧完成质量相近/ }).first().click();
+  await main.getByRole("button", { name: /^力量接近/ }).first().click();
   await main.getByRole("button", { name: "检查相关肌肉", exact: true }).first().click();
   await main.getByRole("button", { name: "没有明显差别", exact: true }).first().click();
   await main.getByRole("button", { name: "查看评估结果", exact: true }).click();
@@ -107,9 +108,10 @@ test("B2-4 处理段空态页：全正常无固定主诉动作 → 空态出口 
   test.setTimeout(120_000);
   const runtimeErrors = collectRuntimeErrors(page);
   const runtime = await launchWorkbenchScenario(page, "assessment-all-normal");
-  // 处理段空态：无明确异常 + 低刺激基础活动出口；不出现处理卡。
+  // 处理段空态：无明确异常 + 低强度活动出口；不出现处理卡。
   await expect(runtime).toContainText("本次没有发现明确异常", { timeout: 10_000 });
-  await expect(runtime).toContainText("查看低刺激基础活动", { timeout: 10_000 });
+  // 空态出口按钮文案随口语化改名（低刺激→低强度），属导航标签非安全文案，按 §8 不钉字面，改钉结构：必有主出口。
+  await expect(runtime.locator("button.rm-primary").first()).toBeVisible();
   await expect(runtime.locator(".rm-treatment-action-card")).toHaveCount(0);
   await assertNoHorizontalOverflow(page);
   await assertNoRuntimeErrors(runtimeErrors);

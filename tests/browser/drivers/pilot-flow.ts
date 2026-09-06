@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { expectUniqueVisible, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
+import { clickFunctionCompletion, expectUniqueVisible, openFreshProduct, skipOnboarding, symptomOrganizeButton } from "../support/page-helpers";
 
 async function clickUnique(page: Page, name: string | RegExp, description: string) {
   const button = await expectUniqueVisible(page, description, page.getByRole("button", { name, exact: typeof name === "string" }));
@@ -102,10 +102,11 @@ export async function completeProfessionalAssessment(page: Page, options: { stop
     await button.click();
   };
   await click("打开检查", "打开评估检查");
-  await click("做不完或不敢继续", "下蹲功能无法完成");
+  // 功能作答三联按动作定制（批次 3），改按值点击；motion AROM limited 标签现为通用短标签「患侧偏小」。
+  await clickFunctionCompletion(page, "unable");
   await click("没力或撑不住", "下蹲功能无法完成原因");
   await click("下一个检查", "进入台阶下降控制检查");
-  await click("做不完或不敢继续", "台阶动作无法完成");
+  await clickFunctionCompletion(page, "unable");
   await click("没力或撑不住", "台阶动作无法完成原因");
   await click("下一个检查", "进入膝关节主动伸直");
   await click(/患侧偏小.*膝后仍明显悬空/, "主动伸直活动受限");
@@ -114,12 +115,12 @@ export async function completeProfessionalAssessment(page: Page, options: { stop
   const holdButton = page.locator("main:visible").locator("button:visible").filter({ hasText: /保持稳定|能保持/ }).first();
   if (await holdButton.count()) await holdButton.click();
   await click("下一个检查", "进入膝关节主动屈曲");
-  await click(/患侧偏小.*活动范围受限/, "主动屈曲活动受限");
+  await click("患侧偏小", "主动屈曲活动受限");
   await click("没有不适", "主动屈曲没有不适");
   const flexHold = page.locator("main:visible").locator("button:visible").filter({ hasText: /保持稳定|能保持/ }).first();
   if (await flexHold.count()) await flexHold.click();
   await click("下一个检查", "进入大腿内侧力量检查");
-  await click(/力量接近.*两侧完成质量相近/, "大腿内侧力量接近");
+  await click(/^力量接近/, "大腿内侧力量接近");
   // 力量卡后为「单腿支撑与骨盆稳定检查」（单选直答，正常口径）。
   await click("下一个检查", "进入单腿支撑与骨盆稳定检查");
   await page.locator("main:visible").locator("button:visible").filter({ hasText: /力量接近/ }).first().click();
@@ -177,7 +178,7 @@ export async function completeSingleActionAssessment(page: Page) {
     await button.click();
   };
   await click("打开检查", "打开评估检查");
-  await click("可以做完", "下蹲功能正常完成");
+  await clickFunctionCompletion(page, "complete");
   await click("动作基本稳定", "下蹲功能稳定");
   await click("不会", "下蹲功能没有不适");
   await clickNextIfPresent();
@@ -186,7 +187,7 @@ export async function completeSingleActionAssessment(page: Page) {
     guard += 1;
     const title = (await page.locator("h1:visible").first().textContent().catch(() => "")) ?? "";
     if (/台阶下降/.test(title)) {
-      await click("做不完或不敢继续", "台阶动作无法完成");
+      await clickFunctionCompletion(page, "unable");
       await click("没力或撑不住", "台阶动作无法完成原因");
       await clickNextIfPresent();
       continue;
@@ -198,13 +199,13 @@ export async function completeSingleActionAssessment(page: Page) {
       continue;
     }
     if (/屈曲/.test(title)) {
-      await click(/患侧偏小.*活动范围受限/, "主动屈曲活动受限");
+      await click("患侧偏小", "主动屈曲活动受限");
       await click("没有不适", "主动屈曲没有不适");
       await clickNextIfPresent();
       continue;
     }
     if (/大腿内侧|力量/.test(title)) {
-      await click(/力量接近.*两侧完成质量相近/, "大腿内侧力量接近");
+      await click(/^力量接近/, "大腿内侧力量接近");
       const tension = main.getByRole("button", { name: "检查相关肌肉", exact: true });
       if (await tension.count()) {
         await tension.click();
@@ -306,13 +307,13 @@ export async function completeSingleActionTreatment(page: Page, options: { chief
     const title = (await page.locator("h1:visible").first().textContent().catch(() => "")) ?? "";
     if (/活动范围/.test(title) && !/原来的动作/.test((await main.textContent()) ?? "")) {
       // 范围复测：给「接近目标」口径。
-      const better = main.getByRole("button", { name: /接近目标.*与健侧接近/ }).first();
+      const better = main.getByRole("button", { name: /接近目标/ }).first();
       if (await better.count()) await better.click();
       const noPain = main.getByRole("button", { name: "没有不适", exact: true }).first();
       if (await noPain.count()) await noPain.click();
     } else {
       // 统一批量复测：范围接近健侧（闭合复查义务）+ 主诉分数不变 + 下蹲能完成。
-      const better = main.getByRole("button", { name: /接近目标.*与健侧接近/ }).first();
+      const better = main.getByRole("button", { name: /接近目标/ }).first();
       if (await better.count()) await better.click();
       const noPain = main.getByRole("button", { name: "没有不适", exact: true }).first();
       if (await noPain.count()) await noPain.click();
@@ -363,10 +364,11 @@ export async function completeProfessionalAssessmentWithPassive(page: Page, opti
       await summaryButton.click();
       break;
     }
-    // 功能卡：正常完成口径。
-    const canDo = main.getByRole("button", { name: "可以做完", exact: true });
-    if (await canDo.count()) {
-      await canDo.click();
+    // 功能卡：正常完成口径。三联按动作定制（批次 3），改按「这个动作能做完吗？」题块内三列网格索引点 complete。
+    const completionBlock = main.locator(".rm-motion-answer-block")
+      .filter({ has: page.getByRole("heading", { name: "这个动作能做完吗" }) });
+    if (await completionBlock.count()) {
+      await completionBlock.locator(".rm-result-grid.is-three button").nth(0).click();
       await page.waitForTimeout(120);
       const stable = main.getByRole("button", { name: "动作基本稳定", exact: true });
       if (await stable.count()) await stable.click();
@@ -628,7 +630,7 @@ export async function completeProfessionalTreatmentRound(page: Page, options: { 
     await button.click();
   };
   await click("处理完成，复测原来的动作", "完成第一项处理");
-  await click(/仍受限.*主动活动幅度仍小于健侧/, "复测主动伸直仍受限");
+  await click(/仍受限/, "复测主动伸直仍受限");
   await click("没有不适", "复测主动伸直不适");
   for (const heading of ["下蹲", "下台阶"] as const) {
     const retest = page.locator("article").filter({ has: page.getByRole("heading", { name: heading, exact: true }) });
@@ -642,7 +644,7 @@ export async function completeProfessionalTreatmentRound(page: Page, options: { 
   }
   await click("继续", "完成批量复测");
   await click("处理完成，复测活动范围", "完成第二项处理");
-  await click(/接近目标.*主动活动幅度与健侧接近/, "复测主动屈曲活动范围");
+  await click(/接近目标/, "复测主动屈曲活动范围");
   await click("没有不适", "复测主动屈曲不适");
   await click("继续", "完成主动屈曲复测");
   // 完成面板出现后等待继续排查区渲染完成。

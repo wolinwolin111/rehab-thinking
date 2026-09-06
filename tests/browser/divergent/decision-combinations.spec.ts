@@ -50,9 +50,12 @@ async function completePainDetails(page: Page) {
 
 async function answerCurrentAssessment(page: Page, combination: Combination) {
   const button = (text: string | RegExp) => page.locator("button:visible").filter({ hasText: typeof text === "string" ? new RegExp(`^${escapeRegExp(text)}$`) : text });
-  const functionComplete = button("可以做完");
-  if (await functionComplete.count()) {
-    await clickFirstUnselected(page, functionComplete, "功能完成状态");
+  // 功能作答三联按动作定制（批次 3）：命中「这个动作能做完吗？」题块时按值索引点 complete。
+  const completionBlock = page.locator(".rm-motion-answer-block")
+    .filter({ has: page.getByRole("heading", { name: "这个动作能做完吗" }) });
+  if (await completionBlock.count()) {
+    await completionBlock.locator(".rm-result-grid.is-three button").nth(0).click();
+    await page.waitForTimeout(120);
     await clickFirstUnselected(page, button("动作基本稳定"), "功能控制状态");
     const discomfort = combination === "function-pain" ? "会" : "不会";
     const changed = await clickFirstUnselected(page, button(discomfort), "功能动作不适状态");

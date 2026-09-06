@@ -117,3 +117,21 @@ test("exerciseMuscleLabels leaves pure movement-pattern tags unmapped", () => {
   assert.deepEqual(core.exerciseMuscleLabels(["jump", "landing", "change-direction"], "跳跃落地与减速"), []);
   assert.deepEqual(core.exerciseMuscleLabels(["sit-to-stand", "squat", "movement-pattern"], "坐站与浅蹲"), []);
 });
+
+test("exerciseMuscleLabels is tags-only: title muscle words without matching tags map to nothing (批次 6 a19b73c)", () => {
+  // 批次 6：去掉标题匹配，只按 tags。标题含「小腿」但 tags 全是动作模式词 → 不映射（防标题字面复活）。
+  assert.deepEqual(core.exerciseMuscleLabels(["hip-hinge", "movement-pattern"], "小腿后侧提踵"), []);
+  assert.deepEqual(core.exerciseMuscleLabels(["movement-pattern", "stairs"], "大腿前侧拉伸"), []);
+});
+
+test("hip-hinge 带 glute 标签后映射到臀部放松区（放松区域增加，批次 6 a19b73c）", () => {
+  // knee/ankle/thigh 三条站立屈髋练习补 glute 标签 → exerciseMuscleLabels 命中臀区。
+  assert.deepEqual(
+    core.exerciseMuscleLabels(["hip-hinge", "movement-pattern", "standing-hip-flexion", "stairs", "glute"], "站立屈髋"),
+    ["臀部与髋后外侧肌群"],
+  );
+  assert.deepEqual(
+    core.exerciseMuscleLabels(["thigh-back", "hip-hinge", "daily", "glute"], "站立屈髋"),
+    ["臀部与髋后外侧肌群"],
+  );
+});
