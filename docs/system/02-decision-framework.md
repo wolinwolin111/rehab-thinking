@@ -9,27 +9,24 @@
 
 ## 2. 数据流总图
 
+![决策引擎主数据流](assets/02-main.png)
+
+上游→下游依次为：主诉解析→安全分流→评估队列→逐卡作答→finding→问题台账→处理候选→处理记录→复测→训练→总结复诊；复测后"加重"判定分出停止出口（退阶/聚焦复查/转介）。权限画像（workflow-profile-core）横切全程：自助/学习模式不产生专业证据。
+
+<details><summary>各跳函数名索引</summary>
+
 ```
 口语主诉 ─intake-complaint-core─▶ 解析候选(须确认) ─chief-action-core─▶ 主诉动作/优先侧
-   └─workflow-profile-core─▶ 能力/权限唯一来源
-        ▼
-评估队列  pilot-decision-engine.rankPilotAssessmentIds(:215) ＋ function-assessment-plan(:339)
-   完整性门 assessment-record-complete(:48) ｜ 补缺 assessment-gap(:17)
-        ▼
+评估队列  rankPilotAssessmentIds(:215) ＋ selectFunctionAssessmentPlan(:339) ｜完整性门 record-complete(:48)｜补缺 gap(:17)
 finding    knee-workflow-adapter(:365,218) ｜ local-limb-decision(:149) ｜ tissue-pathway(:40)
-        ▼
-问题台账   knee-decision-core.buildKneeProblems(:228)＋applyObservationStatuses(:278)
-           problem-ledger-core.buildProblemLedger(:24) ｜ finding-groups(:35)
-        ▼
-处理候选   build-trial-targets-core(:69) ｜ buildKneeTreatmentUnits(:380) ｜ buildPilotTreatmentUnits(:402)
-           去重合并 trial-target-core(:35) ｜ 队列推进 treatment-queue-core(:35)
-        ▼
+问题台账   buildKneeProblems(:228)＋applyObservationStatuses(:278) ｜ buildProblemLedger(:24)
+处理候选   buildTrialTargets(:69) ｜ buildKneeTreatmentUnits(:380) ｜ buildPilotTreatmentUnits(:402) ｜ 队列推进 treatment-queue-core(:35)
 复测       retest-obligation-core(:155) ｜ retest-ledger-core(:156,91) ｜ batch-retest-compute(:10)
-        ▼
-训练       local-limb trainingFor(:127) ｜ training-progression(:53) ｜ stage-gate(:24) ｜ home-relaxation(:62)
-        ▼
+训练       trainingFor(:127) ｜ training-progression(:53) ｜ stage-gate(:24) ｜ home-relaxation(:62)
 复诊/总结  next-session-recommendation(:27) ｜ followup-review(:60) ｜ decision-trace(:19)
 ```
+
+</details>
 
 ## 3. 主诉解析（intake）
 
@@ -68,6 +65,8 @@ finding    knee-workflow-adapter(:365,218) ｜ local-limb-decision(:149) ｜ tis
 
 生成管线（build-trial-targets-core.ts:69 起）：候选池装配→12 连过滤（可用性/K-P0-07/专业门槛/先行肌肉试验/组织路径排除/白名单/能力/锐痛路径，:224-244）→打分→typeOrder 随症状切换（麻电→neural 优先，:406-412）→主诉组 slice(0,3)＋可选组 slice(3,6)（:427）→跨问题按 treatmentKey 合并（trial-target-core.ts:35）。
 
+![处理候选生成管线](assets/02-candidates.png)
+
 - **打分**：kneeCore 当前单元 5000/可用 1200；finding 支持 exact 600/组合 180/120；关系分 ×30/×12/×8/×4；触诊肌肉候选前缀 +1000（:405）。
 - **去重键**：`muscle:标准区域`；treatmentKey=`侧:dedupKey`（candidate-treatment-core.ts:116-154）；同区域链内 muscleLimit 默认 2＋neural/joint/control/other 各 1（:194-203）。
 - **关节松动入口四条件**：rehab 能力＋处理后被动仍受限＋该方向确有肌肉处理记录＋无停止信号（knee-decision-core.ts:538-545）；通用路径另有"初始 PROM=limited 且未复测"放行（build-trial-targets-core.ts:543）——两轨并存，记录在案。
@@ -92,6 +91,8 @@ finding    knee-workflow-adapter(:365,218) ｜ local-limb-decision(:149) ｜ tis
 - **归因三套"态"**：TrialResult 四态（better/partial/same/worse）；单元 attribution 三态（primary-supported/primary-hypothesis/group-only）；responseRole 七态（partial-contribution/key-completion/independent-completion/range-contribution/no-change/worsened/not-immediately-testable，treatment-response-core.ts:1-29）。
 - retest-only 记录不增加处理序号，但观察必须入序列（knee-workflow-adapter.ts:394-414）。
 
+![复测闭环](assets/02-retest.png)
+
 ## 9. 训练分期与进退阶
 
 - **分期公式**：`stageCount = min(目标上限, max(2, 次数+1), 5)`——每次最多开放下一层（local-limb-decision-core.ts:134-137）；急性/撞伤/肌腱只开第 1 项（:131）。
@@ -105,9 +106,13 @@ finding    knee-workflow-adapter(:365,218) ｜ local-limb-decision(:149) ｜ tis
 - **不良事件阶梯**（adverse-response-core.ts:48-55）：采集不完整→capture；神经/无力或持续升高且≥7 分→stop-and-refer；训练源＋停止后回落＋位置性质未变＋未退过阶→regress-training；否则 focused-reassessment（≤3 项）。
 - 追加式历史：当天晚些/次日加重追加到本次观察，不增加康复次数；连续异常每次评估版本递增，旧版本方案不可跨版本执行（canExecutePlan，:70）。
 
+![复诊窗口与不良事件阶梯](assets/02-followup.png)
+
 ## 11. 双侧规则
 
 优先侧裁决＝安全＞主诉＞评估，**评估更差侧只能提醒不能静默替换**（bilateral-flow-core.ts:25-54）；双侧评估未完→训练 low-load，安全信号/处理加重→blocked（:83）；单侧完成后出口必须用户选择，不自动跳侧（:101-120）；双侧复测同卡分侧记录，任一侧加重停止同类处理。
+
+![双侧流程](assets/01-bilateral.png)
 
 ## 12. 溯源与知识版本
 
