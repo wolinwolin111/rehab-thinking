@@ -14,11 +14,11 @@
 <text x="560" y="268" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">返回修改上游？</text>
 <path d="M 120 330 H 1000 V 376 H 120 Z" fill="#EDEDED" stroke="#999999" stroke-width="1.5"/>
 <text x="560" y="358" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#444444">SYS-STATE-001：受影响的下游旧处理/复测/训练目标全部失效，不可继续执行</text>
-<path d="M 115 144 L 115 112 L 305 112 L 305 80" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
-<path d="M 305 144 L 305 112 L 495 112 L 495 80" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
-<path d="M 495 144 L 495 112 L 685 112 L 685 80" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
-<path d="M 685 144 L 685 112 L 875 112 L 875 80" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
-<path d="M 875 144 L 875 112 L 1015 112 L 1015 80" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
+<path d="M 190 112 L 210 112 L 210 112 L 230 112" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
+<path d="M 380 112 L 400 112 L 400 112 L 420 112" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
+<path d="M 570 112 L 590 112 L 590 112 L 610 112" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
+<path d="M 760 112 L 780 112 L 780 112 L 800 112" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
+<path d="M 950 112 L 950 112 L 950 112 L 950 112" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/>
 <path d="M 495 144 L 495 192 L 560 192 L 560 240" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="527.5" y="186" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">改症状/评估</text>
 <path d="M 430 263 L 367.5 263 L 367.5 144 L 305 144" fill="none" stroke="#555" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arr)"/><text x="375.5" y="197.5" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">允许回跳</text>
 <path d="M 560 286 L 560 330" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="568" y="302" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">改动即触发</text>
