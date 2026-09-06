@@ -13,10 +13,10 @@ RehabMind 是悦舒运动康复的确定性运动康复思路辅助工具。它�
 
 ## 文档入口
 
-- [文档中心](./docs/README.md)：正式产品、决策和场景文档的唯一索引。
-- [项目状态](./docs/handover/project-status.md)：当前技术栈、部署和已知限制。
-- [当前整改执行方案](./docs/plans/rehabmind-current-remediation-execution-plan.md)：现行整改顺序、测试、发布和开放门槛。
-- [仓库结构整理方案](./docs/plans/repository-structure-refactor-plan.md)：目标目录、依赖边界和迁移批次。
+- [文档中心](./docs/README.md)：现行系统文档（`docs/system/` 九份）的唯一索引。
+- [项目状态](./docs/archive/handover/project-status.md)：历史技术栈、部署和已知限制（已归档）。
+- [当前整改执行方案](./docs/archive/plans/rehabmind-current-remediation-execution-plan.md)：历史整改顺序记录（已归档）。
+- [仓库结构整理方案](./docs/archive/plans/repository-structure-refactor-plan.md)：目标目录、依赖边界和迁移批次（已归档）。
 
 ## 当前目录
 
@@ -65,7 +65,7 @@ npm run test:summary
 
 ## 开发约束
 
-1. 产品和决策预期来自四份正式文档，不从现有代码输出反推规则。
+1. 产品和决策预期来自文档中心（`docs/system/` 九份现行文档），不从现有代码输出反推规则。
 2. 页面只收集用户意图和展示结果，流程决策逐步迁入正式生产编排器。
 3. 领域核心不能依赖 React、DOM、网络、SQLite 或浏览器存储。
 4. 案例、康复记录、事件、请求和 revision 必须显式传递，不从全局数组猜测。

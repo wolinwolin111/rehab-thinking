@@ -1,28 +1,30 @@
 # RehabMind 回归测试总表
 
-更新时间：2026-08-27  
-适用基线：开发整改收口提交 `42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`，buildId=`local-42c0efb1c85f`。下方旧批次记录保留作历史审计；本次指定缺陷的当前结论以“2026-08-27 最终收口”及同一 buildId 的证据为准。
+更新时间：2026-08-27 18:55（Asia/Shanghai）
+适用基线：开发最终修复提交链以 `049a21c` 收口；当前验证 commit=`049a21c3b02a0990c0c3212d2615c96019bb82cb`，buildId=`local-049a21c3b02a-dirty-584c11ea5025`。下方旧批次记录保留作历史审计；QA 工作树仍 dirty，但生产源码无待提交改动。
 
-## 2026-08-27 最终收口
+## 2026-08-27 049a21c 最终复测收口
 
-本次以本表为主任务单，读取测试会话交接文档、真实浏览器覆盖矩阵、产品主规范和决策引擎规范后，完成并验证以下开发整改：
+### 2026-08-27 `3fe14b3` 肌肉定位图与训练素材回归
 
-- `UX-01`：教程完成或跳过后仍可从首页重新打开聚焦教程；关键“帮我整理”入口达到最小可操作尺寸。
-- `INSPECT-ENTRY-GATE-01`：建案成功后入口闸门立即关闭，视口巡检可以继续，不再被残留浮层中断。
-- `BODY-MAP-UI-02`：切换主要大部位不再静默清空既有标记；旧标记保留在历史上下文，清理必须由用户显式操作。
-- 多标签页冲突：通过 `tabId`、版本/草稿变更广播和保存前复核识别交错写入，提示用户重新加载或保留当前草稿，不再静默覆盖。
-- 已确认视觉设计：按确认后的多功能动作队列更新对应视觉基线；没有修改断言来制造通过。
-- 额外收口：多功能动作排序/进入独立评估队列、固定 `eventId` 完全重放幂等和构建类型错误一并修复，避免完整回归在相邻路径上再次失败。
+生产提交 `3fe14b30fd9f2631413bcc7754767052bf366edd`，buildId=`rehabmind-pilot-app-0.1.0+local-3fe14b30fd9f-dirty-d2f719128104.3fe14b30fd9f`。旧 `MUSCLE_ZONE_RECTS/atlas-v2` 测试合同已更新为 v1 底图、连续 SVG path、`data-region-id`、小腿三头肌单块和训练缺图/有图分支。
 
-本次修复提交链：`f4c7b393500ac85c830ea15ff609f7027ba70688`（主整改）、`9233d0fa86cc291f9e84aba33cadec0862ee1b5c`（多动作队列）、`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`（已确认视觉基线）。
+| 缺陷编号 | 复现步骤 | 修复提交 | 测试层 | 应出现 / 禁止出现 | 当前构建 | 最后验证 | 状态与证据 |
+|---|---|---|---|---|---|---|---|
+| MUSCLE-VISUAL-01 | 进入肌肉定位；检查大腿/小腿各视角；移动端打开；进入训练缺图和有图动作 | `3fe14b3`；QA 合同更新 | component + L6 preview + visual | 应使用 v1 底图、连续区域、`data-region-id`，小腿后侧为一块；缺图只显示文字，有图显示 `.rm-action-reference`；禁止 atlas、矩形分割、旧视频占位 | `3fe14b3` / `rehabmind-pilot-app-0.1.0+local-3fe14b30fd9f-dirty-d2f719128104.3fe14b30fd9f` | 2026-08-27 18:55 | component 3/3；浏览器身体图 3/3；移动预览 2/2；视觉 3/3；thigh/calf v1 资源 HTTP 200 |
 
-最终结果：`npm run build`、`npm run test:fast`、定向回归和完整浏览器套件均通过；完整浏览器套件 41 项中 32 passed、9 个既有显式 skipped、0 failed。`npm run lint` 为 0 error、2 个 Hook warning；`inspect-local --visual --axe` 全部通过。
+本次以本表为主任务单，针对 `a5774ec`～`049a21c` 开发链重新执行定向、整体、完整浏览器和质量门禁。QA 没有修改生产规则；测试侧仅新增/维护真实页面场景、断言、证据脚本和文档。
 
-最终证据目录：
+- `TEST-2b` / `RMD-HIST`：真实 v1 快照迁移、新建/归档补建线程和 session index 的 v2 可选字段形状通过；不放宽 schema。
+- 当前页面边界：T-09 四档、双侧低负荷 gate、双侧完整纵向流程、第二次康复/新问题历史、网络/超时/本机存储失败均由真实 test workbench fixture 验证。
+- 相邻固定回归：`test:fast`、full Edge、Edge release、移动预览、Firefox 高风险和 inspect-local 均按本地实际 commit/buildId 重新绑定。
+- 既有已修复项继续保持：教程/入口、身体图保留清理、多标签页冲突、固定 eventId 重放和视觉基线未回退。
 
-- 定向：`artifacts/quality/playwright/ux-01-final-42c0efb1c85f`、`body-map-final-42c0efb1c85f`、`entry-gate-final-42c0efb1c85f`、`multitab-final-42c0efb1c85f`、`visual-final-42c0efb1c85f`；
-- 完整：`artifacts/quality/playwright/full-final-42c0efb1c85f`；
-- 本地巡检：`artifacts/quality/inspect-local/2026-08-26T21-41-36-389Z/report.md`。
+本次开发修复提交链：`a5774ec`、`41b5032`、`e638887`、`eb1a216`、`39f40c1`、`5a455d6`、`f42a7d4`、`f191976`、`bebfb4a`、`8a05742`、`8d62214`、`3764e5d`、`36687e2`、`049a21c`；前序历史投影修复为 `b60f68a`、`ab218d4`、`66c5675`、`0728f82`。
+
+最终浏览器结果：E2E-04 定向 1/1、整体 20/20、full Edge 48/48、release 5/5、移动预览 2/2、Firefox 高风险 1/1、inspect-local 42/42，均无失败；整体与 full 无 skipped。`npm run test:fast` 通过；`npm run lint` 为 0 error、2 个既有 Hook warning。E2E-01～15 当前均已收口。
+
+当前证据目录：`artifacts/quality/playwright/target-final-049a21c`、`overall-final-049a21c`、`full-final-049a21c`、`release-final-049a21c`、`mobile-final-049a21c`、`firefox-final-049a21c`、`explore-final-049a21c`；本地巡检为 `artifacts/quality/inspect-local/2026-08-27T10-32-10-886Z/report.md`。这些 manifest 均绑定本地实际 commit/buildId。
 
 ## 使用规则
 
@@ -40,31 +42,31 @@
 
 | 缺陷编号 | 复现步骤 | 修复提交 | 测试层 | 应出现 / 禁止出现 | 当前构建 | 最后验证 | 状态与证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| DEF-CONSENT-01 | 首次建案时观察同意门；建案完成后检查遮罩；刷新页面 | 4aff9d8、5423d80；测试加固 a805361 | L6 + L5 | 应关闭同意门并保留草稿；禁止遮罩残留、永远创建中或刷新复现 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:38 | 当前构建已回归；`release-20260826183809-12860`、`full-20260826183247-19260` |
-| M-01/M-02 | 主诉侧与肿胀/压痛/感觉标记侧不一致；删除一个标记再刷新 | 1dbf5fb、ab3d99a、92fc130 | L2/L3 + L6 | 应保留独立侧别和标记，删除一个不误删另一个；禁止静默改侧或串标记 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 当前构建已回归；`full-20260826183247-19260` 中 BODY-MAP-UI-01 通过 |
-| BODY-MAP-UI-02 | 已有标记后切换主要大部位 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 | 应保留旧标记并要求显式清理；禁止切换区域静默清空 | `local-42c0efb1c85f` | 2026-08-27 05:35 | 当前构建已回归；3/3 通过；`artifacts/quality/playwright/body-map-final-42c0efb1c85f` |
-| M-03/M-04 | 外伤原话与选择矛盾；主诉侧与力量较弱侧不一致后查看结果 | ab3d99a；M-04 未提交 | L3 + L6 | 应出现矛盾提示并展示真实较弱侧；禁止吞掉矛盾或固定写“患侧力量偏弱” | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 规则/快速层通过；当前浏览器缺独立 oracle，未判定通过 |
-| M-05/M-07 | 修改侧别、完成双侧评估和复测 | d3621ce、92fc130 | L2/L3 + L6 | 应清理失效标记、保留左右结果并选择优先侧；禁止旧标记/旧计划泄漏 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 整体双侧场景 skipped；当前未覆盖 |
-| M-06/T-01 | 不形成固定主诉动作；动作选择无法完成并注明原因 | ab3d99a | L2/L3 + L6 | 应进入观察/进一步判断并保留无法完成原因；禁止生成伪造分数或按正常完成 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 规则层有证据；整体页面场景 skipped，当前未覆盖 |
-| INT-05/INT-07 | 明确主诉动作；再加入多个功能动作 | 多批次修复 | L2/L3 + L6 | 应先独立检查主诉，再显示独立队列；禁止提前递进或合并动作/分数 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 当前构建已回归；`full-20260826183247-19260`，P0 与发散路径通过 |
-| SAFE-02/SAFE-04/MIX-03 | 急性风险、麻电/感觉变化、疼痛+肿胀+麻电组合 | 多批次修复 | L2/L3 + L6 | 应安全停止或进入专业确认并保留保存出口；禁止继续普通处理/训练 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 当前构建 P0/Edge 代表场景已回归；急性踝完整闭环仍 skipped |
-| T-02/T-10/T-11/RET-06 | 处理后改善、无变化、加重；训练留空反馈或训练后加重 | ab3d99a | L2/L3 + L6 | 应记录真实反应、加重停止并有限退阶；禁止空反馈完成、加重后继续或无限循环 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 规则/部分历史证据；当前整体浏览器场景 skipped，未闭环 |
-| RET-02/RET-03 | 两个活动动作分别处理复测；同一物理动作消费最近合法结果 | 多批次修复 | L2/L3 + L5/L6 | 应按动作身份隔离或复用且不新增记录；禁止串用最近结果 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | RET-02 当前 P0 通过；RET-03 仍缺纯用户自然前置 |
-| T-03/T-05/T-06/T-07/T-08 | 第二次康复、趋势矛盾、新问题和历史记录 | 3c0dc7d、d3621ce、878a822 | L3 + L5 + L6 | 应追加当前复查、保留历史和新问题；禁止覆盖第一次康复或静默合并趋势 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 当前整体随访历史场景 skipped，未覆盖 |
-| T-09 | 构造保存后 23:59:59、24h、7d 的急性/慢性快照并恢复 | 当前实现已有规则层，浏览器夹具待补 | L2/L3 + L5 + L6 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒；禁止自动改答案 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | domain/workflow 规则测试通过；浏览器 `test.fixme`，缺 UI 快照夹具 |
-| DATA-04/DATA-09/OPS-04 | 断网、超时、保存冲突、错误凭据、管理员读取和脱敏 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L5/L7 + L6 | 应保留本机草稿、拒绝旧 revision、错误可追溯且脱敏；禁止丢数据、覆盖新快照或泄露秘密 | `local-42c0efb1c85f` | 2026-08-27 05:36 | 多标签页交错保存当前 2/2 通过；`artifacts/quality/playwright/multitab-final-42c0efb1c85f`；其他管理员/清理整体场景仍按显式 skipped 记录 |
-| UX-01 | 首次完成/跳过教程；点击首页入口重新打开；检查关键 CTA 尺寸 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 | 应可重新打开聚焦教程，关键入口高度≥44、宽度≥96；禁止入口不可用或尺寸不足 | `local-42c0efb1c85f` | 2026-08-27 05:35 | 当前构建已回归；3/3 通过；`artifacts/quality/playwright/ux-01-final-42c0efb1c85f` |
-| VISUAL-BASELINE-01 | Edge 桌面首页、评估队列、390px 首页截图比对 | `42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`（确认设计后更新基线） | visual | 当前实现应与已批准基线一致；禁止未经确认刷新截图掩盖结构变化 | `local-42c0efb1c85f` | 2026-08-27 05:36 | 当前构建已回归；3/3 通过；`artifacts/quality/playwright/visual-final-42c0efb1c85f` |
-| INSPECT-ENTRY-GATE-01 | 390px、1440px 建案后继续视口巡检；观察入口门是否关闭 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 inspect | 应在建案完成后关闭入口门并继续检查；禁止浮层残留导致巡检中断 | `local-42c0efb1c85f` | 2026-08-27 05:41 | 当前构建已回归；巡检全部通过；`artifacts/quality/inspect-local/2026-08-26T21-41-36-389Z/report.md` |
-| TEST-03 | seed=20260827 驱动真实工作台，仅操作可见控件 | 测试基础设施 | L6 exploration | 应可重放并记录 seed/轨迹；失败需截图、trace、快照；禁止复制简化业务模型 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:32 | 当前构建通过；`full-20260826183247-19260`，脚本成功；失败证据分支已实现 |
-| TEST-10 | Pixel 5/Chromium、iPhone 13/WebKit；Firefox 高风险流程 | 测试基础设施 | L6-preview + L6 | 移动预览应独立报告；禁止用 Edge 结果冒充移动通过 | fdaee6f / `local-fdaee6fc5ca3-dirty-085a66c496a1` | 2026-08-27 02:39 | `mobile-preview-20260826183850-23340` 2/2、`firefox-risk-20260826183918-23120` 1/1 通过；当前脚本覆盖仍是预览冒烟，人体图/滑条/保存恢复/安全停止/双侧/加重/总结等专门行为未齐 |
-| DATA-REPLAY-01 | 创建案例；保存带固定 `eventId` 的事件；完全重放同一请求 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L5 + unit/integration | 应返回原成功结果、revision 不增加、事件不重复；禁止因服务端重新生成 envelope 时间而返回 409 | `local-42c0efb1c85f` | 2026-08-27 05:26 | 已修复并由 `npm run test:fast` 覆盖；同一请求重放返回原成功结果，不重复追加事件 |
-| BUILD-TYPE-01 | 执行 `npm run test:fast` | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L0 | 应完成 typecheck/build 并进入后续浏览器门禁；禁止编译错误时产出发布证据 | `local-42c0efb1c85f` | 2026-08-27 05:39 | 当前构建已通过 `npm run test:fast`；architecture/typecheck/build/node tests 全部通过 |
-| TEST-FIXTURE-MIGRATION-01 | 集成 fixture 应应用当前 drizzle migration 全集后再创建案例 | 测试侧已同步 | L5 test infrastructure | 应包含 0009 clinical event identity；禁止用旧 schema 运行当前 service 造成假失败 | `local-42c0efb1c85f` | 2026-08-27 05:39 | fixture 已应用完整 migration；`npm run test:fast` 通过 |
+| DEF-CONSENT-01 | 首次建案时观察同意门；建案完成后检查遮罩；刷新页面 | 4aff9d8、5423d80；测试加固 a805361 | L6 + L5 | 应关闭同意门并保留草稿；禁止遮罩残留、永远创建中或刷新复现 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | full/release 已回归；`full-final-049a21c-584c11ea-20260827`、`release-final-049a21c-584c11ea-20260827` |
+| M-01/M-02 | 主诉侧与肿胀/压痛/感觉标记侧不一致；删除一个标记再刷新 | 1dbf5fb、ab3d99a、92fc130 | L2/L3 + L6 | 应保留独立侧别和标记，删除一个不误删另一个；禁止静默改侧或串标记 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | full Edge 身体图契约 3/3 通过；`full-final-049a21c-584c11ea-20260827` |
+| BODY-MAP-UI-02 | 已有标记后切换主要大部位 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 | 应保留旧标记并要求显式清理；禁止切换区域静默清空 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | full Edge 3/3 通过；`full-final-049a21c-584c11ea-20260827` |
+| M-03/M-04 | 外伤原话与选择矛盾；主诉侧与力量较弱侧不一致后查看结果 | ab3d99a；M-04 未提交 | L3 + L6 | 应出现矛盾提示并展示真实较弱侧；禁止吞掉矛盾或固定写“患侧力量偏弱” | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 规则/快速层通过；浏览器仍缺独立 oracle，不升格为页面覆盖 |
+| M-05/M-07 / E2E-04 | 修改侧别；只答右侧后检查门禁；再完成左侧、按右→左处理并分别复测 | d3621ce、92fc130、8a05742、8d62214、3764e5d、36687e2、049a21c | L2/L3 + L5 + L6 | 应保留左右独立结果和右侧优先顺序，单侧未完成禁止推进；阶段事件/快照应同版；禁止单侧冒充完成或产生 stage-bypass 告警 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | `target-final-049a21c-584c11ea-20260827` 1/1；overall 20/20、full 48/48；通过态 `trace.zip` 与 `assessment-completed-readback.json` 证明 step=3、两侧 limited、safetyComplete=true |
+| M-06/T-01 | 不形成固定主诉动作；动作选择无法完成并注明原因 | ab3d99a | L2/L3 + L6 | 应进入观察/进一步判断并保留无法完成原因；禁止生成伪造分数或按正常完成 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | E2E-05/06 通过；E2E-06 已覆盖疼痛、没力、害怕、说明不清 |
+| INT-05/INT-07 | 明确主诉动作；再加入多个功能动作 | 多批次修复 | L2/L3 + L6 | 应先独立检查主诉，再显示独立队列；禁止提前递进或合并动作/分数 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | full Edge P0 与发散路径通过；`full-final-049a21c-584c11ea-20260827` |
+| SAFE-02/SAFE-04/MIX-03 | 急性风险、麻电/感觉变化、疼痛+肿胀+麻电组合 | 多批次修复 | L2/L3 + L6 | 应安全停止或进入专业确认并保留保存出口；禁止继续普通处理/训练 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 急性踝安全停止、P0 麻电组合通过；其余发散组合按矩阵记录 |
+| T-02/T-10/T-11/RET-06 | 处理后改善、无变化、加重；训练留空反馈或训练后加重 | `f42a7d4`、`f191976` | L2/L3 + L6 | 应记录真实反应、加重停止并有限退阶；禁止空反馈完成、加重后继续或无限循环 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | E2E-07～10 4/4 通过；`overall-final-049a21c-584c11ea-20260827` |
+| RET-02/RET-03 | 两个活动动作分别处理复测；同一物理动作消费最近合法结果 | 多批次修复 | L2/L3 + L5/L6 | 应按动作身份隔离或复用且不新增记录；禁止串用最近结果 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | RET-02 full Edge/P0 通过；RET-03 仍缺纯用户自然前置 |
+| T-03/T-05/T-06/T-07/T-08 | 第二次康复、趋势矛盾、新问题和历史记录 | 3c0dc7d、d3621ce、878a822、b60f68a、bebfb4a | L3 + L5 + L6 | 应追加当前复查、保留历史和新问题；禁止覆盖第一次康复或静默合并趋势 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | v2 历史、第二次/新问题及 session 2 服务投影通过；趋势矛盾仍单列证据 |
+| T-09 | 构造保存后 23:59:59、24h、7d 的急性/慢性快照并恢复 | `snapshot-freshness.spec.ts` / test workbench fixture | L2/L3 + L5 + L6 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒；禁止自动改答案 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 4 档真实页面通过；`overall-final-049a21c-584c11ea-20260827` |
+| DATA-04/DATA-09/OPS-04 | 断网、超时、保存冲突、错误凭据、管理员读取和脱敏 | `39f40c1`、`bebfb4a`；QA fixture | L5/L7 + L6 | 应保留本机草稿、拒绝旧 revision、错误可追溯且脱敏；禁止丢数据、覆盖新快照或泄露秘密 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 多标签页、故障、管理员脱敏、session 2 反馈及 runId 清理均通过 |
+| UX-01 | 首次完成/跳过教程；点击首页入口重新打开；检查关键 CTA 尺寸 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 | 应可重新打开聚焦教程，关键入口高度≥44、宽度≥96；禁止入口不可用或尺寸不足 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | full Edge 相关回归通过；`full-final-049a21c-584c11ea-20260827` |
+| VISUAL-BASELINE-01 | Edge 桌面首页、评估队列、390px 首页截图比对 | `42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`（确认设计后更新基线） | visual | 当前实现应与已批准基线一致；禁止未经确认刷新截图掩盖结构变化 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 当前 full Edge 视觉 3/3 通过；`full-final-049a21c-584c11ea-20260827` |
+| INSPECT-ENTRY-GATE-01 | 390px、1440px 建案后继续视口巡检；观察入口门是否关闭 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L6 inspect | 应在建案完成后关闭入口门并继续检查；禁止浮层残留导致巡检中断 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 巡检 42/42 通过；`artifacts/quality/inspect-local/2026-08-27T10-32-10-886Z/report.md` |
+| TEST-03 | seed=20260827 驱动真实工作台，仅操作可见控件 | 测试基础设施 | L6 exploration | 应可重放并记录 seed/轨迹；失败需截图、trace、快照；禁止复制简化业务模型 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 1/1 通过；`explore-final-049a21c-584c11ea-20260827`；失败证据分支已实现 |
+| TEST-10 | Pixel 5/Chromium、iPhone 13/WebKit；Firefox 高风险流程 | 测试基础设施 | L6-preview + L6 | 移动预览应独立报告；禁止用 Edge 结果冒充移动通过 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | 移动 2/2、Firefox 1/1；仍仅预览/高风险范围 |
+| DATA-REPLAY-01 | 创建案例；保存带固定 `eventId` 的事件；完全重放同一请求 | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L5 + unit/integration | 应返回原成功结果、revision 不增加、事件不重复；禁止因服务端重新生成 envelope 时间而返回 409 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | `test:fast`、integration 通过；同一请求不重复追加事件 |
+| BUILD-TYPE-01 | 执行 `npm run test:fast` | `f4c7b393500ac85c830ea15ff609f7027ba70688` | L0 | 应完成 typecheck/build 并进入后续浏览器门禁；禁止编译错误时产出发布证据 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | architecture/typecheck/build/137 个 Node 测试文件通过 |
+| TEST-FIXTURE-MIGRATION-01 | 集成 fixture 应应用当前 drizzle migration 全集后再创建案例 | 测试侧已同步 | L5 test infrastructure | 应包含 0009 clinical event identity；禁止用旧 schema 运行当前 service 造成假失败 | `049a21c` / `local-049a21c3b02a-dirty-584c11ea5025` | 2026-08-27 18:32 | migration 10、issues 0；integration 17/17 通过 |
 
 ## 本轮新增固定回归脚本（已落地与未覆盖边界）
 
-下列路径已创建；“已通过”只表示对应当前证据，`test.fixme` 或未实现 oracle 的场景仍不得标为完整覆盖：
+下列路径已创建；“已通过”只表示对应当前证据，条件性 `test.skip` 或未实现 oracle 的场景仍不得标为完整覆盖：
 
 - tests/browser/overall/first-use-and-knee.spec.ts：E2E-01、E2E-02；
 - tests/browser/overall/safety-bilateral-and-unable.spec.ts：E2E-03 至 E2E-06；

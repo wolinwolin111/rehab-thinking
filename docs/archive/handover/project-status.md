@@ -132,7 +132,7 @@ VPS 网页人工任务
 ## 10. 事实来源
 
 - 当前施工顺序：[App 入口、移动体验与测试效率优化方案](../plans/rehabmind-app-experience-optimization-plan.md)
-- 当前测试方法：[当前测试计划](../quality/rehabmind-test-plan.md)
-- 本地验收：[App 体验本地网页验收](../quality/app-experience-local-acceptance-2026-08-25.md)
-- VPS 操作：[试用发布执行手册](../operations/pilot-release-readiness-execution-runbook.md)
-- 产品与规则：[完整产品设计](../rehabmind-complete-product-design.md)、[膝踝知识库](../knee-ankle-pilot-knowledge.md)
+- 当前测试方法：[当前测试计划](../../quality/rehabmind-test-plan.md)
+- 本地验收：[App 体验本地网页验收](../../quality/app-experience-local-acceptance-2026-08-25.md)
+- VPS 操作：[试用发布执行手册](../../operations/pilot-release-readiness-execution-runbook.md)
+- 产品与规则：[完整产品设计](../../rehabmind-complete-product-design.md)、[膝踝知识库](../../knee-ankle-pilot-knowledge.md)

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1150" height="560" viewBox="0 0 1150 560"><defs><marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#555"/></marker></defs><rect width="100%" height="100%" fill="white"/><path d="M 30 70 H 280 V 126 H 30 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="155" y="94.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">等待医学许可或加重</text><text x="155" y="111.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">medical-clearance · 无天数</text>
+<path d="M 305 70 H 555 V 126 H 305 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="430" y="94.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">急性或存在肿胀</text><text x="430" y="111.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">2～3 天</text>
+<path d="M 580 70 H 830 V 126 H 580 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="705" y="94.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">即时处理或未解决活动度</text><text x="705" y="111.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">3～7 天</text>
+<path d="M 855 70 H 1105 V 126 H 855 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="980" y="94.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">训练且分期≥4</text><text x="980" y="111.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">7～14 天</text>
+<path d="M 878 180 H 1082 A 23 23 0 0 1 1082 226 H 878 A 23 23 0 0 1 878 180 Z" fill="#548235" stroke="#548235" stroke-width="1.5"/>
+<text x="980" y="208" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#FFFFFF">默认：约 7 天</text>
+<path d="M 129 300 H 371 A 29 29 0 0 1 371 358 H 129 A 29 29 0 0 1 129 300 Z" fill="#2E75B6" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="250" y="325.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#FFFFFF">不良事件上报</text><text x="250" y="342.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#FFFFFF">来源 处理/训练 · 时机 · 回落</text>
+<path d="M 650 290 L 830 329 L 650 368 L 470 329 Z" fill="#FFF2CC" stroke="#BF9000" stroke-width="1.5"/>
+<text x="650" y="325.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">神经/无力？或持续升高且 ≥7 分？</text><text x="650" y="342.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">采集 5 项完整才判定</text>
+<path d="M 880 290 H 1110 V 348 H 880 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="995" y="324" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">stop-and-refer 转介</text>
+<path d="M 475 430 L 690 466 L 475 502 L 260 466 Z" fill="#FFF2CC" stroke="#BF9000" stroke-width="1.5"/>
+<text x="475" y="462.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">训练源＋停止后回落</text><text x="475" y="479.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">＋位置性质未变＋未退过阶？</text>
+<path d="M 60 430 H 240 V 494 H 60 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="150" y="458.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">regress-training</text><text x="150" y="475.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">退阶一次</text>
+<path d="M 690 430 H 990 V 494 H 690 Z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.5"/>
+<text x="840" y="458.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="13" font-weight="bold" fill="#1F1F1F">focused-reassessment</text><text x="840" y="475.5" text-anchor="middle" font-family="Microsoft YaHei" font-size="12" font-weight="normal" fill="#1F1F1F">≤3 项聚焦复查（独立评估版本）</text>
+<path d="M 280 98 L 292.5 98 L 292.5 98 L 305 98" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="300.5" y="92" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<path d="M 555 98 L 567.5 98 L 567.5 98 L 580 98" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="575.5" y="92" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<path d="M 830 98 L 842.5 98 L 842.5 98 L 855 98" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="850.5" y="92" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<path d="M 980 126 L 980 180" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="988" y="147" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<path d="M 400 329 L 435 329 L 435 329 L 470 329" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="443" y="323" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">采集完整</text>
+<path d="M 830 329 L 855 329 L 855 319 L 880 319" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="863" y="318" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">是</text>
+<path d="M 650 368 L 650 399 L 475 399 L 475 430" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="562.5" y="393" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<path d="M 260 466 L 205 466 L 205 430 L 150 430" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="213" y="442" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">是</text>
+<path d="M 690 466 L 765 466 L 765 430 L 840 430" fill="none" stroke="#555" stroke-width="1.4"  marker-end="url(#arr)"/><text x="773" y="442" font-family="Microsoft YaHei" font-size="12" font-weight="bold" fill="#B45309">否</text>
+<text x="575" y="30" text-anchor="middle" font-family="Microsoft YaHei" font-size="16" font-weight="bold" fill="#1F4E79">复诊窗口分档（按序判定，命中即出）与不良事件阶梯</text></svg>

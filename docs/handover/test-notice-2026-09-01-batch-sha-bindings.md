@@ -860,3 +860,62 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 测试侧影响
 
 本轮无新增代码行为变化（两项裁定均为"维持现状"），解钉清单不变（仍为 rendered-html:993 一条＋批次 2 problem-ledger-core 加载一条＋既有预存失败）。
+
+---
+
+# 第 28 轮 — 文档整合（docs/system/ 九份现行文档＋历史归档）与新增解钉项
+
+## 开发侧变更（2026-09-06，提交 853d8cb→466d855＋归档批次）
+
+- `docs/system/` 新建九份现行系统文档（01 产品设计／02 决策引擎／03 临床知识库／04 内容目录／05 会话编排／06 数据持久化／07 边界门禁／08 设计原则／09 拓展路线），全部以代码实测为准；Word/Excel 镜像在 outputs/（owner 私有，不入库）。
+- `docs/README.md` 重写为九份文档索引；旧"四份正式文档"口径废止。
+- 历史文档 `git mv` 进 `docs/archive/{plans,handover,rebuild,knee-decision-core,architecture,research}/`（保留 git 历史）；`docs/handover/` 仅留活动 test-notice 与测试侧 test-session-handoff；`docs/rehabmind-rebuild/` 仅留 data/ 与 knowledge/（代码 sourceCaseIds 溯源终点）。
+- 4 份旧正式文档（product-design / decision-framework / pilot-knowledge / scenario-coverage）**暂留原位**并加"已被取代"横幅——原因见下方解钉项。
+
+## ⚠ 新增解钉项（本轮引入，共 2 处）
+
+1. **rendered-html.test.mjs "keeps one concise four-document source of truth"（:890-912）**：钉旧 README 字面（"四份文档的优先级"等）＋四份旧文档路径与标题。README 已重写为九份文档索引（`466d855`），该用例自本轮起失败。请测试侧把断言迁移到新结构：README 九份文档表＋`docs/system/` 各文档关键句（建议弱断言标题），并决定旧四文档路径钉是否随归档解除。
+2. **sys-invariant-traceability.test.mjs（:10）**：读 `docs/pilot-scenario-coverage.md` 作 SYS-* 编号"文档侧唯一来源"。该文档暂留原位故**当前不失败**；但文档侧唯一来源已迁移为 `docs/system/02-decision-framework.md`（§13＋附表"不变量17"），建议测试侧改指 02 后，旧四文档即可归档。
+3. （信息）release-fingerprint-core.test.mjs:9 以 `docs/rehab-decision-framework.md` 作指纹排除路径样例——文档暂留故不失败；归档时需同步。
+
+## 文档死链新增（测试侧 B 类文件，dev 不碰）
+
+归档移动使 `docs/quality/rehabmind-quality-remediation-register.md` 的 2 条 `../plans/…` 链接失效（该计划已移入 `docs/archive/plans/`，正确目标应为 `../archive/plans/…`）。`check:docs` 现剩 3 条缺失，均属 docs/quality/（另 1 条为既有 real-browser-flow-audit）。请测试侧随本批解钉一并改为 `../archive/plans/…`。
+
+## 对基线的影响
+
+套件失败基线 54→**55**（新增即上述 rendered-html 四文档用例一条；已实测 rendered-html 单文件失败 8 条，其中 7 条为既有）。check:structure 仍绿（docs 根 5 文件未动，门禁零改动）。
+
+## 完成后动作（测试解钉时）
+
+- 上述 2 处解钉 → 删除 4 份旧文档顶部的"已被取代"横幅确认行 → `git mv` 至 `docs/archive/docs-root/` → docs 根仅剩 README（届时 check-repository-structure 的 expectedDocs 需同步收窄，开发侧配合）。
+
+---
+
+# 第 29 轮 — 批次 0–7 测试回归完成（测试侧 3c96f8b）＋基线口径修正
+
+## 测试侧交付（agent/testing，merge 3a85ed3，回归 run reg-20260906065010-13516 verdict=passed）
+
+- 门禁：fast 28.4s／knowledge／full 74 passed（71+3 新场景）／mobile 2；node 796/0；registry 100 ok。
+- 解钉：node 10 处＋浏览器约 24 处＋视觉基线 2 张，全部按"卡 id 定位＋值锚定"迁移，零新字面钉、零降级；新增契约测试锁值契约/ankle-intrinsic/boundaries 双护栏/居家放松 tags-only。
+- 屏级补覆盖：`scenario-catalog.ts` 新增 3 场景（calf-local-assessment/ankle-assessment-cards/ankle-training-card）＋ `action-catalog-screens.spec.ts` AC-1/2/3 ＋ registry 97→100。
+- 批次 2 唯一真回归 `problem-ledger-core`：改 `tests/support/loadTypeScriptModule.mjs`（拓扑捆绑 import 图），4/4 绿。
+
+## ⚠ 基线口径修正（接受测试侧 22 轮通报的正确性）
+
+第 22 轮"53 条失败＝52 预存＋1 回归"基于 **dev 分支自带 tests/ 副本**——该副本落后于测试分支现行 tests/。合并实测：boundaries stage 违规、first-use:43、rendered-html 预存红**在现行测试树不存在**（批次 1.5/边界迁移早已落地测试分支）；dev 陈旧 tests/ 上测出的"预存红"多数为过期断言。**结论**：批次 0–7 实际只引入 1 条文件级真回归（problem-ledger-core，测试侧已修）。
+
+## 开发侧复核（scenario-catalog.ts 三场景）
+
+- 结构：id/title/description/mode/target/initialProblem/step/snapshotOverrides/fixtureNote 与既有条目一致；`step:2`（评估）/`step:4`（训练）与六步流程 0 基一致；纯插入未改既有条目。
+- 类型：`intake?: Partial<IntakeState>` 部分覆盖，regionId "calf-local"/"ankle-foot" 为既有合法值；symptomType/mechanism/onset 均命中选项表；`assessmentResults:{}` 合法。
+- 影响面：仅 `/test` 测试工作台，零生产路径影响。**批准采纳。**
+
+## 剩余对齐项（dev↔testing 下次合并时）
+
+| 项 | 归属 | 说明 |
+|---|---|---|
+| four-document 测试（rendered-html:890-912） | 测试侧 | dev 文档整合后 docs/README 已重构为九份索引，该钉在测试树基（8f839bb）尚绿；**下次合并最新 dev 会红**，请按第 28 轮口径迁移（弱断言标题＋docs/system 各文档关键句） |
+| quality 登记册 2 条 `../plans/` 死链 | 测试侧 | 归档移动所致，目标应为 `../archive/plans/…`（第 28 轮已列） |
+| boundaries type-only 差异 | 开发侧备注 | dev 现报 5 条 stage `import type` 违规（4 文件，4fd593b 预存，仅类型导入无运行时耦合）；测试树报 ok——脚本目前不豁免 import type，分支差异待下次合并对齐（是否豁免 type-only 属独立决策） |
+| 4 份旧正式文档归档 | 双方向 | 待 four-document 与 sys-invariant 解钉后，dev 侧 git mv 进 docs/archive/docs-root/ |
