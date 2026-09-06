@@ -889,3 +889,33 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 完成后动作（测试解钉时）
 
 - 上述 2 处解钉 → 删除 4 份旧文档顶部的"已被取代"横幅确认行 → `git mv` 至 `docs/archive/docs-root/` → docs 根仅剩 README（届时 check-repository-structure 的 expectedDocs 需同步收窄，开发侧配合）。
+
+---
+
+# 第 29 轮 — 批次 0–7 测试回归完成（测试侧 3c96f8b）＋基线口径修正
+
+## 测试侧交付（agent/testing，merge 3a85ed3，回归 run reg-20260906065010-13516 verdict=passed）
+
+- 门禁：fast 28.4s／knowledge／full 74 passed（71+3 新场景）／mobile 2；node 796/0；registry 100 ok。
+- 解钉：node 10 处＋浏览器约 24 处＋视觉基线 2 张，全部按"卡 id 定位＋值锚定"迁移，零新字面钉、零降级；新增契约测试锁值契约/ankle-intrinsic/boundaries 双护栏/居家放松 tags-only。
+- 屏级补覆盖：`scenario-catalog.ts` 新增 3 场景（calf-local-assessment/ankle-assessment-cards/ankle-training-card）＋ `action-catalog-screens.spec.ts` AC-1/2/3 ＋ registry 97→100。
+- 批次 2 唯一真回归 `problem-ledger-core`：改 `tests/support/loadTypeScriptModule.mjs`（拓扑捆绑 import 图），4/4 绿。
+
+## ⚠ 基线口径修正（接受测试侧 22 轮通报的正确性）
+
+第 22 轮"53 条失败＝52 预存＋1 回归"基于 **dev 分支自带 tests/ 副本**——该副本落后于测试分支现行 tests/。合并实测：boundaries stage 违规、first-use:43、rendered-html 预存红**在现行测试树不存在**（批次 1.5/边界迁移早已落地测试分支）；dev 陈旧 tests/ 上测出的"预存红"多数为过期断言。**结论**：批次 0–7 实际只引入 1 条文件级真回归（problem-ledger-core，测试侧已修）。
+
+## 开发侧复核（scenario-catalog.ts 三场景）
+
+- 结构：id/title/description/mode/target/initialProblem/step/snapshotOverrides/fixtureNote 与既有条目一致；`step:2`（评估）/`step:4`（训练）与六步流程 0 基一致；纯插入未改既有条目。
+- 类型：`intake?: Partial<IntakeState>` 部分覆盖，regionId "calf-local"/"ankle-foot" 为既有合法值；symptomType/mechanism/onset 均命中选项表；`assessmentResults:{}` 合法。
+- 影响面：仅 `/test` 测试工作台，零生产路径影响。**批准采纳。**
+
+## 剩余对齐项（dev↔testing 下次合并时）
+
+| 项 | 归属 | 说明 |
+|---|---|---|
+| four-document 测试（rendered-html:890-912） | 测试侧 | dev 文档整合后 docs/README 已重构为九份索引，该钉在测试树基（8f839bb）尚绿；**下次合并最新 dev 会红**，请按第 28 轮口径迁移（弱断言标题＋docs/system 各文档关键句） |
+| quality 登记册 2 条 `../plans/` 死链 | 测试侧 | 归档移动所致，目标应为 `../archive/plans/…`（第 28 轮已列） |
+| boundaries type-only 差异 | 开发侧备注 | dev 现报 5 条 stage `import type` 违规（4 文件，4fd593b 预存，仅类型导入无运行时耦合）；测试树报 ok——脚本目前不豁免 import type，分支差异待下次合并对齐（是否豁免 type-only 属独立决策） |
+| 4 份旧正式文档归档 | 双方向 | 待 four-document 与 sys-invariant 解钉后，dev 侧 git mv 进 docs/archive/docs-root/ |
