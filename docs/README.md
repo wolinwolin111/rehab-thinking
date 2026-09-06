@@ -28,7 +28,8 @@
 - `operations/`：发布运行手册。
 - `quality/`：测试侧体系（B 类，测试会话所有）。
 - `handover/test-notice-2026-09-01-batch-sha-bindings.md`：开发→测试活动通信日志（未决解钉与批次绑定在此，测试回归完成后归档）。
-- `archive/`：全部历史过程文档（旧正式文档、已执行完的施工计划、一次性交接）。
+- `archive/`：全部历史过程文档（已执行完的施工计划、一次性交接、被取代的 rebuild 叙述文档）。
+- **暂留原位的 4 份旧正式文档**（product-design / decision-framework / pilot-knowledge / scenario-coverage）：内容已被 01/02/03 取代并加了取代横幅，因测试侧仍按旧路径钉文档（rendered-html、sys-invariant-traceability、release-fingerprint），待解钉后移入 `archive/docs-root/`——解钉项已登记通知档第 28 轮。
 
 ## 维护规则
 

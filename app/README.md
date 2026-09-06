@@ -25,4 +25,4 @@
 - API、持久化、反馈和管理服务：`src/infrastructure/pilot/`
 - Repository 与 SQLite：`db/`
 
-依赖方向和迁移状态见[仓库结构整理方案](../docs/plans/repository-structure-refactor-plan.md)及[当前整改执行方案](../docs/plans/rehabmind-current-remediation-execution-plan.md)。
+依赖方向和迁移状态见[仓库结构整理方案](../docs/archive/plans/repository-structure-refactor-plan.md)及[当前整改执行方案](../docs/archive/plans/rehabmind-current-remediation-execution-plan.md)。

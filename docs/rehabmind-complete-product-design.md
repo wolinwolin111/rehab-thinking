@@ -1,5 +1,7 @@
 # RehabMind 产品规范
 
+> ⚠ **已被取代（2026-09-06 文档整合）**：本文现行内容已并入 [docs/system/](./system/)（01 产品设计与用户流程）。因测试侧仍按旧路径钉文档（rendered-html / sys-invariant-traceability / release-fingerprint），暂留原位；测试解钉后本文移入 docs/archive/docs-root/。请勿在本文追加新规则。
+
 > 状态：现行
 >
 > 版本：2026-08-25
@@ -804,7 +806,7 @@ RehabMind 是面向健身教练、普拉提教练、瑜伽教练、康复学习�
 
 安全分流、步骤锁定、处理权限、评分比较和最终决策继续由规则引擎执行。AI 输出必须经过字段校验和用户确认，不能直接覆盖医生限制。
 
-视觉 AI 另行设计为“动作观察助手”：识别身体关键点、估算活动范围、左右差异、动作完成度和明显代偿，再由用户补充是否不适。它不判断韧带、肌腱、炎症或骨性损伤，也不自动给诊断。详细方案见 [09-visual-assessment-plan.md](rehabmind-rebuild/09-visual-assessment-plan.md)，当前 Demo 只保留数据接口规划，不增加摄像头入口。
+视觉 AI 另行设计为“动作观察助手”：识别身体关键点、估算活动范围、左右差异、动作完成度和明显代偿，再由用户补充是否不适。它不判断韧带、肌腱、炎症或骨性损伤，也不自动给诊断。详细方案见 [archive/rebuild/09-visual-assessment-plan.md](./archive/rebuild/09-visual-assessment-plan.md)，当前 Demo 只保留数据接口规划，不增加摄像头入口。
 
 视觉接入安排在基础流程稳定后实施；当前膝伸直使用人工双侧比较和主动保持自测，不依赖视觉模型。
 

@@ -1,5 +1,7 @@
 # 膝关节与踝足首发版场景验收
 
+> ⚠ **已被取代（2026-09-06 文档整合）**：本文现行内容已并入 [docs/system/](./system/)（02 §13（不变量与场景表已吸收进 docs/system/02 附表））。因测试侧仍按旧路径钉文档（rendered-html / sys-invariant-traceability / release-fingerprint），暂留原位；测试解钉后本文移入 docs/archive/docs-root/。请勿在本文追加新规则。
+
 更新时间：2026-08-25
 
 > 状态：现行验收规范。产品、决策和知识内容分别见[产品规范](./rehabmind-complete-product-design.md)、[决策引擎规范](./rehab-decision-framework.md)和[首发知识库](./knee-ankle-pilot-knowledge.md)。

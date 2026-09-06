@@ -1,6 +1,6 @@
 # 09 · 拓展路线（Extension Roadmap）
 
-> 文档状态：现行 ｜ 建立：2026-09-06 ｜ 来源：session-kernel 计划、rebuild/09/10/11/12、knee-decision-core/04、research 系列＋当前代码预留接口实测
+> 文档状态：现行 ｜ 建立：2026-09-06 ｜ 来源：session-kernel 计划、archive/rebuild/09/10/11/12、archive/knee-decision-core/04、research 系列＋当前代码预留接口实测
 > 本文只定"往哪扩、按什么顺序、接口在哪"。各方案全文在归档中（指针见附表）。
 
 ## 1. 当前未开放清单
@@ -28,7 +28,7 @@
 - AI 主诉收集边界：AI 只产候选（explicit/inferred/uncertain/missing/conflict），confirmed 只能由用户确认写入；管线 AI Parser→Schema Validator→User Confirmation→Case Builder→规则引擎；失败降级＝人体图＋最少固定问题。
 - 分阶段 A~E＋12 条验收场景见归档原文。
 
-## 4. 视觉评估（rebuild/09＋knee-decision-core/04，状态：方案定稿未接入）
+## 4. 视觉评估（archive/rebuild/09＋archive/knee-decision-core/04，状态：方案定稿未接入）
 
 - 定位：辅助记录检查结果，不新增治疗逻辑；能算完成度/左右差/分段异常/晃动，**不能算疼痛、触诊、被动末端、组织损伤、真实肌力**。
 - 技术：设备端 MediaPipe Pose（33 关键点）优先；原始视频默认不上传；不用通用大模型算角度。

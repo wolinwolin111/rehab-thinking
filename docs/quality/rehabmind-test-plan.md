@@ -223,52 +223,34 @@ npm run test:summary
 
 RMD 批次的退出条件是：定向回归通过，必要的变异测试能抓住门禁回归，L5 数据/安全检查通过，L6 Edge 发布基线通过；涉及移动的批次还必须完成对应 M 层独立运行。浏览器不承担临床组合穷举，组合逻辑以 L2/L3 测试和内部逻辑覆盖矩阵为准。
 
-## 9. 当前证据（历史基线 + 2026-08-27 整改核验）
+## 9. 当前证据（`049a21c` 最终 QA 基线）
 
-| 项目 | 结果 |
-| --- | --- |
-| 快速门禁 | 通过；123 个测试文件、生产构建和架构边界 |
-| SQLite/API | 15/15 |
-| migration | 9 个，兼容问题 0 |
-| SQLite health | integrity `ok`、外键失败 0 |
-| lint | 0 error、0 warning |
-| 最小浏览器 | 4/4，约 19 秒 |
-
-本轮浏览器实际发现并推动修复了“提示遮挡阶段栏”和“先创建案例后刷新不恢复草稿”两个问题。这说明保留少量真实接线有价值，但不需要恢复大规模浏览器业务组合。
-
-### 9.1 2026-08-27 低成本核验结果
-
-本次核验绑定 commit=`fdaee6fc5ca3beb246ed5184650540d6a78507a8`、当前生成的 buildId=`local-fdaee6fc5ca3-dirty-085a66c496a1`。工作树仍有开发改动，且本次没有生成新的 release build；以下结果是整改中的 dirty-build 基线，不是发布候选结论。
+当前统一身份：commit=`049a21c3b02a0990c0c3212d2615c96019bb82cb`，buildId=`local-049a21c3b02a-dirty-584c11ea5025`，appVersion=`rehabmind-pilot-app-0.1.0+local-049a21c3b02a-dirty-584c11ea5025.049a21c3b02a`，snapshot schema=`2`。开发生产源码已提交，QA 工作树的 dirty 仅来自测试/文档/巡检脚本和生成文件；浏览器 manifest 已重新绑定本地实际 commit。
 
 | 层级/命令 | 结果 | 结论 |
 | --- | --- | --- |
-| 定向复测 `test:logic:retest` | 34/34 | 通过 |
-| 定向队列 `test:logic:queue` | 37/37 | 通过 |
-| 定向台账/双侧 `test:logic:ledger` | 39/39 | 通过 |
-| 变异 `test:logic:mutations` | 列出的门禁变异全部 killed | 通过 |
-| unit `test:unit` | 575/576 | 1 条失败：事件重放幂等；新增 RMD-HIST/MARK 定向测试 6/6 通过 |
-| workflow `test:workflow` | 119/119 | 通过 |
-| component `test:component` | 76/76 | 通过 |
-| SQLite/API `test:integration` | 16/17 | 1 条失败：事件重放返回 409 |
-| security | 13/13 | 通过 |
-| SQLite health / migration | health 通过；10 个 migration、issues 0 | 通过 |
-| dependencies / performance | 均通过 | 通过 |
-| `test:fast` | 未通过 | TypeScript `TS2322`：`rehabmind-workbench.tsx:1328` 的 `SimpleAnswer \| undefined` 不能传给 `StrengthAnswer` |
-| lint | 0 error、4 warning | 未达到零告警基线；4 条为 Hook 依赖 warning |
+| `npm run test:fast` | 架构边界、typecheck、build、137 个 Node 测试文件通过 | 通过 |
+| TEST-2b | 2/2 | 通过；v2 空可选字段不再被 schema 拒绝 |
+| `npm run test:integration` | 17/17 | 通过 |
+| `test:logic:retest` / `test:logic:ledger` | 34/34、39/39 | 通过 |
+| `test:vertical` / `test:security` | 2/2、13/13 | 通过 |
+| SQLite health / migration | integrity `ok`、外键失败 0；10 migrations、issues 0 | 通过 |
+| `npm run lint` | 0 error、2 个 Hook warning | 通过但保留 warning |
+| Edge release / overall | release 5/5；整体 20/20 | 通过；无 skipped/failed |
+| Edge full | 48/48 | 通过；无 skipped/failed |
+| M1 移动预览 / Firefox 高风险 | Pixel 5/Chromium、iPhone 13/WebKit 2/2；Firefox 1/1 | 移动独立预览和 Firefox 高风险通过；不替代 Android |
+| `inspect-local --visual --axe` | 42/42；320px 差异 0.34% | 通过，commit/buildId 已绑定 |
 
-本次为使集成测试实际使用当前数据合同，测试侧同步了 `tests/integration/sqlite-api/support.mjs` 和 `a5-infrastructure-contract.integration.mjs` 的 0009 migration fixture；并将旧的 schema v1/无稳定身份断言改为当前 schema v2/稳定 `problemThreadId`、`sessionId` 合同。生产实现未在测试侧修改。
+当前已登记浏览器证据 manifest：`artifacts/quality/playwright/target-final-049a21c`、`overall-final-049a21c`、`full-final-049a21c`、`release-final-049a21c`、`mobile-final-049a21c`、`firefox-final-049a21c`、`explore-final-049a21c`。巡检报告：`artifacts/quality/inspect-local/2026-08-27T10-32-10-886Z/report.md`。每个 manifest 均绑定同一 commit/buildId。
 
-### 9.2 RMD 整改当前状态
+本轮测试侧同步了因生产 v2 投影变化而过时的服务断言和记录页源码合同，并新增真实 test workbench fixture 边界，没有放宽 schema，也没有修改生产规则。浏览器组合继续只验证真实页面接线、关键反向断言和固定 seed；临床组合逻辑仍由 L2/L3 domain/workflow 测试承担。
 
-上述表格是 2026-08-25 的历史基线，不代表 2026-08-27 RMD 整改已验收。开发正在优化整改，当前测试侧先完成合同、场景和证据要求的固化；在开发明确交付稳定命令/事件与 fixture 前，RMD 项目统一记为“待测试”，不计入通过数。
+### 9.1 仍未覆盖的证据
 
-当前未形成 RMD 最终通过证据的原因包括：
-
-- 稳定的 `sessionId`、`problemThreadId`、`recordId` 及事件重建样本尚需按交接文档交付；
-- BodyMark、ScoreRecord、历史趋势、跨会话和保存冲突需要同一批可复现快照验证，不能只用组件或字符串检查代替；
-- 离线、冲突、保存失败、多标签页、刷新恢复需要可控故障注入和浏览器 trace；
-- M2～M5 需要模拟器、真机、debug/release APK 的独立产物与运行证据，M1 移动预览不能替代这些层级；
-- 当前工作树如含未提交开发改动，所有测试只能作为 dirty-build 基线，不能视为发布候选验收。
+- T-09 四档浏览器时间夹具、双侧低负荷 gate、第二次康复/新问题历史、network/timeout/storage 页面边界已由当前整体 fixture 通过；它们不再列为未覆盖；
+- E2E-04 双侧左右完整评估、优先侧处理顺序、分别复测及单侧未完成限制已由 `bilateral-longitudinal` 与 `bilateral-training-gate` 的真实页面证据收口；E2E-01～15 当前均为 verified；
+- 移动预览仅覆盖当前预览脚本的输入/溢出/弹层焦点冒烟；人体图、滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结等专门行为和 Android M2～M5 仍未形成证据；
+- M2～M5 仍缺模拟器、真机、debug/release APK 运行环境和产物；M1 预览不可替代这些层级。
 
 ## 10. 发布条件
 

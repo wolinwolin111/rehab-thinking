@@ -50,7 +50,7 @@ infrastructure/pilot（持久化/API） ◀── features；domain 禁止反向
 
 | 属主 | 文件 |
 |---|---|
-| dev（可改） | src/**、docs/system/**、docs/handover/test-notice-*、docs/plans/*、scripts（除 B 类列名外） |
+| dev（可改） | src/**、docs/system/**、docs/handover/test-notice-*、docs/archive/**、scripts（除 B 类列名外） |
 | 测试（dev 不碰） | tests/**、docs/quality/**、release.generated.ts、artifacts/、scripts/quality/inspect-local.mjs、docs/handover/test-session-handoff-* |
 
 规则来源：批次 1（2026-09-04）owner 确立；批次 7 落地 boundaries 防再发。例外协调（如阶段文件违规消化）走通知档。

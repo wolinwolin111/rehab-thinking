@@ -6,7 +6,7 @@
 >
 > 读者：下一位接手的开发者或 AI 执行模型
 >
-> **现行口径**：执行顺序和开放门槛以[App 入口、移动体验与测试效率优化方案](../plans/rehabmind-app-experience-optimization-plan.md)为准，当前事实以[最新完整交接](./rehabmind-handover-2026-08-25.md)、[项目状态](./project-status.md)、[当前测试计划](../quality/rehabmind-test-plan.md)和[VPS 发布验收](../quality/app-experience-vps-acceptance-2026-08-25.md)为准。本文后续章节保留 2026-08-22/23 的历史交接细节，不得用旧邀请、旧测试计数或旧 VPS 绿灯替代当前证据。
+> **现行口径**：执行顺序和开放门槛以[App 入口、移动体验与测试效率优化方案](../plans/rehabmind-app-experience-optimization-plan.md)为准，当前事实以[最新完整交接](./rehabmind-handover-2026-08-25.md)、[项目状态](./project-status.md)、[当前测试计划](../../quality/rehabmind-test-plan.md)和[VPS 发布验收](../../quality/app-experience-vps-acceptance-2026-08-25.md)为准。本文后续章节保留 2026-08-22/23 的历史交接细节，不得用旧邀请、旧测试计数或旧 VPS 绿灯替代当前证据。
 >
 > **最新完整交接入口**：[RehabMind 当前交接文档（2026-08-23 至 2026-08-25）](./rehabmind-handover-2026-08-25.md)。
 

@@ -96,7 +96,7 @@ L5  index.ts          新形状查询 API（终态唯一对外入口）
 
 ## 9. 演化决策记录（指针）
 
-批次 0–7（骨架→提踵→功能→方向→力量→处理→训练→缩减删旧）、C1/C2 续批（代偿/双侧观察入库、紧张位置与双侧化链经实测裁定跳过）、编号分离与归类接线（含两处修正与两项"接受"裁定）。全部决策与理由：`docs/plans/rehabmind-action-catalog-execution-master-2026-09-04.md` §10/§13/§14/§15；过程与解钉：`docs/handover/test-notice-2026-09-01-batch-sha-bindings.md` 第 15–27 轮。
+批次 0–7（骨架→提踵→功能→方向→力量→处理→训练→缩减删旧）、C1/C2 续批（代偿/双侧观察入库、紧张位置与双侧化链经实测裁定跳过）、编号分离与归类接线（含两处修正与两项"接受"裁定）。全部决策与理由：`docs/archive/plans/rehabmind-action-catalog-execution-master-2026-09-04.md` §10/§13/§14/§15；过程与解钉：`docs/handover/test-notice-2026-09-01-batch-sha-bindings.md` 第 15–27 轮。
 
 **已固化的过程教训**（详见 08）：等价性验证禁止循环论证（旧值必须取自 git 基线）；先抓基线再估工；以界面现实为准不以类型定义为准；比较类判断不预填表现。
 

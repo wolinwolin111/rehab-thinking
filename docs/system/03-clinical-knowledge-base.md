@@ -11,7 +11,7 @@
 | 匿名编号↔真实原文唯一映射 + A~E 证据分级 | rebuild/data/source-catalog.md | 溯源终点 |
 | 关系定义与审核记录（KNEE-R01~R10、ANKLE-R01~R07，2026-08-13 通过） | rebuild/knowledge/ | pilot-knowledge.ts 的 relation id＋测试断言 |
 | 膝 P0/P1 证据链与审查号（K-P0-01~07、RAW-KNEE-001~008） | src/knowledge/rehab/（代码内） | knee-p0-runtime、build-trial-targets-core.ts:227 |
-| 验收案例 KDC-01~10（KDC-05 被代码以 sourceCaseIds 引用） | knee-decision-core/03 | knee-decision-core.ts:586,605,623 |
+| 验收案例 KDC-01~10（KDC-05 被代码以 sourceCaseIds 引用） | archive/knee-decision-core/03 | knee-decision-core.ts:586,605,623 |
 | 跨区域关系 CROSS-R01~R07 | rebuild/knowledge/cross-region-relations.md | 纯 draft 预留（多部位扩展，见 09） |
 
 **已知治理欠账**：个别条目的 sourceCaseIds 混入中文自由文本（"线下膝伸直受限规则""线下膝下痛评估规则"，knee-decision-core.ts:471,:509），与结构化 id 不同源、机器不可校验；KNEE-002~005 病例草稿的 reviewStatus 标 draft 但已于 08-13 审核并被代码消费——知识层治理时统一修正。

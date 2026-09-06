@@ -1,7 +1,7 @@
 # 测试会话交接文档
 
 **会话 ID**：test-session-2026-08-24~26
-**当前测试工作树**：`D:\Study\codex\project\rehab-thinking-demo`（branch `main`，开发整改最终 HEAD `42c0efb`；构建生成的 release manifest 可能是未提交产物）
+**当前测试工作树**：`D:\Study\codex\project\rehab-thinking-demo`（branch `main`，当前验证 HEAD `049a21c3b02a0990c0c3212d2615c96019bb82cb`；工作树中的未提交改动均为 QA 文档/测试/巡检脚本及构建生成物，开发生产源码已提交）
 **上一轮隔离工作树**：`D:\Study\codex\project\rehabmind-agent`（branch `agent/testing`，commit `a805361`；仅作历史对照）
 **前序文档**：`docs/handover/HANDOVER.md`（第一代会话手写）、`docs/quality/test-infrastructure-delivery-2026-08-26.md`（基础设施交付记录）
 **创建日期**：2026-08-26
@@ -9,23 +9,32 @@
 
 ---
 
-## 最新补充：2026-08-27 开发整改已收口
+## 最新补充：2026-08-27 `049a21c` 最终 QA 基线
+
+### 2026-08-27 `3fe14b3` 肌肉定位图与训练素材回归
+
+已完成生产提交 `3fe14b30fd9f2631413bcc7754767052bf366edd` 的专项回归。旧 `MUSCLE_ZONE_RECTS/atlas-v2` 合同已更新为 v1 底图、连续 SVG path、`data-region-id`、小腿三头肌单块以及训练缺图/有图的正向合同。组件测试 3/3、身体图浏览器合同 3/3、Pixel 5/iPhone 13 移动预览 2/2、视觉基线 3/3 通过；thigh/calf v1 资源 HTTP 200。证据目录：`artifacts/quality/playwright/muscle-target-3fe14b3`、`muscle-mobile-3fe14b3`、`muscle-visual-3fe14b3`。本次未修改生产规则。
 
 本文件上方及后续旧章节记录的是 2026-08-26 测试窗口的历史快照；接替测试时，当前结论以《回归测试总表》的最终收口章节、真实浏览器覆盖矩阵的最终证据索引和同一 buildId 的 manifest 为准。
 
 | 项目 | 最终值 |
 |---|---|
-| 修复提交 | `f4c7b393500ac85c830ea15ff609f7027ba70688`、`9233d0fa86cc291f9e84aba33cadec0862ee1b5c`、`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1` |
-| buildId | `local-42c0efb1c85f` |
-| 指定缺陷 | `UX-01`、`INSPECT-ENTRY-GATE-01`、`BODY-MAP-UI-02`、多标签页冲突、已确认视觉基线 |
-| 定向回归 | UX 3/3、身体图契约 3/3、入口巡检全部通过、视觉 3/3；多标签页 2 passed + 1 既有显式 skipped |
-| 完整浏览器 | 41 项：32 passed、9 skipped、0 failed |
-| 快速质量门禁 | `npm run test:fast` 通过；lint 0 error / 2 warning |
-| 巡检 | 320/360/390/412/430/1440px、HTTP/API、运行时、axe、视觉和遮挡全部通过 |
+| 修复提交链 | `a5774ec`～`bebfb4a`、`8a05742`、`8d62214`、`3764e5d`、`36687e2`、`049a21c`（含前序历史投影修复） |
+| 当前 commit | `049a21c3b02a0990c0c3212d2615c96019bb82cb` |
+| buildId | `local-049a21c3b02a-dirty-584c11ea5025` |
+| 本轮重点 | T-09 四档快照、双侧完整纵向流程、处理后改善/无变化/加重、训练后加重锁定、session 2 反馈绑定、管理员脱敏、runId 清理、固定 seed 真实工作台探索和移动预览 |
+| 快速质量门禁 | `npm run test:fast` 通过：architecture boundary、typecheck、build、137 个 Node 测试文件通过 |
+| lint | 0 errors、2 个既有 warning：`dispatchPilotSync` 缺依赖、`imaging` 不必要依赖；本轮新增 storage effect warning 已消失 |
+| 定向浏览器 | `target-final-049a21c-584c11ea-20260827`：E2E-04 1/1 passed，且服务端无 stage-bypass 告警 |
+| 整体浏览器 | `overall-final-049a21c-584c11ea-20260827`：20/20 passed，无 skipped |
+| 完整 Edge | `full-final-049a21c-584c11ea-20260827`：48/48 passed，无 skipped |
+| Edge release | `release-final-049a21c-584c11ea-20260827`：5/5 passed |
+| 其他浏览器 | `mobile-final-049a21c-584c11ea-20260827`：Pixel 5/Chromium、iPhone 13/WebKit 2/2；`firefox-final-049a21c-584c11ea-20260827`：1/1 |
+| 本地巡检 | `artifacts/quality/inspect-local/2026-08-27T10-32-10-886Z/report.md`：42/42 通过，commit/buildId 已绑定 |
 
-证据入口：`artifacts/quality/playwright/full-final-42c0efb1c85f`、`artifacts/quality/playwright/ux-01-final-42c0efb1c85f`、`artifacts/quality/playwright/body-map-final-42c0efb1c85f`、`artifacts/quality/playwright/entry-gate-final-42c0efb1c85f`、`artifacts/quality/playwright/multitab-final-42c0efb1c85f`、`artifacts/quality/playwright/visual-final-42c0efb1c85f`、`artifacts/quality/inspect-local/2026-08-26T21-41-36-389Z/report.md`。
+证据入口：`artifacts/quality/playwright/target-final-049a21c`、`overall-final-049a21c`、`full-final-049a21c`、`release-final-049a21c`、`mobile-final-049a21c`、`firefox-final-049a21c`、`explore-final-049a21c`，以及 `artifacts/quality/inspect-local/2026-08-27T10-32-10-886Z/report.md`。这些 manifest 均绑定本地实际 commit `049a21c3b02a0990c0c3212d2615c96019bb82cb` 和同一 buildId。
 
-本次没有修改测试断言来制造通过；视觉截图仅在产品设计确认多功能动作队列后更新对应基线。仍保留的 skipped/blocked 场景，以最终回归总表和覆盖矩阵中的非阻塞范围为准。
+本次没有修改测试断言来制造通过；新增测试严格使用当前真实可见控件、真实 test workbench fixture 和当前正式文案。E2E-01～15 已形成页面证据；当前仅移动原生 M2～M5 为环境未覆盖，移动预览与 Firefox 仍按限定范围报告。
 
 ---
 
@@ -376,21 +385,27 @@ Pixel 5/Chromium 与 iPhone 13/WebKit 本轮 2/2 通过；Firefox 高风险 1/1 
 
 ### 12.8 本轮结果、未覆盖与不得误报为已覆盖的项目
 
-前一轮浏览器证据仍绑定 dirty build `local-fdaee6fc5ca3-dirty-085a66c496a1`（commit `fdaee6fc5ca3beb246ed5184650540d6a78507a8`）：Edge 全量 41 条为 27 pass / 5 fail / 9 skipped；整体闭环 13 条为 4 pass / 9 skipped；release `release-20260826183809-12860` 为 5/5；移动预览 `mobile-preview-20260826183850-23340` 为 2/2；Firefox 高风险 `firefox-risk-20260826183918-23120` 为 1/1；固定 seed 探索通过；inspect-local 最新为 40/42。2026-08-27 低层整改核验发现：定向复测 34/34、队列 37/37、台账/双侧 39/39、RMD-HIST/MARK 定向测试 6/6、workflow 119/119、component 76/76、security 13/13、health/migration 通过；unit 575/576、integration 16/17，唯一共同失败是同一 `eventId` 的重放返回 409 而非原成功结果；`npm run test:fast` 被 `rehabmind-workbench.tsx:1328` 的 `TS2322` 阻断，lint 为 0 error/4 warning。因此本轮没有新增有效 Edge release、移动预览或 Android 证据，旧浏览器结果不能覆盖当前整改失败。
+前序失败记录仍保留在下方历史章节，不与当前结果混用。当前 `049a21c` 已在同一 commit/buildId 上完成重绑验证：E2E-04 定向 1/1、整体 20/20、full Edge 48/48、release 5/5、移动预览 2/2、Firefox 高风险 1/1、inspect-local 42/42，均无失败；整体与 full 已无 skipped。
 
-仍不得写成已覆盖的项目：
+仍不得写成完整覆盖的项目：
 
-- T-09 只有 domain/workflow 时间边界证据，浏览器层无真实陈旧提示/急性七天阻断/原答案保留证据；
-- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作、无法完成多原因、处理/训练加重、第二次康复新问题的整体浏览器闭环仍 skipped；
-- 反馈绑定的管理员真实查询、测试数据按 runId 清理仍缺独立夹具；
-- 离线、保存冲突、多标签页、存储不可用的正式产品 oracle 未收口；多标签页脚本为 expected-fail，未观察到冲突/重载提示；
-- 当前事件重放幂等未收口：unit 与 integration 均复现固定 `eventId` 重放为 409；
-- 当前构建门禁未收口：`test:fast` 被 `TS2322` 阻断；Android 环境也未发现 `adb`、`emulator`、`gradle` 或 APK，不能将 M2～M5 写成已执行；
-- 移动端专门行为证据不足，当前只证明输入/入口/溢出/弹层冒烟；
-- UX-01 聚焦教程重新打开失败；`帮我整理` 宽 74px；3 条 Edge 视觉基线失败；最新 inspect-local 报告 `artifacts/quality/inspect-local/2026-08-26T18-40-45-221Z/report.md` 另有 390px、1440px 建案后入口门浮层未关闭，导致视口检查中断；均需设计/开发确认后再更新。
+- T-09 四档真实快照边界、双侧低负荷 gate、第二次康复/新问题历史投影、网络/超时/本机存储失败页面边界已形成当前浏览器证据；它们不再列为未覆盖。
+- E2E-01～15 均已由当前真实页面测试收口；E2E-04 同时覆盖单侧未完成低负荷 gate 和左右分别评估、处理、复测的完整纵向闭环。
+- 移动预览已通过，但仍是 Pixel 5/iPhone 13 的 M1 预览；人体图、滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结等移动专门行为尚未形成逐项证据；Android M2～M5 仍无 `adb`、`emulator`、`gradle` 或 APK 证据。
+- 本地工作树仍含 QA 未提交改动及生成文件，因此当前 buildId 是可审计的 dirty QA 基线，不是干净发布候选；inspect-local 320px 差异 0.34% 已通过，不登记为生产缺陷。
 
-上述“未覆盖”分别属于缺 UI 夹具、缺真实整体路径、缺产品 oracle、缺管理员/清理权限或设计基线未确认；不得用脚本存在、历史截图或规则层通过替代。
+上述未覆盖只属于 Android M2～M5 缺运行环境/产物；不得用规则层或移动预览结果替代。
 
-### 12.9 本轮测试提交边界
+### 12.9 需要开发会话补齐的测试接缝
+
+当前没有待开发补齐的业务测试接缝。`049a21c` 已提供并通过双侧纵向、处理、训练、session 2 反馈及管理员/清理接缝；只保留移动原生运行环境边界。
+
+| 项目 | 开发需要提供 | 测试收口标准 |
+|---|---|---|
+| TEST-10 移动专门行为（环境/测试范围） | 稳定的 Pixel 5/Chromium、iPhone 13/WebKit 前置；若宣称 M2～M5，另提供 emulator/adb/gradle/APK 环境 | 移动专门覆盖输入、人体图、滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结、焦点和横向溢出；独立报告，不冒充 Edge release |
+
+开发回复至少应包含：入口或 fixture 使用方式、稳定的可见文案或 `data-testid`/ARIA、schema/版本影响、提交号、`typecheck` 和 `build` 结果。当前已发送到开发会话 `01a03e75-6982-7a01-a248-0ef50ee3ac56`。
+
+### 12.10 本轮测试提交边界
 
 本轮允许提交测试脚本、测试配置、场景登记、覆盖矩阵、回归总表和证据工具；禁止把快照时间重算、提醒/阻断逻辑、侧别语义或其他生产规则修复混入测试提交。发现生产规则缺陷时，先在回归总表登记复现与预期，再单独进入开发修复提交。

@@ -860,3 +860,32 @@ owner 在 3000 本地看到「小腿后内侧」仍为宽水滴。已三层验�
 ## 测试侧影响
 
 本轮无新增代码行为变化（两项裁定均为"维持现状"），解钉清单不变（仍为 rendered-html:993 一条＋批次 2 problem-ledger-core 加载一条＋既有预存失败）。
+
+---
+
+# 第 28 轮 — 文档整合（docs/system/ 九份现行文档＋历史归档）与新增解钉项
+
+## 开发侧变更（2026-09-06，提交 853d8cb→466d855＋归档批次）
+
+- `docs/system/` 新建九份现行系统文档（01 产品设计／02 决策引擎／03 临床知识库／04 内容目录／05 会话编排／06 数据持久化／07 边界门禁／08 设计原则／09 拓展路线），全部以代码实测为准；Word/Excel 镜像在 outputs/（owner 私有，不入库）。
+- `docs/README.md` 重写为九份文档索引；旧"四份正式文档"口径废止。
+- 历史文档 `git mv` 进 `docs/archive/{plans,handover,rebuild,knee-decision-core,architecture,research}/`（保留 git 历史）；`docs/handover/` 仅留活动 test-notice 与测试侧 test-session-handoff；`docs/rehabmind-rebuild/` 仅留 data/ 与 knowledge/（代码 sourceCaseIds 溯源终点）。
+- 4 份旧正式文档（product-design / decision-framework / pilot-knowledge / scenario-coverage）**暂留原位**并加"已被取代"横幅——原因见下方解钉项。
+
+## ⚠ 新增解钉项（本轮引入，共 2 处）
+
+1. **rendered-html.test.mjs "keeps one concise four-document source of truth"（:890-912）**：钉旧 README 字面（"四份文档的优先级"等）＋四份旧文档路径与标题。README 已重写为九份文档索引（`466d855`），该用例自本轮起失败。请测试侧把断言迁移到新结构：README 九份文档表＋`docs/system/` 各文档关键句（建议弱断言标题），并决定旧四文档路径钉是否随归档解除。
+2. **sys-invariant-traceability.test.mjs（:10）**：读 `docs/pilot-scenario-coverage.md` 作 SYS-* 编号"文档侧唯一来源"。该文档暂留原位故**当前不失败**；但文档侧唯一来源已迁移为 `docs/system/02-decision-framework.md`（§13＋附表"不变量17"），建议测试侧改指 02 后，旧四文档即可归档。
+3. （信息）release-fingerprint-core.test.mjs:9 以 `docs/rehab-decision-framework.md` 作指纹排除路径样例——文档暂留故不失败；归档时需同步。
+
+## 文档死链新增（测试侧 B 类文件，dev 不碰）
+
+归档移动使 `docs/quality/rehabmind-quality-remediation-register.md` 的 2 条 `../plans/…` 链接失效（该计划已移入 `docs/archive/plans/`，正确目标应为 `../archive/plans/…`）。`check:docs` 现剩 3 条缺失，均属 docs/quality/（另 1 条为既有 real-browser-flow-audit）。请测试侧随本批解钉一并改为 `../archive/plans/…`。
+
+## 对基线的影响
+
+套件失败基线 54→**55**（新增即上述 rendered-html 四文档用例一条；已实测 rendered-html 单文件失败 8 条，其中 7 条为既有）。check:structure 仍绿（docs 根 5 文件未动，门禁零改动）。
+
+## 完成后动作（测试解钉时）
+
+- 上述 2 处解钉 → 删除 4 份旧文档顶部的"已被取代"横幅确认行 → `git mv` 至 `docs/archive/docs-root/` → docs 根仅剩 README（届时 check-repository-structure 的 expectedDocs 需同步收窄，开发侧配合）。

@@ -1,23 +1,35 @@
 # RehabMind 真实场景覆盖矩阵
 
-更新时间：2026-08-27（历史执行记录保留；本轮职责、证据分类和当前结果已回写）
+更新时间：2026-08-27 18:55（历史执行记录保留；本轮职责、证据分类和当前结果已回写）
 
-**当前结果口径**：本轮以“2026-08-27 最终收口证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
+**当前结果口径**：本轮以“2026-08-27 `049a21c` 最终证据索引”、`docs/quality/regression-test-register-2026-08-26.md` 和同一 buildId 的 manifest 为准。旧批次段落、历史脚本和未绑定本轮 runId 的截图只能说明曾经走过，不能计入本轮覆盖；若旧段落与本轮索引冲突，以本轮索引为准。
 
-## 2026-08-27 最终收口证据
+## 2026-08-27 049a21c 当前证据
 
-统一身份：commit=`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`，buildId=`local-42c0efb1c85f`，snapshot schema=`2`。
+补充验证：生产提交 `3fe14b3` 的肌肉定位图与训练素材整改已完成测试合同更新并通过。证据：`artifacts/quality/playwright/muscle-target-3fe14b3`、`muscle-mobile-3fe14b3`、`muscle-visual-3fe14b3`；组件合同 `muscle-region-location-picker.test.mjs` 3/3；thigh/calf v1 图片资源均 HTTP 200。该补充不改变既有 `049a21c` 业务基线身份，仅针对本次生产视觉提交单独绑定 buildId。
 
-本次开发整改已重新验证 `UX-01`、`INSPECT-ENTRY-GATE-01`、`BODY-MAP-UI-02`、多标签页冲突和已确认视觉基线。定向回归全部通过；完整 Edge 套件 41 项中 32 passed、9 个既有显式 skipped、0 failed。测试断言未被改写为“通过”，视觉截图只在确认多功能动作队列设计后更新了对应基线。
+统一身份：commit=`049a21c3b02a0990c0c3212d2615c96019bb82cb`，buildId=`local-049a21c3b02a-dirty-584c11ea5025`，appVersion=`rehabmind-pilot-app-0.1.0+local-049a21c3b02a-dirty-584c11ea5025.049a21c3b02a`，snapshot schema=`2`。
+
+本轮针对 `a5774ec`～`049a21c` 开发链重新绑定并验证真实 test workbench fixture、保存故障、历史投影、处理/训练结果、管理员页面边界和双侧完整纵向流程；QA 只维护测试断言、真实浏览器场景和证据脚本，没有修改生产规则。E2E-01～15 均已形成当前浏览器证据。
 
 | 缺陷/职责 | 当前证据 | 结果 |
 | --- | --- | --- |
-| `UX-01` | `ux-01-final-42c0efb1c85f` | 3/3 passed |
-| `BODY-MAP-UI-02` | `body-map-final-42c0efb1c85f` | 3/3 passed（所在身体图契约组） |
-| `INSPECT-ENTRY-GATE-01` | `inspect-local/2026-08-26T21-41-36-389Z/report.md` | 全部巡检通过 |
-| 多标签页冲突 | `multitab-final-42c0efb1c85f` | 2 passed，1 个既有显式 skipped |
-| 已确认视觉基线 | `visual-final-42c0efb1c85f` | 3/3 passed |
-| 完整浏览器回归 | `full-final-42c0efb1c85f` | 32 passed、9 skipped、0 failed |
+| `TEST-2b` / RMD-HIST | `tests/integration/sqlite-api/real-snapshot-recovery.integration.mjs`；`npm run test:integration` | 2/2、17/17 passed（沿开发链复测；当前 5a 仅 hook 依赖变更） |
+| E2E-03 / 急性踝安全停止 | `tests/browser/overall/safety-bilateral-and-unable.spec.ts`；`overall-final-049a21c-584c11ea-20260827` | 1/1 passed；高风险路径禁用普通评估并保留保存出口 |
+| E2E-04 / 双侧完整纵向流程 | 同上；`target-final-049a21c-584c11ea-20260827`；通过态 trace 与 `assessment-completed-readback.json` | 1/1 passed；左右分别评估/处理/复测，优先侧为右侧，单侧未完成不能推进；阶段事件与服务端快照同版且无 stage-bypass 告警 |
+| E2E-05 / 无明确主诉动作 | `tests/browser/overall/safety-bilateral-and-unable.spec.ts`；`overall-final-049a21c-584c11ea-20260827` | 1/1 passed；保留一般症状，不生成伪造动作分数 |
+| E2E-06 / 动作无法完成 | `tests/browser/overall/safety-bilateral-and-unable.spec.ts`；`overall-final-049a21c-584c11ea-20260827` | 1/1 passed；疼痛、没力、害怕、说明不清四类可见原因均验证 |
+| E2E-07～10 / 处理与训练 | `tests/browser/overall/retest-training-followup.spec.ts`；同上 | 4/4 passed；改善、无变化、处理加重、训练加重均有正反向断言 |
+| E2E-13～15 / 反馈、管理员、清理 | `tests/browser/overall/feedback-admin-cleanup.spec.ts`；同上 | 3/3 passed；session 2 绑定、脱敏和 runId 隔离均可审计 |
+| T-09 / bilateral gate / history / save faults | `tests/browser/overall/snapshot-freshness.spec.ts`、`fixture-boundaries.spec.ts`；同上 | 5/5 passed；四档陈旧、双侧低负荷、历史投影、网络/超时/存储失败均有真实页面证据 |
+| `UX-01` / 身体图 / 视觉 | `full-final-049a21c-584c11ea-20260827` | 当前 full Edge 对应场景通过 |
+| `INSPECT-ENTRY-GATE-01` | `inspect-local/2026-08-27T10-32-10-886Z/report.md` | 42/42 通过，commit/buildId 已绑定 |
+| 多标签页冲突 | `overall-final-049a21c-584c11ea-20260827` / `full-final-049a21c-584c11ea-20260827` | 交错保存场景通过；整体无 skipped |
+| Edge release | `release-final-049a21c-584c11ea-20260827` | 5/5 passed |
+| TEST-10 移动预览 | `mobile-final-049a21c-584c11ea-20260827` | Pixel 5/Chromium、iPhone 13/WebKit 2/2 |
+| TEST-10 Firefox 高风险 | `firefox-final-049a21c-584c11ea-20260827` | 1/1 passed |
+| 完整浏览器回归 | `full-final-049a21c-584c11ea-20260827` | 48/48 passed，无 skipped/failed |
+| MUSCLE-VISUAL-01 | `muscle-target-3fe14b3`、`muscle-mobile-3fe14b3`、`muscle-visual-3fe14b3` | component 3/3；身体图浏览器 3/3；移动 2/2；视觉 3/3；v1 资源 200 |
 
 所有浏览器证据位于 `artifacts/quality/playwright/`；构建、静态和单元/工作流证据由 `npm run test:fast`、`npm run lint` 和构建生成的 release manifest 提供。
 
@@ -53,18 +65,18 @@
 | INT-02 | 自定义动作保留原话，不强行归类 | 输入“跪坐/打羽毛球跨步”等自定义动作 | B10 历史浏览器、规则测试 | 覆盖·历史浏览器 | 改动主诉解析或复测时重跑 |
 | INT-03 | 没有固定动作时不生成虚假分数 | 无固定动作、跳过动作和分数 | B2、B13 历史浏览器 | 覆盖·历史浏览器 | 暂不列为新增 P0 |
 | INT-04 | 肿胀、按压痛、麻电范围独立记录 | 同时填写肿胀、按压痛、麻电位置 | 踝足脚本覆盖肿胀；规则测试覆盖字段 | 部分覆盖 | 补多症状位置的真实页面脚本 |
-| INT-05 | 明确主诉动作首次只显示当前动作，正常后才递进 | 主诉“下蹲”→首次只下蹲→选择正常→出现下一功能 | `tests/browser/p0/decision-gates.spec.ts`；`artifacts/quality/playwright/full` | 覆盖·本轮浏览器 | 当前 build 通过：首屏不提前出现下一层功能，主诉正常后才进入后续队列 |
+| INT-05 | 明确主诉动作首次只显示当前动作，正常后才递进 | 主诉“下蹲”→首次只下蹲→选择正常→出现下一功能 | `tests/browser/p0/decision-gates.spec.ts`；`full-5a455d6-final-rerun-20260827064635-19892` | 覆盖·本轮浏览器 | 当前 build 通过：首屏不提前出现下一层功能，主诉正常后才进入后续队列 |
 | INT-06 | 模式、操作对象和能力共同决定可见检查 | 自助、给自己、给别人三种入口切换 | `scripts/legacy-browser/real-browser-b-permission-modes.mjs`；历史髌骨脚本 | 覆盖·历史浏览器 | 旧脚本曾验证权限门控；本轮没有绑定当前 runId 的独立页面证据 |
-| INT-07 | 多个功能主诉动作分别进入独立评估，不合并成一个动作 | 专业模式同时选择下蹲、上下楼/下台阶 | `tests/browser/p0/decision-gates.spec.ts`；`artifacts/quality/playwright/full` | 覆盖·本轮浏览器 | 当前 build 通过：两个功能动作分别出现独立检查队列；复测动作隔离由 RET-02/03 单独验证 |
+| INT-07 | 多个功能主诉动作分别进入独立评估，不合并成一个动作 | 专业模式同时选择下蹲、上下楼/下台阶 | `tests/browser/p0/decision-gates.spec.ts`；`full-5a455d6-final-rerun-20260827064635-19892` | 覆盖·本轮浏览器 | 当前 build 通过：两个功能动作分别出现独立检查队列；复测动作隔离由 RET-02/03 单独验证 |
 | SAFE-01 | 急性踝伤安全确认通过后才进入基础评估 | 急性崴脚、无高风险、没有影像 | 历史踝足脚本 | 覆盖·历史浏览器 | 旧脚本曾走通；本轮整体急性踝场景未收口 |
-| SAFE-02 | 骨性风险、循环或感觉异常时停止普通流程 | 急性崴脚+高风险+无影像/医生结论 | 历史高风险脚本；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；当前 build 缺急性踝完整闭环 |
-| SAFE-03 | 高分疼痛且多个动作无法完成时停止自助处理 | 普通用户主诉9/10、两项活动度因疼痛无法完成、一项功能动作因疼痛无法完成 | 历史高疼痛脚本；本轮整体场景 skipped | 部分覆盖 | 旧页面证据保留，当前 build 未形成独立整体闭环 |
+| SAFE-02 | 骨性风险、循环或感觉异常时停止普通流程 | 急性崴脚+高风险+无影像/医生结论 | `tests/browser/overall/safety-bilateral-and-unable.spec.ts`；`overall-5a455d6-final-20260827064246-25568` | 覆盖·本轮浏览器 | 急性外伤高风险路径通过；当前验证的是代表性高风险组合，不等于所有临床组合穷举 |
+| SAFE-03 | 高分疼痛且多个动作无法完成时停止自助处理 | 普通用户主诉9/10、两项活动度因疼痛无法完成、一项功能动作因疼痛无法完成 | 历史高疼痛脚本；当前无独立整体场景 | 部分覆盖 | 旧页面证据保留，当前 build 未形成独立整体闭环 |
 | SAFE-04 | 麻电、感觉变化或新的明显无力进入专业确认 | 输入麻电/放射/感觉下降 | `tests/browser/p0/decision-gates.spec.ts`；`artifacts/quality/playwright/full` | 覆盖·本轮浏览器 | 当前 build 通过：出现专业确认/保存出口，未进入普通处理或训练 |
-| ASS-01 | 功能动作无法完成不能当作正常，后续只复核完成状态 | 下楼或下蹲选择无法完成并说明原因 | 历史功能无法完成脚本；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；当前 build 缺整体页面闭环 |
-| ASS-02 | “疼、没力、害怕、不知道”四种无法完成原因分流不同 | 同一动作分别选择四种原因 | 规则测试 | 覆盖·规则/服务层 | 至少补疼痛、力量、未知三条页面场景 |
-| ASS-03 | 没有实际完成基线不能生成普通分数复测 | 只报告动作但没有实际完成动作 | 历史功能无法完成脚本；规则测试 | 部分覆盖 | 规则/历史页面有证据；当前 build 整体场景 skipped |
+| ASS-01 | 功能动作无法完成不能当作正常，后续只复核完成状态 | 下楼或下蹲选择无法完成并说明原因 | `tests/browser/overall/safety-bilateral-and-unable.spec.ts`；`overall-final-049a21c-584c11ea-20260827` | 覆盖·本轮浏览器 | 四类原因均保留无法完成状态，禁止普通动作前后对比 |
+| ASS-02 | “疼、没力、害怕、不知道”四种无法完成原因分流不同 | 同一动作分别选择四种原因 | 规则测试；同一真实页面用例依次验证四类可见原因 | 覆盖·规则+浏览器 | 四类原因均有页面选择状态和禁止误判正常的证据 |
+| ASS-03 | 没有实际完成基线不能生成普通分数复测 | 只报告动作但没有实际完成动作 | 同上；规则测试 | 覆盖·本轮浏览器 | 页面禁止生成动作前后对比；规则层验证复测资格 |
 | ASS-04 | 单纯力量或控制偏弱进入训练，不进入手法处理 | 活动接近健侧、抗阻或单腿控制偏弱 | 历史力量脚本；规则测试 | 覆盖·历史浏览器 | 旧页面证据保留；本轮未绑定当前 runId 的独立页面证据 |
-| ASS-05 | 未知/暂不判断不能变成正常或直接生成处理 | AROM、PROM、力量、专项全部未知 | 历史未知结果脚本；规则测试；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；当前 build 缺整体页面闭环 |
+| ASS-05 | 未知/暂不判断不能变成正常或直接生成处理 | AROM、PROM、力量、专项全部未知 | 历史未知结果脚本；规则测试；当前无独立整体场景 | 部分覆盖 | 规则/历史页面有证据；当前 build 缺整体页面闭环 |
 | ASS-06 | 全阳性时按问题类别和处理单元执行，不把异常全部混成一种 | 活动、功能、局部、肌肉均异常 | C2 历史浏览器 | 覆盖·历史浏览器 | 加入固定多处理队列脚本 |
 | ASS-07 | 踝足基础方向固定保留，主诉别名归一到同一物理动作 | “脚底向外转”并实际完成踝足外翻 | 历史踝足脚本、动作身份测试 | 覆盖·历史浏览器 | 旧脚本曾验证；当前 build 未在本轮独立脚本复跑 |
 | ASS-08 | 髌骨四方向被动检查必须实际渲染四张方向卡 | 专业模式+被动活动能力+髌骨主诉 | 历史髌骨脚本、历史截图 | 覆盖·历史浏览器 | 旧脚本证据保留；当前 build 未绑定本轮 runId |
@@ -72,13 +84,13 @@
 | ASS-10 | PROM仍受限且具备权限时进入对应关节处理 | 主动受限→PROM仍受限→肌肉处理后关节入口 | 历史髌骨脚本 | 覆盖·历史浏览器 | 旧脚本证据保留；当前 build 未绑定本轮 runId |
 | ASS-11 | 没有相应专业能力时关节入口关闭 | 相同PROM受限但不声明关节处理能力 | 历史髌骨权限脚本 | 覆盖·历史浏览器 | 旧脚本证据保留；当前 build 未绑定本轮 runId |
 | RET-01 | 肿胀是时间性目标，处理一次后继续其他队列 | 肿胀管理完成后仍有肌肉/活动问题 | 历史踝足脚本 | 覆盖·历史浏览器 | 旧页面证据保留；本轮整体处理分支仍未形成独立闭环 |
-| RET-02 | 不同功能动作不能复用最近动作的复测结果 | 同一案例同时存在膝主动伸直和膝主动屈曲受限，并分别进入处理复测 | `tests/browser/p0/decision-gates.spec.ts`；`artifacts/quality/playwright/full`；规则测试 | 覆盖·本轮浏览器 | 当前 build 通过：两条不同物理活动分别完成复测并保留各自变化；功能动作不冒充活动复测 |
+| RET-02 | 不同功能动作不能复用最近动作的复测结果 | 同一案例同时存在膝主动伸直和膝主动屈曲受限，并分别进入处理复测 | `tests/browser/p0/decision-gates.spec.ts`；`full-5a455d6-final-rerun-20260827064635-19892`；规则测试 | 覆盖·本轮浏览器 | 当前 build 通过：两条不同物理活动分别完成复测并保留各自变化；功能动作不冒充活动复测 |
 | RET-03 | 同一动作可以复用最近合法结果 | 同一物理动作在处理和复测间保持同一动作身份 | `scripts/legacy-browser/real-browser-ret-action-identity.mjs`；`scripts/legacy-browser/real-browser-ret-reuse-branch.mjs`；规则测试 | 部分覆盖 | 已验证真实处理页恢复后出现“继续下一项”，消费同动作最近合法结果后 `trialRecord` 数量保持不变；前置快照由 IndexedDB 夹具建立，纯用户前置路径仍需固定 |
 | RET-04 | 队列重排后新开放候选不能被旧队列跳过 | 第一处理后新候选插入队列 | 队列规则测试 | 覆盖·规则/服务层 | 页面层缺少动态队列场景 |
 | RET-05 | 部分改善、仍受限的问题不能静默结束 | 主诉下降但活动仍受限 | C2、规则测试 | 覆盖·历史浏览器 | 修改处理队列时重跑 |
-| RET-06 | 处理后加重必须停止并聚焦复查 | 分数升高或活动变差 | 历史处理加重脚本；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；当前 build 缺整体处理加重闭环 |
-| TRN-01 | 所有训练动作都有即时反馈后才能结束训练 | 先不填写反馈，再逐项填写 | 历史训练脚本；规则测试；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；当前 build 缺整体训练反馈闭环 |
-| TRN-02 | 训练后加重最多退阶一次，不得循环 | 训练不适→停止后回落→退阶→再次异常 | 历史训练加重脚本；本轮整体场景 skipped | 部分覆盖 | 规则/历史页面有证据；连续退阶和当前整体闭环仍未收口 |
+| RET-06 | 处理后加重必须停止并聚焦复查 | 分数升高或活动变差 | `retest-training-followup.spec.ts`；当前定向 run | 覆盖·规则+浏览器 | 停止、聚焦复查、保存出口和禁止进入训练均通过 |
+| TRN-01 | 所有训练动作都有即时反馈后才能结束训练 | 先不填写反馈，再逐项填写 | 规则/台账测试；真实训练加重页面 | 覆盖·规则+代表页面 | 必填由 L3 台账门禁覆盖，L6 验证真实反馈控件与状态接线 |
+| TRN-02 | 训练后加重最多退阶一次，不得循环 | 训练不适→停止后回落→退阶→再次异常 | `retest-training-followup.spec.ts`；规则测试 | 覆盖·规则+浏览器 | 首次加重后锁定进阶和其他反馈，仅开放处理加重或保存；退阶次数由规则层覆盖 |
 | TRN-03 | 有肿胀、刺痛或麻电时自主放松只能选择性避开 | 普通膝路径查看自主放松；急性踝伤训练后查看肿胀风险提示 | 历史膝/踝足脚本；历史 Edge/移动视口 | 覆盖·历史浏览器 | 旧脚本证据保留；当前 build 未补刺痛/麻电专门正反场景 |
 | STATE-01 | 返回修改上游答案会使下游旧计划失效 | 总结页返回修改诱发动作或能力 | B11 历史浏览器 | 覆盖·历史浏览器 | 当前状态版本变更时重跑 |
 | STATE-02 | 保存、刷新、恢复保留步骤、模式、权限和未完成字段 | 未完成症状收集→保存→刷新→恢复 | B12 历史浏览器 | 覆盖·历史浏览器 | 转为当前 Playwright 可重复脚本 |
@@ -86,17 +98,17 @@
 | STATE-04 | 后续康复新症状不能覆盖旧问题 | 第2次康复选择新症状 | B19 历史浏览器 | 覆盖·历史浏览器 | 当前同步版本加入后重跑 |
 | DATA-01 | 创建、自动保存、修订号和版本信息可追溯 | 创建案例→保存快照→连续保存多个 revision→读取服务端快照、事件和版本 | 当前 E2E-01/02/11、P0 persistence、integration；旧离线/隔离脚本 | 部分覆盖·当前构建 | 当前 build 已覆盖匿名建案、正常流程和刷新恢复；连续 revision/全量版本回读仍以服务层和历史脚本为主 |
 | DATA-02 | 多案例交替操作不能串线 | 创建 A/B 两个案例，交替保存和恢复 | 服务/历史隔离脚本；本轮无对应整体场景 | 部分覆盖 | 数据层有隔离证据，当前真实页面未绑定本轮 runId |
-| DATA-03 | 旧修订号保存返回冲突，不覆盖最新数据 | 两个窗口使用旧 revision 保存 | integration/security/历史隔离脚本；`tests/browser/overall/retest-training-followup.spec.ts`；`artifacts/quality/playwright/multitab-final-42c0efb1c85f` | 覆盖·本轮浏览器 | 当前 build 已观察到多标签页交错保存提示；用户可重新加载或保留当前草稿，不静默覆盖 |
-| DATA-04 | 网络失败、超时、刷新中断时保留本地草稿 | 断网保存→继续填写→刷新→恢复本地副本→恢复联网同步；保存请求卡住后超时 | integration、历史离线/超时脚本；本轮整体保存分支 | 部分覆盖·当前构建 | 服务层/历史脚本有证据；本轮未形成完整页面异常闭环，需保留不确定性 |
-| DATA-05 | 反馈绑定案例、目标康复记录和模块，后台能区分提交位置 | 当前模块提交反馈；在第2次康复中回溯反馈第1次的处理复测；无法判断时提交未定位反馈；管理员按案例编号查询 | 服务测试/历史反馈脚本；本轮整体反馈场景 skipped | 部分覆盖 | 服务层和历史页面有证据；当前 build 缺整体反馈与管理员查询闭环 |
-| DATA-06 | 删除、失效链接、管理员入口保护有效 | 删除案例后旧链接、普通入口和管理员入口分别访问 | 安全/历史管理员脚本；本轮管理员整体场景 skipped | 部分覆盖 | 服务/安全层有证据；当前 build 缺真实管理员和清理整体闭环 |
+| DATA-03 | 旧修订号保存返回冲突，不覆盖最新数据 | 两个窗口使用旧 revision 保存 | integration/security；`tests/browser/overall/retest-training-followup.spec.ts`；`full-5a455d6-final-rerun-20260827064635-19892` | 覆盖·本轮浏览器 | 当前 build 已观察到多标签页交错保存提示；用户可重新加载或保留当前草稿，不静默覆盖 |
+| DATA-04 | 网络失败、超时、刷新中断时保留本地草稿 | 断网保存→继续填写→刷新→恢复本地副本→恢复联网同步；保存请求卡住后超时 | `tests/browser/overall/fixture-boundaries.spec.ts`；`overall-5a455d6-final-20260827064246-25568`；integration | 部分覆盖·当前构建 | network/timeout/storage 页面失败语义已通过；完整断网恢复联网和服务端冲突组合仍需补证据 |
+| DATA-05 | 反馈绑定案例、目标康复记录和模块，后台能区分提交位置 | 第2次康复当前模块提交反馈；管理员按案例编号查询 | `feedback-admin-cleanup.spec.ts`；服务测试 | 覆盖·本轮浏览器 | 服务端与管理员页均显示目标第 2 次及相同提交位置 |
+| DATA-06 | 删除、失效链接、管理员入口保护有效 | 两个 runId 分别建案；删除 A 后继续访问 B；再清理 B | `feedback-admin-cleanup.spec.ts`；安全测试 | 覆盖·本轮浏览器 | 错误凭据拒绝、runId 隔离清理和另一轮存活均通过 |
 | DATA-07 | 预览 D1 与正式试用数据隔离，版本号完整 | 预览部署创建案例并回读版本 | 历史预览脚本；本轮本地 build manifest | 覆盖·历史浏览器 | 预览证据只适用于预览环境，不能代替正式试用验收 |
 | DATA-08 | 邀请制入口和管理员入口分权 | 通过邀请链接进入试用；普通入口、案例访问凭据和管理员入口分别验证 | 历史邀请边界脚本；服务/安全层 | 覆盖·历史浏览器 | 旧预览路径有证据；本轮当前页面无独立邀请整体场景 |
 | DATA-09 | 错误日志可追溯但不泄露秘密 | 制造 4xx、保存冲突和访问拒绝，检查响应、日志形状和案例关联 | `scripts/legacy-browser/real-browser-error-redaction.mjs`；`tests/unit/infrastructure/pilot-api-redaction.test.mjs`；本地和预览 | 部分覆盖 | 本地和预览响应不泄露令牌、完整主诉和内部凭据，服务日志形状由静态测试固定；Cloudflare tail 本轮因连接超时未取得真实日志证据 |
-| UX-01 | 教程首次出现、跳过、完成和重新打开都可用 | 新浏览器上下文打开教程并完成引导 | `tests/browser/known-defects/ux-regression.spec.ts`；`artifacts/quality/playwright/ux-01-final-42c0efb1c85f` | 覆盖·本轮浏览器 | 当前 build 3/3 通过：完成/跳过、重新打开聚焦教程、关键 CTA 尺寸和滑条状态均符合合同 |
+| UX-01 | 教程首次出现、跳过、完成和重新打开都可用 | 新浏览器上下文打开教程并完成引导 | `tests/browser/known-defects/ux-regression.spec.ts`；`full-5a455d6-final-rerun-20260827064635-19892` | 覆盖·本轮浏览器 | 当前 build 相关场景通过：完成/跳过、重新打开聚焦教程、关键 CTA 尺寸和滑条状态均符合合同 |
 | UX-02 | 案例学习和学习解释入口能真实打开 | 首页进入案例学习并切换解释 | 文档明确记录入口不存在 | 功能缺口 | 先实现入口，再加入矩阵 |
-| UX-03 | 移动端关键页面不溢出且按钮可操作 | 390×844 踝足完整闭环 | 本轮 mobile-preview 冒烟；历史踝足脚本 | 部分覆盖 | 本轮移动项目通过输入/入口/溢出/焦点冒烟；人体图、滑条、保存恢复、安全停止、双侧、加重、总结等专门行为未齐 |
-| UX-04 | 不同浏览器的按钮、滑条、图片和布局一致 | Edge、Chrome、Firefox 至少各一条主路径 | 本轮 Edge release、Pixel/iPhone preview、Firefox risk；历史教程脚本 | 部分覆盖 | 本轮设备/浏览器冒烟通过；不代表全量兼容和所有临床路径一致 |
+| UX-03 | 移动端关键页面不溢出且按钮可操作 | 390×844 踝足完整闭环 | `mobile-preview-5a455d6-final-rerun-20260827064549-16704`；历史踝足脚本 | 部分覆盖 | Pixel 5/iPhone 13 预览通过当前脚本的输入/入口/溢出/焦点冒烟；人体图、滑条、保存恢复、安全停止、双侧、加重、总结等专门行为未齐 |
+| UX-04 | 不同浏览器的按钮、滑条、图片和布局一致 | Edge、Chrome、Firefox 至少各一条主路径 | `release-5a455d6-final-20260827064426-21744`、`mobile-preview-5a455d6-final-rerun-20260827064549-16704`、`firefox-risk-5a455d6-final-rerun-20260827064615-6252` | 部分覆盖 | 本轮设备/浏览器冒烟通过；不代表全量兼容和所有临床路径一致 |
 
 ## 机制发散场景库
 
@@ -104,7 +116,7 @@
 
 | ID | 组合场景 | 关键页面断言 | 当前状态 |
 | --- | --- | --- | --- |
-| MIX-01 | 只有疼痛位置，没有明确动作 | 不生成整套处理，不虚构动作分数 | 覆盖·历史浏览器 |
+| MIX-01 | 只有疼痛位置，没有明确动作 | 不生成整套处理，不虚构动作分数 | `overall-safety-0728d-20260827052234-20500`；覆盖·本轮浏览器 |
 | MIX-02 | 有肿胀但没有疼痛 | 进入观察/低刺激出口，不生成疼痛处理 | `tests/browser/divergent/swelling-and-queue.spec.ts`；覆盖·本轮浏览器 |
 | MIX-03 | 疼痛、肿胀和麻电同时存在 | 安全/专业确认优先，不进入普通肌肉处理 | `tests/browser/p0/decision-gates.spec.ts`；`artifacts/quality/playwright/full`；覆盖·本轮浏览器 |
 | MIX-04 | 多个症状位置中只有一个评估异常 | 只有异常位置生成下游目标 | 部分覆盖 |
@@ -277,46 +289,46 @@
 - visual、inspect：证明布局、溢出、遮挡和无障碍巡检；不证明临床推理正确；
 - deployment：证明当前部署目标和恢复链路；不再把已退出的 Cloudflare/Wrangler 作为当前产品合同。
 
-### 2026-08-27 本轮证据索引
+### 历史证据索引：2026-08-27 `0728f82`
 
-最终统一基线为 commit=`42c0efb1c85f2a1f6d6d2e512bcdba9f04b435d1`、buildId=`local-42c0efb1c85f`、snapshotSchemaVersion=`2`。下面的最终 runId 是当前构建证据入口；旧 `artifacts/quality/playwright/*` 产物若 buildId 不同，只能作为历史参考。
+上一份完整绿色 QA 基线为 commit=`0728f82353b0beced6d1e4aa6385429b0dfff25c`、buildId=`local-0728f82353b0-dirty-dbf0491523f0`、snapshotSchemaVersion=`2`。随后共享工作树出现开发未提交 source diff，最新 `npm run test:fast` 在 `scenario-catalog.ts:446/458/470/482` 失败；因此该 buildId 仍是最后可审计绿色身份，不能把当前 dirty 工作树当作验收版本。下面的 runId 均绑定各自记录的构建；旧产物若身份不同，只能作为历史参考。
 
 | 证据职责 | 命令/项目 | runId | 结果 | 说明 |
 | --- | --- | --- | --- | --- |
-| browser-overall / browser / visual / exploration | `node scripts/quality/run-browser-tests.mjs full-final-42c0efb1c85f --project=edge-full` / Edge | `full-final-42c0efb1c85f-20260826213704-18100` | 32 pass / 9 skipped / 0 failed | 41 项；MIX-11、INT-07、RET-02、UX-01、BODY-MAP-UI-02、视觉和固定 seed 探索均通过 |
-| browser release | `npm run test:browser:release` / Edge release | `release-20260826183809-12860` | 5/5 pass | 桌面 release 基线 |
-| mobile-preview | `npm run test:browser:mobile-preview` | `mobile-preview-20260826183850-23340` | 2/2 pass | Pixel 5/Chromium、iPhone 13/WebKit；当前仅冒烟范围 |
-| firefox-risk-preview | `npm run test:browser:firefox-risk` | `firefox-risk-20260826183918-23120` | 1/1 pass | 仅高风险冒烟 |
-| inspect | `node scripts/quality/inspect-local.mjs http://localhost:3000 --visual --axe` | `2026-08-26T21-41-36-389Z` | 全部通过 | 320/360/390/412/430/1440px；HTTP/API/布局/运行时/axe/视觉/遮挡均通过，入口闸门已正确关闭 |
-| L2/L3 定向逻辑 | `test:logic:retest`、`test:logic:queue`、`test:logic:ledger`、`test:logic:mutations` | 2026-08-27-low-cost | 34/34、37/37、39/39；变异全部 killed | 复测、动态队列、双侧/侧别、处理/训练加重的规则层通过；不替代页面证据 |
-| L0/L1/L5 低成本门禁 | `test:unit`、`test:workflow`、`test:component`、`test:integration`、`test:security`、health/migration | 2026-08-27-low-cost | unit 575/576；workflow 119/119；component 76/76；integration 16/17；security/health/migration 通过 | 新增 RMD-HIST/MARK 定向测试 6/6；同一事件重放幂等在 unit/integration 均失败；typecheck 另阻断 `test:fast` |
+| browser-overall / browser / visual / exploration | `npm run test:browser:full` / Edge | `full-20260827053408-12792` | 35 pass / 5 skipped / 0 failed | 40 项；身体图、INT-05/07、RET-02、UX-01、视觉、固定 seed 探索及本轮新增 E2E-03/05/06 均已执行 |
+| browser release | `npm run test:browser:release` / Edge release | `release-20260827053731-20072` | 5/5 pass | 桌面 release 基线 |
+| mobile-preview | `npm run test:browser:mobile-preview` | `mobile-preview-20260827054316-21860` | 2/2 pass（后续需重跑） | Pixel 5/Chromium、iPhone 13/WebKit；helper 加固已通过，但该 run 后共享开发 dirty 批次使 `test:fast` 失败 |
+| firefox-risk-preview | `npm run test:browser:firefox-risk` | `firefox-risk-20260827043913-9084` | 1/1 pass | 仅高风险冒烟 |
+| inspect | `node scripts/quality/inspect-local.mjs http://localhost:3000 --visual --axe` | `2026-08-27T04-43-32-444Z` | 42/42 通过 | 320/360/390/412/430/1440px；HTTP/API/布局/运行时/axe/视觉/遮挡均通过 |
+| TEST-2b / L2-L3 定向逻辑 | `real-snapshot-recovery.integration.mjs`、`test:logic:retest`、`test:logic:ledger`、`test:logic:mutations` | 2026-08-27 | 2/2、34/34、39/39；变异全部 killed | 历史投影、复测、双侧/侧别、处理/训练加重规则层通过；不替代页面证据 |
+| L0/L1/L5 门禁 | `test:fast`、`test:integration`、`test:vertical`、`test:security`、health/migration | 2026-08-27 | fast 通过；integration 17/17；vertical 2/2；security/health/migration 通过 | v2 空可选字段路径已覆盖；构建身份已绑定当前 commit/buildId |
 
 ## 新增本轮场景
 
-下列场景已登记到 scenario-registry；状态以脚本实际结果为准，`blocked` 表示脚本存在但本轮因缺夹具/oracle/权限而 skipped，不能计为覆盖。
+下列场景已登记到 scenario-registry；状态以脚本实际结果为准。当前整体套件 20/20、full Edge 48/48，无 skipped/failed。业务 E2E-01～15 均为 verified；`partial` 仅用于移动/Firefox 有意限制的预览范围。
 
 | ID | 设计规则/场景 | 应出现 | 禁止出现 | 证据职责 | 当前状态 |
 | --- | --- | --- | --- | --- | --- |
-| SNAPSHOT-STALE-01 | 按实际经过时间恢复快照 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒 | 自动修改原答案；急性未确认进入普通流程 | L2/L3 + L5 + L6 | 部分覆盖：规则通过，浏览器缺 UI 快照夹具 |
-| E2E-01-first-use-consent-case | 首次进入、来源、同意、匿名建案 | 同意门完成后进入案例并关闭遮罩 | 未同意使用、遮罩残留、匿名身份泄露 | L6 | 覆盖·本轮浏览器：full 通过 |
-| E2E-02-unilateral-knee-normal | 单侧膝正常闭环 | 症状→评估→处理复测→训练反馈→总结 | 跳阶段、侧别串线、遗漏反馈 | L6 | 覆盖·本轮浏览器：full 通过 |
-| E2E-03-acute-ankle-safety-stop | 急性踝扭伤安全停止 | 安全出口和保存出口可见 | 继续普通评估/处理/训练 | L6 | blocked：整体脚本 fixme，缺稳定 UI 夹具 |
-| E2E-04-bilateral-priority-and-assessment | 双侧优先侧与双侧评估 | 左右分别记录、分别复测、优先侧明确 | 一侧覆盖另一侧、只评一侧进入训练 | L6 | blocked：整体脚本 fixme |
-| E2E-05-no-clear-chief-action | 无明确主诉动作 | 保留一般症状且不生成动作分数 | 自动猜动作、伪造前后分数 | L3 + L6 | blocked：整体脚本 fixme；规则层另有证据 |
-| E2E-06-unable-action-reasons | 动作无法完成 | 原因分流、保留无法完成、无正常分数 | 无法完成当成正常 | L3 + L6 | blocked：整体脚本 fixme；规则层另有证据 |
-| E2E-07-treatment-better | 处理后改善 | 记录改善并进入下一合法阶段 | 把处理结果误当训练后结果 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-08-treatment-no-change | 处理后无变化 | 保留无变化并进入观察/复评出口 | 无变化显示成功；自动加大训练 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-09-treatment-worsening | 处理后加重 | 停止并进入聚焦复查 | 加重后继续处理或训练 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-10-training-worsening | 训练后加重 | 反馈门槛、停止或有限退阶 | 空反馈完成、无限退阶 | L3 + L6 | blocked：整体脚本 fixme |
-| E2E-11-refresh-restore | 刷新恢复 | 原答案、阶段和本机草稿保持 | 丢答案、错误回退 | L5 + L6 | 覆盖·本轮浏览器：full 通过 |
-| E2E-12-second-rehab-new-history | 第二次康复和新问题 | 旧历史保留、新问题开新路径 | 覆盖第一次康复 | L5 + L6 | blocked：整体脚本 fixme |
-| E2E-13-feedback-context | 反馈绑定 | 目标记录、当前模块和提交位置正确 | 无案例反馈或绑定错误记录 | L5 + L6 | blocked：缺真实管理员/反馈整体夹具 |
-| E2E-14-admin-redaction | 管理员脱敏 | 匿名查询和错误凭据拒绝，响应脱敏 | 令牌、主诉或堆栈泄露 | L5/L7 | blocked：整体脚本 fixme；security/release 层另有证据 |
-| E2E-15-test-data-cleanup | 测试数据清理 | 只清理本轮 runId 创建的数据 | 误删其他案例或留下不可追踪数据 | L5/L7 | blocked：缺独立清理夹具 |
-| TEST-03-real-ui-seeded-exploration | 固定 seed 真实工作台探索 | 只操作可见控件，失败可重放 | 复制简化模型或只保存终端错误 | L6 exploration | 覆盖·本轮浏览器：seed=20260827，full 通过 |
-| TEST-10-mobile-preview | Pixel 5、iPhone 13 移动预览 | 独立报告输入、人体图、滑条、保存恢复、安全停止、双侧、加重、训练、总结、焦点、溢出 | Edge 结果冒充移动通过 | L6-preview | 部分覆盖：Pixel 5/iPhone 13 2/2；当前脚本为预览冒烟 |
-| TEST-10-firefox-high-risk | Firefox 高风险流程 | 安全停止、麻电/感觉变化、处理/训练加重 | 把 Firefox 冒烟写成全量兼容门禁 | L6 preview | 部分覆盖：Firefox 1/1；仅高风险冒烟 |
-| INSPECT-entry-gate-after-create | 建案后入口门浮层在 390px、1440px 视口关闭 | 建案后浮层关闭并继续视口检查 | 浮层残留导致巡检中断 | L6 inspect | 覆盖·本轮浏览器：`2026-08-26T21-41-36-389Z` 全部通过；对应 `INSPECT-ENTRY-GATE-01` |
+| SNAPSHOT-STALE-01 | 按实际经过时间恢复快照 | <24h 无提醒；>=24h 非阻断；急性 >=7d 强提醒并重新确认；慢性只提醒 | 自动修改原答案；急性未确认进入普通流程 | L2/L3 + L5 + L6 | verified：`overall-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-01-first-use-consent-case | 首次进入、来源、同意、匿名建案 | 同意门完成后进入案例并关闭遮罩 | 未同意使用、遮罩残留、匿名身份泄露 | L6 | verified：`full-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-02-unilateral-knee-normal | 单侧膝正常闭环 | 症状→评估→处理复测→训练反馈→总结 | 跳阶段、侧别串线、遗漏反馈 | L6 | verified：`full-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-03-acute-ankle-safety-stop | 急性踝扭伤安全停止 | 安全出口和保存出口可见 | 继续普通评估/处理/训练 | L6 | verified：`overall-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-04-bilateral-priority-and-assessment | 双侧优先侧与双侧评估 | 左右分别记录、按右侧优先分别处理、左右分别复测；单侧未完成保持限制 | 一侧覆盖另一侧、只评一侧进入训练、阶段事件使用旧快照 | L6 | verified：`target-final-049a21c-584c11ea-20260827` 与 overall/full 均通过；SQLite 回读 step=3、两侧 limited、safetyComplete=true |
+| E2E-05-no-clear-chief-action | 无明确主诉动作 | 保留一般症状且不生成动作分数 | 自动猜动作、伪造前后分数 | L3 + L6 | verified：`overall-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-06-unable-action-reasons | 动作无法完成 | 原因分流、保留无法完成、无正常分数 | 无法完成当成正常 | L3 + L6 | verified：四类真实可见原因通过 |
+| E2E-07-treatment-better | 处理后改善 | 记录改善并进入下一合法阶段 | 把处理结果误当训练后结果 | L3 + L6 | verified：范围恢复并进入下一合法处理 |
+| E2E-08-treatment-no-change | 处理后无变化 | 保留无变化并进入观察/复评出口 | 无变化显示成功；自动加大训练 | L3 + L6 | verified：显示“仍受限，未明显改变”，不显示恢复成功 |
+| E2E-09-treatment-worsening | 处理后加重 | 停止并进入聚焦复查 | 加重后继续处理或训练 | L3 + L6 | verified：停止、聚焦复查和保存出口通过 |
+| E2E-10-training-worsening | 训练后加重 | 反馈门槛、停止或有限退阶 | 空反馈完成、无限退阶 | L3 + L6 | verified：进阶与其他动作锁定，仅开放处理加重或保存结束 |
+| E2E-11-refresh-restore | 刷新恢复 | 原答案、阶段和本机草稿保持 | 丢答案、错误回退 | L5 + L6 | verified：`overall-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-12-second-rehab-new-history | 第二次康复和新问题 | 旧历史保留、新问题开新路径 | 覆盖第一次康复 | L5 + L6 | verified：`overall-final-049a21c-584c11ea-20260827` 通过 |
+| E2E-13-feedback-context | 反馈绑定 | 目标记录、当前模块和提交位置正确 | 无案例反馈或绑定错误记录 | L5 + L6 | verified：second-session 反馈经服务器与管理员页绑定 session 2 |
+| E2E-14-admin-redaction | 管理员脱敏 | 匿名查询和错误凭据拒绝，响应脱敏 | 令牌、主诉或堆栈泄露 | L5/L7 | verified：错误凭据拒绝、匿名查询和脱敏导出通过 |
+| E2E-15-test-data-cleanup | 测试数据清理 | 只清理本轮 runId 创建的数据 | 误删其他案例或留下不可追踪数据 | L5/L7 | verified：两个独立 runId 证明隔离清理通过 |
+| TEST-03-real-ui-seeded-exploration | 固定 seed 真实工作台探索 | 只操作可见控件，失败可重放 | 复制简化模型或只保存终端错误 | L6 exploration | verified：seed=20260827，`explore-final-049a21c-584c11ea-20260827` 通过 |
+| TEST-10-mobile-preview | Pixel 5、iPhone 13 移动预览 | 独立报告输入、人体图、滑条、保存恢复、安全停止、双侧、加重、训练、总结、焦点、溢出 | Edge 结果冒充移动通过 | L6-preview | 部分覆盖：`mobile-final-049a21c-584c11ea-20260827` 2/2；当前脚本为预览冒烟 |
+| TEST-10-firefox-high-risk | Firefox 高风险流程 | 安全停止、麻电/感觉变化、处理/训练加重 | 把 Firefox 冒烟写成全量兼容门禁 | L6 preview | 部分覆盖：`firefox-final-049a21c-584c11ea-20260827` 1/1；仅高风险冒烟 |
+| INSPECT-entry-gate-after-create | 建案后入口门浮层在 390px、1440px 视口关闭 | 建案后浮层关闭并继续视口检查 | 浮层残留导致巡检中断 | L6 inspect | 覆盖·本轮浏览器：`2026-08-27T06-52-29-327Z` 42/42 通过；对应 `INSPECT-ENTRY-GATE-01` |
 
 ## 快照陈旧的测试 oracle
 
@@ -362,11 +374,6 @@ npm run test:browser:firefox-risk
 
 ## 当前明确未覆盖
 
-- T-09 的浏览器层实际陈旧提醒、7 天急性阻断和答案保留；规则层边界测试已通过；
-- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作和无法完成多原因的整体页面闭环；
-- 处理后改善/无变化/加重、训练后加重、第二次康复新问题历史的整体页面闭环；
-- 反馈绑定的管理员真实查询、测试数据按 runId 清理；
-- 移动端人体图、评分滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结和弹层焦点的专门移动行为证据；当前 Pixel 5/iPhone 13 仅完成输入/溢出/入口冒烟；
-- 离线、存储不可用和部分异常页面分支仍缺正式产品 oracle；这不影响本次已收口的多标签页冲突路径；
-- 急性踝安全停止、双侧完整评估/复测、无明确主诉动作、无法完成多原因、处理/训练加重、第二次康复新问题、管理员查询和测试数据清理等整体页面场景仍按显式 skipped/blocked 记录；
-- 移动端本次仍是 Pixel 5/iPhone 13 预览冒烟，不把桌面 Edge 结果冒充移动全量行为覆盖；Android 真机/模拟器不在本次环境证据内。
+- E2E-01～15 已由当前真实页面场景验证，不再列为未覆盖；E2E-04 同时保留 `bilateral-training-gate` 的直接边界证据和 `bilateral-longitudinal` 的完整纵向证据。
+- TEST-10 移动预览 2/2 通过，但当前仅是 M1 预览冒烟；人体图、滑条、保存恢复、安全停止、双侧、加重、训练反馈、总结等移动专门行为未逐项覆盖。Android M2～M5 仍无 `adb`、`emulator`、`gradle` 或 APK 证据。
+- 当前浏览器 manifest 已按本地实际 commit 重绑；工作树仍含 QA 未提交改动及生成文件，因此 buildId 是可审计的 dirty QA 基线，不是干净发布候选。

@@ -84,7 +84,7 @@ RehabMind 是悦舒运动康复的线上康复助手。它记录用户问题，�
 
 23 日工作日志曾写“允许开放”，这是当日版本的历史判断。24 日重新审查后发现测试有效性、架构、信息密度和人工理解仍有缺口，25 日又取消邀请并重做入口与移动体验，因此该“允许开放”已经失效。
 
-23 日详情见 [会话工作日志](./session-log-2026-08-23.md) 和 [历史发布验收](../quality/release-acceptance-report-2026-08-23.md)。
+23 日详情见 [会话工作日志](./session-log-2026-08-23.md) 和 [历史发布验收](../../quality/release-acceptance-report-2026-08-23.md)。
 
 ## 5. 2026-08-24 完成内容
 
@@ -118,7 +118,7 @@ RehabMind 是悦舒运动康复的线上康复助手。它记录用户问题，�
 - 六阶段视图提取为真实类型组件；主工作台从约 8750 行降至约 5.2k 行，保留状态协调、持久化和流程命令。
 - 增加依赖边界、循环、仓库结构、Markdown 链接和资产清单自动门禁。
 
-24 日详情见 [A7 发布门禁](../quality/a7-release-gates-2026-08-24.md)（同目录 A0-A6 为前序证据）和 [B0-B6 结构治理](../quality/b0-b6-structure-governance-2026-08-24.md)。
+24 日详情见 [A7 发布门禁](../../quality/a7-release-gates-2026-08-24.md)（同目录 A0-A6 为前序证据）和 [B0-B6 结构治理](../../quality/b0-b6-structure-governance-2026-08-24.md)。
 
 ## 6. 2026-08-25 完成内容
 
@@ -168,7 +168,7 @@ RehabMind 是悦舒运动康复的线上康复助手。它记录用户问题，�
 - VPS 保留 3 个发布版本，发布前和恢复演练均有独立 SQLite 备份；
 - 六个桌面/手机视口的 VPS 只读预检无横向溢出、无运行时错误。
 
-证据见 [本地网页验收](../quality/app-experience-local-acceptance-2026-08-25.md) 和 [VPS 发布验收](../quality/app-experience-vps-acceptance-2026-08-25.md)。
+证据见 [本地网页验收](../../quality/app-experience-local-acceptance-2026-08-25.md) 和 [VPS 发布验收](../../quality/app-experience-vps-acceptance-2026-08-25.md)。
 
 ## 7. 当前代码结构与耦合边界
 
@@ -317,18 +317,18 @@ ssh -i C:\Users\26259\.ssh\id_ed25519 rehabdeploy@66.154.101.204
 
 | 资料 | 用途 |
 | --- | --- |
-| [文档中心](../README.md) | 四份正式规则和全部资料入口 |
+| [文档中心](../../README.md) | 四份正式规则和全部资料入口 |
 | [当前项目状态](./project-status.md) | 当前简明状态 |
 | [App 体验优化方案](../plans/rehabmind-app-experience-optimization-plan.md) | 当前 12 步施工顺序 |
-| [当前测试计划](../quality/rehabmind-test-plan.md) | L0-L7、执行节奏和发布门槛 |
-| [质量整改登记](../quality/rehabmind-quality-remediation-register.md) | 问题编号、状态和验收标准 |
-| [本地网页验收](../quality/app-experience-local-acceptance-2026-08-25.md) | 第 1 至第 9 步证据 |
-| [VPS 发布验收](../quality/app-experience-vps-acceptance-2026-08-25.md) | 第 10 步证据和发布缺陷 |
-| [VPS 发布手册](../operations/pilot-release-readiness-execution-runbook.md) | 发布、备份、健康和回滚步骤 |
-| [B0-B6 结构治理](../quality/b0-b6-structure-governance-2026-08-24.md) | 当前目录边界来源 |
+| [当前测试计划](../../quality/rehabmind-test-plan.md) | L0-L7、执行节奏和发布门槛 |
+| [质量整改登记](../../quality/rehabmind-quality-remediation-register.md) | 问题编号、状态和验收标准 |
+| [本地网页验收](../../quality/app-experience-local-acceptance-2026-08-25.md) | 第 1 至第 9 步证据 |
+| [VPS 发布验收](../../quality/app-experience-vps-acceptance-2026-08-25.md) | 第 10 步证据和发布缺陷 |
+| [VPS 发布手册](../../operations/pilot-release-readiness-execution-runbook.md) | 发布、备份、健康和回滚步骤 |
+| [B0-B6 结构治理](../../quality/b0-b6-structure-governance-2026-08-24.md) | 当前目录边界来源 |
 | [23 日会话日志](./session-log-2026-08-23.md) | 23 日详细历史 |
-| [动作图提示词](../rehabmind-rebuild/10-knee-ankle-action-image-prompts.md) | 待生成 Q 版动作素材 |
-| [动作图清单](../rehabmind-rebuild/11-action-image-inventory.md) | 待交付和接入资产 |
+| [动作图提示词](../rebuild/10-knee-ankle-action-image-prompts.md) | 待生成 Q 版动作素材 |
+| [动作图清单](../rebuild/11-action-image-inventory.md) | 待交付和接入资产 |
 
 ## 13. 禁止沿用的旧口径
 
