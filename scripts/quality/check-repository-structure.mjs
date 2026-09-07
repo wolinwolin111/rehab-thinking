@@ -24,7 +24,7 @@ for (const file of appFiles) {
 }
 
 const docsRoot = (await readdir(path.join(root, "docs"), { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
-const expectedDocs = ["README.md", "knee-ankle-pilot-knowledge.md", "pilot-scenario-coverage.md", "rehab-decision-framework.md", "rehabmind-complete-product-design.md"].sort();
+const expectedDocs = ["README.md"];
 if (JSON.stringify(docsRoot) !== JSON.stringify(expectedDocs)) errors.push(`unexpected docs root files: ${docsRoot.join(", ")}`);
 
 const testsRoot = (await readdir(path.join(root, "tests"), { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);

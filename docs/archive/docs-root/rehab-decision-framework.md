@@ -1,6 +1,6 @@
-# RehabMind 决策引擎规范
+﻿# RehabMind 决策引擎规范
 
-> ⚠ **已被取代（2026-09-06 文档整合）**：本文现行内容已并入 [docs/system/](./system/)（02 决策引擎）。因测试侧仍按旧路径钉文档（rendered-html / sys-invariant-traceability / release-fingerprint），暂留原位；测试解钉后本文移入 docs/archive/docs-root/。请勿在本文追加新规则。
+> ⚠ **已被取代（2026-09-06 文档整合）**：本文现行内容已并入 [docs/system/](../../system/)（02 决策引擎）。2026-09-08 测试侧解钉完成后已归档至 docs/archive/docs-root/。请勿在本文追加新规则。
 
 > 状态：现行
 >
@@ -618,4 +618,4 @@ Finding 是经过用户确认的待解决问题，不是诊断。
 
 ---
 
-更细的历史讨论保存在 [archive](./archive/) 中，不再作为现行判断依据。
+更细的历史讨论保存在 [archive](../) 中，不再作为现行判断依据。

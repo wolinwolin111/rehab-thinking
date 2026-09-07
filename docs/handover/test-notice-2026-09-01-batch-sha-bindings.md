@@ -959,3 +959,59 @@ R4（膝治疗卡 60～90）、R4'（任意肌肉候选"怎么做"兜底剂量�
 ## owner 批准补记（2026-09-07）
 
 两项均点头：①兜底剂量删延长句、常规即 90 封顶，不加新剂量；②居家放松/双侧/训练前准备并入 60～90 范围确认生效。裁定归档见主控方案 §16。本批定稿，无待决项。
+
+---
+
+# 第 31 轮 — doc 11 校对并入（回应测试侧）
+
+- **registry 状态语义更正采纳**：确认 f4b49e2 树 registry 无 status 字段（100 条纯指针索引），我引的是重构前旧快照——已改为"状态见 real-browser-coverage-matrix.md"。§3.3 并入 `test:browser:full`／`test:release`。doc 11 升 v1.1。
+- **browser 计数异议**：推送树（f4b49e2）实测 `.spec.ts` 为 **31**，非 34——你说的 3 个新走查 spec 似未推送（含 unsupported-region-hint.spec.ts 已在 31 内）。推送后我下版跟数。
+- **归档阻塞确认**：f4b49e2 已完成 four-document 解钉（rendered-html:990 已迁移为 documentation-index 口径）＋quality 死链修复，但 **sys-invariant-traceability.test.mjs 仍读 `docs/pilot-scenario-coverage.md`**（第 28 轮解钉项第 2 条未动）。请测试侧把 DOC 指针迁移到 `docs/system/02-decision-framework.md`（§13＋附表"不变量17"），迁移落地并推送后，dev 侧即归档 4 份旧文档并收窄 check-repository-structure expectedDocs。
+
+---
+
+# 第 32 轮 — 批准 B 方案＋定稿 doc 布局（回应测试侧第 31 轮回议）
+
+## ① browser 计数认收
+
+487271f 已核：`walkthrough/batch1~3.spec.ts` 在树，`.spec.ts` 现 34。doc 11 v1.2 已更新（含 WALKTHROUGH_REVIEW 默认 skip 注记）。four-document 稳健化（计数无关＋动态读 system/）认可，dev 加文档不再连环红。
+
+## ② sys-invariant：**批准 B 方案**
+
+dev 复核你们的实测成立：JSON 33 个 SYS-* 带 guards[].file＋anchor；02 §13 是散文简写（正则只抽到 SYS-EVIDENCE-001，16 场景号根本不在 02）——迁指针到 02 必爆 32 僵尸红。**不选 A 的理由**：把 16 个场景登记号灌进决策引擎文档属为门禁扭曲文档，违反最小充分；且"文档列了但无守护"检测在重构后已无前提（无单一 doc 承载全清单）。B 保留两项硬检查（守护文件存在＋anchor 真实），语义正确。02 §13 继续承载不变量**语义**，JSON 为编号**权威清单**——dev 会在 02 §13 补一行此分工声明（A 类，随归档批）。
+
+## ③ 一处纠正＋布局定稿
+
+纠正：release-fingerprint-core.test.mjs 里 `docs/handover/HANDOVER.md`／`project-status.md`／`remediation-execution-plan.md` 是**谓词字符串样例**（`isReleaseFingerprintExcluded` 纯函数，不查文件存在），三份文件早已在 archive 而测试仍绿即为证——"移动即红"不成立。但你们的顺序判断正确：sys-invariant 的 DOC 是**真实读取**，它不解钉我不能动 pilot-scenario-coverage.md。
+
+**最终布局（定稿）**：docs 根仅剩 `README.md`；4 份旧文档 → `docs/archive/docs-root/`。
+
+**执行序**：
+1. **测试侧（你们，step 1）**：sys-invariant 改 B（去 doc 交叉核对，留 guards/anchor 硬检查，JSON comment 里"文档侧唯一来源"字样一并删）；release-fingerprint 样例按新谓词语义更新——dev 将在 step 2 把 `NON_RUNTIME_REPORTS` 改为前缀式：排除 `README.md`、`docs/README.md`、`scripts/README.md`、`tests/README.md`＋前缀 `docs/quality/`、`docs/archive/`、`docs/handover/`＋生成件；删除三条已死精确路径；非排除样例建议用 `docs/system/01-product-design.md`（现行文档计入指纹，与旧四文档当年口径一致）。
+2. **开发侧（我们，step 2）**：同一批推送 4 份 `git mv`＋谓词前缀化＋check-repository-structure expectedDocs 5→1＋02 §13 分工声明。
+
+step 1 推送后我们即刻执行 step 2。
+
+---
+
+# 第 33 轮 — Step 2 落地：4 份旧文档已归档，docs 根仅剩 README
+
+## 完成内容（回应你们第 32 轮 b071279）
+
+- 4 份旧文档 `git mv` 至 `docs/archive/docs-root/`（git 历史保留）；横幅改"已归档"，全部出链/入链修正（A 类 9 文件＋4 份自身）。
+- `check-repository-structure` expectedDocs 5→1（docs 根仅 README）。
+- `release-fingerprint-core.mjs` 谓词前缀化：排除 README×4＋前缀 `docs/quality/`、`docs/archive/`、`docs/handover/`＋生成件；删除 3 条死精确路径。你们留注释的两条 excluded 样例（docs/handover/xxx、docs/archive/xxx）现在补上会绿。
+- 02 §13 加"JSON＝编号权威清单，本节＝语义"分工声明；README/11 §6 同步归档事实。
+
+## 你们复核时的两个预期红（均为 dev 过期 tests/ 副本，测试树应绿）
+
+1. dev 树 sys-invariant-traceability.test.mjs 整文件红（旧版仍读已移动的 pilot-scenario-coverage.md；你们 b071279 版已不读）。
+2. dev 树 release-fingerprint-core.test.mjs "A7 REL-03" 红（旧版仍断言已删除的死路径样例；你们 b071279 版已删）。
+
+## 新增 B 类死链 1 条（请随复核批处理）
+
+docs/quality/real-browser-flow-audit.md:3 → `../pilot-scenario-coverage.md` 已失效，正确目标 `../archive/docs-root/pilot-scenario-coverage.md`。check:docs 现 4 条缺失＝3 预存＋此新增。
+
+## 门禁自证
+
+check:structure ok（docs 根 1 文件）；check:catalog/typecheck 绿；node 套件失败集合 58→60，新增即上述两条过期副本红，其余逐条相同。

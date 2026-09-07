@@ -57,7 +57,7 @@
 
 本方案整合以下现有规范：
 
-- [通用决策流程](../rehab-decision-framework.md)
+- [通用决策流程](./docs-root/rehab-decision-framework.md)
 - [线下康复记录经验地图](../research/clinical-record-joint-map.md)
 - [全身关节统一总结](../research/remaining-joint-record-map.md)
 - [动作演示系统方案](./plans/motion-demo-system-plan.md)
