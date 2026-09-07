@@ -991,3 +991,27 @@ dev 复核你们的实测成立：JSON 33 个 SYS-* 带 guards[].file＋anchor�
 2. **开发侧（我们，step 2）**：同一批推送 4 份 `git mv`＋谓词前缀化＋check-repository-structure expectedDocs 5→1＋02 §13 分工声明。
 
 step 1 推送后我们即刻执行 step 2。
+
+---
+
+# 第 33 轮 — Step 2 落地：4 份旧文档已归档，docs 根仅剩 README
+
+## 完成内容（回应你们第 32 轮 b071279）
+
+- 4 份旧文档 `git mv` 至 `docs/archive/docs-root/`（git 历史保留）；横幅改"已归档"，全部出链/入链修正（A 类 9 文件＋4 份自身）。
+- `check-repository-structure` expectedDocs 5→1（docs 根仅 README）。
+- `release-fingerprint-core.mjs` 谓词前缀化：排除 README×4＋前缀 `docs/quality/`、`docs/archive/`、`docs/handover/`＋生成件；删除 3 条死精确路径。你们留注释的两条 excluded 样例（docs/handover/xxx、docs/archive/xxx）现在补上会绿。
+- 02 §13 加"JSON＝编号权威清单，本节＝语义"分工声明；README/11 §6 同步归档事实。
+
+## 你们复核时的两个预期红（均为 dev 过期 tests/ 副本，测试树应绿）
+
+1. dev 树 sys-invariant-traceability.test.mjs 整文件红（旧版仍读已移动的 pilot-scenario-coverage.md；你们 b071279 版已不读）。
+2. dev 树 release-fingerprint-core.test.mjs "A7 REL-03" 红（旧版仍断言已删除的死路径样例；你们 b071279 版已删）。
+
+## 新增 B 类死链 1 条（请随复核批处理）
+
+docs/quality/real-browser-flow-audit.md:3 → `../pilot-scenario-coverage.md` 已失效，正确目标 `../archive/docs-root/pilot-scenario-coverage.md`。check:docs 现 4 条缺失＝3 预存＋此新增。
+
+## 门禁自证
+
+check:structure ok（docs 根 1 文件）；check:catalog/typecheck 绿；node 套件失败集合 58→60，新增即上述两条过期副本红，其余逐条相同。

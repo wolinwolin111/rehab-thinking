@@ -15,10 +15,10 @@
 按下面顺序阅读，不要一上来直接改 `rehabmind-complete-demo.tsx`：
 
 1. 本文，了解仓库地图、状态流和已知边界。
-2. [产品规范](../../rehabmind-complete-product-design.md)，了解页面、模式、数据记录和产品范围。
-3. [决策引擎规范](../../rehab-decision-framework.md)，了解信息如何变成评估、问题、处理、复测和训练。
-4. [膝踝首发知识库](../../knee-ankle-pilot-knowledge.md)，了解膝、踝、大腿、小腿的具体候选和优先级。
-5. [首发场景验收](../../pilot-scenario-coverage.md)，了解必须走通的场景和发布门槛。
+2. [产品规范](../docs-root/rehabmind-complete-product-design.md)，了解页面、模式、数据记录和产品范围。
+3. [决策引擎规范](../docs-root/rehab-decision-framework.md)，了解信息如何变成评估、问题、处理、复测和训练。
+4. [膝踝首发知识库](../docs-root/knee-ankle-pilot-knowledge.md)，了解膝、踝、大腿、小腿的具体候选和优先级。
+5. [首发场景验收](../docs-root/pilot-scenario-coverage.md)，了解必须走通的场景和发布门槛。
 6. [真实浏览器走读纪律](../../quality/real-browser-flow-audit.md)，了解为什么纯代码测试不够，以及真实页面如何记录。
 
 历史讨论、旧方案和迁移记录只用于追溯，不参与当前规则：

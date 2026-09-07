@@ -31,7 +31,7 @@
 - `quality/`：测试侧体系（B 类，测试会话所有）。
 - `handover/test-notice-2026-09-01-batch-sha-bindings.md`：开发侧轮次制记录档（改动/裁定/解钉项登记，供追溯；跨会话信息由 owner 转述，本档非通信通道）。
 - `archive/`：全部历史过程文档（已执行完的施工计划、一次性交接、被取代的 rebuild 叙述文档）。
-- **暂留原位的 4 份旧正式文档**（product-design / decision-framework / pilot-knowledge / scenario-coverage）：内容已被 01/02/03 取代并加了取代横幅，因测试侧仍按旧路径钉文档（rendered-html、sys-invariant-traceability、release-fingerprint），待解钉后移入 `archive/docs-root/`——解钉项已登记通知档第 28 轮。
+- `archive/docs-root/`：4 份旧正式文档（product-design / decision-framework / pilot-knowledge / scenario-coverage），内容已被 01/02/03 取代；2026-09-08 测试侧解钉完成后归档，docs 根仅剩本索引。
 
 ## 维护规则
 

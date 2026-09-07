@@ -1,14 +1,10 @@
 const NON_RUNTIME_REPORTS = new Set([
   "README.md",
   "docs/README.md",
-  "docs/handover/HANDOVER.md",
-  "docs/handover/test-session-handoff-2026-08-26.md",
-  "docs/handover/project-status.md",
-  "docs/rehabmind-current-remediation-execution-plan.md",
-  "docs/quality/rehabmind-quality-remediation-register.md",
   "scripts/README.md",
   "tests/README.md",
 ]);
+const NON_RUNTIME_PREFIXES = ["docs/quality/", "docs/archive/", "docs/handover/"];
 
 export function normalizeReleasePath(file) {
   return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
@@ -18,18 +14,15 @@ export function isReleaseFingerprintExcluded(file, generatedReleasePath = "src/i
   const normalized = normalizeReleasePath(file);
   return normalized === normalizeReleasePath(generatedReleasePath)
     || NON_RUNTIME_REPORTS.has(normalized)
-    || normalized.startsWith("docs/quality/");
+    || NON_RUNTIME_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
 export const RELEASE_FINGERPRINT_EXCLUDED_PATHS = Object.freeze([
   "README.md",
   "docs/README.md",
-  "docs/handover/HANDOVER.md",
-  "docs/handover/test-session-handoff-2026-08-26.md",
-  "docs/handover/project-status.md",
-  "docs/rehabmind-current-remediation-execution-plan.md",
-  "docs/quality/rehabmind-quality-remediation-register.md",
-  "docs/quality/**",
   "scripts/README.md",
   "tests/README.md",
+  "docs/quality/**",
+  "docs/archive/**",
+  "docs/handover/**",
 ]);

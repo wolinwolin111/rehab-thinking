@@ -13,10 +13,10 @@
 
 本文只规定整改顺序、架构边界、测试方法、数据迁移、发布和验收要求，不新增康复决策或临床规则。产品行为仍以文档中心列出的四份正式文档为准：
 
-1. [产品规范](../../rehabmind-complete-product-design.md)
-2. [决策引擎规范](../../rehab-decision-framework.md)
-3. [膝踝首发知识库](../../knee-ankle-pilot-knowledge.md)
-4. [首发场景验收](../../pilot-scenario-coverage.md)
+1. [产品规范](../docs-root/rehabmind-complete-product-design.md)
+2. [决策引擎规范](../docs-root/rehab-decision-framework.md)
+3. [膝踝首发知识库](../docs-root/knee-ankle-pilot-knowledge.md)
+4. [首发场景验收](../docs-root/pilot-scenario-coverage.md)
 
 本文是当前 VPS + SQLite 架构下的执行顺序来源。旧版[全项目整改执行手册](./rehabmind-quality-remediation-implementation-plan.md)继续保留历史整改编号和已完成工作，但其中 Cloudflare、D1、浏览器三轮门禁及旧发布流程不再覆盖本文的新结论。
 

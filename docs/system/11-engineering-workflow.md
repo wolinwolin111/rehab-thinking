@@ -72,7 +72,7 @@
 
 - **真源**：`docs/system/01–11`＋`docs/README.md` 索引（冲突裁决序见 README）。历史与裁定依据：`docs/archive/`（决策档案＝主控方案 §10–§16）；溯源终点：`docs/rehabmind-rebuild/data|knowledge`（代码 sourceCaseIds 引用）。
 - **镜像**：`outputs/系统文档/`（docx/xlsx，gitignored，供人工评审/打印；**给 AI 模型一律喂 md，不喂镜像**）。生成管线在仓外 `.docgen/`（md2docx／flowchart SVG→PNG／gen-sys*xlsx），md 更新后需重跑，镜像有快照漂移风险。
-- 4 份旧正式文档暂留 docs 根（被 B 类测试钉路径），解钉后归档——见 README 与第 28 轮。
+- 4 份旧正式文档已于 2026-09-08 归档至 `docs/archive/docs-root/`（第 32 轮定稿、测试侧 b071279 解钉后执行）；docs 根仅剩 README。
 
 ## 7. 新会话接手清单（按序）
 
