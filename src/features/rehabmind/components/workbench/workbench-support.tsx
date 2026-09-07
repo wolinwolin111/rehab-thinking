@@ -1995,7 +1995,7 @@ export function dynamicMuscleCandidateFromRecord(record: DynamicMuscleHistoryRec
     title: record.treatmentName ?? record.candidateTitle,
     type: "muscle",
     access: "self",
-    do: record.action || `按图示在${normalizedRegion.label}两侧轻按一次，以按压时更酸或更胀的一侧为重点，轻柔处理30～60秒。`,
+    do: record.action || `按图示在${normalizedRegion.label}两侧轻按一次，以按压时更酸或更胀的一侧为重点，轻柔处理60～90秒。`,
     observe: "只做轻柔按压；出现明显刺痛、麻或电感就停止。",
     retest: "处理后比较仍未恢复的相关活动和主诉动作。",
     tags: [`tension:${normalizedRegion.label}`],
