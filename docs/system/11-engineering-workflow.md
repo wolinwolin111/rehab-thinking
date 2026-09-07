@@ -1,7 +1,7 @@
 # 11 · 工程协作与测试体系（Engineering Workflow & Test System）
 
 > 定位：回答"这个项目怎么两个人一起开发、怎么验证、怎么接手干活"。产品/领域/架构真源见 01–10；本文所有测试体系描述的权威来源是 **agent/testing 分支的 `tests/README.md`**（dev 树自带的 tests/ 副本已过期，见 §4）。
-> 状态：v1（2026-09-07）。§3/§4 基于开发侧对测试分支的只读观察，已请测试侧校对。
+> 状态：v1.1（2026-09-08；§3 已并入测试侧校对：registry 状态语义更正、入口补全）。§3/§4 基于开发侧对测试分支的只读观察。
 
 ## 1. 双分支协作模型
 
@@ -35,7 +35,7 @@
 | `tests/workflow/` | 工作流轨迹、决策表、不变量、种子探索 | 20 |
 | `tests/component/` | React 展示边界、页面适配、接线合同 | 15 |
 | `tests/integration/sqlite-api/` | 真实 SQLite＋route/service 纵向集成 | （.integration.mjs） |
-| `tests/browser/` | 真实界面/路由/资源接线（不穷举康复组合） | 31 spec |
+| `tests/browser/` | 真实界面/路由/资源接线（不穷举康复组合） | 31 spec（推送树实测，随走查波动） |
 | `tests/support/`、`tests/fixtures/` | 生产模块加载器、场景输入 | — |
 
 \* 按 `*.test.*`/`*.spec.*` 统计，不含 integration 后缀。
@@ -46,11 +46,11 @@
 
 ### 3.3 正式入口（测试树）
 
-`test:fast`（边界＋typecheck＋build＋unit/workflow/component）／`test:integration`／`test:logic:mutations`（定向错误注入）／`test:browser:release`（4 条最小发布接线）／`test:summary`（按构建身份汇总证据与阻塞）。开发侧门禁（`check:*` 系列）总表见 07 §3。
+`test:fast`（边界＋typecheck＋build＋unit/workflow/component）／`test:integration`／`test:logic:mutations`（定向错误注入）／`test:browser:release`（4 条最小发布接线）／`test:browser:full`（全量浏览器回归）／`test:release`（发布门禁聚合，含浏览器）／`test:summary`（按构建身份汇总证据与阻塞）。开发侧门禁（`check:*` 系列）总表见 07 §3。
 
 ### 3.4 场景登记与测试工作台
 
-- `tests/workflow/scenario-registry.json`：**100 条**场景登记（scenarioId/ruleIds/priority/evidenceType/script/status/releaseRequired；status ∈ verified/partial/blocked/failed）。registry 校验门禁 100 ok。
+- `tests/workflow/scenario-registry.json`：**100 条场景指针索引**（scenarioId/ruleIds/priority/evidenceType/script/titlePattern/tags/layer/gateId/releaseRequired——**无状态字段**）；通过/阻塞状态见 `docs/quality/real-browser-coverage-matrix.md` 的状态列。registry 校验门禁 100 ok。
 - `src/features/rehabmind/test-workbench/`（A 类，开发侧维护）：`/test` 路由的场景目录 `scenario-catalog.ts`（full_flow/step 直达，仅测试用途，零生产影响）。测试侧新增场景需开发侧复核结构与类型（第 29 轮先例）。
 - Playwright：`playwright.config.ts`——`WALKTHROUGH_URL` 默认 `http://localhost:3000/`，浏览器通道默认 **msedge**，产物落 `artifacts/quality/playwright`。
 

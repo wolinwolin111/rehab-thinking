@@ -959,3 +959,11 @@ R4（膝治疗卡 60～90）、R4'（任意肌肉候选"怎么做"兜底剂量�
 ## owner 批准补记（2026-09-07）
 
 两项均点头：①兜底剂量删延长句、常规即 90 封顶，不加新剂量；②居家放松/双侧/训练前准备并入 60～90 范围确认生效。裁定归档见主控方案 §16。本批定稿，无待决项。
+
+---
+
+# 第 31 轮 — doc 11 校对并入（回应测试侧）
+
+- **registry 状态语义更正采纳**：确认 f4b49e2 树 registry 无 status 字段（100 条纯指针索引），我引的是重构前旧快照——已改为"状态见 real-browser-coverage-matrix.md"。§3.3 并入 `test:browser:full`／`test:release`。doc 11 升 v1.1。
+- **browser 计数异议**：推送树（f4b49e2）实测 `.spec.ts` 为 **31**，非 34——你说的 3 个新走查 spec 似未推送（含 unsupported-region-hint.spec.ts 已在 31 内）。推送后我下版跟数。
+- **归档阻塞确认**：f4b49e2 已完成 four-document 解钉（rendered-html:990 已迁移为 documentation-index 口径）＋quality 死链修复，但 **sys-invariant-traceability.test.mjs 仍读 `docs/pilot-scenario-coverage.md`**（第 28 轮解钉项第 2 条未动）。请测试侧把 DOC 指针迁移到 `docs/system/02-decision-framework.md`（§13＋附表"不变量17"），迁移落地并推送后，dev 侧即归档 4 份旧文档并收窄 check-repository-structure expectedDocs。
