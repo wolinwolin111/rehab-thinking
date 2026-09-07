@@ -1,5 +1,5 @@
 {
-  "comment": "SYS 不变量/场景 -> 守护测试映射（批次 4）。guards[].file 相对仓库根；anchor 必须真实出现在该文件中，证明守护关系。文档侧唯一来源：docs/pilot-scenario-coverage.md。",
+  "comment": "SYS 不变量/场景 -> 守护测试映射（批次 4；第 32 轮改 B：本 JSON 为编号权威清单）。guards[].file 相对仓库根；anchor 必须真实出现在该文件中，证明守护关系。语义承载见 docs/system/02-decision-framework.md §13（散文，非机器可读源）。",
   "invariants": {
     "SYS-EVIDENCE-001": { "guards": [{ "file": "tests/unit/domain/pilot-decision-engine.test.mjs", "anchor": "buildPilotTreatmentUnits" }] },
     "SYS-EVIDENCE-002": { "guards": [{ "file": "tests/unit/domain/pilot-decision-engine.test.mjs", "anchor": "matchedRelationIds" }] },

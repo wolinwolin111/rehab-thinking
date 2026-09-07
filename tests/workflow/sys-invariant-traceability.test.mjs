@@ -1,31 +1,21 @@
-// SYS 追溯完整性门禁（批次 4）：
-// 1. 文档侧唯一来源 docs/pilot-scenario-coverage.md 中出现的每个 SYS-* 编号，
-//    必须在本目录 sys-invariant-traceability.json 有守护映射（防孤儿不变量）；
-// 2. JSON 中每个守护文件必须存在，且文件内容包含 anchor（证明守护关系真实成立）；
-// 3. JSON 中不得出现文档已删除的僵尸编号。
+// SYS 追溯完整性门禁（批次 4；第 32 轮改 B 方案）：
+// 编号权威清单＝本目录 sys-invariant-traceability.json（含 guards/anchor）；
+// 语义承载见 docs/system/02-decision-framework.md §13（散文，非机器可读源）。
+// 门禁保留两项硬检查：① 编号清单非空且唯一；② 每个守护文件存在且含 anchor（守护关系真实）。
+// 旧「文档↔JSON 孤儿/僵尸交叉核对」已删——重构后 SYS-* 分散（02 仅散文简写、无 16 场景号），
+// 无单一文档承载全清单，该检测前提不成立（owner 第 32 轮裁定 B）。
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-const DOC = new URL("../../docs/pilot-scenario-coverage.md", import.meta.url);
 const MAP = new URL("./sys-invariant-traceability.json", import.meta.url);
-
-const docText = await readFile(DOC, "utf8");
 const map = JSON.parse(await readFile(MAP, "utf8"));
 
-const documentedIds = [...new Set(docText.match(/SYS-[A-Z]+(?:-[A-Z]+)*-?\d{2,3}/g) || [])].sort();
-const mappedIds = [
-  ...new Set([...Object.keys(map.invariants), ...Object.keys(map.scenarios)]),
-].sort();
+const ids = [...Object.keys(map.invariants), ...Object.keys(map.scenarios)];
 
-test("文档中每个 SYS-* 编号都有守护测试映射（无孤儿不变量/场景）", () => {
-  const orphans = documentedIds.filter((id) => !mappedIds.includes(id));
-  assert.deepEqual(orphans, [], `以下编号在验收文档中出现但缺少守护映射：${orphans.join(", ")}`);
-});
-
-test("追溯清单中没有文档已删除的僵尸编号", () => {
-  const zombies = mappedIds.filter((id) => !documentedIds.includes(id));
-  assert.deepEqual(zombies, [], `以下编号已不在验收文档中，应从清单删除：${zombies.join(", ")}`);
+test("SYS 编号权威清单非空且唯一", () => {
+  assert.ok(ids.length >= 30, `SYS 编号应不少于 30，实得 ${ids.length}`);
+  assert.equal(new Set(ids).size, ids.length, "SYS 编号不得重复");
 });
 
 for (const [id, entry] of Object.entries({ ...map.invariants, ...map.scenarios })) {

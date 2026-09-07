@@ -6,7 +6,7 @@ test("A7 REL-03: runtime and rule inputs remain part of a dirty build identity",
   for (const file of [
     "src/features/rehabmind/components/workbench/rehabmind-workbench.tsx",
     "src/domain/workflow/orchestrate-workflow.ts",
-    "docs/rehab-decision-framework.md",
+    "docs/system/01-product-design.md",
     "drizzle/0006_admin_audit.sql",
     "drizzle/0007_source_and_consent.sql",
     "drizzle/0008_test_case_isolation.sql",
@@ -16,13 +16,12 @@ test("A7 REL-03: runtime and rule inputs remain part of a dirty build identity",
 });
 
 test("A7 REL-03: generated identity and post-run status reports do not invalidate their own evidence", () => {
+  // 第 32 轮：删除 3 条已归档的死路径样例（HANDOVER/project-status/remediation-plan）。
+  // docs/handover/、docs/archive/ 的前缀排除覆盖待 dev Step 2 谓词前缀化后补样例（现谓词按精确集合，加前缀样例此刻会红）。
   for (const file of [
     "src/infrastructure/pilot/release/release.generated.ts",
     "README.md",
     "docs/README.md",
-    "docs/handover/HANDOVER.md",
-    "docs/handover/project-status.md",
-    "docs/rehabmind-current-remediation-execution-plan.md",
     "docs/quality/rehabmind-quality-remediation-register.md",
     "docs/quality/a7-release-gates-2026-08-24.md",
     "scripts/README.md",

@@ -1,6 +1,6 @@
 // 投影函数全空间穷举验证。
 // Oracle 来源：
-// - 阶段解锁阶梯：docs/pilot-scenario-coverage.md 六阶段逐级解锁 + SYS-STATE-001（上游失效锁回评估）
+// - 阶段解锁阶梯：docs/system/01-product-design.md 六阶段逐级解锁 + SYS-STATE-001（上游失效锁回评估）
 // - 训练门禁：SYS-S02/S03（加重停止不得进入训练）、SYS-BILATERAL-003（双侧未完整评估仅低负荷）
 // - 不变量完备性：INV-WORKFLOW-STAGE-BYPASS / INV-RETEST-SKIPPED / INV-QUEUE-EARLY-END / INV-TRAINING-GATE-BYPASS 文档定义
 // - 单调性：完成度只进不退时，解锁层级不得回退（阶段进度设计性质）
