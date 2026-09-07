@@ -1,7 +1,7 @@
 # 11 · 工程协作与测试体系（Engineering Workflow & Test System）
 
 > 定位：回答"这个项目怎么两个人一起开发、怎么验证、怎么接手干活"。产品/领域/架构真源见 01–10；本文所有测试体系描述的权威来源是 **agent/testing 分支的 `tests/README.md`**（dev 树自带的 tests/ 副本已过期，见 §4）。
-> 状态：v1.1（2026-09-08；§3 已并入测试侧校对：registry 状态语义更正、入口补全）。§3/§4 基于开发侧对测试分支的只读观察。
+> 状态：v1.2（2026-09-08；§3 已并入测试侧校对：registry 状态语义、入口补全、walkthrough 计数）。§3/§4 基于开发侧对测试分支的只读观察。
 
 ## 1. 双分支协作模型
 
@@ -35,7 +35,7 @@
 | `tests/workflow/` | 工作流轨迹、决策表、不变量、种子探索 | 20 |
 | `tests/component/` | React 展示边界、页面适配、接线合同 | 15 |
 | `tests/integration/sqlite-api/` | 真实 SQLite＋route/service 纵向集成 | （.integration.mjs） |
-| `tests/browser/` | 真实界面/路由/资源接线（不穷举康复组合） | 31 spec（推送树实测，随走查波动） |
+| `tests/browser/` | 真实界面/路由/资源接线（不穷举康复组合） | 34 spec（含 `walkthrough/` 3 条走查，`WALKTHROUGH_REVIEW` 守卫默认 skip） |
 | `tests/support/`、`tests/fixtures/` | 生产模块加载器、场景输入 | — |
 
 \* 按 `*.test.*`/`*.spec.*` 统计，不含 integration 后缀。
