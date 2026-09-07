@@ -988,28 +988,28 @@ assert.match(demo, /const pilotTreatmentUnits = decisionEngine\.treatmentUnits/)
 });
 
 test("keeps one concise documentation index as source of truth", async () => {
-  // dev 第 28–29 轮（docs/system 批次 2–6）：docs 重构为九份 system 现行文档 + archive 追溯。
-  // 旧「四份正式文档」断言按 dev 口径迁移为弱断言（结构 + 标题，不钉正文字面）。
-  const [index] = await Promise.all([
+  // dev 第 28–30 轮：docs 重构为 system/ 现行文档 + archive 追溯，文档数随扩展增长（9→10→…）。
+  // 计数与文件清单均易变——按 §8 不钉字面：计数用 \d+，文件清单动态读 system/ 目录。
+  const [index, { readdirSync }] = await Promise.all([
     readFile(new URL("../../docs/README.md", import.meta.url), "utf8"),
+    import("node:fs"),
   ]);
-  // 现行文档：9 份全部在 system/，以代码实测为准；索引之外过程文档一律进 archive 只作追溯。
-  assert.match(index, /现行系统文档共 9 份/);
+  assert.match(index, /现行系统文档共 \d+ 份/);
   assert.match(index, /全部在 \[`system\/`\]\(\.\/system\/\)/);
   assert.match(index, /不得引用为当前标准/);
   assert.match(index, /01.*产品设计与用户流程/);
   assert.match(index, /02.*决策引擎/);
   assert.match(index, /04.*动作内容目录/);
   assert.match(index, /archive\/\)/);
-  // system 现行文档必须存在（标题弱断言），且 archive 保留历史（可追溯）。
-  for (const file of [
-    "01-product-design", "02-decision-framework", "03-clinical-knowledge-base",
-    "04-content-catalog", "05-session-orchestration", "06-data-and-persistence",
-    "07-architecture-boundaries", "08-design-principles", "09-extension-roadmap",
-  ]) {
-    const src = await readFile(new URL(`../../docs/system/${file}.md`, import.meta.url), "utf8");
+  // system/ 下每份现行文档必须存在、以一级标题开头、标注现行；README 索引须列出全部。
+  const systemDir = new URL("../../docs/system/", import.meta.url);
+  const docs = readdirSync(systemDir).filter((f) => /^\d{2}-.*\.md$/.test(f)).sort();
+  assert.ok(docs.length >= 9, `system 现行文档应不少于 9 份，实得 ${docs.length}`);
+  for (const file of docs) {
+    const src = await readFile(new URL(`../../docs/system/${file}`, import.meta.url), "utf8");
     assert.match(src, /^# /, `${file} 必须存在且以一级标题开头`);
-    assert.match(src, /文档状态：现行/, `${file} 应标注现行状态`);
+    assert.match(src, /文档状态：/, `${file} 应标注文档状态（现行/提案等）`);
+    assert.ok(index.includes(file.replace(/\.md$/, "")), `README 索引须链接 ${file}`);
   }
 });
 
