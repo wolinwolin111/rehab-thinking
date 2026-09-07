@@ -1008,7 +1008,7 @@ test("keeps one concise documentation index as source of truth", async () => {
   for (const file of docs) {
     const src = await readFile(new URL(`../../docs/system/${file}`, import.meta.url), "utf8");
     assert.match(src, /^# /, `${file} 必须存在且以一级标题开头`);
-    assert.match(src, /文档状态：/, `${file} 应标注文档状态（现行/提案等）`);
+    assert.match(src, /状态[：:]/, `${file} 应标注文档状态（现行/提案等；01-10 用「文档状态：」，11 用「状态：」）`);
     assert.ok(index.includes(file.replace(/\.md$/, "")), `README 索引须链接 ${file}`);
   }
 });

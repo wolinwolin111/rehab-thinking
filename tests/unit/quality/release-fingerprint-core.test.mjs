@@ -16,14 +16,15 @@ test("A7 REL-03: runtime and rule inputs remain part of a dirty build identity",
 });
 
 test("A7 REL-03: generated identity and post-run status reports do not invalidate their own evidence", () => {
-  // 第 32 轮：删除 3 条已归档的死路径样例（HANDOVER/project-status/remediation-plan）。
-  // docs/handover/、docs/archive/ 的前缀排除覆盖待 dev Step 2 谓词前缀化后补样例（现谓词按精确集合，加前缀样例此刻会红）。
+  // 第 33 轮：谓词已前缀化（docs/quality|archive|handover/ + 四 README + 生成件）；补 docs/handover/、docs/archive/ 前缀排除样例。
   for (const file of [
     "src/infrastructure/pilot/release/release.generated.ts",
     "README.md",
     "docs/README.md",
     "docs/quality/rehabmind-quality-remediation-register.md",
     "docs/quality/a7-release-gates-2026-08-24.md",
+    "docs/handover/test-notice-2026-09-01-batch-sha-bindings.md",
+    "docs/archive/docs-root/pilot-scenario-coverage.md",
     "scripts/README.md",
     "tests/README.md",
   ]) assert.equal(isReleaseFingerprintExcluded(file), true, file);
