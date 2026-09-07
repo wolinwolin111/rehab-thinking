@@ -31,6 +31,7 @@ yarn-error.log*
 dev-server*.log
 .codex-*.log
 .tmp-*
+*.tmp.*
 /.tmp/
 
 # env files (can opt-in for committing if needed)
@@ -48,7 +49,7 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
-/artifacts/quality/
+/artifacts/
 
 # local runtime databases
 /data/*.sqlite

@@ -55,7 +55,7 @@ export function candidateAction(candidate: CandidateActionInput, controlMotionId
     const control = controls.length
       ? `随后完成${controls.map((plan) => `${plan.controlTitle}：${plan.controlInstruction}${plan.controlRepetitions}`).join("；")}`
       : "";
-    const dosage = "力度从轻到中等，以轻微酸胀为限；保持30～60秒，必要时一次延长至90秒。出现刺痛、麻、电感或熟悉症状加重立即停止。";
+    const dosage = "力度从轻到中等，以轻微酸胀为限；保持60～90秒。出现刺痛、麻、电感或熟悉症状加重立即停止。";
     return `${release}。${dosage}${control ? `随后${control.replace(/^随后/, "")}` : ""}`;
   }
   if (candidate.type === "joint") {

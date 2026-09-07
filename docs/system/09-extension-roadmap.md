@@ -19,7 +19,9 @@
 
 **与现有体系关系**：05 的 orchestrator 独占原则是它的过渡形态；02 的复测义务台账（retest-ledger）已是"唯一事实源"的落地样板。
 
-## 3. 多部位·多问题链（rebuild/12，状态：预研）
+## 3. 多部位·多问题链（设计已独立成篇 → [10 多关节多部位康复·拓展方案](./10-multi-region-rehabilitation.md)，状态：v1 提案待评审）
+
+以下为旧预研（archive/rebuild/12）的素材要点，仅作输入参考；**架构决策以 10 为准**（链＝problemThread 复用身份层、单链退化、工作流链作用域、共享动作 join、跨链归因封顶趋势支持、调度器纯函数、内容层零新架构、六阶段实施）。
 
 - 数据结构：RehabCase（episodes[]/problemChains[]/relationships[]/sharedFunctionalTasks[]）；ProblemChain 每链独立评估/处理/复测状态，**禁止全局 assessmentIndex**。
 - 四种归组：一位多置（一条链）／同事件多问题（两链串行）／异时可能代偿（待筛查关系＋短筛查）／异时无关联（保持独立；首批最多两条链）。

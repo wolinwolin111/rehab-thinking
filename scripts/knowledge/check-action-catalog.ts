@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { ACTION_TERMS } from "../../src/knowledge/actions/terms.ts";
 import { ASSESSMENT_ENTRIES } from "../../src/knowledge/actions/assessment.ts";
 import { TREATMENT_ENTRIES } from "../../src/knowledge/actions/treatment.ts";
@@ -32,6 +32,20 @@ const genericIssues = COMPENSATION_GENERIC
   .filter((id) => !COMPENSATION_OPTIONS[id])
   .map((id) => ({ code: "CAT-BAD-GENERIC-COMPENSATION-ID", entryId: "COMPENSATION_GENERIC", detail: id }));
 
+/** 松解剂量防漂移（owner 裁定 f9721b6：松解类 30～60秒→60～90秒）：src 任何文案不得再出现「30～60秒」。 */
+function releaseDoseDriftIssues(): Array<{ code: string; entryId: string; detail: string }> {
+  const hits: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path);
+      else if (/\.(ts|tsx)$/.test(entry.name) && readFileSync(path, "utf8").includes("30～60秒")) hits.push(path);
+    }
+  };
+  walk("src");
+  return hits.map((file) => ({ code: "CAT-RELEASE-DOSE-DRIFT", entryId: file, detail: "松解类时长统一 60～90秒（owner 裁定 f9721b6）" }));
+}
+
 const issues = [
   ...validateActionCatalog({
     terms: Object.keys(ACTION_TERMS),
@@ -45,6 +59,7 @@ const issues = [
       : [{ code: "CAT-GOLDEN-MISMATCH", entryId: id, detail: `${GOLDEN_OUTPUTS[id]} !== ${actual}` }]),
   ...deadTagIssues,
   ...genericIssues,
+  ...releaseDoseDriftIssues(),
 ];
 
 if (issues.length) {

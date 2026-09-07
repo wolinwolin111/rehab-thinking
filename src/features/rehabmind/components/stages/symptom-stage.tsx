@@ -382,7 +382,7 @@ export function SymptomStage(props: SymptomStageProps) {
 
       <section className="rm-professional-section rm-professional-notes"><header><span>07</span><div><h2>专业备注</h2><p>记录尚未确认的判断；备注不会改变页面建议。</p></div></header><textarea value={intake.professionalNotes} onChange={(event) => invalidateAfterIntake({ ...intake, professionalNotes: event.target.value })} placeholder="例如：考虑外侧链参与；待活动度与抗阻结果验证。" /></section>
 
-      {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting"><span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion}</h2><p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p></section> : null}
+      {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting"><span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion}</h2><p>现在只开放大腿至足部。{unsupportedDescriptionRegion}的问题不会被套进膝踝方案。可以修改描述换成支持的部位，也可以保存本次信息，先完成线下评估。</p><div><button type="button" onClick={rewriteIntakeDescription}>修改症状描述</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></div></section> : null}
       {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>这种情况不适合自己练，也不建议自己松神经。可保存当前信息，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题，可保存当前信息后再继续。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
@@ -428,7 +428,8 @@ export function SymptomStage(props: SymptomStageProps) {
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting">
         <span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion}</h2>
-        <p>现在只开放大腿至足部。骨盆、臀部、腹股沟和髋关节不会被套进膝踝方案。</p>
+        <p>现在只开放大腿至足部。{unsupportedDescriptionRegion}的问题不会被套进膝踝方案。可以修改描述换成支持的部位，也可以保存本次信息，先完成线下评估。</p>
+        <div><button type="button" onClick={rewriteIntakeDescription}>修改症状描述</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></div>
       </section> : null}
       {vascularDescriptionSignal ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>描述中出现发凉或发白</h2><p>这可能与末端循环有关，不要先做强刺激处理。可以保存当前信息，优先完成线下评估。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
 
