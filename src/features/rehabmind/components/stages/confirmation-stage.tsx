@@ -117,11 +117,11 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       <h2>这个应用不提供术后恢复方案</h2>
       <p>{postopRouting.procedureLabel ? `${postopRouting.procedureLabel}${postopRouting.timingLabel ? `（${postopRouting.timingLabel}）` : ""}还在按专项指南恢复的阶段。` : "先确认手术情况，再决定这里能帮到什么。"}</p>
       <p>配套的术后恢复指导站有分阶段的专项内容；任何与手术医生要求冲突的地方，都以医生意见为先。</p>
-      <div className="rm-page-actions split"><button type="button" className="rm-primary" data-rehabmind-test="postop-referral-open" onClick={() => window.open(postopRouting.guideUrl ?? consultationUrl, "_blank", "noopener")}>去术后指导站查看</button><button type="button" onClick={onSaveReferral}>保存本次信息</button></div>
+      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" className="rm-primary" data-rehabmind-test="postop-referral-open" onClick={() => window.open(postopRouting.guideUrl ?? consultationUrl, "_blank", "noopener")}>去术后指导站查看</button><button data-action-role="secondary" type="button" onClick={onSaveReferral}>保存本次信息</button></div>
       <p><a href={consultationUrl} target="_blank" rel="noreferrer">没有匹配的专项指南？预约线上讲解人工沟通</a></p>
-    </section> : <div className="rm-page-actions split">
-      <button type="button" onClick={onBack}>{backLabel}</button>
-      <button type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
+    </section> : <div className="rm-page-actions split" data-action-layout="split">
+      <button data-action-role="secondary" type="button" onClick={onBack}>{backLabel}</button>
+      <button data-action-role="primary" type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
     </div>}
   </section>;
 }

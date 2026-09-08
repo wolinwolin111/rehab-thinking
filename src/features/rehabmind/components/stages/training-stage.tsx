@@ -216,7 +216,7 @@ export function TrainingStage(props: TrainingStageProps) {
         <strong>{finalChange.delta > 0 ? `比最开始下降 ${finalChange.delta} 分` : finalChange.delta < 0 ? `比最开始上升 ${Math.abs(finalChange.delta)} 分` : "与最开始相同"}</strong>
         <p>{finalResult === "better" ? "这次训练有帮助，继续保持现在的做法。" : finalResult === "worse" ? "先停止加重的处理和训练，建议线下评估。" : "这次没有明显变化，先不增加难度；持续不变时建议线下评估。"}</p>
       </section> : null}
-        <div className="rm-page-actions split"><button type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button type="button" className="rm-primary" disabled={!overallComplete} onClick={() => {
+        <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => setTrainingReadyForFinalRetest(false)}>返回训练</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!overallComplete} onClick={() => {
           // T-02：最终复测记录加重时，结束前需要显式确认（取消则留在本页重新复测）。
           if (finalResult === "worse" && !window.confirm("刚才的最终复测记录了加重。确定现在结束并查看总结吗？建议先停止加重的训练并观察。")) return;
           setTrainingPlanSaved(false); setTrainingComplete(true); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -225,7 +225,7 @@ export function TrainingStage(props: TrainingStageProps) {
   }
   if (bilateralTrainingBlocked) return <section className="rm-page">
     <StepHeading eyebrow="第5步 · 训练与居家" title="当前不能进入训练" />
-    <section className="rm-complete-panel is-referral"><span>双侧安全出口</span><h2>先停止当前安排并重新确认</h2><p>当前存在安全信号或处理后加重，不能用低负荷训练绕过复评。</p><div className="rm-page-actions split"><button type="button" className="rm-primary" onClick={() => reopenAssessment()}>返回相关评估</button><button type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button></div></section>
+    <section className="rm-complete-panel is-referral"><span>双侧安全出口</span><h2>先停止当前安排并重新确认</h2><p>当前存在安全信号或处理后加重，不能用低负荷训练绕过复评。</p><div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" className="rm-primary" onClick={() => reopenAssessment()}>返回相关评估</button><button data-action-role="secondary" type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button></div></section>
   </section>;
   return <section className="rm-page">
     <StepHeading eyebrow="第5步 · 训练与居家" title="今天需要做的训练" />
@@ -277,7 +277,7 @@ export function TrainingStage(props: TrainingStageProps) {
       <footer>如果出现刺痛、麻、电感或症状加重，立即停止。</footer>
     </details> : null}
 
-    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止刚才的做法，并记录停下来后的变化。</p><div className="rm-page-actions split"><button type="button" data-rehabmind-test="training-worsening-reassess" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button type="button" data-rehabmind-test="training-worsening-save" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
+    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止刚才的做法，并记录停下来后的变化。</p><div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" data-rehabmind-test="training-worsening-reassess" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds })}>处理这次加重</button><button data-action-role="secondary" type="button" data-rehabmind-test="training-worsening-save" onClick={() => saveRecord("训练后加重，待重新评估")}>保存并结束</button></div></section> : null}
 
     {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
@@ -285,7 +285,7 @@ export function TrainingStage(props: TrainingStageProps) {
 
     <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再增加难度" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "这次先完成基础活动，并记录两侧反馈。" : "连续两次完成、动作稳定且第二天没有持续加重后，一次只增加个数、阻力、难度或训练量中的一项。"}</p></section>
 
-    {!trainingHasWorsened ? <div className="rm-page-actions rm-training-actions"><button type="button" onClick={() => goToStep(3)}>返回处理记录</button><button type="button" className="rm-primary" disabled={!hasCompleteTrainingFeedback} onClick={() => {
+    {!trainingHasWorsened ? <div className="rm-page-actions rm-training-actions" data-action-layout="three"><button data-action-role="secondary" type="button" onClick={() => goToStep(3)}>返回处理记录</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!hasCompleteTrainingFeedback} onClick={() => {
       if (!exercises.length || tissuePathway.retestTiming !== "same-session" || !trainingNeedsChiefRetest) {
         setFinalRetestConfirmed(false);
         setTrainingPlanSaved(false);
@@ -297,6 +297,6 @@ export function TrainingStage(props: TrainingStageProps) {
         setTrainingReadyForFinalRetest(true);
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }}>{!exercises.length ? "完成当前安排，查看总结" : tissuePathway.retestTiming !== "same-session" ? "训练完成，稍后复查" : trainingNeedsChiefRetest ? "训练完成，整体复测" : "训练完成，查看总结"}</button><button type="button" className="rm-secondary-action" onClick={() => { setTrainingComplete(false); setTrainingPlanSaved(true); setTrainingReadyForFinalRetest(false); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>暂不训练，保存方案</button></div> : null}
+    }}>{!exercises.length ? "完成当前安排，查看总结" : tissuePathway.retestTiming !== "same-session" ? "训练完成，稍后复查" : trainingNeedsChiefRetest ? "训练完成，整体复测" : "训练完成，查看总结"}</button><button data-action-role="tertiary" type="button" className="rm-secondary-action" onClick={() => { setTrainingComplete(false); setTrainingPlanSaved(true); setTrainingReadyForFinalRetest(false); setTransitionTarget("summary"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>暂不训练，保存方案</button></div> : null}
   </section>;
 }
