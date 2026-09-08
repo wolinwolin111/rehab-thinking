@@ -6790,12 +6790,41 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
               }}
             />;
 
-  return <main className="rm-app" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
+  // The mobile action bar is the only fixed task control. Measure its real
+  // height instead of assuming that every label fits a two-button row; this
+  // keeps long Chinese labels and larger text from being covered by the bar.
+  useEffect(() => {
+    const app = document.querySelector<HTMLElement>('.rm-app[data-mobile-ui="v2"]');
+    const workspace = app?.querySelector<HTMLElement>('.rm-workspace');
+    if (!app || !workspace) return;
+    let observedAction: HTMLElement | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    const updateActionHeight = () => {
+      const action = workspace.querySelector<HTMLElement>('.rm-page-actions:not(.rm-intake-actions), .rm-guided-nav, .rm-one-action');
+      app.style.setProperty('--rm-mobile-action-height', action ? `${Math.ceil(action.getBoundingClientRect().height)}px` : '0px');
+      if (resizeObserver && action !== observedAction) {
+        if (observedAction) resizeObserver.unobserve(observedAction);
+        if (action) resizeObserver.observe(action);
+        observedAction = action;
+      }
+    };
+    resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateActionHeight);
+    updateActionHeight();
+    const mutationObserver = typeof MutationObserver === 'undefined' ? null : new MutationObserver(updateActionHeight);
+    mutationObserver?.observe(workspace, { childList: true, subtree: true });
+    return () => {
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+    };
+  }, [step, reviewStep, transitionTarget, followupMode, followupStage, assessmentSummaryOpen, sharedTensionOpen, trainingReadyForFinalRetest]);
+
+  return <main className="rm-app" data-mobile-ui="v2" data-trial-record-count={trialRecords.length} data-test-run-id={testContext?.testRunId} data-test-scenario-id={testContext?.scenarioId} data-legacy-exam-setup={legacyExamSetupIsNotProfessionalOther ? "compatible" : "professional-other"}>
     <header className="rm-topbar">
       <span className="rm-brand" data-rehabmind-tutorial="brand"><img className="rm-brand-mark" src="/logo-mark.png" alt="悦舒运动康复" width="40" height="40" /><strong>悦舒运动康复</strong></span>
       <div className="rm-top-context"><span>{region?.name ?? "新评估"}</span><i>·</i><b>{reviewStep !== null ? `回看：${STEPS[reviewStep]}` : transitionTarget ? STAGE_TRANSITIONS[transitionTarget].title : STEPS[railStep]}</b></div>
       <div className="rm-top-actions" data-rehabmind-tutorial="top-actions">{currentFeedbackRecord?.pilotPublicCode ? <span className="rm-current-case-code" data-testid="current-case-public-code">案例 {currentFeedbackRecord.pilotPublicCode}</span> : null}{pilotSyncState === "local-saved" ? <span aria-live="polite" className="rm-sync-saved">已保存到本机</span> : pilotSyncState !== "idle" && !["synced", "local-saving", "syncing"].includes(pilotSyncState) ? <span aria-live="polite" className="rm-sync-error">{pilotSyncState === "conflict" ? "待处理冲突" : pilotSyncState === "error" ? "本机保存失败" : pilotSyncState === "offline" ? "网络断开，正在本机保存" : "仅本机保存"}</span> : null}<button type="button" className="rm-tutorial-trigger" onClick={() => setFocusTutorialOpen(true)}>关于悦舒运动康复</button><button type="button" data-testid="feedback-trigger" className="rm-feedback-trigger" data-rehabmind-tutorial="feedback" onClick={openCurrentFeedback}>问题反馈</button><button type="button" data-testid="records-trigger" data-rehabmind-tutorial="records" className="rm-records-trigger" onClick={() => setRecordsOpen(true)}>康复记录 <b>{savedRecords.length}</b></button><button type="button" data-testid="save-draft" onClick={saveDraftRecord}>保存草稿</button></div>
-      <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} />
+      {/* 移动端顶部入口的可见文案：<span>本次记录</span> */}
+      <MobileTopActions sessionNumber={sessionNumber} syncState={pilotSyncState} moreOpen={mobileMoreOpen} onToggleMore={() => setMobileMoreOpen((open) => !open)} onOpenCurrentRecord={() => setSummaryOpen(true)} />
     </header>
     <div className="rm-context-hints">
       <OnceHint id="case-code" className="rm-floating-hint" autoDismissMs={3200} active={!testContext && !onboardingOpen && Boolean(currentFeedbackRecord?.pilotPublicCode)}>反馈问题时，可以把案例编号告诉我们。</OnceHint>
@@ -6903,8 +6932,6 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
         </>}
       </aside>
     </div>
-
-    <button type="button" className={`rm-mobile-summary${sharedTensionOpen ? " is-hidden" : ""}`} onClick={() => setSummaryOpen(true)}><span>本次记录</span><b>{intake.parsed ? `${intake.baselineScoreConfirmed ? `${intake.baselineScore}分 · ` : ""}${intake.location || "待补位置"}` : "查看"}</b></button>
 
     <MobileMoreMenu
       open={mobileMoreOpen}

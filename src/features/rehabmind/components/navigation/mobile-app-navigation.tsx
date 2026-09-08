@@ -10,15 +10,18 @@ export function MobileTopActions({
   syncState,
   moreOpen,
   onToggleMore,
+  onOpenCurrentRecord,
 }: {
   sessionNumber: number;
   syncState: PilotSyncDisplayState;
   moreOpen: boolean;
   onToggleMore: () => void;
+  onOpenCurrentRecord: () => void;
 }) {
   const saveStatus = mobileSaveStatus(syncState);
   return <div className="rm-mobile-top-actions">
     <span aria-live="polite">第{sessionNumber}次{saveStatus ? ` · ${saveStatus}` : ""}</span>
+    <button type="button" className="rm-mobile-current-record rm-mobile-summary" aria-label="打开本次记录" onClick={onOpenCurrentRecord}><span>本次记录</span></button>
     <button type="button" aria-label="更多" aria-expanded={moreOpen} onClick={onToggleMore}>⋮</button>
   </div>;
 }
@@ -105,7 +108,7 @@ export function MobileMoreMenu({
       <nav>
         <button type="button" onClick={onOpenRecords}>康复记录</button>
         <button type="button" onClick={onOpenFeedback}>问题反馈</button>
-        <button type="button" onClick={onOpenHelp}>关于悦舒运动康复</button>
+        <button type="button" aria-label="关于 RehabMind" onClick={onOpenHelp}>关于悦舒运动康复</button>
         <button type="button" onClick={onSave}>保存本次记录</button>
       </nav>
     </section>

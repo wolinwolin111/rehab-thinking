@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const STEPS = ["症状信息", "关键确认", "评估检查", "处理复测", "训练居家", "康复总结"];
 
@@ -14,7 +14,19 @@ export function DevToolbar({
   onJumpToStep: (step: 0 | 1 | 2 | 3 | 4 | 5) => void;
 }) {
   const [open, setOpen] = useState(false);
-  if (process.env.NODE_ENV !== "development") return null;
+  const [enabled, setEnabled] = useState(false);
+
+  // The destructive reset/clear controls are useful while developing, but a
+  // patient should never see a floating wrench in the mobile treatment flow.
+  // Opt in explicitly with ?devtools=1 when those controls are needed.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (process.env.NODE_ENV === "development" && new URLSearchParams(window.location.search).get("devtools") === "1") {
+      setEnabled(true);
+    }
+  }, []);
+
+  if (!enabled) return null;
 
   return (
     <div style={{ position: "fixed", bottom: 8, left: 8, zIndex: 9999 }}>

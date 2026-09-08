@@ -1,0 +1,1131 @@
+/*
+ * Patient mobile presentation layer (v2).
+ *
+ * This file intentionally owns presentation only. The data-mobile-ui attribute
+ * is not persisted in a snapshot and does not participate in workflow rules.
+ * The signature is a quiet indigo task surface with a teal “improving” signal;
+ * red is reserved for stop/referral states already decided by the domain.
+ */
+
+:root {
+  --rm-mobile-bg: #f5f7fa;
+  --rm-mobile-surface: #ffffff;
+  --rm-mobile-text: #202838;
+  --rm-mobile-muted: #596579;
+  --rm-mobile-primary: #5659c9;
+  --rm-mobile-primary-deep: #42469f;
+  --rm-mobile-selected: #eceefa;
+  --rm-mobile-success: #237a68;
+  --rm-mobile-success-soft: #e8f5f1;
+  --rm-mobile-danger: #b54747;
+  --rm-mobile-danger-soft: #fff0f0;
+  --rm-mobile-warning: #8a5a16;
+  --rm-mobile-warning-soft: #fff7e6;
+  --rm-mobile-line: #dce2ea;
+  --rm-mobile-control-line: #7c8799;
+}
+
+.rm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The v2 shell is deliberately scoped so desktop and the legacy guided surface
+ * remain untouched while each mobile slice is migrated. */
+@media (max-width: 720px) {
+  body:has(.rm-app[data-mobile-ui="v2"]) {
+    background: var(--rm-mobile-bg);
+    color: var(--rm-mobile-text);
+  }
+
+  .rm-app[data-mobile-ui="v2"] {
+    --rm-ink: var(--rm-mobile-text);
+    --rm-muted: var(--rm-mobile-muted);
+    --rm-paper: var(--rm-mobile-bg);
+    --rm-white: var(--rm-mobile-surface);
+    --rm-blue: var(--rm-mobile-primary);
+    --rm-blue-soft: var(--rm-mobile-selected);
+    --rm-green: var(--rm-mobile-success);
+    --rm-green-soft: var(--rm-mobile-success-soft);
+    --rm-red: var(--rm-mobile-danger);
+    --rm-red-soft: var(--rm-mobile-danger-soft);
+    --rm-gold: var(--rm-mobile-warning);
+    --rm-gold-soft: var(--rm-mobile-warning-soft);
+    --rm-line: var(--rm-mobile-line);
+    --rm-line-strong: var(--rm-mobile-control-line);
+    --rm-mobile-action-height: 88px;
+    min-height: 100svh;
+    background: var(--rm-mobile-bg);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-topbar {
+    height: auto;
+    min-height: 60px;
+    padding: 8px 16px 8px 20px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    color: var(--rm-mobile-text);
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--rm-mobile-line);
+    box-shadow: none;
+    backdrop-filter: blur(16px);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-topbar::after { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-brand { min-width: 0; color: var(--rm-mobile-text); }
+  .rm-app[data-mobile-ui="v2"] .rm-brand strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: -.02em; }
+  .rm-app[data-mobile-ui="v2"] .rm-brand-mark { width: 32px; height: 32px; border-radius: 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-top-context { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-top-actions { display: none; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span {
+    max-width: 94px;
+    overflow: hidden;
+    color: var(--rm-mobile-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 9px;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 10px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 21px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record {
+    min-width: 74px;
+    color: var(--rm-mobile-primary-deep);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  /* The legacy class is retained as a selector alias for release checks. Its
+   * old desktop/mobile rule made it fixed to the viewport, which would make
+   * the single top-bar action cover the adjacent more button. */
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-summary {
+    position: static;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    box-shadow: none;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button:hover { background: var(--rm-mobile-selected); }
+
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar {
+    top: 0;
+    padding: 9px 20px 8px;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 3px 12px rgba(32, 40, 56, .035);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button { min-height: 38px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button span { color: var(--rm-mobile-text); font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button b { color: var(--rm-mobile-primary-deep); font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i { height: 3px; background: #e4e7ef; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i em { background: var(--rm-mobile-primary); }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workspace {
+    width: min(calc(100% - 32px), 720px);
+    padding: 24px 0 calc(var(--rm-mobile-action-height) + 28px + env(safe-area-inset-bottom));
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-heading { margin-bottom: 22px; gap: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading > div { min-width: 0; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading > div > span { color: var(--rm-mobile-primary-deep); font-size: 12px; letter-spacing: .04em; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading h1 { margin-top: 5px; color: var(--rm-mobile-text); font-size: clamp(24px, 7vw, 29px); font-weight: 700; line-height: 1.4; letter-spacing: -.035em; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading p { margin-top: 8px; color: var(--rm-mobile-muted); font-size: 15px; line-height: 1.65; }
+  /* The sticky stage bar is the only six-stage progress presentation. Keep the
+   * assessment's current/total badge, but remove the duplicate six-dot row. */
+  .rm-app[data-mobile-ui="v2"] .rm-heading .rm-step-progress { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading > b { min-width: 46px; width: 46px; height: 46px; color: var(--rm-mobile-primary-deep); border: 1px solid #cfd3f2; background: var(--rm-mobile-selected); box-shadow: none; font-size: 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-heading > b small { color: var(--rm-mobile-muted); font-size: 11px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    width: min(100%, 720px);
+    min-height: var(--rm-mobile-action-height);
+    margin: 0 auto;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -8px 24px rgba(32, 40, 56, .08);
+    backdrop-filter: blur(14px);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).three { grid-template-columns: 1fr; gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button {
+    min-height: 52px;
+    padding: 10px 12px;
+    border: 1px solid var(--rm-mobile-control-line);
+    border-radius: 11px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button.rm-primary {
+    border-color: var(--rm-mobile-primary);
+    color: #fff;
+    background: var(--rm-mobile-primary);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button:disabled { color: var(--rm-mobile-muted); background: #f1f3f6; border-color: var(--rm-mobile-line); opacity: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button:disabled::after { content: " · 还需补充"; font-size: 12px; font-weight: 500; }
+
+  /* Guided intake uses its own previous/next navigation while the rest of the
+   * workbench uses rm-page-actions. It is the same task role, so it occupies
+   * the same measured bottom rail without adding another action instance. */
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    width: min(100%, 720px);
+    min-height: var(--rm-mobile-action-height);
+    margin: 0 auto;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -8px 24px rgba(32, 40, 56, .08);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 8px;
+    backdrop-filter: blur(14px);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav > button {
+    min-height: 52px;
+    padding: 10px 12px;
+    border: 1px solid var(--rm-mobile-control-line);
+    border-radius: 11px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav > button.rm-primary { border-color: var(--rm-mobile-primary); color: #fff; background: var(--rm-mobile-primary); }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav > button:disabled { color: var(--rm-mobile-muted); background: #f1f3f6; border-color: var(--rm-mobile-line); opacity: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav > button:disabled::after { content: " · 还需补充"; font-size: 12px; font-weight: 500; }
+
+  /* Keep the historic selector on the single top-bar record button so release
+   * checks and extensions still find the action without restoring a second
+   * floating control. */
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-summary { display: inline-flex; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-drawer-backdrop { padding-top: 12px; background: rgba(23, 31, 45, .42); }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer { border-radius: 20px 20px 0 0; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer > header,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer > header { min-height: 64px; padding-inline: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer nav,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer > nav { padding-inline: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer nav button,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer > nav button { min-height: 56px; border-radius: 12px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-case-aside.is-open { border-radius: 20px 20px 0 0; }
+  .rm-app[data-mobile-ui="v2"] .rm-case-aside.is-open > header { min-height: 64px; padding-inline: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-case-aside.is-open > header button {
+    min-width: 64px;
+    min-height: 44px;
+    padding: 7px 12px;
+    border: 1px solid var(--rm-mobile-control-line);
+    border-radius: 10px;
+    color: var(--rm-mobile-primary-deep);
+    background: var(--rm-mobile-surface);
+    font-size: 14px;
+    font-weight: 650;
+  }
+
+  /* Quiet surfaces: one task owns the visual weight; nested card stacks do not. */
+  .rm-app[data-mobile-ui="v2"] .rm-page > section,
+  .rm-app[data-mobile-ui="v2"] .rm-page > article { box-shadow: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-page button,
+  .rm-app[data-mobile-ui="v2"] .rm-page input,
+  .rm-app[data-mobile-ui="v2"] .rm-page textarea,
+  .rm-app[data-mobile-ui="v2"] .rm-page select { font-size: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-form-block { margin-top: 24px; }
+  .rm-app[data-mobile-ui="v2"] .rm-label { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-label > span { font-size: 17px; line-height: 1.5; }
+  .rm-app[data-mobile-ui="v2"] .rm-label > b { font-size: 13px; line-height: 1.5; }
+  .rm-app[data-mobile-ui="v2"] .rm-options { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-options button,
+  .rm-app[data-mobile-ui="v2"] .rm-check-grid button,
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid button,
+  .rm-app[data-mobile-ui="v2"] .rm-region-grid button {
+    min-height: 52px;
+    padding: 11px 12px;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 12px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.45;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-options button.is-selected,
+  .rm-app[data-mobile-ui="v2"] .rm-region-grid button.is-selected,
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid button.is-selected {
+    color: var(--rm-mobile-primary-deep);
+    border-color: var(--rm-mobile-primary);
+    background: var(--rm-mobile-selected);
+    box-shadow: inset 0 0 0 1px rgba(86, 89, 201, .12);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-check-grid button.is-selected { color: var(--rm-mobile-success); border-color: #8fcbbb; background: var(--rm-mobile-success-soft); }
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid button strong { font-size: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid button small { margin-top: 3px; font-size: 13px; line-height: 1.4; }
+  .rm-app[data-mobile-ui="v2"] .rm-region-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-region-grid strong { font-size: 17px; }
+  .rm-app[data-mobile-ui="v2"] .rm-region-grid span { font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-status { margin-bottom: 12px; padding: 14px 16px; border-left-width: 4px; border-radius: 12px; background: var(--rm-mobile-selected); box-shadow: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-status h2 { font-size: 21px; }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-status p { font-size: 14px; }
+
+  /* Location is the one deliberately visual patient task: enlarge the map,
+   * keep view/side controls explicit, and leave text/list alternatives visible. */
+  .rm-app[data-mobile-ui="v2"] .rm-location-picker-head { min-height: 0; padding: 14px 16px 12px; align-items: stretch; flex-direction: column; gap: 10px; background: var(--rm-mobile-surface); }
+  .rm-app[data-mobile-ui="v2"] .rm-location-picker-head strong { font-size: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-picker-head nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 4px; background: var(--rm-mobile-bg); }
+  .rm-app[data-mobile-ui="v2"] .rm-location-picker-head nav button { min-height: 44px; padding: 8px 10px; color: var(--rm-mobile-muted); font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-picker-head nav button.is-selected { color: #fff; background: var(--rm-mobile-primary); }
+  .rm-app[data-mobile-ui="v2"] .rm-location-side-mode { min-height: 0; padding: 11px 16px; align-items: stretch; flex-direction: column; gap: 7px; background: var(--rm-mobile-surface); }
+  .rm-app[data-mobile-ui="v2"] .rm-location-side-mode > span { margin: 0; font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-side-mode button { min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-atlas-workbench { padding: 10px; gap: 12px; background: var(--rm-mobile-bg); }
+  .rm-app[data-mobile-ui="v2"] .rm-atlas-view-tabs { padding: 8px 10px 0; gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-atlas-view-tabs button { min-height: 44px; padding: 8px 12px; border-color: var(--rm-mobile-line); color: var(--rm-mobile-muted); background: var(--rm-mobile-surface); font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-atlas-view-tabs button.is-active { color: #fff; border-color: var(--rm-mobile-primary); background: var(--rm-mobile-primary); box-shadow: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-body-map { width: min(100%, 360px); margin: 0 auto; border-color: var(--rm-mobile-line); border-radius: 14px; background: var(--rm-mobile-surface); box-shadow: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-body-hotspot { min-width: 48px; }
+  .rm-app[data-mobile-ui="v2"] .rm-body-hotspot span { padding: 4px 7px; font-size: 11px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-detail-panel > header { padding: 14px 16px 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-detail-panel > header strong { font-size: 17px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-detail-panel > div { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 14px 14px; gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-detail-panel button { min-height: 52px; padding: 9px 10px; font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-selection-list { padding: 14px; background: var(--rm-mobile-bg); }
+  .rm-app[data-mobile-ui="v2"] .rm-location-selection-list article { min-height: 58px; grid-template-columns: 42px minmax(0, 1fr) auto; padding: 9px 10px; gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-selection-list article strong { font-size: 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-location-selection-list article button { min-width: 44px; min-height: 44px; font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions {
+    min-height: 48px;
+    margin: 14px 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 11px;
+    border: 1px solid var(--rm-mobile-control-line);
+    border-radius: 10px;
+    color: var(--rm-mobile-primary-deep);
+    background: var(--rm-mobile-surface);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button:disabled { color: #a6adba; background: #f2f4f7; opacity: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > span { min-width: 82px; color: var(--rm-mobile-text); font-size: 15px; font-weight: 700; text-align: center; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button.rm-score-zero { flex: 0 1 auto; padding-inline: 10px; color: var(--rm-mobile-muted); font-size: 13px; font-weight: 650; }
+  .rm-app[data-mobile-ui="v2"] .rm-page input[type="radio"],
+  .rm-app[data-mobile-ui="v2"] .rm-page input[type="checkbox"] { width: 20px; height: 20px; }
+  .rm-app[data-mobile-ui="v2"] :focus-visible { outline: 3px solid rgba(86, 89, 201, .35); outline-offset: 3px; }
+
+  @supports (height: 100dvh) {
+    .rm-app[data-mobile-ui="v2"] { min-height: 100dvh; }
+  }
+}
+
+@media (max-width: 359px) {
+  .rm-app[data-mobile-ui="v2"] .rm-topbar { padding-inline: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-brand strong { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { max-width: 74px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 66px; padding-inline: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workspace { width: calc(100% - 32px); }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).split { grid-template-columns: 1fr; }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav { grid-template-columns: 1fr; }
+  .rm-app[data-mobile-ui="v2"] .rm-options,
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (min-width: 721px) {
+  /* The compact score controls belong to the patient surface; keep the
+   * established professional/desktop slider presentation unchanged. */
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-app[data-mobile-ui="v2"] .rm-page { animation: none; }
+}
+
+/* -------------------------------------------------------------------------
+ * Patient-flow presentation pass
+ *
+ * The desktop stylesheet contains a large amount of clinical information in
+ * deliberately dense grids. On a phone the information hierarchy needs to be
+ * read top-to-bottom: one question, one answer group, one next action. These
+ * rules keep the domain markup intact while giving every stage the same mobile
+ * rhythm and the same indigo/mint/amber language.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .rm-app[data-mobile-ui="v2"] .rm-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-page > .rm-heading,
+  .rm-app[data-mobile-ui="v2"] .rm-page > .rm-case-summary-bar {
+    margin-bottom: 0;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-page > h2,
+  .rm-app[data-mobile-ui="v2"] .rm-page > h3,
+  .rm-app[data-mobile-ui="v2"] .rm-page section > h2,
+  .rm-app[data-mobile-ui="v2"] .rm-page article > h2 {
+    line-height: 1.4;
+  }
+
+  /* The task rail is shared by page-actions, guided intake and one-action
+   * pages. The observer in the workbench measures whichever one is present. */
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions),
+  .rm-app[data-mobile-ui="v2"] .rm-one-action {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    width: min(100%, 720px);
+    min-height: var(--rm-mobile-action-height);
+    margin: 0 auto;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -8px 24px rgba(32, 40, 56, .08);
+    backdrop-filter: blur(14px);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-one-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-one-action > button,
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 11px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).three {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).three > button {
+    min-height: 48px;
+    padding-block: 8px;
+  }
+
+  /* Safety confirmation: keep the risk prompt visually heavier than the
+   * surrounding form, without hiding any conditional question. */
+  .rm-app[data-mobile-ui="v2"] .rm-safety-stages {
+    margin: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-stages span {
+    min-height: 44px;
+    padding: 8px 5px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-prior-care-note {
+    margin: 0;
+    border-radius: 12px;
+    background: var(--rm-mobile-surface);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-prior-care-note > summary {
+    min-height: 56px;
+    padding: 12px 14px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check {
+    gap: 8px;
+    margin: 0;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--rm-mobile-surface);
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .05);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list > header,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > header {
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    background: var(--rm-mobile-selected);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list > header span,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > header span {
+    color: var(--rm-mobile-primary-deep);
+    font-size: 13px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article {
+    padding: 14px;
+    border: 0;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article:last-of-type { border-bottom: 0; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list strong,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article strong {
+    display: block;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list span,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article span {
+    display: block;
+    margin-top: 5px;
+    color: var(--rm-mobile-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list button,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check button {
+    min-height: 50px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list button.is-selected:not(.is-alert) {
+    color: var(--rm-mobile-success);
+    border-color: #8fcbbb;
+    background: var(--rm-mobile-success-soft);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-question-alert {
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--rm-mobile-danger);
+    background: var(--rm-mobile-danger-soft);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > div {
+    padding: 14px;
+    border-top: 1px solid var(--rm-mobile-line);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > div strong {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > div span {
+    display: block;
+    margin-top: 5px;
+    color: var(--rm-mobile-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-imaging {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-imaging button {
+    min-height: 54px;
+    padding: 11px 12px;
+    border-radius: 11px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-imaging button.is-selected {
+    color: var(--rm-mobile-primary-deep);
+    border-color: var(--rm-mobile-primary);
+    background: var(--rm-mobile-selected);
+    box-shadow: inset 4px 0 var(--rm-mobile-primary);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-surgery-confirmed {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-surgery-confirmed > button { min-height: 44px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-route-note,
+  .rm-app[data-mobile-ui="v2"] .rm-inline-note {
+    margin: 0;
+    padding: 16px;
+    border-left-width: 4px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-route-note h2 { margin-top: 5px; font-size: 21px; }
+  .rm-app[data-mobile-ui="v2"] .rm-route-note p { margin-top: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-route-note > button { width: 100%; min-height: 50px; margin-top: 14px; border-radius: 10px; }
+
+  /* Assessment: use a quiet queue first, then a single detailed check card. */
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage-rail {
+    margin: 0;
+    padding: 8px;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 14px;
+    background: var(--rm-mobile-surface);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage {
+    min-height: 62px;
+    padding: 8px 6px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage > span { font-size: 11px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage > strong { font-size: 13px; line-height: 1.25; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage > b { font-size: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage.is-current { border-color: #cfd3f2; background: var(--rm-mobile-selected); }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-columns { display: grid; gap: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-module,
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage-rail,
+  .rm-app[data-mobile-ui="v2"] .rm-batch-record {
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-module > header,
+  .rm-app[data-mobile-ui="v2"] .rm-batch-record > header {
+    min-height: 58px;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-header-actions { gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-header-actions button { min-height: 42px; padding-inline: 10px; border-radius: 9px; font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-list { padding: 8px; gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-list > button { min-height: 58px; padding: 9px 10px; border-radius: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-list > button span { font-size: 14px; line-height: 1.35; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-list > button b { font-size: 11px; }
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-appendable { padding: 12px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-assessment-progress > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rm-app[data-mobile-ui="v2"] .rm-assessment-progress button { min-height: 44px; border-radius: 9px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-check-card,
+  .rm-app[data-mobile-ui="v2"] .rm-function-result-stack,
+  .rm-app[data-mobile-ui="v2"] .rm-assessment-summary > article,
+  .rm-app[data-mobile-ui="v2"] .rm-assessment-summary > section {
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header { min-height: 64px; padding: 12px 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header strong { font-size: 17px; line-height: 1.35; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > section { padding: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > section p { font-size: 15px; line-height: 1.6; }
+  .rm-app[data-mobile-ui="v2"] .rm-comparison-anchor { margin: 0 12px 12px; padding: 11px 12px; font-size: 14px; line-height: 1.5; }
+  .rm-app[data-mobile-ui="v2"] .rm-motion-answer-block h3 { font-size: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-motion-answer-block .rm-result-grid,
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid { padding: 10px 0 0; gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-result-grid button { min-height: 52px; border-radius: 10px; font-size: 15px; line-height: 1.35; }
+  .rm-app[data-mobile-ui="v2"] .rm-motion-answer-block .rm-result-grid:not(.is-two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rm-app[data-mobile-ui="v2"] .rm-motion-answer-block .rm-result-grid:not(.is-two) button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-help { margin: 0 12px 12px; border-radius: 10px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-score {
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 13px;
+    box-shadow: none;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-score-head { align-items: flex-start; gap: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-head strong { font-size: 15px; line-height: 1.45; }
+  .rm-app[data-mobile-ui="v2"] .rm-score output { min-width: 70px; padding: 8px; font-size: 34px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score input[type="range"] { margin-block: 24px 12px; }
+
+  /* Treatment and retest: expose the current candidate before the long
+   * instructions, then turn each response into a two-column thumb zone. */
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-context,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-priority,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-round,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-card,
+  .rm-app[data-mobile-ui="v2"] .rm-retest,
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-checkpoint {
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-card > header,
+  .rm-app[data-mobile-ui="v2"] .rm-retest > header,
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-checkpoint > header { padding: 14px 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-card h2,
+  .rm-app[data-mobile-ui="v2"] .rm-retest h2,
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-checkpoint h2 { font-size: 21px; line-height: 1.4; }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-unit-steps,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-do { padding: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-unit-steps li,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-do li { line-height: 1.6; }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-back { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-back button { min-height: 46px; padding: 8px 10px; border-radius: 9px; font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-retest-field-title { gap: 5px; }
+  .rm-app[data-mobile-ui="v2"] .rm-retest-field-title span { font-size: 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-retest-field-title small { font-size: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-auto-result,
+  .rm-app[data-mobile-ui="v2"] .rm-overall-retest-result { border-radius: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-auto-result strong { font-size: 16px; line-height: 1.5; }
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list { gap: 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list article { padding: 12px; border-radius: 11px; }
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list .rm-result-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* Training and summary are intentionally calmer than safety/referral
+   * screens: mint marks progress, while amber remains a real caution. */
+  .rm-app[data-mobile-ui="v2"] .rm-training-hold,
+  .rm-app[data-mobile-ui="v2"] .rm-training-warning,
+  .rm-app[data-mobile-ui="v2"] .rm-training-feedback-gate,
+  .rm-app[data-mobile-ui="v2"] .rm-next-stage,
+  .rm-app[data-mobile-ui="v2"] .rm-overall-retest-action,
+  .rm-app[data-mobile-ui="v2"] .rm-overall-retest-result {
+    margin: 0;
+    border-radius: 13px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-training-hold { display: grid; grid-template-columns: 1fr; gap: 5px; padding: 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-training-hold > span { grid-row: auto; }
+  .rm-app[data-mobile-ui="v2"] .rm-training-hold > p { grid-column: auto; }
+  .rm-app[data-mobile-ui="v2"] .rm-training-path,
+  .rm-app[data-mobile-ui="v2"] .rm-training-basis,
+  .rm-app[data-mobile-ui="v2"] .rm-home-relaxation,
+  .rm-app[data-mobile-ui="v2"] .rm-summary-details { margin: 0; border-radius: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-training-path > summary,
+  .rm-app[data-mobile-ui="v2"] .rm-training-basis > summary,
+  .rm-app[data-mobile-ui="v2"] .rm-summary-details > summary { min-height: 54px; padding: 12px 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination { margin: 0; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination > div { gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination button { min-height: 46px; border-radius: 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise { border-radius: 13px; overflow: hidden; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-summary { min-height: 76px; padding: 10px 11px; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-detail { padding: 0 12px 14px; }
+  .rm-app[data-mobile-ui="v2"] .rm-feedback-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-feedback-quick button { min-height: 52px; padding: 9px 10px; border-radius: 10px; font-size: 14px; line-height: 1.35; }
+  .rm-app[data-mobile-ui="v2"] .rm-next-stage { padding: 15px; }
+  .rm-app[data-mobile-ui="v2"] .rm-next-stage h2 { font-size: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-next-stage p { font-size: 14px; }
+
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel {
+    margin: 0;
+    padding: 18px 15px;
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel h2 { font-size: 23px; line-height: 1.4; }
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel p { font-size: 14px; line-height: 1.7; }
+  .rm-app[data-mobile-ui="v2"] .rm-final-score { grid-template-columns: 1fr auto 1fr; }
+  .rm-app[data-mobile-ui="v2"] .rm-summary-dashboard { gap: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-summary-module,
+  .rm-app[data-mobile-ui="v2"] .rm-summary-column,
+  .rm-app[data-mobile-ui="v2"] .rm-summary-section { border-radius: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-items article,
+  .rm-app[data-mobile-ui="v2"] .rm-followup-new { gap: 10px; padding: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-items article > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-followup-new > div:last-child { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-items button,
+  .rm-app[data-mobile-ui="v2"] .rm-followup-new button { min-height: 50px; border-radius: 9px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-decision { margin: 0; padding: 16px; border-radius: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-decision h2 { font-size: 21px; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-session-change { margin: 0; padding: 14px; border-radius: 12px; }
+
+  /* Fixed bars and bottom sheets need an explicit safe-area runway. */
+  .rm-app[data-mobile-ui="v2"] .rm-records-page > main { padding-bottom: 104px; }
+  .rm-app[data-mobile-ui="v2"] .rm-records-page-actions { min-height: 78px; }
+  .rm-app[data-mobile-ui="v2"] .rm-snapshot-freshness { border-radius: 0 0 12px 12px; }
+}
+
+@media (max-width: 359px) {
+  .rm-app[data-mobile-ui="v2"] .rm-workbench-stage-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rm-app[data-mobile-ui="v2"] .rm-imaging { grid-template-columns: 1fr; }
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list .rm-result-grid { grid-template-columns: 1fr; }
+  .rm-app[data-mobile-ui="v2"] .rm-followup-items article > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-followup-new > div:last-child { grid-template-columns: 1fr; }
+}
+
+/* The legacy shell hides both rails between 721px and 820px. Keep the
+ * patient-facing progress affordance present on small tablets as well. */
+@media (min-width: 721px) and (max-width: 820px) {
+  body:has(.rm-app[data-mobile-ui="v2"]) { background: var(--rm-mobile-bg); }
+  .rm-app[data-mobile-ui="v2"] .rm-topbar {
+    min-height: 60px;
+    height: auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-inline: 16px;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-top-actions { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 10px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button:last-child { min-width: 44px; font-size: 22px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar {
+    display: grid;
+    position: sticky;
+    top: 60px;
+    z-index: 70;
+    gap: 8px;
+    padding: 9px 20px 8px;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .96);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button {
+    min-height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button span { font-size: 14px; font-weight: 750; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button b { color: var(--rm-mobile-primary-deep); font-size: 13px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i { height: 3px; overflow: hidden; border-radius: 2px; background: #e4e7ef; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i em { height: 100%; display: block; background: var(--rm-mobile-primary); }
+  .rm-app[data-mobile-ui="v2"] .rm-workspace { width: min(calc(100% - 32px), 720px); padding: 24px 0 100px; }
+}
+
+/* Phones in landscape report a wide CSS viewport (for example 844×390 on an
+ * iPhone 13). Keep the patient shell mobile until the short side has enough
+ * room for a desktop rail; this also prevents the first-use welcome sheet from
+ * being vertically clipped by the portrait-oriented hero scale. */
+@media (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
+  body:has(.rm-app[data-mobile-ui="v2"]) { background: var(--rm-mobile-bg); }
+
+  .rm-product-welcome { padding: 14px 18px 18px 26px; }
+  .rm-product-welcome-inner { min-height: calc(100dvh - 32px); }
+  .rm-product-welcome header b { width: 34px; height: 34px; }
+  .rm-product-welcome header span { font-size: 14px; }
+  .rm-product-welcome section { padding: 18px 0; }
+  .rm-product-welcome h1 { margin: 7px 0 10px; font-size: clamp(30px, 6vw, 48px); }
+  .rm-product-welcome section > p { font-size: 16px; line-height: 1.45; }
+  .rm-product-welcome section > div { align-items: center; flex-direction: row; margin-top: 17px; }
+  .rm-product-welcome section button { width: auto; min-height: 46px; padding: 8px 17px; }
+  .rm-product-welcome footer { padding-top: 10px; font-size: 11px; line-height: 1.45; }
+
+  .rm-entry-sheet-backdrop { padding: 0 14px; align-items: center; }
+  .rm-entry-sheet { max-height: calc(100dvh - 20px); padding: 16px; border-radius: 14px; }
+  .rm-entry-sheet > footer { align-items: center; flex-direction: row; margin-top: 12px; }
+  .rm-entry-sheet > footer button { width: auto; min-height: 44px; }
+
+  .rm-focus-tooltip { max-height: calc(100dvh - 18px); padding: 10px 14px; }
+  .rm-focus-copy h1 { font-size: 20px; }
+  .rm-focus-copy p { margin-top: 5px; font-size: 12px; line-height: 1.45; }
+  .rm-focus-footer { margin-top: 9px; }
+
+  .rm-app[data-mobile-ui="v2"] {
+    min-height: 100dvh;
+    background: var(--rm-mobile-bg);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 6px 16px 6px 20px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--rm-mobile-line);
+    box-shadow: none;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-top-actions,
+  .rm-app[data-mobile-ui="v2"] .rm-top-context,
+  .rm-app[data-mobile-ui="v2"] .rm-step-rail { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { display: flex; flex-shrink: 0; align-items: center; gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { max-width: 120px; overflow: hidden; color: var(--rm-mobile-muted); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button { min-width: 44px; min-height: 44px; padding: 0 9px; border: 1px solid var(--rm-mobile-line); border-radius: 10px; color: var(--rm-mobile-text); background: var(--rm-mobile-surface); font-size: 21px; line-height: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 74px; color: var(--rm-mobile-primary-deep); font-size: 13px; font-weight: 700; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-summary { position: static; right: auto; bottom: auto; z-index: auto; box-shadow: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar {
+    display: grid;
+    position: sticky;
+    top: 0;
+    z-index: 70;
+    gap: 7px;
+    padding: 7px 20px 6px;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 3px 12px rgba(32, 40, 56, .035);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button {
+    min-height: 34px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button span { color: var(--rm-mobile-text); font-size: 13px; font-weight: 750; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button b { color: var(--rm-mobile-primary-deep); font-size: 12px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i { height: 3px; overflow: hidden; border-radius: 2px; background: #e4e7ef; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i em { height: 100%; display: block; background: var(--rm-mobile-primary); }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-drawer-backdrop { padding-top: 12px; background: rgba(23, 31, 45, .42); display: flex; align-items: flex-end; position: fixed; inset: 0; z-index: 250; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer { width: 100%; max-height: 82dvh; padding-bottom: env(safe-area-inset-bottom); border-radius: 20px 20px 0 0; background: var(--rm-mobile-surface); overflow-y: auto; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer > header,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer > header { min-height: 58px; padding-inline: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stage-drawer nav,
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-more-drawer > nav { padding-inline: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-shell { width: 100%; padding: 0; display: block; }
+  .rm-app[data-mobile-ui="v2"] .rm-workspace {
+    width: min(calc(100% - 32px), 720px);
+    padding: 16px 0 calc(var(--rm-mobile-action-height) + 16px + env(safe-area-inset-bottom));
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-page { display: grid; gap: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page button,
+  .rm-app[data-mobile-ui="v2"] .rm-page input,
+  .rm-app[data-mobile-ui="v2"] .rm-page textarea,
+  .rm-app[data-mobile-ui="v2"] .rm-page select { font-size: 16px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions { min-height: 48px; margin: 14px 0 4px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button { min-width: 44px; min-height: 44px; padding: 0 11px; border: 1px solid var(--rm-mobile-control-line); border-radius: 10px; color: var(--rm-mobile-primary-deep); background: var(--rm-mobile-surface); font-size: 22px; font-weight: 700; line-height: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button:disabled { color: #a6adba; background: #f2f4f7; opacity: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > span { min-width: 82px; color: var(--rm-mobile-text); font-size: 15px; font-weight: 700; text-align: center; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-actions > button.rm-score-zero { flex: 0 1 auto; padding-inline: 10px; color: var(--rm-mobile-muted); font-size: 13px; font-weight: 650; }
+  .rm-app[data-mobile-ui="v2"] .rm-case-aside.is-open {
+    width: 100%;
+    height: auto;
+    max-height: 82dvh;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: 20px 20px 0 0;
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions),
+  .rm-app[data-mobile-ui="v2"] .rm-one-action,
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    width: min(100%, 1024px);
+    min-height: var(--rm-mobile-action-height);
+    margin: 0 auto;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rm-mobile-line);
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -8px 24px rgba(32, 40, 56, .08);
+    backdrop-filter: blur(14px);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-one-action { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions).three { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions) > button,
+  .rm-app[data-mobile-ui="v2"] .rm-one-action > button,
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav > button { min-height: 46px; padding: 8px 12px; font-size: 14px; }
+}
+
+/* Final mobile polish -----------------------------------------------------
+ * The action rail uses its measured height only for the page's bottom
+ * runway. It must not use that same variable as its own min-height: doing so
+ * creates a feedback loop (the rail measures itself, then grows to the
+ * measured value) and can turn a one-action button into a full-screen purple
+ * block on treatment pages.
+ */
+@media (max-width: 720px), (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
+  .rm-app[data-mobile-ui="v2"] .rm-page-actions:not(.rm-intake-actions),
+  .rm-app[data-mobile-ui="v2"] .rm-one-action,
+  .rm-app[data-mobile-ui="v2"] .rm-guided-nav {
+    height: auto;
+    min-height: 0;
+    align-items: center;
+    grid-auto-rows: max-content;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-one-action > button {
+    height: auto;
+    min-height: 52px;
+    max-height: 72px;
+    align-self: center;
+  }
+
+  /* A treatment card has one job on a phone: say where to work, then what to
+   * do. Keep those two parts visible, but remove the desktop's saturated
+   * split-ribbon treatment and nested card feeling. */
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-roadmap {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-roadmap > header {
+    /* The treatment card immediately below already states the current site
+     * and action. Repeating both here made the phone flow feel like two
+     * competing primary cards. Keep this context in the accessible DOM, but
+     * let the action card own the visual headline. */
+    display: none;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-roadmap > details {
+    margin-top: 0;
+    border: 1px solid var(--rm-mobile-line);
+    border-radius: 11px;
+    background: var(--rm-mobile-surface);
+    overflow: hidden;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-roadmap > details > summary {
+    min-height: 46px;
+    padding: 10px 13px;
+    color: var(--rm-mobile-text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-roadmap > details > summary b {
+    color: var(--rm-mobile-success);
+    font-size: 12px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-card {
+    border: 1px solid var(--rm-mobile-line);
+    background: var(--rm-mobile-surface);
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-card > .rm-treatment-ribbon {
+    grid-template-columns: 1fr;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-ribbon > section {
+    min-height: 0;
+    padding: 15px;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-site {
+    border-right: 0;
+    border-bottom: 1px solid #d8def3;
+    background: #f5f6ff;
+    color: var(--rm-mobile-text);
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-site span,
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-action span {
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-site span { color: var(--rm-mobile-primary-deep); }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-ribbon h2 {
+    margin-top: 5px;
+    font-size: 22px;
+    line-height: 1.35;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-action {
+    border-top: 0;
+    background: var(--rm-mobile-success-soft);
+    color: #175d51;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-action span { color: var(--rm-mobile-success); }
+  .rm-app[data-mobile-ui="v2"] .rm-treatment-action h2 { color: #155b4f; }
+}

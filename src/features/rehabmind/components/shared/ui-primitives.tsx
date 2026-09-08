@@ -104,8 +104,21 @@ export function ScoreSlider({ value, onChange, label, context, compact = false, 
   const draft = currentDraft.value;
   const displayedValue = draft;
   const hasDisplayedScore = selected || currentDraft.dirty;
+  const commitButtonScore = (nextValue: number) => {
+    const clampedValue = Math.min(10, Math.max(0, nextValue));
+    const next = { sourceKey: `${true}:${clampedValue}:${context ?? ""}`, value: clampedValue, dirty: false };
+    sliderStateRef.current = next;
+    setDraftState(next);
+    onChange(clampedValue);
+  };
   return <section className={`rm-score ${compact ? "is-compact" : ""} ${selected && !currentDraft.dirty ? "is-recorded" : ""}`}>
     <div className="rm-score-head"><div><span>{label}</span>{context ? <strong>{context}</strong> : null}</div><output>{selected || currentDraft.dirty ? displayedValue : "—"}<small>/10</small></output></div>
+    <div className="rm-score-actions" aria-label="评分微调">
+      <button type="button" aria-label="评分减1分" onClick={() => commitButtonScore(displayedValue - 1)} disabled={displayedValue <= 0}>−</button>
+      <span aria-live="polite">{selected || currentDraft.dirty ? `${displayedValue} 分` : "尚未记录"}</span>
+      <button type="button" aria-label="评分加1分" onClick={() => commitButtonScore(displayedValue + 1)} disabled={displayedValue >= 10}>＋</button>
+      {!selected && !currentDraft.dirty ? <button type="button" className="rm-score-zero" aria-label="记录评分为0分" onClick={() => commitButtonScore(0)}>记录为0分</button> : null}
+    </div>
     <input aria-label={label} type="range" min="0" max="10" step="1" value={displayedValue} onInput={handleSliderChange} onChange={commitDraft} onBlur={commitDraft} onPointerUp={commitDraft} onMouseUp={commitDraft} onTouchEnd={commitDraft} onKeyDown={handleSliderKeyDown} style={{ "--score": `${displayedValue * 10}%` } as CSSProperties} />
     <div className="rm-score-scale"><span>0 · 没有疼痛或不适</span><span>10 · 能想象到的最严重</span></div>
     <p className="rm-score-guide" aria-live="polite">{hasDisplayedScore ? `${displayedValue}/10 · ${scoreGuideLabel(displayedValue)}` : "拖动后显示当前程度"}</p>
