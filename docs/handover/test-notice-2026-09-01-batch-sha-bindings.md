@@ -1015,3 +1015,9 @@ docs/quality/real-browser-flow-audit.md:3 → `../pilot-scenario-coverage.md` �
 ## 门禁自证
 
 check:structure ok（docs 根 1 文件）；check:catalog/typecheck 绿；node 套件失败集合 58→60，新增即上述两条过期副本红，其余逐条相同。
+
+---
+
+# 第 34 轮 — 手机端 UI 二期整改完成（阶段 A–G）
+
+施工单 `mobile-ui-remediation-phase2-execution-plan-2026-09-08.md` 全阶段落地：动作合同 49 容器、权威底栏区块、三按钮两行合同（实测 390=120px/320=111px/横屏一行 63px，前态 179/193px）、禁用伪文案清零、测量自反馈与 safe-area 双算清零、第 1 步双操作区合并、图谱 320 溢出修复、抽屉滚动锁。提交链 96915f6→d0e21d1。完整交接报告（含实测表、测试树断言核对、已知限制 6 条）见 `docs/handover/development-to-test-mobile-ui-phase2-2026-09-08.md`。预期零解钉；若合并后 rendered-html 源码钉意外红请按往来登记。mobile-preview 套件与视觉抽查请测试侧下轮排入（驱动脚本可复用 outputs/mobile-phase2/capture-driver.mjs）。
