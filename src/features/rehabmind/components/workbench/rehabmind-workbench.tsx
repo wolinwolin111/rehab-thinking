@@ -6800,8 +6800,16 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
     let observedAction: HTMLElement | null = null;
     let resizeObserver: ResizeObserver | null = null;
     const updateActionHeight = () => {
-      const action = workspace.querySelector<HTMLElement>('.rm-page-actions:not(.rm-intake-actions), .rm-guided-nav, .rm-one-action');
-      app.style.setProperty('--rm-mobile-action-height', action ? `${Math.ceil(action.getBoundingClientRect().height)}px` : '0px');
+      // Only the visible, actually-fixed action rail may drive the runway:
+      // hidden or zero-height branches must never be measured, and an equal
+      // height must not be rewritten (feedback-free measurement, plan §9.2).
+      const candidates = workspace.querySelectorAll<HTMLElement>('.rm-page-actions:not(.rm-intake-actions), .rm-guided-nav, .rm-one-action');
+      const action = Array.from(candidates).find((element) => {
+        const style = window.getComputedStyle(element);
+        return style.display !== "none" && style.position === "fixed" && element.getBoundingClientRect().height > 0;
+      }) ?? null;
+      const nextHeight = action ? `${Math.ceil(action.getBoundingClientRect().height)}px` : "0px";
+      if (app.style.getPropertyValue('--rm-mobile-action-height') !== nextHeight) app.style.setProperty('--rm-mobile-action-height', nextHeight);
       if (resizeObserver && action !== observedAction) {
         if (observedAction) resizeObserver.unobserve(observedAction);
         if (action) resizeObserver.observe(action);

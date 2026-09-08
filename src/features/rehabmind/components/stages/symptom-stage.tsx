@@ -421,9 +421,9 @@ export function SymptomStage(props: SymptomStageProps) {
         <h2>{showAllIntakeFields ? "按需要修改" : guidedFieldTitle || "你希望恢复到什么程度？"}</h2>
         <p>{showAllIntakeFields ? "只改需要调整的内容即可。" : missingFields.length || guidedQuestionReady ? "选好后直接点下一步。" : "信息已补充完成。"}</p>
       </section>
-      {!showAllIntakeFields ? <nav className="rm-guided-nav" aria-label="症状信息问题导航">
-        <button type="button" disabled={guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0)} onClick={returnToPreviousIntakeQuestion}>← 上一步</button>
-        {nextMissingField ? <button type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : null}
+      {!showAllIntakeFields ? <nav className="rm-guided-nav" aria-label="症状信息问题导航" data-action-layout="split">
+        <button data-action-role="secondary" type="button" disabled={guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0)} onClick={returnToPreviousIntakeQuestion}>← 上一步</button>
+        {nextMissingField ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : null}
       </nav> : null}
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting">

@@ -1395,8 +1395,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-safety-list article { grid-template-columns: 1fr; }
   .rm-bone-check > article { grid-template-columns: 1fr; }
   .rm-imaging { grid-template-columns: 1fr; }
-  .rm-page-actions.split, .rm-page-actions.three { grid-template-columns: 1fr; }
-  .rm-page-actions.split > button:first-child, .rm-page-actions.three > button:first-child { order: 3; }
+  .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.split, .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.three { grid-template-columns: 1fr; }
+  /* v2 patients use the role-driven authoritative rail (mobile-patient.css §8.4); this legacy position guess must not touch them. */
+  .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.split > button:first-child, .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.three > button:first-child { order: 3; }
   .rm-check-card > section, .rm-function-result-stack > section { min-height: 0; padding: 17px; grid-template-columns: 1fr; gap: 5px; }
   .rm-check-card > section p { font-size: 17px; }
   .rm-result-grid { grid-template-columns: 1fr 1fr; }
