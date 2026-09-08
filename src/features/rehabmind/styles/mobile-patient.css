@@ -37,6 +37,9 @@
   border: 0;
 }
 
+/* Background scroll is frozen while any managed dialog/drawer is open. */
+body.rm-dialog-open { overflow: hidden; }
+
 /* The v2 shell is deliberately scoped so desktop and the legacy guided surface
  * remain untouched while each mobile slice is migrated. */
 @media (max-width: 720px) {
@@ -756,6 +759,40 @@
   .rm-app[data-mobile-ui="v2"] .rm-followup-decision { margin: 0; padding: 16px; border-radius: 12px; }
   .rm-app[data-mobile-ui="v2"] .rm-followup-decision h2 { font-size: 21px; }
   .rm-app[data-mobile-ui="v2"] .rm-followup-session-change { margin: 0; padding: 14px; border-radius: 12px; }
+
+  /* Long Chinese check names must not orphan their last glyph (M-07): give
+   * the title column real flex room before touching font size. */
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header { gap: 10px; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header > div { min-width: 0; flex: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header > i { width: 34px; height: 34px; flex: 0 0 34px; }
+  .rm-app[data-mobile-ui="v2"] .rm-check-card > header strong { overflow-wrap: anywhere; }
+
+  /* Training detail: the desktop 88px label column becomes stacked pairs (M-08). */
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-detail dl > div { grid-template-columns: minmax(0, 1fr); gap: 4px; min-height: 0; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-detail dl dt { color: var(--rm-mobile-primary-deep); font-size: 13px; font-weight: 750; }
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-detail dl dd { margin: 0; }
+
+  /* Summary hero: a quiet light result card, not a saturated dark block (M-09).
+   * Semantic emphasis lives in the delta text, matching the domain copy. */
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero {
+    padding: 16px;
+    border: 1px solid var(--rm-mobile-line);
+    border-left: 4px solid var(--rm-mobile-primary);
+    border-radius: 14px;
+    color: var(--rm-mobile-text);
+    background: var(--rm-mobile-surface);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero > div:first-child span { color: var(--rm-mobile-primary-deep); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero h2 { color: var(--rm-mobile-text); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero p { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score b,
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score strong { color: var(--rm-mobile-text); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score i,
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score small { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score small { color: var(--rm-mobile-success); }
 
   /* Fixed bars and bottom sheets need an explicit safe-area runway. */
   .rm-app[data-mobile-ui="v2"] .rm-records-page > main { padding-bottom: 104px; }

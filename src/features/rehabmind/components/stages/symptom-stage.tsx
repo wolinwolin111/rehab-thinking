@@ -423,7 +423,7 @@ export function SymptomStage(props: SymptomStageProps) {
       </section>
       {!showAllIntakeFields ? <nav className="rm-guided-nav" aria-label="症状信息问题导航" data-action-layout="split">
         <button data-action-role="secondary" type="button" disabled={guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0)} onClick={returnToPreviousIntakeQuestion}>← 上一步</button>
-        {nextMissingField ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : null}
+        {nextMissingField ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : <button data-action-role="primary" type="button" className="rm-primary" disabled={!keyConfirmationReady} onClick={enterKeyConfirmation}>进入关键确认</button>}
       </nav> : null}
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting">
@@ -606,7 +606,7 @@ export function SymptomStage(props: SymptomStageProps) {
 
       {selfNeuralReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>出现麻、电或感觉变化</h2><p>这种情况不适合自己练，也不建议自己松神经。不必补完其余问题，可以直接保存退出，由专业人员检查感觉范围和力量变化。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
       {stabbingEarlyReferral ? <section className="rm-route-note is-waiting"><span>建议先线下确认</span><h2>不活动时也会刺痛</h2><p>先确认局部刺激、外伤或其他需要医学处理的问题。不必补完其余问题，可以直接保存退出。</p><button type="button" onClick={() => saveRecord("待医学评估")}>保存本次信息</button></section> : null}
-      {!unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal ? <div className="rm-page-actions rm-intake-actions"><span>{keyConfirmationReady ? "症状信息已经够用了" : "还需补充："}{!keyConfirmationReady ? intakeMissingFields.slice(0, 6).map((label) => <button key={label} type="button" className="rm-missing-jump" onClick={() => document.getElementById(`field-${label}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>{label}</button>) : null}{!keyConfirmationReady && intakeMissingFields.length > 6 ? `等 ${intakeMissingFields.length} 项` : ""}</span>{keyConfirmationReady ? <button type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div> : null}
+      {!unsupportedDescriptionRegion && !selfNeuralReferral && !stabbingEarlyReferral && !vascularDescriptionSignal ? <div className="rm-page-actions rm-intake-actions" data-action-layout={showAllIntakeFields && keyConfirmationReady ? "split" : "single"}><span>{keyConfirmationReady ? "症状信息已经够用了" : "还需补充："}{!keyConfirmationReady ? intakeMissingFields.slice(0, 6).map((label) => <button key={label} type="button" className="rm-missing-jump" onClick={() => document.getElementById(`field-${label}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>{label}</button>) : null}{!keyConfirmationReady && intakeMissingFields.length > 6 ? `等 ${intakeMissingFields.length} 项` : ""}</span>{showAllIntakeFields && keyConfirmationReady ? <button data-action-role="primary" type="button" className="rm-primary" onClick={enterKeyConfirmation}>进入关键确认</button> : null}</div> : null}
     </>}
   </section>;
 }

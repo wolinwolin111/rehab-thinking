@@ -70,9 +70,12 @@ export function useDialogAccessibility<T extends HTMLElement = HTMLElement>({
       }
     };
     document.addEventListener("keydown", handleKeyDown);
+    const hadLock = document.body.classList.contains("rm-dialog-open");
+    if (!hadLock) document.body.classList.add("rm-dialog-open");
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleKeyDown);
+      if (!hadLock) document.body.classList.remove("rm-dialog-open");
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
   }, [initialFocusRef, open]);
