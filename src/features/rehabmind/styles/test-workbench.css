@@ -48,7 +48,7 @@
 
 .rm-test-mode {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   padding: 24px 0;
 }
@@ -139,6 +139,44 @@
 .rm-test-toolbar > p { grid-column: 1 / -1; margin: 0; color: #9b3e34; font-size: 13px; }
 .rm-test-fixture-note { grid-column: 1 / -1; margin: 0; }
 .rm-test-product { background: #fff; }
+
+/* ---- 表现层组件状态预览（component_preview 模式） ---- */
+.rm-test-preview {
+  display: grid;
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 4vw, 40px) 48px;
+}
+
+.rm-test-preview-note,
+.rm-test-preview-scope {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed #b9c2d6;
+  border-radius: 8px;
+  color: #5d667a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.rm-test-preview-scope { font-family: Consolas, monospace; font-size: 12px; }
+
+.rm-test-preview-block {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #d5dce8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.rm-test-preview-block > h2 { margin: 0; font-size: 17px; color: #17223b; }
+.rm-test-preview-row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* tone 色档块复现 .rm-app[data-mobile-ui="v2"] 作用域链；仅关掉嵌套壳的
+ * min-height:100vh，CSS 变量与皮肤全部来自真实规则。 */
+.rm-test-preview .rm-app { min-height: 0; }
 
 @media (max-width: 820px) {
   .rm-test-launcher { padding: 20px 14px 34px; }

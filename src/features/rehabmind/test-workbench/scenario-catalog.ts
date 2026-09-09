@@ -13,7 +13,7 @@ import type { RehabSessionSummary } from "@/src/features/rehabmind/workflow/sess
 import { PILOT_SNAPSHOT_SCHEMA_VERSION } from "@/src/infrastructure/pilot/api/case-contracts";
 import type { PilotTestFaultMode } from "@/src/infrastructure/pilot/api/case-client";
 
-export type PilotTestMode = "full_flow" | "page_boundary";
+export type PilotTestMode = "full_flow" | "page_boundary" | "component_preview";
 
 export type PilotScenarioFixtureKind = "bilateral-longitudinal" | "bilateral-training-gate" | "history-second-session" | "history-new-problem" | "outcome-panel-records" | "bilateral-per-side-retest" | "treatment-worse-stop";
 
@@ -48,6 +48,17 @@ export type PilotTestScenario = Readonly<{
   faultMode?: PilotTestFaultMode;
   fixtureNote?: string;
 }>;
+
+const COMPONENT_PREVIEW_SCENARIOS: readonly PilotTestScenario[] = [
+  {
+    id: "presentation-components",
+    title: "表现层组件状态",
+    description: "ActionButton/Disclosure/StatusNotice/ChoiceButton/TaskCard/TaskHeading/StageTransition 全状态与总结 tone 五色档，真实组件＋真实 CSS。",
+    mode: "component_preview",
+    target: "组件预览",
+    initialProblem: "",
+  },
+] as const;
 
 const COMPLETED_KNEE_INTAKE = {
   ...DEFAULT_INTAKE,
@@ -989,5 +1000,12 @@ export const PILOT_TEST_SCENARIOS: readonly PilotTestScenario[] = [
 ] as const;
 
 export function findPilotTestScenario(scenarioId: string) {
-  return PILOT_TEST_SCENARIOS.find((scenario) => scenario.id === scenarioId) ?? null;
+  return PILOT_TEST_SCENARIOS.find((scenario) => scenario.id === scenarioId)
+    ?? COMPONENT_PREVIEW_SCENARIOS.find((scenario) => scenario.id === scenarioId)
+    ?? null;
+}
+
+export function pilotScenariosForMode(mode: PilotTestMode): readonly PilotTestScenario[] {
+  if (mode === "component_preview") return COMPONENT_PREVIEW_SCENARIOS;
+  return PILOT_TEST_SCENARIOS.filter((scenario) => scenario.mode === mode);
 }

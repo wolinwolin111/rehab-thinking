@@ -29,11 +29,13 @@ import {
 import {
   createPilotScenarioSnapshot,
   findPilotTestScenario,
+  pilotScenariosForMode,
   PILOT_TEST_SCENARIOS,
   type PilotScenarioSeedContext,
   type PilotTestMode,
   type PilotTestScenario,
 } from "./scenario-catalog";
+import { PresentationPreviewPanel } from "./presentation-preview";
 import "@/src/features/rehabmind/styles/test-workbench.css";
 
 const RUN_STORAGE_KEY = "rehabmind-test-run-v1";
@@ -222,7 +224,7 @@ export default function PilotTestWorkbench() {
   const [busy, setBusy] = useState(false);
   const [runId, setRunId] = useState("");
 
-  const scenarios = useMemo(() => PILOT_TEST_SCENARIOS.filter((item) => item.mode === mode), [mode]);
+  const scenarios = useMemo(() => pilotScenariosForMode(mode), [mode]);
 
   const checkAccess = useCallback(async () => {
     setAccess("checking");
@@ -285,7 +287,17 @@ export default function PilotTestWorkbench() {
 
   async function startSelected() {
     const scenario = findPilotTestScenario(selectedId);
-    if (scenario) await launch(scenario);
+    if (!scenario) return;
+    if (scenario.mode === "component_preview") {
+      setActive((current) => ({
+        context: { testRunId: runId || currentRunId(), scenarioId: scenario.id, createdBy: "test_workbench" },
+        scenario,
+        localCaseId: "",
+        instance: (current?.instance ?? 0) + 1,
+      }));
+      return;
+    }
+    await launch(scenario);
   }
 
   async function restartScenario() {
@@ -404,6 +416,7 @@ export default function PilotTestWorkbench() {
       <section className="rm-test-mode" aria-label="测试模式">
         <button type="button" className={mode === "full_flow" ? "is-active" : ""} onClick={() => { setMode("full_flow"); setSelectedId(PILOT_TEST_SCENARIOS.find((item) => item.mode === "full_flow")?.id ?? ""); }}><strong>完整流程</strong><span>只预填问题描述，后续全部按真实页面完成</span></button>
         <button type="button" className={mode === "page_boundary" ? "is-active" : ""} onClick={() => { setMode("page_boundary"); setSelectedId(PILOT_TEST_SCENARIOS.find((item) => item.mode === "page_boundary")?.id ?? ""); }}><strong>页面定向</strong><span>载入指定阶段，只作为页面边界检查</span></button>
+        <button type="button" className={mode === "component_preview" ? "is-active" : ""} data-testid="test-mode-component-preview" onClick={() => { setMode("component_preview"); setSelectedId("presentation-components"); }}><strong>组件预览</strong><span>表现层组件全状态＋总结 tone 色档，不创建案例</span></button>
         <button type="button" onClick={() => { window.location.href = appUrl("/decision-lab"); }}><strong>决策实验室</strong><span>直接查看生产决策函数输出，不创建案例</span></button>
       </section>
 
@@ -424,7 +437,7 @@ export default function PilotTestWorkbench() {
 
   return <main className="rm-test-runtime" data-testid="test-workbench-runtime" data-scenario-id={active.scenario.id} data-test-run-id={active.context.testRunId} data-test-fault-mode={active.context.faultMode ?? "none"}>
     <header className="rm-test-toolbar">
-      <div className="rm-test-toolbar-context"><span>{active.scenario.mode === "full_flow" ? "完整流程" : "页面边界测试"}</span><strong>{active.scenario.title}</strong><small>批次 {active.context.testRunId}</small></div>
+      <div className="rm-test-toolbar-context"><span>{active.scenario.mode === "full_flow" ? "完整流程" : active.scenario.mode === "component_preview" ? "组件预览" : "页面边界测试"}</span><strong>{active.scenario.title}</strong><small>批次 {active.context.testRunId}</small></div>
       <div className="rm-test-toolbar-actions">
         <button type="button" data-testid="test-restart-scenario" disabled={busy} onClick={() => void restartScenario()}>重新开始</button>
         <button type="button" data-testid="test-clone-scenario" disabled={busy} onClick={() => void cloneScenario()}>复制为新案例</button>
@@ -444,7 +457,7 @@ export default function PilotTestWorkbench() {
       {active.scenario.fixtureNote ? <p className="rm-test-fixture-note" data-testid="test-fixture-note">{active.scenario.fixtureNote}</p> : null}
     </header>
     <div className="rm-test-product">
-      <RehabMindCompleteDemo key={active.instance} testContext={active.context} />
+      {active.scenario.mode === "component_preview" ? <PresentationPreviewPanel /> : <RehabMindCompleteDemo key={active.instance} testContext={active.context} />}
     </div>
   </main>;
 }
