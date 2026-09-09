@@ -394,10 +394,11 @@ export function SymptomStage(props: SymptomStageProps) {
     <StepHeading eyebrow="第1步 · 症状信息" title={intake.parsed ? professionalIntake ? "记录主诉与评估条件" : "确认你的问题信息" : "请描述你的问题"} note={intake.parsed ? professionalIntake ? "可一次填写多个字段；患者原话、检查条件和专业判断分开记录。" : undefined : "请说明不适部位、出现时间、受影响的动作和恢复目标。"} tutorialTarget="flow-mobile" />
     {!intake.parsed ? <>
       <div className="rm-hero-input" data-rehabmind-tutorial="symptom-block">
-        <label htmlFor="chief-description" className="rm-entry-hint"><span>不适部位</span><span>·</span><span>出现时间</span><span>·</span><span>受影响动作</span><span>·</span><span>恢复目标</span></label>
-        <textarea id="chief-description" data-rehabmind-tutorial="symptom-input" value={intake.description} onChange={(event) => setIntake((current) => ({ ...current, description: event.target.value }))} placeholder="例如：右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。" />
-        <p className="rm-entry-example">例如：右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。</p>
-        <small>不清楚的内容可以写“不清楚”。</small>
+        {/* U06: one example below the input; the placeholder stays a short hint,
+         * and the old four-part label row becomes this single helper line. */}
+        <label htmlFor="chief-description" className="rm-entry-hint"><span>一句话说清：哪里不舒服、什么时候开始、什么动作受影响、想恢复到什么程度</span></label>
+        <textarea id="chief-description" data-rehabmind-tutorial="symptom-input" value={intake.description} onChange={(event) => setIntake((current) => ({ ...current, description: event.target.value }))} placeholder="例如：右脚踝昨天扭伤，走路和下楼时疼……" />
+        <p className="rm-entry-example">例如：右脚踝昨天扭伤，走路和下楼时疼，恢复目标是正常走路。不清楚的内容可以写“不清楚”。</p>
         <div><button type="button" data-rehabmind-tutorial="organize" disabled={!intake.description.trim()} onClick={() => beginGuidedIntake(parseIntake(intake.description, { ...DEFAULT_INTAKE, description: intake.description }))}>继续</button></div>
       </div>
     </> : <>

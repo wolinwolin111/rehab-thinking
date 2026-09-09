@@ -242,7 +242,7 @@ export function TrainingStage(props: TrainingStageProps) {
       <div className="rm-effective-home-focus">{effectiveFocusLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留轻柔放松</small></article>)}{effectiveControlLabels.map((label) => <article key={label}><strong>{label}</strong><small>本轮做完后主诉变轻，可保留练习</small></article>)}</div>
     </details> : null}
 
-    {visibleExercise ? <nav className="rm-exercise-pagination" aria-label="训练动作切换"><span>训练动作 {visibleExerciseIndex + 1}/{exercises.length}</span><div><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex === 0} onClick={() => setOpenExercise(exercises[visibleExerciseIndex - 1]?.id ?? "")}>上一个</button><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex >= exercises.length - 1 || !exerciseFeedback[visibleExercise.id]} onClick={() => setOpenExercise(exercises[visibleExerciseIndex + 1]?.id ?? "")}>下一个</button></div></nav> : null}
+    {visibleExercise ? <nav className="rm-exercise-pagination" aria-label="训练动作切换"><span>训练动作 {visibleExerciseIndex + 1}/{exercises.length}</span>{exercises.length > 1 ? <div><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex === 0} onClick={() => setOpenExercise(exercises[visibleExerciseIndex - 1]?.id ?? "")}>上一个</button><button type="button" disabled={trainingHasWorsened || visibleExerciseIndex >= exercises.length - 1 || !exerciseFeedback[visibleExercise.id]} onClick={() => setOpenExercise(exercises[visibleExerciseIndex + 1]?.id ?? "")}>下一个</button></div> : null}</nav> : null}
     <div className="rm-exercise-list">{visibleExercise ? [visibleExercise].map((exercise) => {
       const feedback = exerciseFeedback[exercise.id];
       const exerciseVisual = exerciseActionVisual(exercise, actionImageVariant(intake));
@@ -250,9 +250,8 @@ export function TrainingStage(props: TrainingStageProps) {
         <div className="rm-exercise-summary"><i>{visibleExerciseIndex + 1}</i><span><small>{exercise.startPosition}</small><strong>{exercise.title}</strong></span><b>{exercise.sets} · {exercise.reps}</b><em>{feedback ? "已反馈" : "当前动作"}</em></div>
         <div className="rm-exercise-detail">
           {exerciseVisual ? <ActionReferenceFigure visual={exerciseVisual} /> : null}
-          <dl>{exercise.purpose ? <div><dt>{isThinkingMode ? "训练目的" : "为什么练这个"}</dt><dd>{exercise.purpose}</dd></div> : null}<div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
-          <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
-          <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
+          {/* U10: how-to comes before rationale; rationale moves to the end. */}
+          <dl><div><dt>怎么做</dt><dd><b>{exercise.startPosition}开始：</b>{exercise.how}</dd></div></dl>
           <section className="rm-first-set"><header><span>第一组做完后，选一个最接近的情况</span><strong>{feedbackAdvice(exercise)}</strong></header><div className="rm-feedback-quick">{([
             ["reduce", "做不了或动作变形"],
             ["hold", "难度正合适"],
@@ -262,6 +261,9 @@ export function TrainingStage(props: TrainingStageProps) {
             const selected = mode === "worse" ? feedback?.symptom === "worse" : mode === "reduce" ? Boolean(feedback?.formChanged) : mode === "progress" ? (feedback?.reserve ?? 0) >= 5 && feedback?.symptom !== "worse" : Boolean(feedback && !feedback.formChanged && feedback.reserve >= 2 && feedback.reserve < 5 && feedback.symptom !== "worse");
             return <button type="button" key={mode} data-rehabmind-test={`training-feedback-${mode}`} data-exercise-id={exercise.id} disabled={trainingHasWorsened || bilateralLowLoadOnly && mode === "progress"} className={selected ? "is-selected" : ""} onClick={() => recordQuickFeedback(exercise, mode)}>{label}</button>;
           })}</div></section>
+          {exercise.purpose ? <details className="rm-exercise-alt"><summary>为什么练这个</summary><p>{exercise.purpose}</p></details> : null}
+          <details className="rm-exercise-alt"><summary>做不了？点这里看退阶</summary><p>{exercise.easier}</p></details>
+          <details className="rm-exercise-alt"><summary>太轻松？点这里看进阶</summary><p>{exercise.harder}</p></details>
         </div>
       </article>;
     }) : null}</div>
@@ -281,7 +283,7 @@ export function TrainingStage(props: TrainingStageProps) {
 
     {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
-    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section id="training-feedback-gate" className="rm-training-feedback-gate" data-testid="training-feedback-gate" role="status"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span></section> : null}
+    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section id="training-feedback-gate" className="rm-training-feedback-gate" data-testid="training-feedback-gate" role="status"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span><button type="button" onClick={() => { const pending = pendingFeedbackExercises[0]; if (pending) { setOpenExercise(pending.id); const target = document.querySelector(".rm-first-set"); if (target) target.scrollIntoView({ behavior: "smooth", block: "center" }); } }}>去记录第一个未反馈动作</button></section> : null}
 
     <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再增加难度" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "这次先完成基础活动，并记录两侧反馈。" : "连续两次完成、动作稳定且第二天没有持续加重后，一次只增加个数、阻力、难度或训练量中的一项。"}</p></section>
 

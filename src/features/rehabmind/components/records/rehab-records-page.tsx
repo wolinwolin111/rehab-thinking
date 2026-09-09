@@ -92,19 +92,20 @@ export function RehabRecordsPage({
     <main>
       <OnceHint id="records-open" active={showFirstOpenHint}>这里可以查看以前的恢复情况。</OnceHint>
       {records.length ? <div className="rm-record-case-list">{records.map((record) => <article key={record.id} className="rm-record-case">
+        {/* U13: complaint/status lead; the case code demotes to a helper line;
+         * destructive actions live behind "更多操作", away from the main task. */}
         <header>
-          <div><span>案例编号</span><b>{record.pilotPublicCode ?? "历史本机记录"}</b></div>
-          {record.pilotPublicCode ? <button type="button" onClick={() => onCopyCaseCode(record)}>复制</button> : null}
+          <div><strong className="rm-record-case-title">{record.complaint}</strong></div>
+          {record.pilotPublicCode ? <button type="button" onClick={() => onCopyCaseCode(record)}>复制编号</button> : null}
         </header>
         <section className="rm-record-case-summary">
           <span>{record.sessionStatus === "draft" ? "草稿" : record.status} · 已记录 {(record.sessionIndex ?? record.snapshot?.sessionIndex)?.filter((session) => session.status === "completed").length || record.sessionHistory?.length || record.sessionCount} 次</span>
-          <strong>{record.complaint}</strong>
-          <small>{record.region} · 恢复目标：{record.goal}</small>
+          <small>{record.region} · 恢复目标：{record.goal} · 案例编号 {record.pilotPublicCode ?? "历史本机记录"}</small>
         </section>
         <ThreadRows record={record} />
         <footer>
           <button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.sessionStatus === "draft" ? "继续草稿" : record.status === "等待影像" ? "补充影像" : "继续康复"}</button>
-          <button type="button" className="rm-record-delete" onClick={() => onDelete(record)}>删除案例</button>
+          <details className="rm-record-more"><summary>更多操作</summary><button type="button" className="rm-record-delete" onClick={() => onDelete(record)}>删除案例</button></details>
         </footer>
       </article>)}</div> : <section className="rm-record-empty"><strong>还没有康复记录</strong><p>创建案例后，可以从这里继续康复并查看每次恢复情况。</p></section>}
     </main>

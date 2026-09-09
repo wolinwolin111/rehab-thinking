@@ -75,12 +75,12 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       {priorCare.includes("用过冰敷") ? <p>冰敷不作为恢复必做项；目前证据不能确认它能改善急性踝扭伤的肿胀、活动度或恢复。</p> : null}
     </details> : null}
     {safetyStage === 0 && activeSafetyItems.length ? <div className="rm-safety-list">
-      <header><span>安全确认</span><strong>{activeSafetyItems.length} 项</strong></header>
+      <header><span>安全确认</span><strong>已回答 {activeSafetyItems.filter((item) => safety[item.id]).length}/{activeSafetyItems.length}</strong></header>
       {activeSafetyItems.map((item) => <article key={item.id}><div><strong>{item.text}</strong><span>{item.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[item.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => onSafetyAnswer(item.id, answer)}>{answer === "no" ? "没有" : "有"}</button>)}</div>{safety[item.id] === "yes" ? <p className="rm-question-alert">已记录这项安全信号。完成其余确认后，页面会直接给出停止或线下评估提示。</p> : null}</article>)}
     </div> : null}
 
     {safetyStage === 1 && needsBoneQuestions ? <section className="rm-bone-check">
-      <header><span>急性崴脚后，是否建议优先拍片？</span><p>共 {boneQuestions.length} 项</p></header>
+      <header><span>急性崴脚后，是否建议优先拍片？</span><p>已回答 {boneQuestions.filter((question) => boneRisk[question.id]).length}/{boneQuestions.length}</p></header>
       {boneQuestions.map((question) => <article key={question.id}><div><strong>{question.title}</strong><span>{question.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[question.id] === answer ? "is-selected" : ""} onClick={() => onBoneRiskAnswer(question.id, answer)}>{answer === "yes" ? question.id === "boneSpot" ? "是" : "能" : answer === "no" ? question.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>)}
       {boneQuestionsAnswered ? <div className={boneImagingSuggested ? "is-review" : "is-clear"}><strong>{boneImagingSuggested ? "建议优先结合影像确认" : "目前没有明显的拍片优先线索"}</strong><span>{boneImagingSuggested ? "这不等于骨折。没有明显错位或其他危险信号时，可以先做轻柔检查；暂不跳跃、不强压。" : "疼痛或承重能力持续变差时重新评估。"}</span></div> : null}
     </section> : null}
@@ -123,5 +123,9 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       <button data-action-role="secondary" type="button" onClick={onBack}>{backLabel}</button>
       <button data-action-role="primary" type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
     </div>}
+    {/* U07: name the missing count near the disabled advance and offer a real
+     * jump target; the disabled gate itself is unchanged. */}
+    {safetyStage === 0 && !safetyAnswered ? <p className="rm-inline-note" role="status">还需回答上方安全确认中的 {activeSafetyItems.filter((item) => !safety[item.id]).length} 项。<button type="button" onClick={() => document.querySelector(".rm-safety-list article")?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
+    {safetyStage === 1 && !boneQuestionsAnswered ? <p className="rm-inline-note" role="status">还需回答拍片评估中的 {boneQuestions.filter((question) => !boneRisk[question.id]).length} 项。<button type="button" onClick={() => document.querySelector(".rm-bone-check article")?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
   </section>;
 }

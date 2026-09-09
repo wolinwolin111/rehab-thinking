@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+﻿import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AnswerChoiceGrid, ScoreHistory, ScoreSlider, StepHeading, TreatmentRoadmap } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import { NextSessionCard } from "@/src/features/rehabmind/components/stages/shared/next-session-card";
@@ -839,7 +839,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   const bodyMarkKindLabels: Record<BodyMark["symptomKind"], string> = { complaint: "主诉", swelling: "肿胀", bruise: "淤青", tenderness: "按压痛", sensory: "麻电/感觉" };
   const visibleBodyMarks = bodyMarks.filter((mark) => mark.status !== "invalidated");
     return <section className="rm-page rm-session-summary">
-    <StepHeading eyebrow="第6步" title="本次康复总结" />
+    <StepHeading eyebrow="" title="本次康复总结" />
     <section className={`rm-session-hero ${reportedActionSummary(intake).length > 1 ? "is-multi-action" : ""}`}><ChiefSummaryContent intake={intake} assessmentResults={assessmentResults} assessments={assessments} retestObligations={retestObligations} retestRecords={retestRecords} />{reportedActionSummary(intake).length <= 1 && chiefScoreComparable ? <div className="rm-final-score"><b>{intake.baselineScore}</b><i>→</i><strong>{sessionEndScore}</strong><small>下降 {Math.max(0, intake.baselineScore - sessionEndScore)} 分</small></div> : null}</section>{summaryChiefNote ? <p className="rm-chief-change-note">{summaryChiefNote}</p> : null}
      {intake.professionalNotes.trim() ? <section className="rm-route-note rm-professional-note-summary"><span>专业备注</span><p>{intake.professionalNotes}</p><small>这是尚未确认的判断，不会改变页面建议。</small></section> : null}
      {visibleBodyMarks.length ? <section className="rm-route-note rm-body-mark-summary"><span>症状位置记录</span><div className="rm-body-mark-summary-list">{visibleBodyMarks.map((mark) => <span key={mark.markId}><b>{bodyMarkKindLabels[mark.symptomKind]}</b>{mark.humanLabel}{mark.coordinateCompleteness === "zone-only" ? "（大致位置）" : ""}</span>)}</div></section> : null}

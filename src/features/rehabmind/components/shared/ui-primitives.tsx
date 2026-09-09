@@ -152,11 +152,10 @@ export function StageTransition({ number, title, message, button, onContinue, on
   onBack: () => void;
 }) {
   return <section className="rm-stage-transition" aria-live="polite">
-    <div className="rm-stage-transition-number">{number}</div>
     <div className="rm-stage-transition-copy">
-      <span>下一阶段</span>
+      <span>第 {number} 阶段 · 下一阶段</span>
       <h1>{title}</h1>
-      <p>{message}</p>
+      <p>下一步：{message}</p>
     </div>
     <div className="rm-stage-transition-actions" data-action-layout="stage-transition">
       <button data-action-role="secondary" type="button" onClick={onBack}>返回查看</button>

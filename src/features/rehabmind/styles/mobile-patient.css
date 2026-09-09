@@ -23,6 +23,16 @@
   --rm-mobile-warning-soft: #fff7e6;
   --rm-mobile-line: #dce2ea;
   --rm-mobile-control-line: #7c8799;
+  /* Phase-2 layout tokens (comprehensive plan §5.1): one scale for every
+   * patient-mobile surface; no second theme. */
+  --rm-mobile-page-gutter: 16px;
+  --rm-mobile-section-gap: 16px;
+  --rm-mobile-card-radius: 14px;
+  --rm-mobile-control-radius: 11px;
+  --rm-mobile-touch-min: 44px;
+  --rm-mobile-action-min: 52px;
+  --rm-mobile-action-height: 84px; /* first-paint runway fallback only */
+  --rm-mobile-font: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, "Noto Sans CJK SC", sans-serif;
 }
 
 .rm-sr-only {
@@ -64,6 +74,7 @@ body.rm-dialog-open { overflow: hidden; }
     --rm-line: var(--rm-mobile-line);
     --rm-line-strong: var(--rm-mobile-control-line);
     --rm-mobile-action-height: 84px;
+    font-family: var(--rm-mobile-font);
     min-height: 100svh;
     background: var(--rm-mobile-bg);
   }
@@ -143,7 +154,7 @@ body.rm-dialog-open { overflow: hidden; }
     background: rgba(255, 255, 255, .96);
     box-shadow: 0 3px 12px rgba(32, 40, 56, .035);
   }
-  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button { min-height: 38px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button { min-height: 44px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button span { color: var(--rm-mobile-text); font-size: 14px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > button b { color: var(--rm-mobile-primary-deep); font-size: 13px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-stagebar > i { height: 3px; background: #e4e7ef; }
@@ -288,7 +299,7 @@ body.rm-dialog-open { overflow: hidden; }
     color: var(--rm-mobile-primary-deep);
     border-color: var(--rm-mobile-primary);
     background: var(--rm-mobile-selected);
-    box-shadow: inset 0 0 0 1px rgba(86, 89, 201, .12);
+    box-shadow: inset 3px 0 0 var(--rm-mobile-primary);
   }
   .rm-app[data-mobile-ui="v2"] .rm-check-grid button.is-selected { color: var(--rm-mobile-success); border-color: #8fcbbb; background: var(--rm-mobile-success-soft); }
   .rm-app[data-mobile-ui="v2"] .rm-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -740,6 +751,8 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-training-path > summary,
   .rm-app[data-mobile-ui="v2"] .rm-training-basis > summary,
   .rm-app[data-mobile-ui="v2"] .rm-summary-details > summary { min-height: 54px; padding: 12px 14px; }
+  /* Folded helper rows are real controls: full-width 44px touch targets (U14). */
+  .rm-app[data-mobile-ui="v2"] .rm-exercise-alt > summary { min-height: 44px; padding: 10px 12px; }
   .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination { margin: 0; }
   .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination > div { gap: 7px; }
   .rm-app[data-mobile-ui="v2"] .rm-exercise-pagination button { min-height: 46px; border-radius: 9px; }
@@ -790,10 +803,8 @@ body.rm-dialog-open { overflow: hidden; }
 
   /* Summary hero: a quiet light result card, not a saturated dark block (M-09). */
 
-  /* All-info intake status line (review R-04): the legacy rust color reads
-   * as a warning even when the intake is complete; state now picks the tone. */
-  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { color: var(--rm-mobile-warning); }
-  .rm-app[data-mobile-ui="v2"] .rm-intake-actions.is-complete > span { color: var(--rm-mobile-success); }
+  /* U06: the initial input owns a readable but not cavernous first screen. */
+  .rm-app[data-mobile-ui="v2"] .rm-hero-input textarea { min-height: 150px; font-size: 16px; line-height: 1.6; }
 
   /* Fixed bars and bottom sheets need an explicit safe-area runway. */
   .rm-app[data-mobile-ui="v2"] .rm-records-page > main { padding-bottom: 104px; }
@@ -849,10 +860,16 @@ body.rm-dialog-open { overflow: hidden; }
 
 @media (max-width: 359px) {
   .rm-app[data-mobile-ui="v2"] .rm-workbench-stage-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Real 200% text zoom ≈ 195px layout viewport (review R-06): the top bar
-   * cannot fit the session-status label next to both buttons; hide the
-   * label so brand, record and more never overlap. */
+  /* Normal narrow phones (320–359px): keep a single-line record button with
+   * a real touch target (review U04) — hide only the session-status label. */
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 72px; min-height: 44px; padding-inline: 8px; font-size: 14px; white-space: nowrap; }
+}
+
+/* Extreme pressure viewports only (≈195px layout viewport from real 200%
+ * reflow checks) — NOT normal 320px phones (review U04 §5.2-3). */
+@media (max-width: 240px) {
   .rm-app[data-mobile-ui="v2"] .rm-topbar { padding-inline: 12px; gap: 6px; }
   .rm-app[data-mobile-ui="v2"] .rm-brand-mark { width: 28px; height: 28px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { gap: 4px; }
@@ -881,8 +898,10 @@ body.rm-dialog-open { overflow: hidden; }
  * legacy guided surface on their established presentation. */
 @media (max-width: 720px),
   (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
-  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { color: var(--rm-mobile-warning); }
-  .rm-app[data-mobile-ui="v2"] .rm-intake-actions.is-complete > span { color: var(--rm-mobile-success); }
+  /* All-info intake status (review U01): the class lives on the span, not
+   * the container; the status line owns its own row above the action. */
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { grid-column: 1 / -1; color: var(--rm-mobile-warning); }
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span.is-complete { color: var(--rm-mobile-success); }
 
   /* Focus tutorial card (review R-06 finding): on very narrow layout
    * viewports (real 200%) the JS-positioned card can overflow the screen
@@ -894,8 +913,11 @@ body.rm-dialog-open { overflow: hidden; }
     max-width: calc(100vw - 16px);
   }
 
-  /* Stage-transition card (review R-05): explicit roles, no first-child order.
-   * Wide enough: secondary left, primary right; ≤359px stacks with primary last. */
+  /* Stage-transition card (review R-05/U11): explicit roles, no first-child
+   * order, no giant tilted number competing with the top stage bar, height
+   * from content instead of the desktop 560px min. */
+  .rm-app[data-mobile-ui="v2"] .rm-stage-transition { min-height: 0; padding: 20px; }
+  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-number { display: none; }
   .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; align-items: stretch; }
   .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions > button { min-height: 48px; padding: 10px 12px; border-radius: 11px; }
 
