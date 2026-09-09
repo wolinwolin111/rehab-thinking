@@ -77,5 +77,47 @@
 | RQ-1 | 横屏（>720 宽）反馈门跳转按钮高度 | h<44 失败（F-2 修复后防回退） |
 | RQ-2 | 记录管理/案例更多 summary 命中区 | h<44 失败（F-3） |
 | RQ-3 | 安全答案选中态可访问语义 | 选中按钮无 aria-pressed/radio 语义失败（F-5） |
-| RQ-4 | 总结结果 tone 与比较事实绑定 | 加重/未变用成功色失败（F-4，修后） |
-| RQ-5 | 桌面过渡卡按钮宽度 | >120px 或伸展成卡失败（F-1，修后） |
+| RQ-4 | 总结结果 tone 与比较事实绑定 | 加重/未变用成功色失败（F-4 修后；投影逻辑单测 7/7，待真实渲染回归） |
+| RQ-5 | 桌面过渡卡按钮宽度 | >120px 或伸展成卡失败（F-1 修后） |
+| RQ-6 | 迁移组件不被 ambient 规则回退 | 模块根选择器缺 [data-present] 配对时 min-height/皮肤被 .rm-app 元素规则压过即失败 |
+
+## 交付模板（方案 §15，P6 定稿）
+
+### 基线与范围
+- 基线 SHA / 当前 SHA：06799fe / 6c85b7f（P0+P1=7d5d9a1、P2s1=8daf229、P2s2=0ab4964、P3=8560f36、P4=6c85b7f）
+- 本次实际迁移组件：ActionButton（7 消费者）、Disclosure（2）、StageTransition（1）、ActionRail（2 处 checkpoint）、ChoiceButton/ChoiceGroup（confirmation 全部答案组）、TaskHeading（全部 stage 经 StepHeading 转接）、TaskCard（安全/骨性卡）、presentation-tokens
+- 明确未迁移界面：其余 24 处 rm-page-actions/guided-nav/one-action rail（组件就绪待逐页换）、assessment 处理卡图谱、summary 内容层（P4 只做了 tone 投影，信息重排属获准变更另行批次）、记录页内容层、StatusNotice（无消费者，待接入）
+
+### 分批结果
+| 批次 | 实现状态 | 验收状态 | 证据 | 未决项 |
+|---|---|---|---|---|
+| P0 | 完成 | 通过 | baseline-06799fe/ 四视口全流程 13帧/视口＋F-1..F-5 量化 | — |
+| P1 | 完成 | 通过（P1-RECORDS-MOBILE 待验） | p1-verification/ 4视口 | 移动端记录页路径截图 |
+| P2 | 完成 | 通过（P2-RAIL 状态A/横屏rail 待验） | p2-verification/ | 状态A 分支、横屏 rail 几何 |
+| P3 | 完成 | 通过 | p3-verification/ 语义+几何+定位 | 骨性题桌面截图（结构同 safety） |
+| P4 | 部分完成（tone 投影） | 实现待验 | tone-logic.json 7/7 | 真实渲染三状态（RQ-4）；信息重排未做 |
+| P5 | 部分完成 | 通过（本批范围内） | 各批 verification + 生产构建 CSS 核查 | 全 §11 矩阵未跑全；125/200% 未做 |
+| P6 | 完成 | 通过 | 本台账＋src 类名零命中检查＋生产 CSS 无旧规则 | 未迁移面见上 |
+
+### 可维护性结果
+- 删除/缩小的旧规则及原消费者：stage-transition 全套（workbench 唯一消费者）、rm-heading/rm-step-progress 全套（StepHeading）、rm-record-delete（零消费者）、safety/bone/imaging 桌面元素格（:not 排除壳）、mobile-patient 反馈门补丁/过渡卡三块
+- 每个组件的新唯一所有者：presentation/*.module.css＋presentation-tokens.css（ActionButton/Disclosure/StatusNotice/StageTransition/ActionRail/ChoiceButton/TaskHeading/TaskCard）
+- 仍保留的兼容项、原因与删除条件：:not([data-present]) 排除壳（保护未迁移消费者；逐页迁移后删除）、data-rehabmind-test/data-answer-id（测试与跳转定位）
+- token 实际消费者及未用项：全部 --present-* 有消费者（模块 CSS）；无空置 token
+
+### 行为保护
+- 合法出口、回调、disabled条件前后对照：台账 B 表 8 行逐条（回调集合逐条保留；确认流程未动；窗口 confirm 仍在 workbench 侧）
+- 临床/数据/API/身份是否零修改：是（diff 仅 components/styles/handover/app/layout 样式入口）
+- B 类文件是否零手工修改：是（git log 无 tests/**、docs/quality/**、release.generated.ts、artifacts/** 改动；vinext build 受控验证后已清理 dist）
+
+### 验收
+- 组件预览：合成 props 未建独立预览页（复用 page_boundary 场景替代；如实登记）
+- 真实场景：p1/p2/p3 verification（真实流程到达）
+- 全流程：baseline 4 视口（基线）＋p2 transition 回调链到第 3 步＋rail checkpoint 回调到训练
+- 手机/横屏/桌面/字号/真机：手机✓桌面✓横屏（P1 前 F-2 后通过）；字号 125/200% 未做（U02 口径：另行取证）；真机待真机
+- 开发构建与正式发布门禁分别的状态：vinext build 兼容通过（产物含全部模块类＋装甲、无旧规则）；正式发布门禁＝测试侧 test:release，未执行
+- 测试侧新增失败差集：0（59 条预存红逐条相同，三轮比对）
+
+### 结论
+- 开发实现完成 / 待验 / 验收通过（据实选择）：**开发实现完成（P0–P3 全量、P4 tone 投影、P6 清理）；验收通过限定于已列证据场景；P4 渲染/字号/真机/全矩阵待验**
+- 下一位模型必须处理的具体事项：① RQ-1..RQ-6 转测试侧建回归；② P4 真实渲染三状态取证（treatment-improved/same/worse 场景＋dialog.accept 需在 goto 前注册）；③ 其余 24 处 rail 逐页迁移（每处按台账 A 模板记一行）；④ 125%/200% 按 U02 修正口径另行取证；⑤ 移动端记录页与横屏 rail 几何补采
