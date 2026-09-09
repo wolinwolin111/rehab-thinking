@@ -76,12 +76,12 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
     </details> : null}
     {safetyStage === 0 && activeSafetyItems.length ? <div className="rm-safety-list">
       <header><span>安全确认</span><strong>已回答 {activeSafetyItems.filter((item) => safety[item.id]).length}/{activeSafetyItems.length}</strong></header>
-      {activeSafetyItems.map((item) => <article key={item.id}><div><strong>{item.text}</strong><span>{item.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[item.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => onSafetyAnswer(item.id, answer)}>{answer === "no" ? "没有" : "有"}</button>)}</div>{safety[item.id] === "yes" ? <p className="rm-question-alert">已记录这项安全信号。完成其余确认后，页面会直接给出停止或线下评估提示。</p> : null}</article>)}
+      {activeSafetyItems.map((item) => <article key={item.id} data-answer-id={item.id} data-answered={safety[item.id] ? "yes" : "no"}><div><strong>{item.text}</strong><span>{item.note}</span></div><div>{(["no", "yes"] as YesNo[]).map((answer) => <button type="button" key={answer} className={`${safety[item.id] === answer ? "is-selected" : ""} ${answer === "yes" ? "is-alert" : ""}`} onClick={() => onSafetyAnswer(item.id, answer)}>{answer === "no" ? "没有" : "有"}</button>)}</div>{safety[item.id] === "yes" ? <p className="rm-question-alert">已记录这项安全信号。完成其余确认后，页面会直接给出停止或线下评估提示。</p> : null}</article>)}
     </div> : null}
 
     {safetyStage === 1 && needsBoneQuestions ? <section className="rm-bone-check">
       <header><span>急性崴脚后，是否建议优先拍片？</span><p>已回答 {boneQuestions.filter((question) => boneRisk[question.id]).length}/{boneQuestions.length}</p></header>
-      {boneQuestions.map((question) => <article key={question.id}><div><strong>{question.title}</strong><span>{question.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[question.id] === answer ? "is-selected" : ""} onClick={() => onBoneRiskAnswer(question.id, answer)}>{answer === "yes" ? question.id === "boneSpot" ? "是" : "能" : answer === "no" ? question.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>)}
+      {boneQuestions.map((question) => <article key={question.id} data-answer-id={question.id} data-answered={boneRisk[question.id] ? "yes" : "no"}><div><strong>{question.title}</strong><span>{question.note}</span></div><div>{(["yes", "no", "unsure"] as const).map((answer) => <button type="button" key={answer} className={boneRisk[question.id] === answer ? "is-selected" : ""} onClick={() => onBoneRiskAnswer(question.id, answer)}>{answer === "yes" ? question.id === "boneSpot" ? "是" : "能" : answer === "no" ? question.id === "boneSpot" ? "不是" : "不能" : "不确定"}</button>)}</div></article>)}
       {boneQuestionsAnswered ? <div className={boneImagingSuggested ? "is-review" : "is-clear"}><strong>{boneImagingSuggested ? "建议优先结合影像确认" : "目前没有明显的拍片优先线索"}</strong><span>{boneImagingSuggested ? "这不等于骨折。没有明显错位或其他危险信号时，可以先做轻柔检查；暂不跳跃、不强压。" : "疼痛或承重能力持续变差时重新评估。"}</span></div> : null}
     </section> : null}
 
@@ -123,9 +123,8 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       <button data-action-role="secondary" type="button" onClick={onBack}>{backLabel}</button>
       <button data-action-role="primary" type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
     </div>}
-    {/* U07: name the missing count near the disabled advance and offer a real
-     * jump target; the disabled gate itself is unchanged. */}
-    {safetyStage === 0 && !safetyAnswered ? <p className="rm-inline-note" role="status">还需回答上方安全确认中的 {activeSafetyItems.filter((item) => !safety[item.id]).length} 项。<button type="button" onClick={() => document.querySelector(".rm-safety-list article")?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
-    {safetyStage === 1 && !boneQuestionsAnswered ? <p className="rm-inline-note" role="status">还需回答拍片评估中的 {boneQuestions.filter((question) => !boneRisk[question.id]).length} 项。<button type="button" onClick={() => document.querySelector(".rm-bone-check article")?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
+    {/* U07/fix: jump targets the FIRST UNANSWERED item id, not the first article. */}
+    {safetyStage === 0 && !safetyAnswered ? <p className="rm-inline-note" role="status">还需回答上方安全确认中的 {activeSafetyItems.filter((item) => !safety[item.id]).length} 项。<button type="button" onClick={() => document.querySelector(`[data-answer-id="${activeSafetyItems.find((item) => !safety[item.id])?.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
+    {safetyStage === 1 && !boneQuestionsAnswered ? <p className="rm-inline-note" role="status">还需回答拍片评估中的 {boneQuestions.filter((question) => !boneRisk[question.id]).length} 项。<button type="button" onClick={() => document.querySelector(`[data-answer-id="${boneQuestions.find((question) => !boneRisk[question.id])?.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>去补充</button></p> : null}
   </section>;
 }

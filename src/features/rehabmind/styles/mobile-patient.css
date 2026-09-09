@@ -741,6 +741,19 @@ body.rm-dialog-open { overflow: hidden; }
     border-radius: 13px;
   }
 
+  /* Review fix: the gate's jump button is a real control, not default text. */
+  .rm-app[data-mobile-ui="v2"] .rm-training-feedback-gate button {
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--rm-mobile-primary);
+    border-radius: var(--rm-mobile-control-radius);
+    color: var(--rm-mobile-primary-deep);
+    background: var(--rm-mobile-selected);
+    font-size: 15px;
+    font-weight: 650;
+  }
+
   .rm-app[data-mobile-ui="v2"] .rm-training-hold { display: grid; grid-template-columns: 1fr; gap: 5px; padding: 15px; }
   .rm-app[data-mobile-ui="v2"] .rm-training-hold > span { grid-row: auto; }
   .rm-app[data-mobile-ui="v2"] .rm-training-hold > p { grid-column: auto; }
@@ -865,6 +878,17 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { display: none; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { gap: 6px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 72px; min-height: 44px; padding-inline: 8px; font-size: 14px; white-space: nowrap; }
+  /* Review fix: stage-transition buttons stack on 320 (secondary top, primary bottom). */
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, 1fr); }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 1; grid-row: 2; }
+}
+
+/* Stage-transition buttons sit side by side from 360px up (review fix). */
+@media (min-width: 360px) {
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 2; grid-row: 1; }
 }
 
 /* Extreme pressure viewports only (≈195px layout viewport from real 200%
@@ -883,9 +907,6 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-score-head { grid-template-columns: minmax(0, 1fr); }
   .rm-app[data-mobile-ui="v2"] .rm-score output { min-width: 0; font-size: 26px; padding: 6px; }
   .rm-app[data-mobile-ui="v2"] .rm-score-scale { flex-direction: column; gap: 2px; align-items: flex-start; }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, 1fr); }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 1; grid-row: 2; }
   .rm-app[data-mobile-ui="v2"] .rm-imaging { grid-template-columns: 1fr; }
   .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child,
   .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list .rm-result-grid { grid-template-columns: 1fr; }
@@ -902,6 +923,11 @@ body.rm-dialog-open { overflow: hidden; }
    * the container; the status line owns its own row above the action. */
   .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { grid-column: 1 / -1; color: var(--rm-mobile-warning); }
   .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span.is-complete { color: var(--rm-mobile-success); }
+  /* Review fix: complete state reads "status row, then action row" — the
+   * stacked layout never assigns the primary to a side column. */
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions[data-action-layout="stacked"] { grid-template-columns: minmax(0, 1fr); }
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions[data-action-layout="stacked"] > span { grid-row: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions[data-action-layout="stacked"] > button { grid-row: 2; }
 
   /* Focus tutorial card (review R-06 finding): on very narrow layout
    * viewports (real 200%) the JS-positioned card can overflow the screen
@@ -915,10 +941,11 @@ body.rm-dialog-open { overflow: hidden; }
 
   /* Stage-transition card (review R-05/U11): explicit roles, no first-child
    * order, no giant tilted number competing with the top stage bar, height
-   * from content instead of the desktop 560px min. */
+   * from content instead of the desktop 560px min. Column direction lives in
+   * width-split media blocks below (≤359 stacks, ≥360 side-by-side). */
   .rm-app[data-mobile-ui="v2"] .rm-stage-transition { min-height: 0; padding: 20px; }
   .rm-app[data-mobile-ui="v2"] .rm-stage-transition-number { display: none; }
-  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; align-items: stretch; }
+  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions { display: grid; gap: 8px; align-items: stretch; }
   .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions > button { min-height: 48px; padding: 10px 12px; border-radius: 11px; }
 
   /* Toast never covers the action rail (review R-03): it rides on the

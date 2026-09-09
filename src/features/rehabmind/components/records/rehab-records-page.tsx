@@ -111,7 +111,12 @@ export function RehabRecordsPage({
     </main>
     <footer className="rm-records-page-actions">
       <button type="button" onClick={onCreate}>新建案例</button>
-      <button type="button" disabled={!records.length} onClick={onClear}>清空本机记录</button>
+      {/* U13 fix: the destructive bulk clear lives in its own management area,
+       * not beside the primary create action. Confirmation flow unchanged. */}
+      <details className="rm-records-manage">
+        <summary>记录管理</summary>
+        <button type="button" disabled={!records.length} onClick={onClear}>清空本机记录</button>
+      </details>
     </footer>
   </section>;
 }
