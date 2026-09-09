@@ -1,6 +1,7 @@
 ﻿import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AnswerChoiceGrid, ScoreHistory, ScoreSlider, StepHeading, TreatmentRoadmap } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { ActionRail } from "@/src/features/rehabmind/components/shared/presentation/action-rail";
 import { NextSessionCard } from "@/src/features/rehabmind/components/stages/shared/next-session-card";
 import MuscleRegionLocationPicker from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -540,7 +541,10 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
         {item.mode === "ordinary" && answer.completion === "complete" ? <ScoreSlider compact value={answer.score ?? 0} selected={Boolean(answer.scoreConfirmed)} onChange={(score) => update({ score, scoreConfirmed: true })} label="现在的不适程度" context={typeof item.baselineScore === "number" ? `第一次记录 ${item.baselineScore}/10` : undefined} /> : null}
       </article>;
     }))}
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" className="rm-primary" disabled={!outstandingFunctionSummary.ready} onClick={finishOutstandingFunctionRetests}>记录这些动作</button><button data-action-role="secondary" type="button" onClick={() => saveRecord("康复中")}>保存，之后继续</button></div>
+    <ActionRail actions={[
+      { id: "record-actions", label: "记录这些动作", placement: "primary", disabled: !outstandingFunctionSummary.ready, onClick: finishOutstandingFunctionRetests },
+      { id: "save-continue", label: "保存，之后继续", placement: "secondary", onClick: () => saveRecord("康复中") },
+    ]} />
   </section> : null;
   const followupRangeNext = followupRetestFindings.reduce<string[]>((parts, finding) => {
     const directionId = motionIdFromFinding(finding);
@@ -584,7 +588,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
   if (outstandingFunctionRetests.length && !["review", "treatment"].includes(followupStage)) return <section className="rm-page">
     <StepHeading eyebrow={`第${sessionNumber}次康复 · 动作复查`} title="先完成还没记录的动作" />
     {outstandingFunctionPanel}
-    <div className="rm-page-actions" data-action-layout="single"><button data-action-role="secondary" type="button" onClick={() => setFollowupStage("treatment")}>返回处理与复查</button></div>
+    <ActionRail actions={[{ id: "back-treatment", label: "返回处理与复查", placement: "secondary", onClick: () => setFollowupStage("treatment") }]} />
   </section>;
 
   if (followupStage === "summary") {
@@ -616,7 +620,10 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
 
   if (followupStage === "treatment" && followupTreatmentWorsened) return <section className="rm-page">
     <StepHeading eyebrow={`第${sessionNumber}次康复 · 处理并复测`} title="本次处理已暂停" />
-    <section className="rm-complete-panel is-referral"><span>刚才的反应</span><h2>{mixedFollowupOutcome ? "疼痛评分下降，但活动表现变差" : "症状或活动表现变差"}</h2><p>{mixedFollowupOutcome ? "疼痛分数的下降和活动表现的变差需要分开记录。当前处理先停止，不把疼痛改善当作整体安全；接下来只确认变差的活动和相关检查。" : "先停止刚才的处理，只确认症状变化和直接相关的检查。"}</p><div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "treatment", sourceId: lastWorsenedFollowup?.candidateId ?? "followup-treatment", sourceLabel: lastWorsenedFollowup?.treatmentName ?? lastWorsenedFollowup?.candidateTitle ?? "刚才的处理", timing: "immediate", beforeScore: lastWorsenedFollowup?.beforeScore ?? followupScore, afterScore: lastWorsenedFollowup?.afterScore ?? followupSessionScore, relatedAssessmentIds: Object.keys(lastWorsenedFollowup?.rangeOutcomes ?? {}).map((id) => `motion:${id}`) })}>确认加重后的变化</button><button data-action-role="secondary" type="button" onClick={() => saveRecord("处理后加重，待重新评估")}>保存并结束</button></div></section>
+    <section className="rm-complete-panel is-referral"><span>刚才的反应</span><h2>{mixedFollowupOutcome ? "疼痛评分下降，但活动表现变差" : "症状或活动表现变差"}</h2><p>{mixedFollowupOutcome ? "疼痛分数的下降和活动表现的变差需要分开记录。当前处理先停止，不把疼痛改善当作整体安全；接下来只确认变差的活动和相关检查。" : "先停止刚才的处理，只确认症状变化和直接相关的检查。"}</p><ActionRail actions={[
+      { id: "confirm-worse", label: "确认加重后的变化", placement: "primary", onClick: () => beginAdverseReassessment({ source: "treatment", sourceId: lastWorsenedFollowup?.candidateId ?? "followup-treatment", sourceLabel: lastWorsenedFollowup?.treatmentName ?? lastWorsenedFollowup?.candidateTitle ?? "刚才的处理", timing: "immediate", beforeScore: lastWorsenedFollowup?.beforeScore ?? followupScore, afterScore: lastWorsenedFollowup?.afterScore ?? followupSessionScore, relatedAssessmentIds: Object.keys(lastWorsenedFollowup?.rangeOutcomes ?? {}).map((id) => `motion:${id}`) }) },
+      { id: "save-end", label: "保存并结束", placement: "secondary", onClick: () => saveRecord("处理后加重，待重新评估") },
+    ]} /></section>
   </section>;
 
   if (followupStage === "treatment") return <section className="rm-page">
@@ -631,7 +638,7 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
       <TreatmentRoadmap completed={followupCompletedLabels} current={followupCurrentRoadmapItem} upcoming={followupUpcomingRoadmapItems} />
       {intake.side === "双侧/中间" ? <p className="rm-bilateral-order">{followupWorseSide ? `先处理${followupWorseSide}，再用同样方法处理另一侧。` : "两侧使用相同方法和强度处理。"}</p> : null}
       {!followupReadyToRetest ? <TreatmentActionCard candidate={selectedCandidate} display={selectedDisplay} controlMotionIds={followupControlMotionIds} side={intake.side} /> : null}
-      {!followupReadyToRetest ? <div className="rm-one-action" data-action-layout="single"><button data-action-role="primary" type="button" className="rm-primary" onClick={() => { setFollowupRetestPlan({ targetId: "target:followup", candidateId: selectedCandidate.id, directionIds: followupRetestFindings.map(motionIdFromFinding) }); setFollowupPostScore(0); setFollowupPostScoreConfirmed(false); setFollowupPostDiscomfort(""); setFollowupMovementResponses({}); setFollowupMovementDiscomforts({}); setFollowupMovementScores({}); setFollowupMovementScoreConfirmed({}); setFollowupReadyToRetest(true); }}>处理完成，开始复测</button></div> : <section className="rm-retest rm-followup-retest">
+      {!followupReadyToRetest ? <ActionRail actions={[{ id: "start-retest", label: "处理完成，开始复测", placement: "primary", onClick: () => { setFollowupRetestPlan({ targetId: "target:followup", candidateId: selectedCandidate.id, directionIds: followupRetestFindings.map(motionIdFromFinding) }); setFollowupPostScore(0); setFollowupPostScoreConfirmed(false); setFollowupPostDiscomfort(""); setFollowupMovementResponses({}); setFollowupMovementDiscomforts({}); setFollowupMovementScores({}); setFollowupMovementScoreConfirmed({}); setFollowupReadyToRetest(true); } }]} /> : <section className="rm-retest rm-followup-retest">
         {shouldRetestChiefNow ? <header><span>复测动作</span><h2>{chiefActionLabel(intake)}</h2><strong>处理前 {followupBeforeScore}/10</strong></header> : null}
         {shouldRetestChiefNow ? <ScoreSlider compact value={followupPostScore} selected={followupPostScoreConfirmed} onChange={(value) => { setFollowupPostScore(value); setFollowupPostDiscomfort(value === 0 ? "no" : "yes"); setFollowupPostScoreConfirmed(true); }} label="现在的不适程度" context={`处理前 ${followupBeforeScore}/10`} /> : null}
         {followupRetestFindings.length ? <section className="rm-followup-range-check">
@@ -685,9 +692,9 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
       <span>处理阶段复测</span>
       <h2>{chiefActionLabel(intake)}</h2>
       <ScoreSlider value={followupPostScore} selected={followupPostScoreConfirmed} onChange={(value) => { setFollowupPostScore(value); setFollowupPostScoreConfirmed(true); }} label="现在的不适程度" context={`本次处理前 ${followupScore}/10`} />
-      <div className="rm-one-action" data-action-layout="single"><button data-action-role="primary" type="button" className="rm-primary" disabled={!followupPostScoreConfirmed} onClick={finishFollowupTreatmentRetest}>记录并进入训练</button></div>
+      <ActionRail actions={[{ id: "record-train", label: "记录并进入训练", placement: "primary", disabled: !followupPostScoreConfirmed, onClick: finishFollowupTreatmentRetest }]} />
     </section> : <section className="rm-route-note"><h2>{currentRecords.length === 0 && followupCandidates.length === 0 ? "本次没有新的即时处理" : "需要处理的项目已完成"}</h2>{currentRecords.length === 0 && followupCandidates.length === 0 ? <p>已恢复的项目不重复处理；力量和动作控制进入训练，仍说不清或无法完成的项目先不下结论。</p> : null}<button type="button" className="rm-primary" onClick={() => setFollowupStage("training")}>查看训练调整</button></section>}
-    {selectedCandidate ? <div className="rm-page-actions" data-action-layout="single"><button data-action-role="secondary" type="button" onClick={() => setFollowupStage("review")}>返回本次复查</button></div> : null}
+    {selectedCandidate ? <ActionRail actions={[{ id: "back-review", label: "返回本次复查", placement: "secondary", onClick: () => setFollowupStage("review") }]} /> : null}
   </section>;
 
   if (followupStage === "training" && followupTrainingReadyForRetest && followupTrainingFeedbackComplete) return <section className="rm-page">
@@ -701,7 +708,10 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
       <ScoreSlider value={followupFinalScore} selected={followupFinalScoreConfirmed} onChange={(value) => { setFollowupFinalScore(value); setFollowupFinalScoreConfirmed(true); }} label="现在有多不舒服？" context={`训练前 ${followupSessionScore}/10`} />
       {followupFinalScoreConfirmed ? <section className={`rm-auto-result is-${resultFromScore(followupSessionScore, followupFinalScore)}`}><span>本次结果</span><strong>{followupFinalScore < followupSessionScore ? `又下降 ${followupSessionScore - followupFinalScore} 分，保留当前训练` : followupFinalScore > followupSessionScore ? "训练后更不舒服，降低训练并停止进阶" : "分数没有变化，保持或降低当前训练"}</strong></section> : null}
     </> : <section className="rm-route-note"><h2>本次没有固定主诉动作</h2><p>保存本次训练选择，下次继续复查已有问题。</p></section>}
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => { setFollowupTrainingReadyForRetest(false); setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); }}>返回训练调整</button><button data-action-role="primary" type="button" className="rm-primary" disabled={hasChiefAction && !followupFinalScoreConfirmed} onClick={completeFollowupSession}>保存第{sessionNumber}次康复</button></div>
+    <ActionRail actions={[
+      { id: "back-training", label: "返回训练调整", placement: "secondary", onClick: () => { setFollowupTrainingReadyForRetest(false); setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); } },
+      { id: "save-session", label: `保存第${sessionNumber}次康复`, placement: "primary", disabled: hasChiefAction && !followupFinalScoreConfirmed, onClick: completeFollowupSession },
+    ]} />
   </section>;
 
   if (followupStage === "training") return <section className="rm-page">
@@ -714,7 +724,10 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
         "reduce", "降低一档"], ["hold", "保持当前"], ["progress", "进阶一项"], ["worse", "做完更不舒服"]] as Array<[FollowupExerciseChoice, string]>).map(([value, label]) => <button type="button" key={value} disabled={value === "progress" && ["reduce", "review"].includes(decision.tone)} className={choice === value ? "is-selected" : ""} onClick={() => setFollowupExerciseChoices((current) => ({ ...current, [exercise.id]: value }))}>{label}</button>)}</div></article>;
     })}</div>
     {followupWorsenedExercise ? <section className="rm-training-warning"><strong>{followupWorsenedExercise.title}后不适更重</strong><p>先停止刚才的做法，看看停下来后是否缓解。</p><button type="button" className="rm-primary" onClick={() => beginAdverseReassessment({ source: "training", sourceId: followupWorsenedExercise.id, sourceLabel: followupWorsenedExercise.title, timing: "during", beforeScore: followupSessionScore, afterScore: followupSessionScore, relatedAssessmentIds: followupWorsenedExerciseAssessmentIds })}>处理这次加重</button></section> : <>{exercises.length > 0 ? <section className="rm-training-feedback-gate"><strong>完成本次训练前，还需要记录每个动作的反馈</strong><span>未选择反馈的动作：{pendingFollowupFeedbackExercises.map((exercise) => exercise.title).join("、") || "无"}</span></section> : null}<section className="rm-next-stage"><span>下次继续</span><h2>先复查以前的问题，再决定是否增加难度</h2></section>
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => setFollowupStage("treatment")}>返回继续处理</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!followupTrainingFeedbackComplete} onClick={() => { if (!followupTrainingNeedsChiefRetest) { completeFollowupSession(); return; } setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); setFollowupTrainingReadyForRetest(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{followupTrainingNeedsChiefRetest ? "训练完成，整体复测" : `保存第${sessionNumber}次康复`}</button></div></>}
+    <ActionRail actions={[
+      { id: "back-treatment", label: "返回继续处理", placement: "secondary", onClick: () => setFollowupStage("treatment") },
+      { id: "finish", label: followupTrainingNeedsChiefRetest ? "训练完成，整体复测" : `保存第${sessionNumber}次康复`, placement: "primary", disabled: !followupTrainingFeedbackComplete, onClick: () => { if (!followupTrainingNeedsChiefRetest) { completeFollowupSession(); return; } setFollowupFinalScore(0); setFollowupFinalScoreConfirmed(false); setFollowupTrainingReadyForRetest(true); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+    ]} /></>}
   </section>;
 
   return <section className="rm-page">
@@ -741,41 +754,44 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
         : <section className="rm-route-note"><h2>本次先完成复查</h2><p>没有明确处理依据时不新增肌肉处理；力量和动作控制继续进入训练，无法判断的项目先不下结论。</p></section>}
     {followupTensionRequired ? <section className="rm-followup-tension"><header><span>肌肉紧张度复查</span><strong>轻按两侧，看看哪里差别更明显</strong></header><MuscleRegionLocationPicker locations={followupTensionOptions} selectedLocations={followupTensionLocations} comparisonLabel={followupTensionComparisonLabel} professional={intake.userRole !== "general"} bilateral={intake.side === "双侧/中间"} side={intake.side} onToggle={toggleFollowupTensionLocation} /></section> : null}
     <section className={`rm-followup-decision is-${decision.tone}`}><span>这次建议</span><h2>{decision.title}</h2></section>
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => setFollowupMode(false)}>查看第一次记录</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!hasNewSymptom || hasNewSymptom === "no" && (!reviewComplete || (hasChiefAction && !followupScoreConfirmed))} onClick={() => {
-      if (hasNewSymptom === "yes") {
-        setFollowupMode(false);
-        setStep(0);
-        // 新症状开启一条新的完整评估路径。保留用户身份与检查方式，
-        // 但旧主诉、旧关节、旧评分和复诊派生状态都必须失效。
-        invalidateAfterIntake({
-          ...DEFAULT_INTAKE,
-          userRole: intake.userRole,
-          examSetup: intake.examSetup,
-          productMode: intake.productMode,
-          operationTarget: intake.operationTarget,
-          capabilities: intake.capabilities,
-          capabilitiesConfirmed: intake.capabilitiesConfirmed,
-          learningExplanation: intake.learningExplanation,
-          spineAssessmentMode: intake.spineAssessmentMode,
-        });
-        return;
-      }
-      if (decision.tone === "reduce") {
-        reopenAssessment("本次状态比上次差，请重新确认发生变化的动作和位置。");
-        return;
-      }
-      setFollowupPostScore(0);
-      setFollowupPostScoreConfirmed(false);
-      setFollowupPostDiscomfort("");
-      setFollowupCandidateId(followupCandidates[0]?.id ?? "");
-      setFollowupReadyToRetest(false);
-      setFollowupMovementResponses({});
-      setFollowupMovementDiscomforts({});
-      setFollowupMovementScores({});
-      setFollowupMovementScoreConfirmed({});
-      setFollowupStage(followupCandidates.length === 0 && (Boolean(localLimbDecision) || tissuePathway.id !== "standard") ? "training" : "treatment");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}>{hasNewSymptom === "yes" ? "补充新症状" : decision.tone === "reduce" ? "重新评估变化" : "继续本次处理"}</button></div>
+    <ActionRail actions={[
+      { id: "view-first", label: "查看第一次记录", placement: "secondary", onClick: () => setFollowupMode(false) },
+      { id: "forward", label: hasNewSymptom === "yes" ? "补充新症状" : decision.tone === "reduce" ? "重新评估变化" : "继续本次处理", placement: "primary", disabled: !hasNewSymptom || hasNewSymptom === "no" && (!reviewComplete || (hasChiefAction && !followupScoreConfirmed)), onClick: () => {
+        if (hasNewSymptom === "yes") {
+          setFollowupMode(false);
+          setStep(0);
+          // 新症状开启一条新的完整评估路径。保留用户身份与检查方式，
+          // 但旧主诉、旧关节、旧评分和复诊派生状态都必须失效。
+          invalidateAfterIntake({
+            ...DEFAULT_INTAKE,
+            userRole: intake.userRole,
+            examSetup: intake.examSetup,
+            productMode: intake.productMode,
+            operationTarget: intake.operationTarget,
+            capabilities: intake.capabilities,
+            capabilitiesConfirmed: intake.capabilitiesConfirmed,
+            learningExplanation: intake.learningExplanation,
+            spineAssessmentMode: intake.spineAssessmentMode,
+          });
+          return;
+        }
+        if (decision.tone === "reduce") {
+          reopenAssessment("身体状态和上次不同，先重新确认发现变化的动作和位置。");
+          return;
+        }
+        setFollowupPostScore(0);
+        setFollowupPostScoreConfirmed(false);
+        setFollowupPostDiscomfort("");
+        setFollowupCandidateId(followupCandidates[0]?.id ?? "");
+        setFollowupReadyToRetest(false);
+        setFollowupMovementResponses({});
+        setFollowupMovementDiscomforts({});
+        setFollowupMovementScores({});
+        setFollowupMovementScoreConfirmed({});
+        setFollowupStage(followupCandidates.length === 0 && (Boolean(localLimbDecision) || tissuePathway.id !== "standard") ? "training" : "treatment");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } },
+    ]} />
   </section>;
   }
 
@@ -880,6 +896,9 @@ export function SummaryStage({ view, actions }: { view: SummaryStageView; action
         <section className="rm-summary-module is-next"><header><div><span>下次复查</span><strong>{nextFocus.length}项</strong></div></header><ol>{nextFocus.map((focus) => <li key={focus}>{focus}</li>)}</ol></section>
       </div>
     </div></details>
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => goToStep(4)}>返回训练</button><button data-action-role="primary" type="button" className="rm-primary" onClick={() => saveRecord("待复查")}>保存本次记录</button></div>
+    <ActionRail actions={[
+      { id: "back-training", label: "返回训练", placement: "secondary", onClick: () => goToStep(4) },
+      { id: "save", label: "保存本次记录", placement: "primary", onClick: () => saveRecord("待复查") },
+    ]} />
   </section>;
 }
