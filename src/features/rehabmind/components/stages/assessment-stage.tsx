@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AnswerChoiceGrid, ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { ActionRail } from "@/src/features/rehabmind/components/shared/presentation/action-rail";
 import LowerLimbLocationPicker from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import MuscleRegionLocationPicker from "@/src/features/rehabmind/components/assessment/muscle-region-location-picker";
 import type { FunctionUnableReason } from "@/src/features/rehabmind/controllers/use-function-retest";
@@ -297,7 +298,10 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <article className="rm-workbench-module"><header><div><span>当前异常</span><strong>{unresolved.length}项</strong></div><button type="button" disabled={!assessmentFlowComplete} onClick={() => { setThinkingWorkbenchOpen(false); setAssessmentSummaryOpen(true); }}>查看</button></header>{unresolved.length ? <div className="rm-workbench-ledger">{buildFindingGroups(unresolved).map((group) => <section key={group.key}><b>{group.label}</b><ul>{group.items.slice(0, 6).map((finding) => <li key={finding.id}>{professionalFindingLabel(finding)}</li>)}</ul></section>)}</div> : <p className="rm-workbench-empty">完成评估后，这里会按类别显示需要处理的问题。</p>}</article>
       <article className="rm-workbench-module"><header><div><span>待复查项目</span><strong>{pendingRetestItems.length}项</strong></div></header>{pendingRetestItems.length ? <div className="rm-workbench-list">{pendingRetestItems.map((item) => <div className="rm-workbench-retest-row" key={item.obligationId}><i>·</i><span>{item.label}</span><b>{item.kindLabel}{item.side ? ` · ${item.side}` : ""}</b></div>)}</div> : <p className="rm-workbench-empty">处理后，这里会列出需要复查的项目。</p>}</article>
     </section>}
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => goToStep(1)}>返回安全确认</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={() => { setTransitionTarget("treatment"); setThinkingWorkbenchOpen(false); }}>评估完成，进入处理</button></div>
+    <ActionRail actions={[
+      { id: "back-safety", label: "返回安全确认", placement: "secondary", onClick: () => goToStep(1) },
+      { id: "to-treatment", label: "评估完成，进入处理", placement: "primary", disabled: !assessmentReadyForTreatment, onClick: () => { setTransitionTarget("treatment"); setThinkingWorkbenchOpen(false); } },
+    ]} />
   </section>;
   }
 
@@ -315,34 +319,40 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <article><strong>感觉的性质有没有改变？</strong>{answerButtons("symptomChanged", ["感觉变了", "感觉没变"])}</article>
         <article><strong>有没有新出现麻、电感或明显无力？</strong>{answerButtons("neuralOrWeakness", ["有", "没有"])}</article>
       </div>
-      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!adverseCaptureComplete(adverseResponse)} onClick={() => setAdverseConfirmedAssessmentIds(["__capture__"])}>确认并继续</button></div>
+      <ActionRail actions={[
+        { id: "save-later", label: "保存，稍后继续", placement: "secondary", onClick: () => saveRecord("待复查") },
+        { id: "confirm-continue", label: "确认并继续", placement: "primary", disabled: !adverseCaptureComplete(adverseResponse), onClick: () => setAdverseConfirmedAssessmentIds(["__capture__"]) },
+      ]} />
     </section>;
   }
   if (adverseResponse && adverseResolution === "stop-and-refer") {
     const adverseIsNeural = adverseResponse.neuralOrWeakness === "yes";
     return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="异常反应" title="本次先停止" />
-    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>{adverseIsNeural ? "停止后出现新的麻、电感或无力" : "停止后仍持续加重，疼痛还在升高"}</h2><p>{adverseIsNeural ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : "停下来仍没有缓解、疼痛还在升高，本次不继续增加处理或训练，保存当前记录并安排专业评估。"}</p><div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => saveRecord("待医学评估")}>保存并结束</button><button data-action-role="primary" type="button" className="rm-primary" onClick={() => goToStep(0)}>补充症状变化</button></div></section>
+    <section className="rm-complete-panel is-referral"><span>{adverseResponse.sourceLabel}</span><h2>{adverseIsNeural ? "停止后出现新的麻、电感或无力" : "停止后仍持续加重，疼痛还在升高"}</h2><p>{adverseIsNeural ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : "停下来仍没有缓解、疼痛还在升高，本次不继续增加处理或训练，保存当前记录并安排专业评估。"}</p><ActionRail actions={[{ id: "save-end", label: "保存并结束", placement: "secondary", onClick: () => saveRecord("待医学评估") }, { id: "supplement", label: "补充症状变化", placement: "primary", onClick: () => goToStep(0) }]} /></section>
   </section>;
   }
   if (adverseResponse && adverseResolution === "regress-training") return <section className="rm-page rm-adverse-page">
     <StepHeading eyebrow="训练调整" title="先降低一个难度变量" />
     <section className="rm-adverse-source"><span>先停止刚才的做法</span><strong>{adverseResponse.sourceLabel}</strong><p>减小范围、减少个数或换成更稳定的姿势，只试一小组。</p></section>
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => setAdverseResponse((current) => current ? { ...current, regressionAttempted: true, settledAfterStopping: "no" } : current)}>退阶后仍然加重</button><button data-action-role="primary" type="button" className="rm-primary" onClick={() => {
-      // T-11：不再把 symptom 从 worse 改写为 same；原始加重保留，仅叠加退阶处置标记。
-      setExerciseFeedback((current) => {
-        const previous = current[adverseResponse.sourceId] ?? { completed: 1, formChanged: false, symptom: "worse" as const, reserve: 0 };
-        return { ...current, [adverseResponse.sourceId]: { ...previous, formChanged: true, followUpAction: "regress-training" as const } };
-      });
-      setFollowupExerciseChoices((current) => current[adverseResponse.sourceId] ? { ...current, [adverseResponse.sourceId]: "reduce" } : current);
-      setTreatmentPlanRevision(adverseResponse.assessmentRevision);
-      restoreAdverseReturn(adverseResponse, "training");
-      setAdverseResponse(null);
-      setAdverseConfirmedAssessmentIds([]);
-      setStep(4);
-      setToast("已记录这次加重，后面只保留更简单的做法");
-      window.setTimeout(() => setToast(""), 2800);
-    }}>改用更简单的做法</button></div>
+    <ActionRail actions={[
+      { id: "still-worse", label: "退阶后仍然加重", placement: "secondary", onClick: () => setAdverseResponse((current) => current ? { ...current, regressionAttempted: true, settledAfterStopping: "no" } : current) },
+      { id: "easier", label: "改用更简单的做法", placement: "primary", onClick: () => {
+        // T-11：不再把 symptom 从 worse 改写为 same；原始加重保留，仅叠加退阶处置标记。
+        setExerciseFeedback((current) => {
+          const previous = current[adverseResponse.sourceId] ?? { completed: 1, formChanged: false, symptom: "worse" as const, reserve: 0 };
+          return { ...current, [adverseResponse.sourceId]: { ...previous, formChanged: true, followUpAction: "regress-training" as const } };
+        });
+        setFollowupExerciseChoices((current) => current[adverseResponse.sourceId] ? { ...current, [adverseResponse.sourceId]: "reduce" } : current);
+        setTreatmentPlanRevision(adverseResponse.assessmentRevision);
+        restoreAdverseReturn(adverseResponse, "training");
+        setAdverseResponse(null);
+        setAdverseConfirmedAssessmentIds([]);
+        setStep(4);
+        setToast("已记录这次加重，后面只保留更简单的做法");
+        window.setTimeout(() => setToast(""), 2800);
+      } },
+    ]} />
   </section>;
   if (isThinkingMode && thinkingWorkbenchOpen && !assessmentSummaryOpen && !sharedTensionOpen) return renderThinkingWorkbench();
   const visibleAssessmentIndex = Math.min(assessmentIndex, Math.max(assessmentDisplayItems.length - 1, 0));
@@ -376,14 +386,17 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <header><i>触</i><div><strong>轻按两侧，看看哪里差别更明显</strong></div></header>
         <MuscleRegionLocationPicker locations={locations} selectedLocations={selectedLocations} comparisonLabel={tensionComparisonLabel} professional={isThinkingMode} bilateral={intake.side === "双侧/中间"} side={intake.side} onToggle={toggleSharedTensionLocation} />
       </article>
-      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => setSharedTensionOpen(false)}>返回活动检查</button><button data-action-role="primary" type="button" className="rm-primary" disabled={!sharedTensionComplete} onClick={() => {
-        setSharedTensionOpen(false);
-        if (focusedReassessmentActive && adverseResponse) finishFocusedReassessment(adverseResponse);
-        else {
-          setAssessmentSummaryOpen(true);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      }}>{focusedReassessmentActive ? "确认复查结果" : "查看评估结果"}</button></div>
+      <ActionRail actions={[
+        { id: "back-motion", label: "返回活动检查", placement: "secondary", onClick: () => setSharedTensionOpen(false) },
+        { id: "confirm-result", label: focusedReassessmentActive ? "确认复查结果" : "查看评估结果", placement: "primary", disabled: !sharedTensionComplete, onClick: () => {
+          setSharedTensionOpen(false);
+          if (focusedReassessmentActive && adverseResponse) finishFocusedReassessment(adverseResponse);
+          else {
+            setAssessmentSummaryOpen(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        } },
+      ]} />
     </section>;
   }
   if (assessmentSummaryOpen && assessmentReadyForTreatment) {
@@ -412,7 +425,13 @@ export function AssessmentStage(props: AssessmentStageProps) {
         <h2>{assessmentNeuralReferral ? "检查动作出现麻或电感" : sharpSpecialReferral ? "轻按刺痛并伴随特殊检查异常" : specialSafetyReferral ? "特殊筛查出现异常信号" : highIrritabilityReferral ? "多项检查出现明显疼痛" : "多项检查因明显疼痛无法完成"}</h2>
         <p>{assessmentNeuralReferral ? "先由专业人员检查感觉范围和力量变化，再决定是否适合继续处理。" : sharpSpecialReferral ? "先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : specialSafetyReferral ? "其中一项结构性筛查出现异常信号。本次不继续加强刺激或负重，建议先由专业人员确认，再决定是否适合继续处理。" : highIrritabilityReferral ? "刚才的动作你能做完，但疼痛已经很重。建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。" : "建议先由专业人员线下评估，再决定适合的松解、关节处理和训练内容。"}</p>
       </section> : <article><span>接下来</span><strong>{discovered.length === 0 && !tracking.some((finding) => ["track:swelling", "track:tender"].includes(finding.id)) ? "当前没有明确异常需要即时处理；下一步查看基础活动。" : hasClearChiefAction(intake) ? `先处理“${chiefActionLabel(intake)}”和仍存在的活动受限；力量或稳定问题放到训练。` : "按刚才复现的熟悉症状和活动问题开始处理；没有判断清楚的项目暂不处理。"}</strong></article>}
-      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); }}>查看 / 修改检查</button>{assessmentNeedsReferral ? <button data-action-role="primary" type="button" className="rm-primary" onClick={() => saveRecord("待医学评估")}>保存并结束本次</button> : <button data-action-role="primary" type="button" className="rm-primary" onClick={() => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>评估完成，继续</button>}</div>
+      <ActionRail actions={assessmentNeedsReferral ? [
+        { id: "review-checks", label: "查看 / 修改检查", placement: "secondary", onClick: () => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); } },
+        { id: "save-medical", label: "保存并结束本次", placement: "primary", onClick: () => saveRecord("待医学评估") },
+      ] : [
+        { id: "review-checks", label: "查看 / 修改检查", placement: "secondary", onClick: () => { setAssessmentSummaryOpen(false); if (sharedTensionRequired) setSharedTensionOpen(true); } },
+        { id: "continue", label: "评估完成，继续", placement: "primary", onClick: () => { setTrialTargetIndex(0); setCandidateIndex(0); setPostScore(0); setPostScoreConfirmed(false); setPostDiscomfort(""); setTransitionTarget("treatment"); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+      ]} />
     </section>;
   }
   const record = assessmentResults[item.id] ?? {};
@@ -552,7 +571,16 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <StepHeading eyebrow={`第3步 · 评估检查 ${visibleAssessmentIndex + 1}/${assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)}`} title="髌骨四方向被动活动" current={visibleAssessmentIndex} total={assessmentDisplayItems.length + (sharedTensionRequired ? 1 : 0)} />
       <p className="rm-comparison-anchor"><b>膝盖完全放松</b>，由专业人员分别比较髌骨向上、向下、向内、向外的活动；只记录与对侧有差异的方向。</p>
       <section className="rm-patella-group">{patellaItems.map(renderPatellaDirection)}</section>
-      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => visibleAssessmentIndex === 0 ? goToStep(1) : setAssessmentIndex(visibleAssessmentIndex - 1)}>上一个检查</button>{visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!itemComplete} onClick={() => setAssessmentIndex(visibleAssessmentIndex + 1)}>下一个检查</button> : sharedTensionRequired ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!assessmentComplete} onClick={() => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>检查相关肌肉</button> : <button data-action-role="primary" type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={openAssessmentSummary}>查看评估结果</button>}</div>
+      <ActionRail actions={visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? [
+        { id: "prev", label: "上一个检查", placement: "secondary", onClick: () => visibleAssessmentIndex === 0 ? goToStep(1) : setAssessmentIndex(visibleAssessmentIndex - 1) },
+        { id: "next", label: "下一个检查", placement: "primary", disabled: !itemComplete, onClick: () => setAssessmentIndex(visibleAssessmentIndex + 1) },
+      ] : sharedTensionRequired ? [
+        { id: "prev", label: "上一个检查", placement: "secondary", onClick: () => visibleAssessmentIndex === 0 ? goToStep(1) : setAssessmentIndex(visibleAssessmentIndex - 1) },
+        { id: "shared-tension", label: "检查相关肌肉", placement: "primary", disabled: !assessmentComplete, onClick: () => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+      ] : [
+        { id: "prev", label: "上一个检查", placement: "secondary", onClick: () => visibleAssessmentIndex === 0 ? goToStep(1) : setAssessmentIndex(visibleAssessmentIndex - 1) },
+        { id: "summary", label: "查看评估结果", placement: "primary", disabled: !assessmentReadyForTreatment, onClick: openAssessmentSummary },
+      ]} />
     </section>;
   }
 
@@ -857,14 +885,35 @@ export function AssessmentStage(props: AssessmentStageProps) {
       <h2>{specialPositiveFindings.map((entry) => entry.title).join("、")}出现了异常反应</h2>
       <p>{intake.stabbingPalpation === "sharp" ? "轻按也有清楚刺痛，同时特殊检查出现异常反应。先别再按压，也别加重负荷或往上加难度，建议先线下评估。" : "这个结果不能单独判断结构问题。可以完成其余低刺激检查；如果症状较重、持续不改善或伴随卡住、明显不稳，建议线下评估或结合影像确认。"}</p>
     </section> : null}
-    <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="secondary" type="button" onClick={() => {
-      if (focusedReassessmentActive) {
-        if (focusedAssessmentPosition > 0) setAssessmentIndex(displayAssessmentIndexForId(focusedAssessmentIds[focusedAssessmentPosition - 1]));
-        else setAdverseConfirmedAssessmentIds((current) => current.filter((id) => id !== "__capture__"));
-        return;
-      }
-      if (visibleAssessmentIndex === 0) goToStep(1);
-      else setAssessmentIndex(visibleAssessmentIndex - 1);
-    }}>{focusedReassessmentActive ? focusedAssessmentPosition > 0 ? "上一个复查" : "返回异常反应" : visibleAssessmentIndex === 0 ? "返回关键确认" : "上一个检查"}</button>{focusedReassessmentActive ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!itemComplete || focusedAssessmentPosition < 0} onClick={() => confirmFocusedAssessment(item.id)}>{focusedAssessmentPosition >= focusedAssessmentIds.length - 1 ? "确认复查结果" : "确认，检查下一项"}</button> : visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!itemComplete} onClick={() => setAssessmentIndex(visibleAssessmentIndex + 1)}>下一个检查</button> : sharedTensionRequired ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!assessmentComplete} onClick={() => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>检查相关肌肉</button> : <button data-action-role="primary" type="button" className="rm-primary" disabled={!assessmentReadyForTreatment} onClick={openAssessmentSummary}>查看评估结果</button>}</div>
+    <ActionRail actions={focusedReassessmentActive ? [
+      { id: "prev-review", label: focusedAssessmentPosition > 0 ? "上一个复查" : "返回异常反应", placement: "secondary", onClick: () => {
+        if (focusedReassessmentActive) {
+          if (focusedAssessmentPosition > 0) setAssessmentIndex(displayAssessmentIndexForId(focusedAssessmentIds[focusedAssessmentPosition - 1]));
+          else setAdverseConfirmedAssessmentIds((current) => current.filter((id) => id !== "__capture__"));
+          return;
+        }
+        if (visibleAssessmentIndex === 0) goToStep(1);
+        else setAssessmentIndex(visibleAssessmentIndex - 1);
+      } },
+      { id: "confirm-review", label: focusedAssessmentPosition >= focusedAssessmentIds.length - 1 ? "确认复查结果" : "确认，检查下一项", placement: "primary", disabled: !itemComplete || focusedAssessmentPosition < 0, onClick: () => confirmFocusedAssessment(item.id) },
+    ] : visibleAssessmentIndex < assessmentDisplayItems.length - 1 ? [
+      { id: "prev", label: visibleAssessmentIndex === 0 ? "返回关键确认" : "上一个检查", placement: "secondary", onClick: () => {
+        if (visibleAssessmentIndex === 0) goToStep(1);
+        else setAssessmentIndex(visibleAssessmentIndex - 1);
+      } },
+      { id: "next", label: "下一个检查", placement: "primary", disabled: !itemComplete, onClick: () => setAssessmentIndex(visibleAssessmentIndex + 1) },
+    ] : sharedTensionRequired ? [
+      { id: "prev", label: visibleAssessmentIndex === 0 ? "返回关键确认" : "上一个检查", placement: "secondary", onClick: () => {
+        if (visibleAssessmentIndex === 0) goToStep(1);
+        else setAssessmentIndex(visibleAssessmentIndex - 1);
+      } },
+      { id: "shared-tension", label: "检查相关肌肉", placement: "primary", disabled: !assessmentComplete, onClick: () => { setSharedTensionOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+    ] : [
+      { id: "prev", label: visibleAssessmentIndex === 0 ? "返回关键确认" : "上一个检查", placement: "secondary", onClick: () => {
+        if (visibleAssessmentIndex === 0) goToStep(1);
+        else setAssessmentIndex(visibleAssessmentIndex - 1);
+      } },
+      { id: "summary", label: "查看评估结果", placement: "primary", disabled: !assessmentReadyForTreatment, onClick: openAssessmentSummary },
+    ]} />
   </section>;
 }

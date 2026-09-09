@@ -1,5 +1,6 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { PillOptions, ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { ActionRail } from "@/src/features/rehabmind/components/shared/presentation/action-rail";
 import LowerLimbLocationPicker from "@/src/features/rehabmind/components/assessment/lower-limb-location-picker";
 import { currentComplaintText, extractComplaintPrioritySide } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { type CapabilityKey, emptyCapabilities, type OperationTarget, type ProductMode, type WorkflowProfile } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -422,10 +423,17 @@ export function SymptomStage(props: SymptomStageProps) {
         <h2>{showAllIntakeFields ? "按需要修改" : guidedFieldTitle || "你希望恢复到什么程度？"}</h2>
         <p>{showAllIntakeFields ? "只改需要调整的内容即可。" : missingFields.length || guidedQuestionReady ? "选好后直接点下一步。" : "信息已补充完成。"}</p>
       </section>
-      {!showAllIntakeFields ? <nav className="rm-guided-nav" aria-label="症状信息问题导航" data-action-layout="split">
-        <button data-action-role="secondary" type="button" disabled={guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0)} onClick={returnToPreviousIntakeQuestion}>← 上一步</button>
-        {nextMissingField ? <button data-action-role="primary" type="button" className="rm-primary" disabled={!guidedQuestionReady} onClick={() => advanceGuidedQuestion(nextMissingField)}>下一步 →</button> : <button data-action-role="primary" type="button" className="rm-primary" disabled={!keyConfirmationReady} onClick={enterKeyConfirmation}>进入关键确认</button>}
-      </nav> : null}
+      {!showAllIntakeFields ? <ActionRail
+        as="nav"
+        ariaLabel="症状信息问题导航"
+        actions={nextMissingField ? [
+          { id: "prev-question", label: "← 上一步", placement: "secondary", disabled: guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0), onClick: returnToPreviousIntakeQuestion },
+          { id: "next-question", label: "下一步 →", placement: "primary", disabled: !guidedQuestionReady, onClick: () => advanceGuidedQuestion(nextMissingField) },
+        ] : [
+          { id: "prev-question", label: "← 上一步", placement: "secondary", disabled: guidedIntakePath.length === 0 || (guidedIntakeField ? guidedIntakePath.indexOf(guidedIntakeField) <= 0 : guidedIntakeCursor <= 0), onClick: returnToPreviousIntakeQuestion },
+          { id: "key-confirm", label: "进入关键确认", placement: "primary", disabled: !keyConfirmationReady, onClick: enterKeyConfirmation },
+        ]}
+      /> : null}
 
       {unsupportedDescriptionRegion ? <section className="rm-route-note is-waiting">
         <span>当前首发范围</span><h2>暂不支持{unsupportedDescriptionRegion}</h2>

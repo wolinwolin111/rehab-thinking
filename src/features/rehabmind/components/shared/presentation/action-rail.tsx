@@ -10,8 +10,14 @@ export type RailAction = {
   onClick: () => void;
 };
 
+import type { ReactNode } from "react";
 import { ActionButton } from "./action-button";
 import styles from "./action-rail.module.css";
+
+// Visual slot order in the three-column grid: secondary, tertiary, primary
+// (widest column last). DOM order MUST equal visual order (plan §7.7 — Tab
+// must not jump in a different sequence than the eye reads).
+const PLACEMENT_ORDER: Record<RailAction["placement"], number> = { secondary: 0, tertiary: 1, primary: 2 };
 
 /**
  * ActionRail (plan §7.7): the fixed bottom action bar owner. The stage adapter
@@ -19,10 +25,15 @@ import styles from "./action-rail.module.css";
  * Same-slot duplicates and over-capacity lists are development-time errors,
  * reported instead of silently dropping buttons.
  */
-export function ActionRail({ actions, ariaLabel = "当前步骤操作", className }: {
+export function ActionRail({ actions, ariaLabel = "当前步骤操作", className, as = "div", note }: {
   actions: RailAction[];
   ariaLabel?: string;
+  /** Extra container class (e.g. page-specific desktop column ratios). */
   className?: string;
+  /** Render as <nav> for semantic question navigation. */
+  as?: "div" | "nav";
+  /** Optional muted helper line rendered after the actions (inside the rail). */
+  note?: ReactNode;
 }) {
   if (process.env.NODE_ENV !== "production") {
     const slots = new Map<string, number>();
@@ -34,11 +45,12 @@ export function ActionRail({ actions, ariaLabel = "当前步骤操作", classNam
     if (slots.has("primary") && slots.get("primary")! > 1) console.error("[ActionRail] more than one primary action.");
   }
 
-  const layout = actions.length === 1 ? "single" : actions.length === 2 ? "split" : "three";
+  const ordered = [...actions].sort((left, right) => PLACEMENT_ORDER[left.placement] - PLACEMENT_ORDER[right.placement]);
+  const layout = ordered.length === 1 ? "single" : ordered.length === 2 ? "split" : "three";
   const rootClass = [styles.rail, className].filter(Boolean).join(" ");
-  return (
-    <div className={rootClass} data-present="action-rail" data-action-layout={layout} aria-label={ariaLabel}>
-      {actions.map((action) => (
+  const content = (
+    <>
+      {ordered.map((action) => (
         <ActionButton
           key={action.id}
           variant={action.variant ?? (action.placement === "primary" ? "primary" : "secondary")}
@@ -50,6 +62,15 @@ export function ActionRail({ actions, ariaLabel = "当前步骤操作", classNam
           {action.label}
         </ActionButton>
       ))}
-    </div>
+      {note ? <small className={styles.note}>{note}</small> : null}
+    </>
+  );
+  if (as === "nav") {
+    return (
+      <nav className={rootClass} data-present="action-rail" data-action-layout={layout} aria-label={ariaLabel}>{content}</nav>
+    );
+  }
+  return (
+    <div className={rootClass} data-present="action-rail" data-action-layout={layout} aria-label={ariaLabel}>{content}</div>
   );
 }

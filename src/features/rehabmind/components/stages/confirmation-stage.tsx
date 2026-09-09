@@ -1,4 +1,5 @@
 import { StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
+import { ActionRail } from "@/src/features/rehabmind/components/shared/presentation/action-rail";
 import { TaskCard } from "@/src/features/rehabmind/components/shared/presentation/task-card";
 import { ChoiceButton, ChoiceGroup } from "@/src/features/rehabmind/components/shared/presentation/choice-button";
 import type { PostOpRouting } from "@/src/domain/rehab/safety/postop-routing-core";
@@ -130,12 +131,17 @@ export function ConfirmationStage(props: ConfirmationStageProps) {
       <h2>这个应用不提供术后恢复方案</h2>
       <p>{postopRouting.procedureLabel ? `${postopRouting.procedureLabel}${postopRouting.timingLabel ? `（${postopRouting.timingLabel}）` : ""}还在按专项指南恢复的阶段。` : "先确认手术情况，再决定这里能帮到什么。"}</p>
       <p>配套的术后恢复指导站有分阶段的专项内容；任何与手术医生要求冲突的地方，都以医生意见为先。</p>
-      <div className="rm-page-actions split" data-action-layout="split"><button data-action-role="primary" type="button" className="rm-primary" data-rehabmind-test="postop-referral-open" onClick={() => window.open(postopRouting.guideUrl ?? consultationUrl, "_blank", "noopener")}>去术后指导站查看</button><button data-action-role="secondary" type="button" onClick={onSaveReferral}>保存本次信息</button></div>
+      <ActionRail actions={[
+        { id: "referral-open", label: "去术后指导站查看", placement: "primary", onClick: () => window.open(postopRouting.guideUrl ?? consultationUrl, "_blank", "noopener") },
+        { id: "save-referral", label: "保存本次信息", placement: "secondary", onClick: onSaveReferral },
+      ]} />
       <p><a href={consultationUrl} target="_blank" rel="noreferrer">没有匹配的专项指南？预约线上讲解人工沟通</a></p>
-    </section> : <div className="rm-page-actions split" data-action-layout="split">
-      <button data-action-role="secondary" type="button" onClick={onBack}>{backLabel}</button>
-      <button data-action-role="primary" type="button" className="rm-primary" disabled={safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety} onClick={onContinue}>{continueLabel}</button>
-    </div>}
+    </section> : <ActionRail
+      actions={[
+        { id: "back", label: backLabel, placement: "secondary", onClick: onBack },
+        { id: "continue", label: continueLabel, placement: "primary", disabled: safetyStage === 0 ? !safetyAnswered : safetyStage === 1 ? !boneQuestionsAnswered : !canContinueSafety, onClick: onContinue },
+      ]}
+    />}
     {/* U07/fix + plan §7.8: jump targets the FIRST UNANSWERED item id, scoped
      * to this page root (not a whole-document query); scroll puts the
      * question on screen and moves focus to its first choice so keyboard

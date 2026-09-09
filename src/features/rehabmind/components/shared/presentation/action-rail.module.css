@@ -24,6 +24,15 @@
   grid-template-columns: minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.4fr);
 }
 
+/* Helper line inside the rail (e.g. "也可以先进入训练或保存记录"). */
+.rail[data-present="action-rail"] > small {
+  grid-column: 1 / -1;
+  color: var(--present-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* Fixed framing only where the shell already fixes legacy rails: narrow
  * viewports and short-wide landscape. Desktop rails flow in the page. */
 @media (max-width: 720px), (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
