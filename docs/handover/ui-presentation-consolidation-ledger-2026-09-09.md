@@ -69,6 +69,7 @@
 | P2-TRANSITION-390/320 | 本轮 | guided | 390×844 / 320×568 | 〃 | 〃/p2-m390、p2-m320 | 组件+真实流程 | 通过（≥360 横排、≤359 纵排、52px） |
 | P2-RAIL-CHECKPOINT-390 | 本轮 | page_boundary(bilateral-longitudinal) | 390×844 | "两侧处理完成后，确认训练出口" | outputs/presentation/p2-verification/rail/ | 组件+真实场景 | 通过（ActionRail fixed h=69、按钮52、runway 同步、主按钮回调进训练；状态B 实测） |
 | P2-RAIL-状态A/横屏/桌面rail | 本轮 | — | — | — | — | 流程层级 | 部分通过：状态B 已实测；状态A 分支属 C 迁移范围（C 完成后互斥渲染消除 F-6 时一并验证）；records 覆盖层下无 rail（Phase B 实证 rails=[]），横屏 rail 几何在 C4 迁移后矩阵复验中采集 |
+| P5-视口/字号（Phase D） | 本轮 | guided | 390@DPR2；195×422@DPR2；160×284@DPR2 | gates→step1→step2 安全确认 | outputs/presentation/p5-verification/zoom200-sim-*/ | 流程+组件 | **通过（机制等效口径）**：overflowX=0 全部；安全确认标题/进度/双列 rail 正常；195 顶栏"本次记录"右缘裁切为 U04 极窄层既定限制非回归。**口径声明**：视口折半＋DPR2 只验证极窄视口重排（200% zoom 对布局视口的机械效果），不等于真实浏览器缩放操作，不冒充 WCAG resize-text——真缩放取证留测试侧 |
 
 ## 测试侧新增回归请求（登记，未接入）
 
