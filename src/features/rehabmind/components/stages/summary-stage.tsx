@@ -65,6 +65,10 @@ type FunctionActionSummary = {
   initial: string;
   retest: string;
   retested: boolean;
+  /** Display-layer tone from RELIABLE existing comparison facts only
+   * (P4/F-4: retested ≠ improved). "neutral" when no comparable pair exists.
+   * No domain rule or clinical wording is changed by this projection. */
+  outcome: "improved" | "worse" | "unchanged" | "completed" | "neutral";
 };
 
 function functionActionSummaries(
@@ -85,13 +89,13 @@ function functionActionSummaries(
         ? `第一次能完成，不适 ${record.symptomScore}/10`
         : functionDiscomfortValue(record) === "yes" ? "第一次能完成，但有不适" : "第一次能完成";
     const obligations = retestObligations.filter((item) => item.sourceAssessmentId === assessmentId && !["cancelled", "superseded"].includes(item.status));
-    if (!obligations.length) return [{ id: assessmentId, label, initial, retest: "这次不需要复查", retested: true }];
+    if (!obligations.length) return [{ id: assessmentId, label, initial, retest: "这次不需要复查", retested: true, outcome: "completed" }];
     const results = obligations.flatMap((obligation) => retestRecords
       .filter((item) => item.obligationId === obligation.obligationId)
       .sort((left, right) => left.recordedAt.localeCompare(right.recordedAt))
       .slice(-1)
       .map((record) => ({ obligation, record })));
-    if (results.length !== obligations.length) return [{ id: assessmentId, label, initial, retest: "本次未复查", retested: false }];
+    if (results.length !== obligations.length) return [{ id: assessmentId, label, initial, retest: "本次未复查", retested: false, outcome: "neutral" }];
     const retestLabel = results.map(({ obligation, record }) => {
       const side = obligation.side ? `${obligation.side}：` : "";
       if (record.completion === "unable") return `${side}${record.unableReason === "weak" ? "仍因没力做不完" : "仍然做不完"}`;
@@ -101,7 +105,26 @@ function functionActionSummaries(
       }
       return `${side}已完成复查`;
     }).join("，");
-    return [{ id: assessmentId, label, initial, retest: retestLabel, retested: true }];
+    // Tone consumes the same comparisons the label just made — never the fact
+    // that a retest merely happened (F-4). Mixed sides stay neutral.
+    const tones = results.map(({ obligation, record }): FunctionActionSummary["outcome"] => {
+      if (record.completion === "unable") return "worse";
+      if (obligation.baselineCompletion === "unable") return "improved";
+      if (typeof obligation.baselineScore === "number" && typeof record.score === "number") {
+        if (record.score < obligation.baselineScore) return "improved";
+        if (record.score > obligation.baselineScore) return "worse";
+        return "unchanged";
+      }
+      return "completed";
+    });
+    const outcome: FunctionActionSummary["outcome"] = tones.every((tone) => tone === "improved")
+      ? "improved"
+      : tones.every((tone) => tone === "worse")
+        ? "worse"
+        : tones.every((tone) => tone === "unchanged" || tone === "completed")
+          ? tones.some((tone) => tone === "unchanged") ? "unchanged" : "completed"
+          : "neutral";
+    return [{ id: assessmentId, label, initial, retest: retestLabel, retested: true, outcome }];
   });
 }
 
@@ -123,7 +146,9 @@ function ChiefSummaryContent({
   const functionActions = functionActionSummaries(assessmentResults, assessments, retestObligations, retestRecords);
   if (functionActions.length) return <div className="rm-chief-action-summary rm-function-action-summary">
     <span>本次动作变化</span>
-    <ul>{functionActions.map((action) => <li key={action.id} className={action.retested ? "is-retested" : "is-pending"}>
+    {/* P4/F-4: the tone reflects the comparison outcome, not mere retest
+     * completion — worse stays red, unchanged stays neutral. */}
+    <ul>{functionActions.map((action) => <li key={action.id} className={action.retested ? `is-retested is-outcome-${action.outcome}` : "is-pending"}>
       <strong>{action.label}</strong>
       <small>{action.initial}</small>
       <em>{action.retest}</em>

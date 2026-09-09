@@ -32,6 +32,7 @@
 | TaskHeading | 全部 stage（StepHeading 转接，签名不变） | complete-demo.css rm-heading 15 规则＋rm-visual-theme 15＋mobile-patient 9（全删） | task-heading.module.css | data-rehabmind-tutorial 锚点保留；进度徽章从"2/4"数字改为"当前第2项／共4项"带标签（§7.5 获准变更） | 三份 CSS rm-heading/rm-step-progress 全部删除（src 零命中后执行） | p3-verification：data-present=task-heading 渲染、进度条/眉标正常 |
 | TaskCard | confirmation-stage 安全/骨性卡 | rm-safety-list article 元素规则（桌面 1fr 190px 两列格） | task-card.module.css | data-answer-id/data-answered 保留在卡根（跳转依赖）；列表分隔线归 mp 列表规则 | 无 | p3-verification：alert tone 红边、answered 属性驱动跳转 |
 | 缺项定位（§7.8） | confirmation 去补充×2、training 去记录 | document.querySelector 全 document 查询；训练门 setState 后立即查旧节点 | closest(".rm-page") 根内查询＋scrollIntoView＋首个按钮 focus({preventScroll})；训练门 setTimeout(0) 等待新节点提交 | 行为不变、目标更准 | 无 | p3-verification：jump 落点 answerId=shape、inView=true、activeElement=BUTTON |
+| 总结结果 tone（F-4/P4） | summary-stage rm-function-action-summary | is-retested 一律 mint（F-4：已复查≠改善） | 展示层 outcome 投影（improved/worse/unchanged/completed/neutral），只消费 retestLabel 生成时已用的同一组分数比较；mixed→neutral | 复测记录/义务（只读投影，无领域改动） | mobile-patient.css mint 一律规则改为 tone 分档 | 逻辑 7/7（outputs/presentation/p4-verification/tone-logic.json）；源码投影逐分支核对；**真实渲染证据：实现待验**（驱动被确认对话/缺口分支阻塞，登记测试侧 RQ-4） |
 
 ## B. 行为等价性
 

@@ -880,7 +880,12 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-chief-action-summary > p { color: var(--rm-mobile-muted); }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li strong { color: var(--rm-mobile-text); }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li small { color: var(--rm-mobile-muted); }
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li em { color: var(--rm-mobile-success); background: var(--rm-mobile-success-soft); }
+  /* P4/F-4: result tone follows the comparison outcome — mint ONLY for a
+   * reliable improvement; unchanged/neutral stay plain, worse turns danger.
+   * Retest completion alone never earns the success color. */
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li em { color: var(--rm-mobile-muted); background: #f1f3f6; }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li.is-outcome-improved em { color: var(--rm-mobile-success); background: var(--rm-mobile-success-soft); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li.is-outcome-worse em { color: var(--rm-mobile-danger); background: var(--rm-mobile-danger-soft); }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li.is-pending em { color: var(--rm-mobile-warning); background: var(--rm-mobile-warning-soft); }
 }
 
