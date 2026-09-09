@@ -71,6 +71,8 @@
 | P2-RAIL-状态A/横屏/桌面rail | 本轮 | — | — | — | — | 流程层级 | 部分通过：状态B 已实测；状态A 分支属 C 迁移范围（C 完成后互斥渲染消除 F-6 时一并验证）；records 覆盖层下无 rail（Phase B 实证 rails=[]），横屏 rail 几何在 C4 迁移后矩阵复验中采集 |
 | P5-视口/字号（Phase D） | 本轮 | guided | 390@DPR2；195×422@DPR2；160×284@DPR2 | gates→step1→step2 安全确认 | outputs/presentation/p5-verification/zoom200-sim-*/ | 流程+组件 | **通过（机制等效口径）**：overflowX=0 全部；安全确认标题/进度/双列 rail 正常；195 顶栏"本次记录"右缘裁切为 U04 极窄层既定限制非回归。**口径声明**：视口折半＋DPR2 只验证极窄视口重排（200% zoom 对布局视口的机械效果），不等于真实浏览器缩放操作，不冒充 WCAG resize-text——真缩放取证留测试侧 |
 
+| 缺陷 F-6（Phase A 发现） | treatment-improved 入口双固定栏互叠（continuation 面板＋评估缺口面板各渲染一个 fixed rail，z-120 重叠拦截点击） | 旧代码两分支并列渲染两个 rm-page-actions 容器 | C4 迁移后条件链互斥渲染单一 ActionRail；ActionRail dev 警告同屏多 primary | 无领域改动 | 无 | f6-probe：elementFromPoint 直中目标按钮、overlays=[]、全站单 fixed rail |
+
 ## 测试侧新增回归请求（登记，未接入）
 
 | # | 请求场景 | 目标错误实现能失败的断言 |
@@ -86,7 +88,7 @@
 
 ### 基线与范围
 - 基线 SHA / 当前 SHA：06799fe / 6c85b7f（P0+P1=7d5d9a1、P2s1=8daf229、P2s2=0ab4964、P3=8560f36、P4=6c85b7f）
-- 本次实际迁移组件：ActionButton（7 消费者）、Disclosure（2）、StageTransition（1）、ActionRail（2 处 checkpoint）、ChoiceButton/ChoiceGroup（confirmation 全部答案组）、TaskHeading（全部 stage 经 StepHeading 转接）、TaskCard（安全/骨性卡）、presentation-tokens
+ - 本次实际迁移组件：ActionButton（7 消费者）、Disclosure（2）、StageTransition（1）、ActionRail（2 处 checkpoint）、ChoiceButton/ChoiceGroup（confirmation 全部答案组）、TaskHeading（全部 stage 经 StepHeading 转接）、TaskCard（安全/骨性卡）、presentation-tokens
 - 明确未迁移界面：其余 24 处 rm-page-actions/guided-nav/one-action rail（组件就绪待逐页换）、assessment 处理卡图谱、summary 内容层（P4 只做了 tone 投影，信息重排属获准变更另行批次）、记录页内容层、StatusNotice（无消费者，待接入）
 
 ### 分批结果
@@ -121,4 +123,4 @@
 
 ### 结论
 - 开发实现完成 / 待验 / 验收通过（据实选择）：**开发实现完成（P0–P3 全量、P4 tone 投影、P6 清理）；验收通过限定于已列证据场景；P4 渲染/字号/真机/全矩阵待验**
-- 下一位模型必须处理的具体事项：① RQ-1..RQ-6 转测试侧建回归；② P4 真实渲染三状态取证（treatment-improved/same/worse 场景＋dialog.accept 需在 goto 前注册）；③ 其余 24 处 rail 逐页迁移（每处按台账 A 模板记一行）；④ 125%/200% 按 U02 修正口径另行取证；⑤ 移动端记录页与横屏 rail 几何补采
+- 下一位模型必须处理的具体事项：① RQ-1..RQ-6 转测试侧建回归；② P4 真实渲染三状态取证（treatment-improved/same/worse 场景＋dialog.accept 需在 goto 前注册）；③ ~~其余 24 处 rail 逐页迁移~~（已完成：C0-C5，见 A 表 ActionRail 行与 F-6 行）；④ 125%/200% 按 U02 修正口径另行取证；⑤ 移动端记录页与横屏 rail 几何补采
