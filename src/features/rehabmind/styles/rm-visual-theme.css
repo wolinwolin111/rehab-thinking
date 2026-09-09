@@ -298,7 +298,6 @@ body:has(.rm-app) {
 .rm-comparison-anchor { border-radius: 14px; background: var(--rm-visual-primary-soft); box-shadow: none; }
 .rm-route-note,
 .rm-training-hold,
-.rm-training-warning,
 .rm-no-response-note { border-radius: 14px; }
 .rm-route-note.is-clear { background: var(--rm-visual-mint-soft); }
 /* 转介/警示卡里的次级按钮：complete-demo.css 的 `.rm-route-note button` 强制白字，
@@ -338,18 +337,6 @@ body:has(.rm-app) {
 .rm-retest-mode-note strong { color: var(--rm-visual-primary-deep); font-size: 14px; }
 .rm-retest-mode-note span { color: var(--rm-visual-muted); font-size: 13px; line-height: 1.55; }
 
-.rm-training-feedback-gate {
-  margin-top: 18px;
-  padding: 15px 17px;
-  border: 1px solid #ead5a7;
-  border-left: 4px solid var(--rm-visual-amber);
-  border-radius: 14px;
-  background: var(--rm-visual-amber-soft);
-  display: grid;
-  gap: 4px;
-}
-.rm-training-feedback-gate strong { color: #765019; font-size: 14px; }
-.rm-training-feedback-gate span { color: #8b6a39; font-size: 13px; line-height: 1.55; }
 .rm-training-actions { grid-template-columns: 1fr 1.25fr 1fr; gap: 8px; }
 .rm-training-actions .rm-secondary-action { color: var(--rm-visual-primary-deep); border-color: rgba(101, 103, 220, .25); background: var(--rm-visual-primary-soft); }
 

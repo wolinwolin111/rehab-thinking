@@ -738,8 +738,6 @@ body.rm-dialog-open { overflow: hidden; }
   /* Training and summary are intentionally calmer than safety/referral
    * screens: mint marks progress, while amber remains a real caution. */
   .rm-app[data-mobile-ui="v2"] .rm-training-hold,
-  .rm-app[data-mobile-ui="v2"] .rm-training-warning,
-  .rm-app[data-mobile-ui="v2"] .rm-training-feedback-gate,
   .rm-app[data-mobile-ui="v2"] .rm-next-stage,
   .rm-app[data-mobile-ui="v2"] .rm-overall-retest-action,
   .rm-app[data-mobile-ui="v2"] .rm-overall-retest-result {

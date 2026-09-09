@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ScoreSlider, StepHeading } from "@/src/features/rehabmind/components/shared/ui-primitives";
 import { ActionButton } from "@/src/features/rehabmind/components/shared/presentation/action-button";
 import { ActionRail } from "@/src/features/rehabmind/components/shared/presentation/action-rail";
+import { StatusNotice } from "@/src/features/rehabmind/components/shared/presentation/status-notice";
 import { resultFromScore } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { needsTrainingToleranceRetest } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
 import { chiefActionLabel, hasClearChiefAction } from "@/src/features/rehabmind/components/workbench/stage-domain-adapters";
@@ -284,14 +285,14 @@ export function TrainingStage(props: TrainingStageProps) {
       <footer>如果出现刺痛、麻、电感或症状加重，立即停止。</footer>
     </details> : null}
 
-    {trainingHasWorsened ? <section className="rm-training-warning" data-testid="training-worsening-warning"><strong>{worsenedExercise?.title ?? "训练动作"}后不适更重</strong><p>先停止刚才的做法，并记录停下来后的变化。</p><ActionRail actions={[
+    {trainingHasWorsened ? <StatusNotice tone="danger" data-testid="training-worsening-warning" title={`${worsenedExercise?.title ?? "训练动作"}后不适更重`}>先停止刚才的做法，并记录停下来后的变化。<ActionRail actions={[
       { id: "worsening-reassess", label: "处理这次加重", placement: "primary", onClick: () => beginAdverseReassessment({ source: "training", sourceId: worsenedExercise?.id ?? "training", sourceLabel: worsenedExercise?.title ?? "刚才的训练", timing: "during", beforeScore: lastChiefScore, afterScore: lastChiefScore, relatedAssessmentIds: worsenedExerciseAssessmentIds }) },
       { id: "worsening-save", label: "保存并结束", placement: "secondary", onClick: () => saveRecord("训练后加重，待重新评估") },
-    ]} /></section> : null}
+    ]} /></StatusNotice> : null}
 
     {handledWorsenedExercise ? <p className="rm-choice-hint" role="status">「{handledWorsenedExercise.title}」曾记录加重，已按你的选择调整后继续；如再次加重请立即停止并记录。</p> : null}
 
-    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <section id="training-feedback-gate" className="rm-training-feedback-gate" data-testid="training-feedback-gate" role="status"><strong>完成训练前，还需要记录每个动作的第一组反馈</strong><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span><ActionButton variant="secondary" size="compact" onClick={() => { const pending = pendingFeedbackExercises[0]; if (!pending) return; setOpenExercise(pending.id); window.setTimeout(() => { const target = document.querySelector(".rm-first-set"); if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); const focusable = target.querySelector<HTMLElement>("button:not([disabled])"); if (focusable) focusable.focus({ preventScroll: true }); } }, 0); }}>去记录第一个未反馈动作</ActionButton></section> : null}
+    {!trainingHasWorsened && exercises.length > 0 && !hasCompleteTrainingFeedback ? <StatusNotice id="training-feedback-gate" tone="warning" live data-testid="training-feedback-gate" title="完成训练前，还需要记录每个动作的第一组反馈"><span>未选择反馈的动作：{pendingFeedbackExercises.map((exercise) => exercise.title).join("、")}</span><ActionButton variant="secondary" size="compact" onClick={() => { const pending = pendingFeedbackExercises[0]; if (!pending) return; setOpenExercise(pending.id); window.setTimeout(() => { const target = document.querySelector(".rm-first-set"); if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); const focusable = target.querySelector<HTMLElement>("button:not([disabled])"); if (focusable) focusable.focus({ preventScroll: true }); } }, 0); }}>去记录第一个未反馈动作</ActionButton></StatusNotice> : null}
 
     <section className="rm-next-stage"><span>下一阶段</span><h2>{bilateralLowLoadOnly ? "完成另一侧评估后再增加难度" : exerciseStage < intake.goal ? displayGoals.find((goal) => goal.level === exerciseStage + 1)?.title : "巩固当前目标能力"}</h2><p>{bilateralLowLoadOnly ? "这次先完成基础活动，并记录两侧反馈。" : "连续两次完成、动作稳定且第二天没有持续加重后，一次只增加个数、阻力、难度或训练量中的一项。"}</p></section>
 
