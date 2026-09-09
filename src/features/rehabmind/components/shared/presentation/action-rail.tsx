@@ -37,7 +37,7 @@ export function ActionRail({ actions, ariaLabel = "当前步骤操作", classNam
   const layout = actions.length === 1 ? "single" : actions.length === 2 ? "split" : "three";
   const rootClass = [styles.rail, className].filter(Boolean).join(" ");
   return (
-    <div className={rootClass} data-action-layout={layout} aria-label={ariaLabel}>
+    <div className={rootClass} data-present="action-rail" data-action-layout={layout} aria-label={ariaLabel}>
       {actions.map((action) => (
         <ActionButton
           key={action.id}

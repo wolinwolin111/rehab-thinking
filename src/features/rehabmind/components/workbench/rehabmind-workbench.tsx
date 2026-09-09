@@ -6803,7 +6803,9 @@ export default function RehabMindCompleteDemo({ testContext }: { testContext?: P
       // Only the visible, actually-fixed action rail may drive the runway:
       // hidden or zero-height branches must never be measured, and an equal
       // height must not be rewritten (feedback-free measurement, plan §9.2).
-      const candidates = workspace.querySelectorAll<HTMLElement>('.rm-page-actions:not(.rm-intake-actions), .rm-guided-nav, .rm-one-action');
+      // P2: migrated ActionRail roots ([data-present="action-rail"]) are the
+      // same owner concept — one measured bar, no second observer.
+      const candidates = workspace.querySelectorAll<HTMLElement>('.rm-page-actions:not(.rm-intake-actions), .rm-guided-nav, .rm-one-action, [data-present="action-rail"]');
       const action = Array.from(candidates).find((element) => {
         const style = window.getComputedStyle(element);
         return style.display !== "none" && style.position === "fixed" && element.getBoundingClientRect().height > 0;

@@ -750,20 +750,8 @@ body:has(.rm-app) {
   .rm-heading p { margin-top: 8px; font-size: 14px; line-height: 1.55; }
   .rm-heading > b { min-width: 44px; height: 44px; font-size: 18px; }
 
-  .rm-stage-transition {
-    min-height: 0;
-    padding: 26px 20px 20px;
-    border-top-width: 5px;
-    grid-template-rows: auto auto auto;
-    gap: 34px;
-  }
-  .rm-stage-transition-number { width: 54px; height: 54px; font-size: 20px; }
-  .rm-stage-transition-copy { align-self: auto; }
-  .rm-stage-transition-copy > span { font-size: 12px; }
-  .rm-stage-transition-copy h1 { font-size: 28px; line-height: 1.25; }
-  .rm-stage-transition-copy p { margin-top: 10px; font-size: 16px; line-height: 1.55; }
-  .rm-stage-transition-actions { gap: 7px; }
-  .rm-stage-transition-actions button { min-height: 48px; padding: 9px 14px; font-size: 14px; line-height: 1.35; }
+  /* Stage-transition theme overrides retired (P2 consolidation): the
+   * component owns its full skin via stage-transition.module.css. */
 
   .rm-collected,
   .rm-check-card,

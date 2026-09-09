@@ -25,6 +25,9 @@
 | Disclosure | 记录页"更多操作"、"记录管理"（rehab-records-page.tsx） | 无专属规则（F-3：summary 默认 25px@desk）；ambient `.rm-app details{radius:12px}`（rm-visual-theme.css:63） | disclosure.module.css | `data-present="disclosure"`；模块根选择器 (0,2,0) 压回 ambient | 无（原本无规则） | p1-verification desk1280 manageSummary h=44（原 25） |
 | StatusNotice | 无消费者（P3/P4 接入答案反馈/门禁提示） | — | status-notice.module.css | `data-present="status-notice"` | — | 组件已建，验收延后至首个消费者 |
 | 模块选择器装甲 | 全部三个组件 | rm-visual-theme.css:57-67 `.rm-app button/article/section/details{radius:12px}` (0,1,1) 曾压过模块 (0,1,0) | 模块根选择器统一 `[class][data-present]` (0,2,0) | — | — | 设计决策；四视口实测未回退 |
+| StageTransition | rehabmind-workbench.tsx:6904（唯一消费者，六步共享） | complete-demo.css:86-94（三行网格=F-1）＋rm-visual-theme.css:753-766＋mobile-patient.css:873-882/928-931 | stage-transition.module.css（ui-primitives.tsx 原签名转接） | `data-present="stage-transition"`；导出名 StageTransition 是测试钉（rendered-html.test.mjs:311-312），保持 | 三份 CSS 全部旧规则删除（src 类名零命中后执行） | p2-verification：desk1280 按钮 253/354×52（原 ~289px 伸展）、m390 115/161×52、m320 纵排 216×52；回调链 continueStageTransition 实测到第 3 步 |
+| ActionRail | treatment-retest-stage.tsx 双侧 checkpoint 两处（R-02 §6.4/状态B/C） | 局部 `rm-page-actions three/split` 渲染（仍受 mobile-patient.css 权威 rail 块控制） | action-rail.module.css＋RailAction 合同（容量3、槽位重复 dev 报错） | `data-present="action-rail"`；测量者选择器同批扩展（workbench:6806），无第二 observer | 两处局部 RailAction 类型与手工布局 IIFE 删除 | p2-rail 驱动：checkpoint 渲染 split fixed h=69、按钮 52px、runway=69px（唯一测量者消费）、主按钮回调 goToStep(4)→训练过渡卡 |
+| ActionRail（其余 24 处 rail） | 其余 stage 页面 | rm-page-actions/guided-nav/one-action＋mobile-patient.css 权威块 | 待后续批次逐页迁移（组件已就绪） | 旧规则全部保留 | 无 | 未迁移——不宣称完成 |
 
 ## B. 行为等价性
 
@@ -39,6 +42,10 @@
 | "复制编号" | `onCopyCaseCode`（06799fe :99） | ActionButton quiet/compact | 无 | 同 | 42→44px |
 | "继续草稿/补充影像/继续康复" | `onRestore` disabled=!record.snapshot（06799fe :107） | ActionButton primary/fullWidth，同 disabled | !record.snapshot | 同 | 无差异 |
 | records Disclosure 展开 | 原生 details/summary（06799fe :108,:116-119） | 同为原生 details；onToggle 可选 | — | — | 原生展开/焦点行为保持 |
+| 双侧 checkpoint 出口（§6.4 状态A） | 返回另一侧评估/继续另一侧处理/低负荷/保存（06799fe :669-690） | 同回调集合，经 ActionRail（placement 映射原 role） | 同（无 disabled 变化） | checkpointOptions | 出口集合与容量逻辑逐条保留；超容量降级"其他安全选择"不变 |
+| 双侧 checkpoint 出口（状态B/C） | 返回另一侧评估(条件)/正常训练/低负荷/保存（06799fe :750-771） | 同上 | 同 | checkpointOptions＋bilateralAssessmentComplete | 同上；primary 唯一性保持 |
+| StageTransition 返回/继续 | onBack→setTransitionTarget(null)、onContinue→continueStageTransition（06799fe :6904） | 同回调经新组件 | — | STAGE_TRANSITIONS | 文案/按钮名不变；实测 continue 进入第 3 步 |
+| 桌面过渡卡（F-1 修复） | 三行网格 min-height 560px（基线截图 desk1280） | 内容驱动 cardH=229，按钮 52px | — | — | **获准视觉变化**（方案 §1.1 明示目标）；文案未动 |
 
 ## C. 验收
 
@@ -53,6 +60,10 @@
 | P1-GATE-320/390/LAND | 本轮 | guided | 三视口 | 训练反馈门"去记录第一个未反馈动作" | outputs/presentation/p1-verification/ | 组件+真实流程 | 通过（h=44 全视口；F-2 修复） |
 | P1-RECORDS-DESK | 本轮 | guided | 1280×800 | 康复记录/记录管理/更多操作 | 〃/p1-desk1280-1280x800/ | 组件+真实流程 | 通过（manage 44；F-3 修复） |
 | P1-RECORDS-MOBILE | 本轮 | guided | 320/390/844 | 〃 | — | 组件层级 | 实现待验（驱动未命中移动端更多抽屉入口；组件为跨视口共享同一模块皮肤，桌面证据＋模块无媒体查询支撑；P5 补移动端路径） |
+| P2-TRANSITION-DESK | 本轮 | guided | 1280×800 | "症状信息收集完毕"过渡卡 | outputs/presentation/p2-verification/p2-desk1280-1280x800/ | 组件+真实流程 | 通过（F-1 修复：按钮 253/354×52 非卡宽伸展） |
+| P2-TRANSITION-390/320 | 本轮 | guided | 390×844 / 320×568 | 〃 | 〃/p2-m390、p2-m320 | 组件+真实流程 | 通过（≥360 横排、≤359 纵排、52px） |
+| P2-RAIL-CHECKPOINT-390 | 本轮 | page_boundary(bilateral-longitudinal) | 390×844 | "两侧处理完成后，确认训练出口" | outputs/presentation/p2-verification/rail/ | 组件+真实场景 | 通过（ActionRail fixed h=69、按钮52、runway 同步、主按钮回调进训练；状态B 实测） |
+| P2-RAIL-状态A/横屏/桌面rail | 本轮 | — | — | — | — | 流程层级 | 实现待验（状态A 分支与横屏/桌面 rail 几何未采；组件固定框架含 landscape 媒体块；登记 P5 补） |
 
 ## 测试侧新增回归请求（登记，未接入）
 

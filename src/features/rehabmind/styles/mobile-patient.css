@@ -869,17 +869,8 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { display: none; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { gap: 6px; }
   .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 72px; min-height: 44px; padding-inline: 8px; font-size: 14px; white-space: nowrap; }
-  /* Review fix: stage-transition buttons stack on 320 (secondary top, primary bottom). */
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, 1fr); }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 1; grid-row: 2; }
-}
-
-/* Stage-transition buttons sit side by side from 360px up (review fix). */
-@media (min-width: 360px) {
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
-  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 2; grid-row: 1; }
+  /* Stage-transition stacking/side-by-side rules retired (P2): the component
+   * owns its layout in stage-transition.module.css (≤359 stack, ≥360 row). */
 }
 
 /* Extreme pressure viewports only (≈195px layout viewport from real 200%
@@ -930,14 +921,8 @@ body.rm-dialog-open { overflow: hidden; }
     max-width: calc(100vw - 16px);
   }
 
-  /* Stage-transition card (review R-05/U11): explicit roles, no first-child
-   * order, no giant tilted number competing with the top stage bar, height
-   * from content instead of the desktop 560px min. Column direction lives in
-   * width-split media blocks below (≤359 stacks, ≥360 side-by-side). */
-  .rm-app[data-mobile-ui="v2"] .rm-stage-transition { min-height: 0; padding: 20px; }
-  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-number { display: none; }
-  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions { display: grid; gap: 8px; align-items: stretch; }
-  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions > button { min-height: 48px; padding: 10px 12px; border-radius: 11px; }
+  /* Stage-transition mobile rules retired (P2): the component owns its
+   * compact layout in stage-transition.module.css. */
 
   /* Toast never covers the action rail (review R-03): it rides on the
    * measured rail height, wraps long text on a controlled card width, and
