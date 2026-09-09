@@ -780,8 +780,27 @@ body.rm-dialog-open { overflow: hidden; }
     box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-complete-panel h2 { font-size: 23px; line-height: 1.4; }
-  .rm-app[data-mobile-ui="v2"] .rm-complete-panel p { font-size: 14px; line-height: 1.7; }
+  /* U09: the page h1 stays the only display heading; the panel's conclusion
+   * h2 steps down so the two stop competing. Body copy reads left-aligned —
+   * result panels are row information, not a ceremony header. */
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel { text-align: left; }
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel h2 { font-size: 20px; line-height: 1.4; margin-top: 5px; }
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel p { font-size: 14px; line-height: 1.7; margin: 10px 0 0; max-width: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel .rm-chief-action-line { margin: 10px 0 0; max-width: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel .rm-final-score { grid-template-columns: auto auto auto; justify-content: start; gap: 12px; margin-top: 12px; }
+  /* Inner helper blocks lose the nested-card border; a shallow fill with a
+   * left edge groups them without stacking another boxed surface. */
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel .rm-no-response-note,
+  .rm-app[data-mobile-ui="v2"] .rm-complete-panel .rm-strength-handoff {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 0;
+    border-left: 3px solid var(--rm-mobile-line-strong, #c8d2de);
+    border-radius: 0 10px 10px 0;
+    background: #f6f8fb;
+    text-align: left;
+    max-width: none;
+  }
   .rm-app[data-mobile-ui="v2"] .rm-final-score { grid-template-columns: 1fr auto 1fr; }
   .rm-app[data-mobile-ui="v2"] .rm-summary-dashboard { gap: 10px; }
   .rm-app[data-mobile-ui="v2"] .rm-summary-module,
