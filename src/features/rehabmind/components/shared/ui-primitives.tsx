@@ -158,9 +158,9 @@ export function StageTransition({ number, title, message, button, onContinue, on
       <h1>{title}</h1>
       <p>{message}</p>
     </div>
-    <div className="rm-stage-transition-actions">
-      <button type="button" onClick={onBack}>返回查看</button>
-      <button type="button" className="rm-primary" onClick={onContinue}>{button}</button>
+    <div className="rm-stage-transition-actions" data-action-layout="stage-transition">
+      <button data-action-role="secondary" type="button" onClick={onBack}>返回查看</button>
+      <button data-action-role="primary" type="button" className="rm-primary" onClick={onContinue}>{button}</button>
     </div>
   </section>;
 }

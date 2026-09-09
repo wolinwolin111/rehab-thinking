@@ -666,12 +666,28 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
         <span>已完成{intake.prioritySide || "优先侧"}当前处理</span>
         <h2>另一侧还没有被默认判定为正常</h2>
         <p>可以返回另一侧继续检查，也可以先做低负荷基础活动；完成双侧针对性评估后，才开放正常训练。</p>
-        <div className="rm-page-actions three" data-action-layout="three">
-          {checkpointOptions.includes("return-other-side-assessment") ? <button data-action-role="secondary" type="button" onClick={() => editCompletedAssessment()}>返回另一侧评估</button> : null}
-          {checkpointOptions.includes("continue-other-side-treatment") ? <button data-action-role="primary" type="button" className="rm-primary" onClick={() => setMidpointDecisionDone(true)}>继续另一侧处理</button> : null}
-          {checkpointOptions.includes("low-load-activity") ? <button data-action-role="secondary" type="button" onClick={openLowLoadTraining}>进入低负荷基础活动</button> : null}
-          {checkpointOptions.includes("save-and-continue") ? <button data-action-role="tertiary" type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button> : null}
-        </div>
+        {(() => {
+          // 表现层动作映射（评审单 R-02 §6.4）：底栏最多三个按钮，多余出口
+          // 降到正文"其他安全选择"，不再让四个条件按钮竞争三个角色槽。
+          type RailAction = { key: string; label: string; role: "primary" | "secondary" | "tertiary"; onClick: () => void };
+          const all: RailAction[] = [];
+          if (checkpointOptions.includes("return-other-side-assessment")) all.push({ key: "return-other-side-assessment", label: "返回另一侧评估", role: "secondary", onClick: () => editCompletedAssessment() });
+          if (checkpointOptions.includes("continue-other-side-treatment")) all.push({ key: "continue-other-side-treatment", label: "继续另一侧处理", role: "primary", onClick: () => setMidpointDecisionDone(true) });
+          if (checkpointOptions.includes("low-load-activity")) all.push({ key: "low-load-activity", label: "进入低负荷基础活动", role: all.some((a) => a.role === "primary") ? "secondary" : "primary", onClick: openLowLoadTraining });
+          if (checkpointOptions.includes("save-and-continue")) all.push({ key: "save-and-continue", label: "保存，稍后继续", role: "tertiary", onClick: () => saveRecord("待复查") });
+          const primary = all.find((a) => a.role === "primary");
+          const secondary = all.find((a) => a.role === "secondary");
+          const tertiary = all.find((a) => a.role === "tertiary");
+          const rail = [secondary, primary, tertiary].filter(Boolean) as RailAction[];
+          const inline = all.filter((a) => !rail.includes(a));
+          const layout = rail.length === 1 ? "single" : rail.length === 2 ? "split" : "three";
+          return <>
+            <div className={`rm-page-actions${layout === "three" ? " three" : layout === "split" ? " split" : ""}`} data-action-layout={layout} aria-label="当前步骤操作">
+              {rail.map((action) => <button key={action.key} data-action-role={action.role} type="button" className={action.role === "primary" ? "rm-primary" : ""} onClick={action.onClick}>{action.label}</button>)}
+            </div>
+            {inline.length ? <div className="rm-inline-note" role="note"><strong>其他安全选择：</strong>{inline.map((action) => <button key={action.key} type="button" onClick={action.onClick}>{action.label}</button>)}</div> : null}
+          </>;
+        })()}
       </section>
     </section>;
   }
@@ -731,12 +747,28 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
           <span>两侧记录已保留</span>
           <h2>{bilateralAssessmentComplete ? "双侧针对性评估已完成" : "另一侧针对性评估还未完成"}</h2>
           <p>{bilateralAssessmentComplete ? "现在可以进入正常训练；如果想先观察，也可以保存记录。" : "当前只开放低负荷基础活动，不能把未评估侧当成正常，也不能直接进入正常训练。"}</p>
-          <div className="rm-page-actions three" data-action-layout="three">
-            {!bilateralAssessmentComplete && checkpointOptions.includes("return-other-side-assessment") ? <button data-action-role="secondary" type="button" onClick={() => editCompletedAssessment()}>返回另一侧评估</button> : null}
-            {checkpointOptions.includes("normal-training") ? <button data-action-role="primary" type="button" className="rm-primary" onClick={() => { setMidpointDecisionDone(true); goToStep(4); }}>进入正常训练</button> : null}
-            {checkpointOptions.includes("low-load-activity") ? <button data-action-role="secondary" type="button" onClick={openLowLoadTraining}>进入低负荷基础活动</button> : null}
-            {checkpointOptions.includes("save-and-continue") ? <button data-action-role="tertiary" type="button" onClick={() => saveRecord("待复查")}>保存，稍后继续</button> : null}
-          </div>
+          {(() => {
+            // 表现层动作映射（R-02 状态 B/C）：底栏最多三个、恰好一个 primary，
+            // 超出容量降到正文"其他安全选择"。
+            type RailAction = { key: string; label: string; role: "primary" | "secondary" | "tertiary"; onClick: () => void };
+            const all: RailAction[] = [];
+            if (!bilateralAssessmentComplete && checkpointOptions.includes("return-other-side-assessment")) all.push({ key: "return-other-side-assessment", label: "返回另一侧评估", role: "secondary", onClick: () => editCompletedAssessment() });
+            if (checkpointOptions.includes("normal-training")) all.push({ key: "normal-training", label: "进入正常训练", role: "primary", onClick: () => { setMidpointDecisionDone(true); goToStep(4); } });
+            if (checkpointOptions.includes("low-load-activity")) all.push({ key: "low-load-activity", label: "进入低负荷基础活动", role: all.some((a) => a.role === "primary") ? "secondary" : "primary", onClick: openLowLoadTraining });
+            if (checkpointOptions.includes("save-and-continue")) all.push({ key: "save-and-continue", label: "保存，稍后继续", role: "tertiary", onClick: () => saveRecord("待复查") });
+            const primary = all.find((a) => a.role === "primary");
+            const secondary = all.find((a) => a.role === "secondary");
+            const tertiary = all.find((a) => a.role === "tertiary");
+            const rail = [secondary, primary, tertiary].filter(Boolean) as RailAction[];
+            const inline = all.filter((a) => !rail.includes(a));
+            const layout = rail.length === 1 ? "single" : rail.length === 2 ? "split" : "three";
+            return <>
+              <div className={`rm-page-actions${layout === "three" ? " three" : layout === "split" ? " split" : ""}`} data-action-layout={layout} aria-label="当前步骤操作">
+                {rail.map((action) => <button key={action.key} data-action-role={action.role} type="button" className={action.role === "primary" ? "rm-primary" : ""} onClick={action.onClick}>{action.label}</button>)}
+              </div>
+              {inline.length ? <div className="rm-inline-note" role="note"><strong>其他安全选择：</strong>{inline.map((action) => <button key={action.key} type="button" onClick={action.onClick}>{action.label}</button>)}</div> : null}
+            </>;
+          })()}
         </section>
       </section>;
     }
@@ -800,7 +832,7 @@ export function TreatmentRetestStage({ view, actions }: { view: TreatmentRetestS
               return <li key={item.id}><i>{continuationSuggestions.indexOf(item) + 1}</i><span className="rm-outcome-unexplained-text"><b>{bracket ? bracket[1] : item.title}</b>{bracket ? <small>（{bracket[2]}）</small> : null}</span></li>;
             })}</ul>
             <div className="rm-page-actions" data-action-layout="single">
-              <button data-action-role="secondary" type="button" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
+              <button data-action-role="primary" type="button" className="rm-primary" onClick={() => acceptContinuationSuggestions(continuationSuggestions.map((item) => item.id))}>继续检查这些方向</button>
               <small>也可以先进入训练或保存记录；这些方向以后仍然可以补查。</small>
             </div>
           </section>

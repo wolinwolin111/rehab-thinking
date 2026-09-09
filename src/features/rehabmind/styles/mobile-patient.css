@@ -151,7 +151,7 @@ body.rm-dialog-open { overflow: hidden; }
 
   .rm-app[data-mobile-ui="v2"] .rm-workspace {
     width: min(calc(100% - 32px), 720px);
-    padding: 24px 0 calc(var(--rm-mobile-action-height) + 28px);
+    padding: 24px 0 calc(var(--rm-mobile-action-height) + 36px);
     /* A wide anatomical atlas must never become a document-level horizontal
      * scroll; it scrolls inside its own figure instead (plan §14.2 overflow=0). */
     overflow-x: clip;
@@ -788,9 +788,28 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-exercise-detail dl dt { color: var(--rm-mobile-primary-deep); font-size: 13px; font-weight: 750; }
   .rm-app[data-mobile-ui="v2"] .rm-exercise-detail dl dd { margin: 0; }
 
-  /* Summary hero: a quiet light result card, not a saturated dark block (M-09).
-   * Semantic emphasis lives in the delta text, matching the domain copy. */
+  /* Summary hero: a quiet light result card, not a saturated dark block (M-09). */
+
+  /* All-info intake status line (review R-04): the legacy rust color reads
+   * as a warning even when the intake is complete; state now picks the tone. */
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { color: var(--rm-mobile-warning); }
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions.is-complete > span { color: var(--rm-mobile-success); }
+
+  /* Fixed bars and bottom sheets need an explicit safe-area runway. */
+  .rm-app[data-mobile-ui="v2"] .rm-records-page > main { padding-bottom: 104px; }
+  .rm-app[data-mobile-ui="v2"] .rm-records-page-actions { min-height: 78px; }
+  .rm-app[data-mobile-ui="v2"] .rm-snapshot-freshness { border-radius: 0 0 12px 12px; }
+}
+
+/* Summary hero light card (review R-01) — applies on every phone viewport,
+ * portrait and landscape alike: the old dark-gradient theme must not come
+ * back just because the short side rotates. Content colors migrate with the
+ * container (review principle: the light theme carries its content). */
+@media (max-width: 720px),
+  (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
   .rm-app[data-mobile-ui="v2"] .rm-session-hero {
+    position: relative;
+    overflow: hidden;
     padding: 16px;
     border: 1px solid var(--rm-mobile-line);
     border-left: 4px solid var(--rm-mobile-primary);
@@ -801,23 +820,55 @@ body.rm-dialog-open { overflow: hidden; }
     gap: 12px;
     box-shadow: 0 8px 22px rgba(44, 56, 88, .045);
   }
+  /* The old theme decorates with a blurred purple circle; patient v2 drops it. */
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero::after { display: none; }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero > div:first-child span { color: var(--rm-mobile-primary-deep); }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero h2 { color: var(--rm-mobile-text); }
   .rm-app[data-mobile-ui="v2"] .rm-session-hero p { color: var(--rm-mobile-muted); }
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score b,
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score strong { color: var(--rm-mobile-text); }
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score i,
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score small { color: var(--rm-mobile-muted); }
-  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score small { color: var(--rm-mobile-success); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score { position: relative; z-index: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score b { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score strong { color: var(--rm-mobile-success); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score i { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-final-score small { color: var(--rm-mobile-success); background: var(--rm-mobile-success-soft); }
 
-  /* Fixed bars and bottom sheets need an explicit safe-area runway. */
-  .rm-app[data-mobile-ui="v2"] .rm-records-page > main { padding-bottom: 104px; }
-  .rm-app[data-mobile-ui="v2"] .rm-records-page-actions { min-height: 78px; }
-  .rm-app[data-mobile-ui="v2"] .rm-snapshot-freshness { border-radius: 0 0 12px 12px; }
+  /* Chief-action summary content inherits dark-theme whites from
+   * rm-visual-theme.css; every fact must stay readable on the light card. */
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-chief-action-summary { position: relative; z-index: 1; }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-chief-action-summary > span {
+    color: var(--rm-mobile-primary-deep) !important;
+    border-color: #cfd3f2;
+    background: var(--rm-mobile-selected);
+  }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-chief-action-summary > ul li { color: var(--rm-mobile-text); border-bottom: 1px solid var(--rm-mobile-line); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-chief-action-summary > p { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li strong { color: var(--rm-mobile-text); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li small { color: var(--rm-mobile-muted); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li em { color: var(--rm-mobile-success); background: var(--rm-mobile-success-soft); }
+  .rm-app[data-mobile-ui="v2"] .rm-session-hero .rm-function-action-summary > ul li.is-pending em { color: var(--rm-mobile-warning); background: var(--rm-mobile-warning-soft); }
 }
 
 @media (max-width: 359px) {
   .rm-app[data-mobile-ui="v2"] .rm-workbench-stage-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Real 200% text zoom ≈ 195px layout viewport (review R-06): the top bar
+   * cannot fit the session-status label next to both buttons; hide the
+   * label so brand, record and more never overlap. */
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > span { display: none; }
+  .rm-app[data-mobile-ui="v2"] .rm-topbar { padding-inline: 12px; gap: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-brand-mark { width: 28px; height: 28px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions { gap: 4px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button { min-width: 40px; padding-inline: 4px; }
+  .rm-app[data-mobile-ui="v2"] .rm-mobile-top-actions > button.rm-mobile-current-record { min-width: 0; font-size: 12px; }
+  /* Real-200% (≈195px layout viewport): score cards must stack instead of
+   * being clipped; the numeric output shrinks but stays readable. The
+   * min-width floor lets every fixed-size descendant shrink with the card. */
+  .rm-app[data-mobile-ui="v2"] .rm-score { padding: 12px; min-width: 0; overflow: hidden; }
+  .rm-app[data-mobile-ui="v2"] .rm-score * { min-width: 0; max-width: 100%; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-head { grid-template-columns: minmax(0, 1fr); }
+  .rm-app[data-mobile-ui="v2"] .rm-score output { min-width: 0; font-size: 26px; padding: 6px; }
+  .rm-app[data-mobile-ui="v2"] .rm-score-scale { flex-direction: column; gap: 2px; align-items: flex-start; }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] { grid-template-columns: minmax(0, 1fr); }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="secondary"] { grid-column: 1; grid-row: 1; }
+  .rm-app[data-mobile-ui="v2"] :is(.rm-stage-transition-actions)[data-action-layout="stage-transition"] > [data-action-role="primary"] { grid-column: 1; grid-row: 2; }
   .rm-app[data-mobile-ui="v2"] .rm-imaging { grid-template-columns: 1fr; }
   .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child,
   .rm-app[data-mobile-ui="v2"] .rm-bilateral-side-retest-list .rm-result-grid { grid-template-columns: 1fr; }
@@ -825,7 +876,47 @@ body.rm-dialog-open { overflow: hidden; }
   .rm-app[data-mobile-ui="v2"] .rm-followup-new > div:last-child { grid-template-columns: 1fr; }
 }
 
-/* The legacy shell hides both rails between 721px and 820px. Keep the
+/* Review R-03/04/05 phone-condition rules: toast placement, intake status
+ * tone, and stage-transition ordering. One block keeps desktop and the
+ * legacy guided surface on their established presentation. */
+@media (max-width: 720px),
+  (orientation: landscape) and (max-width: 1024px) and (max-height: 600px) {
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions > span { color: var(--rm-mobile-warning); }
+  .rm-app[data-mobile-ui="v2"] .rm-intake-actions.is-complete > span { color: var(--rm-mobile-success); }
+
+  /* Focus tutorial card (review R-06 finding): on very narrow layout
+   * viewports (real 200%) the JS-positioned card can overflow the screen
+   * and hide its own skip button; clamp it inside the viewport. */
+  .rm-app[data-mobile-ui="v2"] .rm-focus-tooltip {
+    left: 8px !important;
+    right: 8px;
+    width: auto !important;
+    max-width: calc(100vw - 16px);
+  }
+
+  /* Stage-transition card (review R-05): explicit roles, no first-child order.
+   * Wide enough: secondary left, primary right; ≤359px stacks with primary last. */
+  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; align-items: stretch; }
+  .rm-app[data-mobile-ui="v2"] .rm-stage-transition-actions > button { min-height: 48px; padding: 10px 12px; border-radius: 11px; }
+
+  /* Toast never covers the action rail (review R-03): it rides on the
+   * measured rail height, wraps long text on a controlled card width, and
+   * sits below drawers (z 250) so it cannot float above an open overlay. */
+  .rm-app[data-mobile-ui="v2"] .rm-toast {
+    left: 50%;
+    right: auto;
+    bottom: calc(var(--rm-mobile-action-height, 0px) + 12px);
+    transform: translateX(-50%);
+    width: min(calc(100vw - 32px), 360px);
+    z-index: 200;
+    border-radius: 12px;
+    line-height: 1.45;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+  /* The legacy shell hides both rails between 721px and 820px. Keep the
  * patient-facing progress affordance present on small tablets as well. */
 @media (min-width: 721px) and (max-width: 820px) {
   body:has(.rm-app[data-mobile-ui="v2"]) { background: var(--rm-mobile-bg); }
