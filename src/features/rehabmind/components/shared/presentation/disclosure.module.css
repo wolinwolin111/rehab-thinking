@@ -1,0 +1,85 @@
+﻿/*
+ * Disclosure: native details/summary with an owned skin (plan §7.3).
+ * The summary row is a 44px+ hit target at every viewport; the chevron is
+ * drawn with a border (no emoji glyph, no ::after content competition with
+ * legacy .rm-example summary rules). Root selectors pair the module class
+ * with [data-present] so ambient element rules (.rm-app details) cannot
+ * out-rank the component skin.
+ */
+
+.boxed[data-present="disclosure"],
+.quiet[data-present="disclosure"] {
+  font-family: var(--present-font);
+}
+
+.boxed[data-present="disclosure"] {
+  border: 1px solid var(--present-line);
+  border-radius: var(--present-control-radius);
+  background: var(--present-surface);
+  overflow: hidden;
+}
+
+.boxed[data-present="disclosure"] > .summary {
+  min-height: var(--present-touch-min);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--present-ink);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+  cursor: pointer;
+  list-style: none;
+}
+
+.quiet[data-present="disclosure"] > .summary {
+  border: 0;
+  padding-inline: 0;
+}
+
+.boxed[data-present="disclosure"] > .summary::-webkit-details-marker {
+  display: none;
+}
+
+.boxed[data-present="disclosure"] > .summary:focus-visible {
+  outline: 3px solid rgba(86, 89, 201, 0.4);
+  outline-offset: -3px;
+}
+
+.boxed[data-present="disclosure"] > .summary > .summaryText {
+  min-width: 0;
+}
+
+.boxed[data-present="disclosure"] > .summary > .chevron {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--present-muted);
+  border-bottom: 2px solid var(--present-muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+/* Open state: the browser sets the attribute; mirror it on the chevron. */
+details[data-present="disclosure"][open] > .summary > .chevron {
+  transform: rotate(225deg);
+}
+
+.boxed[data-present="disclosure"] > .content {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--present-line);
+  color: var(--present-ink);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.quiet[data-present="disclosure"] > .content {
+  border-top: 0;
+  padding: 8px 0 0;
+}
+
+.boxed[data-present="disclosure"] > .content:empty {
+  display: none;
+}

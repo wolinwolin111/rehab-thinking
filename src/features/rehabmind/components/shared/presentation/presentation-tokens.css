@@ -1,0 +1,41 @@
+/*
+ * Presentation-layer design tokens (ui-presentation-consolidation plan §8).
+ *
+ * These are the single owner of the visual constants used by components under
+ * components/shared/presentation/. Values are frozen to the confirmed palette
+ * already shipped in mobile-patient.css; legacy files may keep their own
+ * copies until their consumers migrate (tracked in the ownership ledger).
+ * Components read tokens only through their own module CSS; pages cannot
+ * re-define them (plan §5.3).
+ */
+
+:root {
+  /* Type */
+  --present-font: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, "Noto Sans CJK SC", sans-serif;
+
+  /* Surfaces and ink */
+  --present-surface: #ffffff;
+  --present-ink: #202838;
+  --present-muted: #596579;
+  --present-line: #dce2ea;
+  --present-line-strong: #7c8799;
+
+  /* Actions */
+  --present-primary: #5659c9;
+  --present-primary-deep: #42469f;
+  --present-primary-soft: #eceefa;
+
+  /* Status tones */
+  --present-success: #237a68;
+  --present-success-soft: #e8f5f1;
+  --present-warning: #8a5a16;
+  --present-warning-soft: #fff7e6;
+  --present-danger: #b54747;
+  --present-danger-soft: #fff0f0;
+
+  /* Shape and touch targets */
+  --present-control-radius: 11px;
+  --present-card-radius: 14px;
+  --present-touch-min: 44px;
+  --present-action-min: 52px;
+}

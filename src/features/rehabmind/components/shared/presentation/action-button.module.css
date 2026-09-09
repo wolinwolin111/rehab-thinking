@@ -1,0 +1,78 @@
+﻿/*
+ * ActionButton: the single owner of action-button skin (plan 搂7.1).
+ * Base skin applies at every viewport; media queries only adjust layout.
+ * Variant = visual tone, independent of rail position/role.
+ */
+
+.actionButton[data-present="action-button"] {
+  min-height: var(--present-action-min);
+  padding: 10px 18px;
+  border: 1px solid var(--present-line-strong);
+  border-radius: var(--present-control-radius);
+  color: var(--present-ink);
+  background: var(--present-surface);
+  font-family: var(--present-font);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+  cursor: pointer;
+}
+
+.actionButton[data-present="action-button"]:focus-visible {
+  outline: 3px solid rgba(86, 89, 201, 0.4);
+  outline-offset: 1px;
+}
+
+.actionButton[data-present="action-button"]:disabled {
+  color: var(--present-muted);
+  background: #f1f3f6;
+  border-color: var(--present-line);
+  cursor: not-allowed;
+}
+
+.actionButton[data-present="action-button"].primary {
+  border-color: var(--present-primary);
+  color: #fff;
+  background: var(--present-primary);
+}
+
+.actionButton[data-present="action-button"].primary:disabled {
+  border-color: var(--present-line);
+}
+
+.actionButton[data-present="action-button"].secondary {
+  border-color: var(--present-line-strong);
+  background: var(--present-surface);
+}
+
+.actionButton[data-present="action-button"].quiet {
+  border-color: transparent;
+  color: var(--present-primary-deep);
+  background: var(--present-primary-soft);
+}
+
+.actionButton[data-present="action-button"].danger {
+  border-color: var(--present-danger);
+  color: var(--present-danger);
+  background: var(--present-danger-soft);
+}
+
+/* Non-critical compact actions keep a 44px touch target (plan 搂7.1). */
+.actionButton[data-present="action-button"].compact {
+  min-height: var(--present-touch-min);
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.actionButton[data-present="action-button"].fullWidth {
+  width: 100%;
+}
+
+/* Long labels wrap and grow; no truncation (plan 搂7.1). The parent assigns
+ * width; these properties only ensure wrapping never clips. */
+.actionButton[data-present="action-button"] {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}

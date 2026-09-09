@@ -1,0 +1,65 @@
+# UI 表现层整理·三张台账（样式所有权 / 行为等价性 / 验收）
+
+> 方案：`ui-presentation-consolidation-plan-2026-09-09.md`（P0→P6 分批实施）。
+> 基线：`06799fe`。本台账随批次滚动更新；每批结束追加该批结果，不重写历史行。
+> 结果取值只用：未实施、实现待验、通过、失败、阻塞、负责人批准延期。
+
+## 已知失败登记（P0 量化基线，全部实测于 06799fe）
+
+| 编号 | 失败 | 基线实测 | 证据 |
+|---|---|---|---|
+| F-1 | 桌面过渡卡按钮过大（方案 §3：约 289px） | complete-demo.css:86 三行网格 `auto 1fr auto`＋按钮 58px min-height；rm-visual-theme.css:753-766 再覆盖 | outputs/presentation/baseline-06799fe/（desk1280 全流程 13 帧） |
+| F-2 | 横屏反馈门按钮退回默认尺寸 | land844 实测 `.rm-training-feedback-gate button` h=30、w=681、font 16px（mobile-patient.css:745 规则在 `@media (max-width:720px)` 块 :410–831 内，844 宽不命中） | baseline-land844/metrics.json |
+| F-3 | 记录管理入口 summary 过小 | desk1280 实测 `.rm-records-manage summary` h=25、font 17px（无任何专属规则） | baseline-desk1280/metrics.json |
+| F-4 | 总结"已复查"一律成功色 | `.rm-function-action-summary li.is-retested em` = rgb(35,122,104) mint（mobile-patient.css:869-871 只按 is-retested/is-pending 二分，不区分改善/未变/加重） | baseline-*/metrics.json summaryTone |
+| F-5 | 答案选中只有外观类无语义 | confirmation-stage.tsx:79,84 仅 `is-selected` 类，无 aria-pressed（实测 ariaPressed=0） | 源码断言＋baseline |
+
+## A. 样式所有权
+
+> 迁移每格一行：组件 → 消费者 → 旧选择器 → 新所有者 → 兼容项 → 删除项 → 证据。
+
+| 组件 | 消费页面/模式 | 原选择器和文件 | 新所有者 | 兼容项 | 删除项 | 验证证据 |
+|---|---|---|---|---|---|---|
+| ActionButton | 训练反馈门跳转按钮（training-stage.tsx:286，guided 双模式） | `@media≤720 .rm-training-feedback-gate button`（mobile-patient.css:745-755，横屏/桌面不命中=F-2） | action-button.module.css＋presentation-tokens.css | `data-present="action-button"` 作测试定位；旧 ambient 元素 reset（font:inherit 等）保留 | mobile-patient.css 门按钮补丁整块删除 | p1-verification 四视口 h=44（原 844 横屏 h=30） |
+| ActionButton | 记录页：新建/复制编号/继续/删除案例/清空本机（rehab-records-page.tsx） | complete-demo.css:2077(header,42px)、:2100(footer)、:2102(.rm-record-delete)、:2105-2107(footer 页脚) | 同上 | :2077/:2100/:2105-2107 改 `:not([data-present="action-button"])` 保留排除壳；`.rm-page button` 字号规则两处（mobile-patient.css:273/1105）加 :not | :2102 `.rm-record-delete` 整行删除（零消费者） | p1-verification desk1280：复制编号 44、继续 52、新建 52、删除(展开) 44、清空 44 |
+| Disclosure | 记录页"更多操作"、"记录管理"（rehab-records-page.tsx） | 无专属规则（F-3：summary 默认 25px@desk）；ambient `.rm-app details{radius:12px}`（rm-visual-theme.css:63） | disclosure.module.css | `data-present="disclosure"`；模块根选择器 (0,2,0) 压回 ambient | 无（原本无规则） | p1-verification desk1280 manageSummary h=44（原 25） |
+| StatusNotice | 无消费者（P3/P4 接入答案反馈/门禁提示） | — | status-notice.module.css | `data-present="status-notice"` | — | 组件已建，验收延后至首个消费者 |
+| 模块选择器装甲 | 全部三个组件 | rm-visual-theme.css:57-67 `.rm-app button/article/section/details{radius:12px}` (0,1,1) 曾压过模块 (0,1,0) | 模块根选择器统一 `[class][data-present]` (0,2,0) | — | — | 设计决策；四视口实测未回退 |
+
+## B. 行为等价性
+
+> 基线从 `git show 06799fe:<file>` 读取；文案/样式变更与临床行为差异分开记录。
+
+| 场景 | 基线合法出口及回调 | 迁移后出口及回调 | disabled条件 | 数据来源 | 差异说明 |
+|---|---|---|---|---|---|
+| 反馈门"去记录第一个未反馈动作" | `pendingFeedbackExercises[0]`→`setOpenExercise(id)`→scrollIntoView（06799fe training-stage.tsx:286） | 同回调，包 ActionButton secondary/compact | 无 | 现有组件状态 | 视觉：全视口 44px（原≤720 才有 44px）；回调零改动 |
+| 记录页"新建案例" | `onCreate`（06799fe :113） | ActionButton primary | 无 | 同 | 无差异（视觉同 primary） |
+| "清空本机记录" | `onClear` disabled=!records.length（06799fe :118） | ActionButton danger/compact，同 disabled | !records.length | 同 | **获准视觉变化**：改 danger 色（危险语义）；确认流程未动 |
+| "删除案例" | `onDelete`→workbench window.confirm（06799fe :108） | ActionButton danger/compact 进 Disclosure | 无 | 同 | 确认流程未动（confirm 在 workbench 侧） |
+| "复制编号" | `onCopyCaseCode`（06799fe :99） | ActionButton quiet/compact | 无 | 同 | 42→44px |
+| "继续草稿/补充影像/继续康复" | `onRestore` disabled=!record.snapshot（06799fe :107） | ActionButton primary/fullWidth，同 disabled | !record.snapshot | 同 | 无差异 |
+| records Disclosure 展开 | 原生 details/summary（06799fe :108,:116-119） | 同为原生 details；onToggle 可选 | — | — | 原生展开/焦点行为保持 |
+
+## C. 验收
+
+> 三层证据分开：组件预览（合成 props）／真实场景（受保护工作台或正常交互）／全流程（合法门禁走完）。
+
+| 场景ID | SHA | 模式 | 实际视口/字号方法 | 可见业务标题 | 证据路径 | 代码/组件/流程层级 | 结果 |
+|---|---|---|---|---|---|---|---|
+| BASE-320 | 06799fe | guided | 320×568@DPR1 | 右小腿主诉全流程 | outputs/presentation/baseline-06799fe/m320-320x568/ | 流程+组件 | 通过（基线留档） |
+| BASE-390 | 06799fe | guided | 390×844@DPR1 | 〃 | 〃/m390-390x844/ | 〃 | 通过（基线留档） |
+| BASE-LAND | 06799fe | guided | 844×390@DPR1 | 〃 | 〃/land844-844x390/ | 〃 | 通过（基线留档；F-2 在案） |
+| BASE-DESK | 06799fe | guided | 1280×800@DPR1 | 〃 | 〃/desk1280-1280x800/ | 〃 | 通过（基线留档；F-1/F-3 在案） |
+| P1-GATE-320/390/LAND | 本轮 | guided | 三视口 | 训练反馈门"去记录第一个未反馈动作" | outputs/presentation/p1-verification/ | 组件+真实流程 | 通过（h=44 全视口；F-2 修复） |
+| P1-RECORDS-DESK | 本轮 | guided | 1280×800 | 康复记录/记录管理/更多操作 | 〃/p1-desk1280-1280x800/ | 组件+真实流程 | 通过（manage 44；F-3 修复） |
+| P1-RECORDS-MOBILE | 本轮 | guided | 320/390/844 | 〃 | — | 组件层级 | 实现待验（驱动未命中移动端更多抽屉入口；组件为跨视口共享同一模块皮肤，桌面证据＋模块无媒体查询支撑；P5 补移动端路径） |
+
+## 测试侧新增回归请求（登记，未接入）
+
+| # | 请求场景 | 目标错误实现能失败的断言 |
+|---|---|---|
+| RQ-1 | 横屏（>720 宽）反馈门跳转按钮高度 | h<44 失败（F-2 修复后防回退） |
+| RQ-2 | 记录管理/案例更多 summary 命中区 | h<44 失败（F-3） |
+| RQ-3 | 安全答案选中态可访问语义 | 选中按钮无 aria-pressed/radio 语义失败（F-5） |
+| RQ-4 | 总结结果 tone 与比较事实绑定 | 加重/未变用成功色失败（F-4，修后） |
+| RQ-5 | 桌面过渡卡按钮宽度 | >120px 或伸展成卡失败（F-1，修后） |

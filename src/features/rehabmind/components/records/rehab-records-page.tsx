@@ -1,6 +1,8 @@
 "use client";
 
 import { OnceHint } from "@/src/features/rehabmind/components/shared/once-hint";
+import { ActionButton } from "@/src/features/rehabmind/components/shared/presentation/action-button";
+import { Disclosure } from "@/src/features/rehabmind/components/shared/presentation/disclosure";
 import type { SavedDemoRecord } from "@/src/features/rehabmind/components/workbench/workbench-support";
 import type { ProblemThreadRecord, SessionIndexRecord } from "@/src/domain/rehab/history/session-identity-core";
 import type { RehabSessionSummary } from "@/src/features/rehabmind/workflow/session-history";
@@ -96,7 +98,7 @@ export function RehabRecordsPage({
          * destructive actions live behind "更多操作", away from the main task. */}
         <header>
           <div><strong className="rm-record-case-title">{record.complaint}</strong></div>
-          {record.pilotPublicCode ? <button type="button" onClick={() => onCopyCaseCode(record)}>复制编号</button> : null}
+          {record.pilotPublicCode ? <ActionButton size="compact" variant="quiet" onClick={() => onCopyCaseCode(record)}>复制编号</ActionButton> : null}
         </header>
         <section className="rm-record-case-summary">
           <span>{record.sessionStatus === "draft" ? "草稿" : record.status} · 已记录 {(record.sessionIndex ?? record.snapshot?.sessionIndex)?.filter((session) => session.status === "completed").length || record.sessionHistory?.length || record.sessionCount} 次</span>
@@ -104,19 +106,18 @@ export function RehabRecordsPage({
         </section>
         <ThreadRows record={record} />
         <footer>
-          <button type="button" className="rm-record-continue" disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.sessionStatus === "draft" ? "继续草稿" : record.status === "等待影像" ? "补充影像" : "继续康复"}</button>
-          <details className="rm-record-more"><summary>更多操作</summary><button type="button" className="rm-record-delete" onClick={() => onDelete(record)}>删除案例</button></details>
+          <ActionButton variant="primary" fullWidth disabled={!record.snapshot} onClick={() => onRestore(record)}>{record.sessionStatus === "draft" ? "继续草稿" : record.status === "等待影像" ? "补充影像" : "继续康复"}</ActionButton>
+          <Disclosure summary="更多操作"><ActionButton size="compact" variant="danger" onClick={() => onDelete(record)}>删除案例</ActionButton></Disclosure>
         </footer>
       </article>)}</div> : <section className="rm-record-empty"><strong>还没有康复记录</strong><p>创建案例后，可以从这里继续康复并查看每次恢复情况。</p></section>}
     </main>
     <footer className="rm-records-page-actions">
-      <button type="button" onClick={onCreate}>新建案例</button>
+      <ActionButton variant="primary" onClick={onCreate}>新建案例</ActionButton>
       {/* U13 fix: the destructive bulk clear lives in its own management area,
        * not beside the primary create action. Confirmation flow unchanged. */}
-      <details className="rm-records-manage">
-        <summary>记录管理</summary>
-        <button type="button" disabled={!records.length} onClick={onClear}>清空本机记录</button>
-      </details>
+      <Disclosure summary="记录管理">
+        <ActionButton size="compact" variant="danger" disabled={!records.length} onClick={onClear}>清空本机记录</ActionButton>
+      </Disclosure>
     </footer>
   </section>;
 }

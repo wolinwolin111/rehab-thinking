@@ -1,0 +1,51 @@
+﻿/*
+ * StatusNotice: tone drives layout and color together (plan §7.4).
+ * Text color is set per tone — never inherited from a parent card surface.
+ * Root selectors pair the module class with [data-present] so ambient rules
+ * cannot out-rank the component skin. Warning/danger stay readable on their
+ * soft backgrounds (4.5:1 target).
+ */
+
+.notice[data-present="status-notice"] {
+  display: grid;
+  gap: 6px;
+  padding: 13px 15px;
+  border: 1px solid var(--present-line);
+  border-radius: var(--present-card-radius);
+  font-family: var(--present-font);
+}
+
+.notice[data-present="status-notice"] > .title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.notice[data-present="status-notice"] > .body {
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.notice[data-present="status-notice"].neutral {
+  color: var(--present-ink);
+  background: var(--present-surface);
+}
+
+.notice[data-present="status-notice"].success {
+  color: var(--present-success);
+  background: var(--present-success-soft);
+  border-color: #cfe6df;
+}
+
+.notice[data-present="status-notice"].warning {
+  color: var(--present-warning);
+  background: var(--present-warning-soft);
+  border-color: #e7d3ab;
+}
+
+.notice[data-present="status-notice"].danger {
+  color: var(--present-danger);
+  background: var(--present-danger-soft);
+  border-color: #ecc7c7;
+}

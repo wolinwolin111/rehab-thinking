@@ -270,7 +270,7 @@ body.rm-dialog-open { overflow: hidden; }
   /* Quiet surfaces: one task owns the visual weight; nested card stacks do not. */
   .rm-app[data-mobile-ui="v2"] .rm-page > section,
   .rm-app[data-mobile-ui="v2"] .rm-page > article { box-shadow: none; }
-  .rm-app[data-mobile-ui="v2"] .rm-page button,
+  .rm-app[data-mobile-ui="v2"] .rm-page button:not([data-present="action-button"]),
   .rm-app[data-mobile-ui="v2"] .rm-page input,
   .rm-app[data-mobile-ui="v2"] .rm-page textarea,
   .rm-app[data-mobile-ui="v2"] .rm-page select { font-size: 16px; }
@@ -741,18 +741,9 @@ body.rm-dialog-open { overflow: hidden; }
     border-radius: 13px;
   }
 
-  /* Review fix: the gate's jump button is a real control, not default text. */
-  .rm-app[data-mobile-ui="v2"] .rm-training-feedback-gate button {
-    min-height: 44px;
-    margin-top: 8px;
-    padding: 8px 14px;
-    border: 1px solid var(--rm-mobile-primary);
-    border-radius: var(--rm-mobile-control-radius);
-    color: var(--rm-mobile-primary-deep);
-    background: var(--rm-mobile-selected);
-    font-size: 15px;
-    font-weight: 650;
-  }
+  /* Presentation consolidation (P1): the feedback gate's jump button moved to
+   * ActionButton ownership — its old ≤720px-only patch is retired, the control
+   * now keeps its skin in landscape/desktop too. */
 
   .rm-app[data-mobile-ui="v2"] .rm-training-hold { display: grid; grid-template-columns: 1fr; gap: 5px; padding: 15px; }
   .rm-app[data-mobile-ui="v2"] .rm-training-hold > span { grid-row: auto; }
@@ -1111,7 +1102,7 @@ body.rm-dialog-open { overflow: hidden; }
     padding: 16px 0 calc(var(--rm-mobile-action-height) + 16px);
   }
   .rm-app[data-mobile-ui="v2"] .rm-page { display: grid; gap: 16px; }
-  .rm-app[data-mobile-ui="v2"] .rm-page button,
+  .rm-app[data-mobile-ui="v2"] .rm-page button:not([data-present="action-button"]),
   .rm-app[data-mobile-ui="v2"] .rm-page input,
   .rm-app[data-mobile-ui="v2"] .rm-page textarea,
   .rm-app[data-mobile-ui="v2"] .rm-page select { font-size: 16px; }

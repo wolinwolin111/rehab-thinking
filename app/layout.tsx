@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import "@/src/features/rehabmind/components/shared/presentation/presentation-tokens.css";
 import "@/src/features/rehabmind/styles/complete-demo.css";
 import "@/src/features/rehabmind/styles/rm-visual-theme.css";
 import "@/src/features/rehabmind/styles/mobile-patient.css";
