@@ -64,11 +64,11 @@
 | BASE-DESK | 06799fe | guided | 1280×800@DPR1 | 〃 | 〃/desk1280-1280x800/ | 〃 | 通过（基线留档；F-1/F-3 在案） |
 | P1-GATE-320/390/LAND | 本轮 | guided | 三视口 | 训练反馈门"去记录第一个未反馈动作" | outputs/presentation/p1-verification/ | 组件+真实流程 | 通过（h=44 全视口；F-2 修复） |
 | P1-RECORDS-DESK | 本轮 | guided | 1280×800 | 康复记录/记录管理/更多操作 | 〃/p1-desk1280-1280x800/ | 组件+真实流程 | 通过（manage 44；F-3 修复） |
-| P1-RECORDS-MOBILE | 本轮 | guided | 320/390/844 | 〃 | — | 组件层级 | 实现待验（驱动未命中移动端更多抽屉入口；组件为跨视口共享同一模块皮肤，桌面证据＋模块无媒体查询支撑；P5 补移动端路径） |
+| P1-RECORDS-MOBILE | 本轮 | guided | 320/390/844 | 〃 | outputs/presentation/p5-verification/b-m*/ | 组件+真实场景 | **通过**（Phase B 补采：更多抽屉→康复记录真实打开；manage summary 44px、overflowX=0、展开删除/清空 ≥44；320 清空折叠态 62px 为两字换行高于达标线） |
 | P2-TRANSITION-DESK | 本轮 | guided | 1280×800 | "症状信息收集完毕"过渡卡 | outputs/presentation/p2-verification/p2-desk1280-1280x800/ | 组件+真实流程 | 通过（F-1 修复：按钮 253/354×52 非卡宽伸展） |
 | P2-TRANSITION-390/320 | 本轮 | guided | 390×844 / 320×568 | 〃 | 〃/p2-m390、p2-m320 | 组件+真实流程 | 通过（≥360 横排、≤359 纵排、52px） |
 | P2-RAIL-CHECKPOINT-390 | 本轮 | page_boundary(bilateral-longitudinal) | 390×844 | "两侧处理完成后，确认训练出口" | outputs/presentation/p2-verification/rail/ | 组件+真实场景 | 通过（ActionRail fixed h=69、按钮52、runway 同步、主按钮回调进训练；状态B 实测） |
-| P2-RAIL-状态A/横屏/桌面rail | 本轮 | — | — | — | — | 流程层级 | 实现待验（状态A 分支与横屏/桌面 rail 几何未采；组件固定框架含 landscape 媒体块；登记 P5 补） |
+| P2-RAIL-状态A/横屏/桌面rail | 本轮 | — | — | — | — | 流程层级 | 部分通过：状态B 已实测；状态A 分支属 C 迁移范围（C 完成后互斥渲染消除 F-6 时一并验证）；records 覆盖层下无 rail（Phase B 实证 rails=[]），横屏 rail 几何在 C4 迁移后矩阵复验中采集 |
 
 ## 测试侧新增回归请求（登记，未接入）
 
