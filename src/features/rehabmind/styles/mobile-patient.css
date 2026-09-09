@@ -175,16 +175,8 @@ body.rm-dialog-open { overflow: hidden; }
     overflow-x: auto;
   }
   .rm-app[data-mobile-ui="v2"] .rm-muscle-location-figure svg { max-width: 100%; height: auto; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading { margin-bottom: 22px; gap: 12px; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading > div { min-width: 0; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading > div > span { color: var(--rm-mobile-primary-deep); font-size: 12px; letter-spacing: .04em; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading h1 { margin-top: 5px; color: var(--rm-mobile-text); font-size: clamp(24px, 7vw, 29px); font-weight: 700; line-height: 1.4; letter-spacing: -.035em; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading p { margin-top: 8px; color: var(--rm-mobile-muted); font-size: 15px; line-height: 1.65; }
   /* The sticky stage bar is the only six-stage progress presentation. Keep the
    * assessment's current/total badge, but remove the duplicate six-dot row. */
-  .rm-app[data-mobile-ui="v2"] .rm-heading .rm-step-progress { display: none; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading > b { min-width: 46px; width: 46px; height: 46px; color: var(--rm-mobile-primary-deep); border: 1px solid #cfd3f2; background: var(--rm-mobile-selected); box-shadow: none; font-size: 15px; }
-  .rm-app[data-mobile-ui="v2"] .rm-heading > b small { color: var(--rm-mobile-muted); font-size: 11px; }
 
   /* -------------------------------------------------------------------------
    * Mobile action rail — the ONE authoritative definition (phase-2 plan §8).
@@ -413,7 +405,7 @@ body.rm-dialog-open { overflow: hidden; }
     gap: 16px;
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-page > .rm-heading,
+  .rm-app[data-mobile-ui="v2"] .rm-page > [data-present="task-heading"],
   .rm-app[data-mobile-ui="v2"] .rm-page > .rm-case-summary-bar {
     margin-bottom: 0;
   }
@@ -482,8 +474,8 @@ body.rm-dialog-open { overflow: hidden; }
     font-size: 13px;
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-safety-list article,
-  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article {
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article:not([data-present="task-card"]),
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article:not([data-present="task-card"]) {
     padding: 14px;
     border: 0;
     border-bottom: 1px solid var(--rm-mobile-line);
@@ -492,8 +484,17 @@ body.rm-dialog-open { overflow: hidden; }
     gap: 10px;
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-safety-list article:last-child,
-  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article:last-of-type { border-bottom: 0; }
+  /* Migrated TaskCard keeps the list rhythm via its own module skin; only the
+   * list-level separators stay here (one layer, no double borders). */
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article[data-present="task-card"],
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article[data-present="task-card"] {
+    border: 0;
+    border-bottom: 1px solid var(--rm-mobile-line);
+    border-radius: 0;
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article[data-present="task-card"]:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article[data-present="task-card"]:last-of-type { border-bottom: 0; }
 
   .rm-app[data-mobile-ui="v2"] .rm-safety-list strong,
   .rm-app[data-mobile-ui="v2"] .rm-bone-check > article strong {
@@ -511,19 +512,40 @@ body.rm-dialog-open { overflow: hidden; }
     line-height: 1.55;
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-safety-list article > div:last-child,
-  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child {
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list article:not([data-present="task-card"]) > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article:not([data-present="task-card"]) > div:last-child {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article > div:last-child {
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check > article:not([data-present="task-card"]) > div:last-child {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .rm-app[data-mobile-ui="v2"] .rm-safety-list button,
-  .rm-app[data-mobile-ui="v2"] .rm-bone-check button {
+  /* Migrated answer groups: 2-up safety choices from 360px; below that the
+   * columns would drop under ~70px and wrap labels, so they stack full-width
+   * (long-label rule, remediation plan §5.3). */
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list [data-present="choice-group"] > div:last-child,
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check [data-present="choice-group"] > div:last-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  @media (min-width: 360px) {
+    .rm-app[data-mobile-ui="v2"] .rm-safety-list [data-present="choice-group"] > div:last-child,
+    .rm-app[data-mobile-ui="v2"] .rm-bone-check [data-present="choice-group"] > div:last-child {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check [data-present="choice-group"] > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rm-app[data-mobile-ui="v2"] .rm-safety-list button:not([data-present="choice-button"]),
+  .rm-app[data-mobile-ui="v2"] .rm-bone-check button:not([data-present="choice-button"]) {
     min-height: 50px;
     border-radius: 10px;
     font-size: 15px;

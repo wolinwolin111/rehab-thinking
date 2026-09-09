@@ -1,0 +1,37 @@
+/*
+ * TaskCard (plan §7.5): white base, light border; status uses a local edge
+ * line — not a big gradient per card. Root selectors pair the module class
+ * with [data-present] against ambient .rm-app article/section radius rules.
+ */
+
+.card[data-present="task-card"] {
+  border: 1px solid var(--present-line);
+  border-left-width: 3px;
+  border-radius: var(--present-card-radius);
+  background: var(--present-surface);
+  font-family: var(--present-font);
+  color: var(--present-ink);
+  overflow-wrap: anywhere;
+}
+
+.card[data-present="task-card"].neutral {
+  border-left-color: var(--present-line);
+}
+
+.card[data-present="task-card"].caution {
+  border-left-color: var(--present-warning);
+}
+
+.card[data-present="task-card"].alert {
+  border-left-color: var(--present-danger);
+}
+
+.card[data-present="task-card"] > .head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 15px 0;
+  font-size: 14px;
+  color: var(--present-muted);
+}

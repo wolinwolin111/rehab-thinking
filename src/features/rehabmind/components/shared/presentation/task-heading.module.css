@@ -1,0 +1,89 @@
+/*
+ * TaskHeading (plan §7.5): one current task per screen. Badges yield to long
+ * titles (wrap below, never squeeze the last character). Root selectors pair
+ * the module class with [data-present] so legacy .rm-heading rules cannot
+ * out-rank the component skin.
+ */
+
+.heading[data-present="task-heading"] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: var(--present-font);
+}
+
+.heading[data-present="task-heading"] > .main {
+  min-width: 0;
+}
+
+.heading[data-present="task-heading"] > .main > .eyebrow {
+  color: var(--present-primary-deep);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: .06em;
+}
+
+.heading[data-present="task-heading"] > .main > .title {
+  margin: 7px 0 0;
+  color: var(--present-ink);
+  font-size: clamp(24px, 4.5vw, 32px);
+  line-height: 1.3;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.heading[data-present="task-heading"] > .main > .note {
+  margin: 10px 0 0;
+  color: var(--present-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.heading[data-present="task-heading"] > .main > .progress {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.heading[data-present="task-heading"] > .main > .progress > i {
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: #e4e7ef;
+}
+
+.heading[data-present="task-heading"] > .main > .progress > i.done {
+  background: var(--present-success);
+}
+
+.heading[data-present="task-heading"] > .main > .progress > i.current {
+  background: var(--present-primary);
+}
+
+/* Badge wraps below the title on narrow screens instead of squeezing it. */
+.heading[data-present="task-heading"] > .badge {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--present-line);
+  border-radius: 10px;
+  color: var(--present-primary-deep);
+  background: var(--present-primary-soft);
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.heading[data-present="task-heading"] > .badge > small {
+  color: var(--present-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+@media (max-width: 359px) {
+  .heading[data-present="task-heading"] {
+    flex-wrap: wrap;
+  }
+}

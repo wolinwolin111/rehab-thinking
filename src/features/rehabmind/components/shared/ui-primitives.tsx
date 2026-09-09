@@ -1,6 +1,7 @@
 import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { scoreGuideLabel } from "./score-guide-copy";
 import { StageTransition as PresentationStageTransition } from "./presentation/stage-transition";
+import { TaskHeading as PresentationTaskHeading } from "./presentation/task-heading";
 
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
 export function TreatmentRoadmap({ completed, current, upcoming }: { completed: Array<{ label: string; summary?: string }>; current: string; upcoming: string[] }) {
@@ -134,13 +135,10 @@ export function ScoreHistory({ scores, condition }: { scores: number[]; conditio
   </section>;
 }
 
+/** 步骤标题：转接到 presentation/TaskHeading（P3 迁移，原签名保持；
+ * 进度徽章带明确标签，长标题时徽章换行不挤字——plan §7.5）。 */
 export function StepHeading({ eyebrow, title, note, current, total, tutorialTarget }: { eyebrow: string; title: string; note?: string; current?: number; total?: number; tutorialTarget?: string }) {
-  const stepMatch = eyebrow.match(/第(\d+)步/);
-  const stepNum = stepMatch ? Number(stepMatch[1]) : null;
-  return <header className="rm-heading" data-rehabmind-tutorial={tutorialTarget}>
-    <div><span>{eyebrow}</span><h1>{title}</h1>{note ? <p>{note}</p> : null}{stepNum ? <div className="rm-step-progress" role="img" aria-label={`第${stepNum}步，共6步`}>{[1, 2, 3, 4, 5, 6].map((n) => <i key={n} className={n < stepNum ? "is-done" : n === stepNum ? "is-current" : ""} />)}</div> : null}</div>
-    {typeof current === "number" && total ? <b>{current + 1}<small>/{total}</small></b> : null}
-  </header>;
+  return <PresentationTaskHeading {...{ eyebrow, title, note, current, total, tutorialTarget }} />;
 }
 
 /** 阶段过渡页：转接到 presentation/StageTransition（P2 迁移，原签名保持）。 */

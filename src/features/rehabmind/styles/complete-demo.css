@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --rm-ink: #17262c;
   --rm-muted: #4c5a60;
   --rm-paper: #f4f7f5;
@@ -21,17 +21,17 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-/* 閿洏鐒︾偣鍙鎬э細缁熶竴鐢ㄩ啋鐩殑钃濈幆锛屾浛浠ｆ祻瑙堝櫒榛樿杞粨銆?*/
+/* 键盘焦点可见性：统一用醒目的蓝环，替代浏览器默认轮廓。 */
 :focus-visible { outline: 3px solid var(--rm-blue); outline-offset: 2px; border-radius: 6px; }
 button:focus:not(:focus-visible), summary:focus:not(:focus-visible) { outline: none; }
 
-/* 鏈瑙ｉ噴锛氳櫄绾垮姞涓嬪垝绾匡紝鎮仠鏄剧ず瀹屾暣閲婁箟銆?*/
+/* 术语解释：虚线加下划线，悬停显示完整释义。 */
 .rm-term { border-bottom: 1px dashed var(--rm-muted); cursor: help; }
-/* 鍏ㄩ儴淇℃伅妯″紡涓嬬己澶卞瓧娈电殑楂樹寒鏍囪銆?*/
+/* 全部信息模式下缺失字段的高亮标记。 */
 .rm-label.is-missing span { color: var(--rm-red); }
 .rm-label.is-missing { box-shadow: inset 3px 0 0 var(--rm-red); }
 .rm-missing-jump { margin: 0 2px; padding: 1px 7px; border: 0; border-radius: 999px; color: var(--rm-red); background: var(--rm-red-soft); font-size: 12px; font-weight: 700; cursor: pointer; }
-/* 鑲岃倝绱у紶搴﹂〉鐨勬樉鐪煎嚭鍙ｆ潯锛氫袱渚у樊鍒笉澶ф椂鍏嶇炕鍖哄煙鍗°€?*/
+/* 肌肉紧张度页的显眼出口条：两侧差别不大时免翻区域卡。 */
 .rm-tension-exit { padding: 12px 14px; border: 1px dashed var(--rm-line-strong); border-radius: 12px; background: var(--rm-paper); }
 .rm-tension-exit > b { display: block; margin-bottom: 8px; color: #415168; font-size: 13px; font-weight: 800; }
 html { background: var(--rm-paper); scroll-behavior: smooth; }
@@ -46,9 +46,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-brand { width: max-content; padding: 0; border: 0; color: white; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; cursor: default; user-select: none; pointer-events: none; }
 .rm-brand > b { width: 40px; height: 40px; color: white; background: var(--rm-blue); display: grid; place-items: center; font: 800 19px/1 "Roboto Condensed", ui-monospace, monospace; transform: rotate(-3deg); }
 .rm-brand-mark { width: 40px; height: 40px; border-radius: 9px; object-fit: contain; display: block; }
-/* 瑙嗚涓婚鐨?.rm-app img 閫氶厤锛坵idth/height:auto锛変細浠ユ洿楂樼壒寮傛€ф妸 LOGO
-   椤跺洖 160px 鑷劧灏哄锛屽湪绉诲姩绔拺鐮撮《鏍忓苟鍘嬩綇 stagebar锛堝浘1 鍥炲綊锛夈€?
-   姝ゅ鐢ㄥ悓婧愬祵濂楁彁鍗囩壒寮傛€ч拤鍥炲浐瀹氬昂瀵搞€?*/
+/* 视觉主题的 .rm-app img 通配（width/height:auto）会以更高特异性把 LOGO
+   顶回 160px 自然尺寸，在移动端撑破顶栏并压住 stagebar（图1 回归）。
+   此处用同源嵌套提升特异性钉回固定尺寸。 */
 .rm-app .rm-brand-mark { width: 40px; height: 40px; }
 .rm-brand strong { font-size: 19px; letter-spacing: -.02em; }
 .rm-top-context { display: flex; align-items: center; gap: 10px; color: #d7e0e1; font-size: 14px; }
@@ -84,19 +84,10 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-workspace { min-width: 0; padding: 54px 0 100px; }
 .rm-page { animation: rm-page-in .22s ease-out; }
 /* Stage-transition rules retired (P2 consolidation): the component moved to
- * components/shared/presentation/stage-transition.module.css; zero consumers
- * of these classes remain (ui-primitives re-export keeps the public API). */
-.rm-heading { margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
-.rm-heading > div { min-width: 0; }
-.rm-heading span { color: var(--rm-blue); font-size: 13px; font-weight: 850; letter-spacing: .08em; }
-.rm-heading h1 { max-width: 700px; margin: 7px 0 0; font-size: clamp(32px, 3vw, 40px); line-height: 1.18; letter-spacing: -.045em; }
-.rm-heading p { max-width: 670px; margin: 11px 0 0; color: var(--rm-muted); font-size: 16px; line-height: 1.7; }
-.rm-step-progress { margin-top: 10px; display: flex; gap: 6px; }
-.rm-step-progress i { width: 28px; height: 6px; border-radius: 3px; background: #dde4ee; display: block; }
-.rm-step-progress i.is-done { background: #27825c; }
-.rm-step-progress i.is-current { background: var(--rm-blue); }
-.rm-heading > b { flex: 0 0 auto; min-width: 72px; height: 62px; padding: 0 9px; color: var(--rm-blue); border: 1px solid #a7baf0; background: var(--rm-blue-soft); display: flex; align-items: center; justify-content: center; gap: 2px; white-space: nowrap; font: 800 25px/1 "Roboto Condensed", ui-monospace, monospace; transform: rotate(2deg); }
-.rm-heading > b small { margin: 0; font-size: 14px; }
+ * components/shared/presentation/stage-transition.module.css. */
+
+/* rm-heading/rm-step-progress rules retired (P3): TaskHeading owns its skin
+ * in task-heading.module.css; badge selectors have zero remaining consumers. */
 
 .rm-hero-input { padding: 9px; border: 2px solid var(--rm-ink); background: white; box-shadow: 11px 11px 0 #dbe4e1; }
 .rm-hero-input label { display: block; padding: 17px 18px 8px; font-size: 21px; font-weight: 850; }
@@ -108,9 +99,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-example { margin-top: 24px; border: 1px solid var(--rm-line); background: white; }
 .rm-example summary { padding: 12px 14px; color: var(--rm-blue); font-size: 14px; font-weight: 800; line-height: 1.4; cursor: pointer; list-style: none; }
 .rm-example summary::-webkit-details-marker { display: none; }
-.rm-example summary::after { content: "锛?; float: right; font-size: 18px; line-height: 1; }
+.rm-example summary::after { content: "＋"; float: right; font-size: 18px; line-height: 1; }
 .rm-example[open] summary { border-bottom: 1px solid var(--rm-line); }
-.rm-example[open] summary::after { content: "鈭?; }
+.rm-example[open] summary::after { content: "−"; }
 .rm-example p { margin: 0; padding: 12px 14px 14px; color: var(--rm-muted); font-size: 14px; line-height: 1.65; }
 
 .rm-collected { margin-bottom: 30px; border: 1px solid var(--rm-line); border-top: 5px solid var(--rm-blue); background: white; box-shadow: var(--rm-shadow); }
@@ -172,8 +163,8 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-symptom-group { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #fff; }
 .rm-symptom-group summary { padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 800; list-style: none; }
 .rm-symptom-group summary::-webkit-details-marker { display: none; }
-.rm-symptom-group summary::before { content: "鈻?"; color: var(--rm-blue); }
-.rm-symptom-group[open] summary::before { content: "鈻?"; }
+.rm-symptom-group summary::before { content: "▸ "; color: var(--rm-blue); }
+.rm-symptom-group[open] summary::before { content: "▾ "; }
 .rm-symptom-group .rm-options { padding: 0 14px 14px; }
 .rm-symptom-group.is-flat strong { display: block; padding: 12px 14px 6px; color: #415168; font-size: 14px; font-weight: 800; }
 .rm-exercise-alt { margin-top: 8px; border: 1px solid var(--rm-line); border-radius: 12px; background: #f8fafc; }
@@ -298,32 +289,32 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-safety-list { display: grid; gap: 8px; }
 .rm-safety-list > header { padding: 10px 14px; border: 1px solid var(--rm-line); background: #f6f8fa; display: flex; align-items: center; justify-content: space-between; }
 .rm-safety-list > header span { margin: 0; color: var(--rm-muted); font-size: 13px; font-weight: 850; }
-.rm-safety-list article { min-height: 82px; padding: 12px 12px 12px 18px; border: 1px solid var(--rm-line); background: white; display: grid; grid-template-columns: 1fr 190px; align-items: center; gap: 15px; }
+.rm-safety-list article:not([data-present="task-card"]) { min-height: 82px; padding: 12px 12px 12px 18px; border: 1px solid var(--rm-line); background: white; display: grid; grid-template-columns: 1fr 190px; align-items: center; gap: 15px; }
 .rm-safety-list article > .rm-question-alert { grid-column: 1 / -1; margin: 0; }
-.rm-safety-list article > div:first-child { display: grid; }
+.rm-safety-list article:not([data-present="task-card"]) > div:first-child { display: grid; }
 .rm-safety-list strong { font-size: 17px; line-height: 1.45; }
 .rm-safety-list span { margin-top: 4px; color: var(--rm-muted); font-size: 12px; }
-.rm-safety-list article > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.rm-safety-list button { min-height: 48px; border: 1px solid var(--rm-line); background: white; font-weight: 800; cursor: pointer; }
-.rm-safety-list button.is-selected { border-color: var(--rm-green); background: var(--rm-green-soft); }
-.rm-safety-list button.is-selected.is-alert { color: white; border-color: var(--rm-red); background: var(--rm-red); }
+.rm-safety-list article:not([data-present="task-card"]) > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.rm-safety-list button:not([data-present="choice-button"]) { min-height: 48px; border: 1px solid var(--rm-line); background: white; font-weight: 800; cursor: pointer; }
+.rm-safety-list button:not([data-present="choice-button"]).is-selected { border-color: var(--rm-green); background: var(--rm-green-soft); }
+.rm-safety-list button:not([data-present="choice-button"]).is-selected.is-alert { color: white; border-color: var(--rm-red); background: var(--rm-red); }
 .rm-bone-check { margin: 22px 0; border: 1px solid var(--rm-line); border-top: 5px solid var(--rm-gold); background: white; }
 .rm-bone-check > header { padding: 18px 20px; border-bottom: 1px solid var(--rm-line); }
 .rm-bone-check > header span { font-size: 20px; font-weight: 850; }
 .rm-bone-check > header p { margin: 5px 0 0; color: var(--rm-muted); font-size: 13px; }
-.rm-bone-check > article { padding: 15px 18px; border-bottom: 1px solid var(--rm-line); display: grid; grid-template-columns: 1fr 260px; align-items: center; gap: 15px; }
-.rm-bone-check > article > div:first-child { display: grid; gap: 4px; }
+.rm-bone-check > article:not([data-present="task-card"]) { padding: 15px 18px; border-bottom: 1px solid var(--rm-line); display: grid; grid-template-columns: 1fr 260px; align-items: center; gap: 15px; }
+.rm-bone-check > article:not([data-present="task-card"]) > div:first-child { display: grid; gap: 4px; }
 .rm-bone-check > article strong { font-size: 16px; line-height: 1.45; }
 .rm-bone-check > article span { color: var(--rm-muted); font-size: 12px; line-height: 1.5; }
-.rm-bone-check > article > div:last-child { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.rm-bone-check button { min-height: 44px; border: 1px solid var(--rm-line); background: white; font-weight: 800; cursor: pointer; }
-.rm-bone-check button.is-selected { color: white; border-color: var(--rm-blue); background: var(--rm-blue); }
+.rm-bone-check > article:not([data-present="task-card"]) > div:last-child { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.rm-bone-check button:not([data-present="choice-button"]) { min-height: 44px; border: 1px solid var(--rm-line); background: white; font-weight: 800; cursor: pointer; }
+.rm-bone-check button:not([data-present="choice-button"]).is-selected { color: white; border-color: var(--rm-blue); background: var(--rm-blue); }
 .rm-bone-check > div { padding: 15px 18px; display: grid; gap: 4px; }
 .rm-bone-check > div.is-review { background: var(--rm-gold-soft); }
 .rm-bone-check > div.is-clear { background: var(--rm-green-soft); }
 .rm-bone-check > div span { color: var(--rm-muted); font-size: 13px; line-height: 1.55; }
 .rm-imaging { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.rm-imaging button { min-height: 55px; padding: 10px 13px; border: 1px solid var(--rm-line); background: white; text-align: left; font-size: 14px; font-weight: 750; cursor: pointer; }
+.rm-imaging button:not([data-present="choice-button"]) { min-height: 55px; padding: 10px 13px; border: 1px solid var(--rm-line); background: white; text-align: left; font-size: 14px; font-weight: 750; cursor: pointer; }
 .rm-imaging button.is-selected { border-color: var(--rm-blue); box-shadow: inset 6px 0 var(--rm-blue); background: var(--rm-blue-soft); }
 .rm-surgery-confirmed { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--rm-line); border-radius: 8px; background: var(--rm-blue-soft); }
 .rm-surgery-confirmed > span { color: var(--rm-muted); font-size: 13px; font-weight: 700; }
@@ -713,9 +704,9 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-time-track span { max-width: 620px; color: var(--rm-muted); font-size: 14px; line-height: 1.6; }
 .rm-time-track button { grid-column: 2; grid-row: 1 / 3; }
 .rm-complete-panel { padding: 34px; border: 1px solid #91cbbb; border-top: 6px solid var(--rm-green); background: white; text-align: center; box-shadow: var(--rm-shadow); }
-/* 缁撹椤垫帓鐗堬細澶撮儴锛坋yebrow/澶ф爣棰?鍓彞/鍒嗘暟锛変繚鐣欏眳涓殑浠紡鎰燂紱
-   鍐呭鍗★紙鍔涢噺浜ゆ帴銆佸緟瑙ｉ噴鏂瑰悜锛夋槸琛屽紡淇℃伅锛屾仮澶嶅乏瀵归綈淇濊瘉鎵锛?
-   鍒楄〃鍦嗙偣涓庢枃瀛楀榻愯€屼笉鏄偓鍦ㄥ鍣ㄥ乏缂樸€?*/
+/* 结论页排版：头部（eyebrow/大标题/副句/分数）保留居中的仪式感；
+   内容卡（力量交接、待解释方向）是行式信息，恢复左对齐保证扫读，
+   列表圆点与文字对齐而不是悬在容器左缘。 */
 .rm-complete-panel > span { color: var(--rm-green); font-size: 13px; font-weight: 850; }
 .rm-complete-panel h2 { margin: 7px 0 0; font-size: 26px; }
 .rm-complete-panel p { margin: 17px auto 23px; max-width: 580px; color: var(--rm-muted); line-height: 1.7; }
@@ -1270,7 +1261,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-consent-copy p { margin: 0; color: #5c687c; line-height: 1.7; }
 .rm-consent-points { margin: 20px 0 14px; padding: 0; list-style: none; display: grid; gap: 9px; }
 .rm-consent-points li { padding-left: 25px; position: relative; color: #26344f; line-height: 1.5; }
-.rm-consent-points li::before { content: "鉁?; position: absolute; left: 0; color: #287769; font-weight: 900; }
+.rm-consent-points li::before { content: "✓"; position: absolute; left: 0; color: #287769; font-weight: 900; }
 .rm-consent-details { margin: 12px 0; padding: 12px 14px; border: 1px solid #d8dee8; background: #f8f9fb; }
 .rm-consent-details summary { color: #4053bc; font-weight: 800; cursor: pointer; }
 .rm-consent-details p { margin: 10px 0 0; color: #5c687c; font-size: 13px; line-height: 1.65; }
@@ -1327,24 +1318,19 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-top-context { display: none; }
   .rm-top-actions .rm-records-trigger { min-width: 44px; padding: 0 8px; font-size: 0; }
   .rm-current-case-code { max-width: 82px; font-size: 10px; }
-  .rm-top-actions .rm-records-trigger::before { content: "璁板綍"; font-size: 12px; }
+  .rm-top-actions .rm-records-trigger::before { content: "记录"; font-size: 12px; }
   .rm-top-actions .rm-records-trigger b { font-size: 10px; }
   .rm-top-actions .rm-feedback-trigger { padding: 0 8px; font-size: 0; }
-  .rm-top-actions .rm-feedback-trigger::before { content: "鍙嶉"; font-size: 12px; }
+  .rm-top-actions .rm-feedback-trigger::before { content: "反馈"; font-size: 12px; }
   .rm-top-actions .rm-tutorial-trigger { padding: 0 8px; font-size: 12px; }
   .rm-top-actions button:last-child { padding-inline: 11px; font-size: 12px; }
   .rm-shell { width: 100%; padding: 0; display: block; }
   .rm-step-rail { display: none; }
   .rm-workspace { width: min(100% - 24px, 720px); margin: 0 auto; padding: 28px 0 92px; }
-  /* Stage-transition order now comes from data-action-role layout rules in
-   * mobile-patient.css; the legacy first-child guess is retired (R-05). */
+  /* Stage-transition compact rules retired (P2): component-owned module CSS. */
   .rm-workbench-stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rm-workbench-columns { grid-template-columns: 1fr; }
-  .rm-heading { margin-bottom: 22px; }
-  .rm-heading h1 { font-size: 30px; letter-spacing: -.04em; }
-  .rm-heading p { font-size: 15px; }
-  .rm-heading > b { min-width: 64px; height: 50px; padding-inline: 7px; font-size: 20px; }
-  .rm-hero-input { box-shadow: 7px 7px 0 #dbe4e1; }
+          .rm-hero-input { box-shadow: 7px 7px 0 #dbe4e1; }
   .rm-hero-input label { font-size: 18px; }
   .rm-hero-input textarea { min-height: 230px; padding: 15px; font-size: 18px; }
   .rm-hero-input > div { padding-left: 8px; display: grid; }
@@ -1386,7 +1372,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
   .rm-bone-check > article { grid-template-columns: 1fr; }
   .rm-imaging { grid-template-columns: 1fr; }
   .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.split, .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.three { grid-template-columns: 1fr; }
-  /* v2 patients use the role-driven authoritative rail (mobile-patient.css 搂8.4); this legacy position guess must not touch them. */
+  /* v2 patients use the role-driven authoritative rail (mobile-patient.css §8.4); this legacy position guess must not touch them. */
   .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.split > button:first-child, .rm-app:not([data-mobile-ui="v2"]) .rm-page-actions.three > button:first-child { order: 3; }
   .rm-check-card > section, .rm-function-result-stack > section { min-height: 0; padding: 17px; grid-template-columns: 1fr; gap: 5px; }
   .rm-check-card > section p { font-size: 17px; }
@@ -1632,7 +1618,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-optional-function-symptom { margin-top: 16px; padding: 12px 14px; border: 1px solid #e2e8e5; border-radius: 12px; background: #fbfcfb; }
 .rm-optional-function-symptom summary { cursor: pointer; color: #405a50; font-weight: 800; }
 
-/* 涓嬭偄鐥囩姸瀹氫綅锛氬厛鐐瑰ぇ鍖哄煙锛屽啀閫夋櫘閫氫汉鑳借娓呯殑鍏蜂綋浣嶇疆銆?*/
+/* 下肢症状定位：先点大区域，再选普通人能说清的具体位置。 */
 .rm-lower-limb-picker { margin-top: 18px; border: 1px solid #bfcfca; background: #f9fbfa; box-shadow: 0 18px 44px rgba(23, 38, 44, .07); }
 .rm-location-picker-head { min-height: 76px; padding: 16px 18px 14px 22px; border-bottom: 1px solid #d6e0dd; background: white; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 20px; }
 .rm-location-picker-head > div { display: grid; gap: 3px; }
@@ -1662,7 +1648,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-body-hotspot:hover { z-index: 5; border-color: #176fa5; background: rgba(46, 152, 211, .2); transform: translateX(-50%) scale(1.035); box-shadow: 0 0 0 4px rgba(36, 139, 198, .1); }
 .rm-body-hotspot.is-active { z-index: 5; border: 2px solid #ef8a32; background: rgba(255, 151, 57, .25); box-shadow: 0 0 0 5px rgba(240, 139, 49, .13); }
 .rm-body-hotspot.is-active span { color: #74360a; background: #fff4e7; }
-.rm-body-hotspot.has-selection::after { content: "鉁?; width: 22px; height: 22px; border-radius: 50%; color: white; background: var(--rm-blue); display: grid; place-items: center; position: absolute; top: 4px; right: 4px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 7px rgba(28, 61, 126, .25); }
+.rm-body-hotspot.has-selection::after { content: "✓"; width: 22px; height: 22px; border-radius: 50%; color: white; background: var(--rm-blue); display: grid; place-items: center; position: absolute; top: 4px; right: 4px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 7px rgba(28, 61, 126, .25); }
 .rm-body-hotspot.is-thigh { top: 18%; width: 20%; height: 27%; border-radius: 44% 44% 35% 35%; }
 .rm-body-hotspot.is-knee { top: 43%; width: 17%; height: 10%; }
 .rm-body-hotspot.is-calf { top: 52%; width: 17%; height: 25%; border-radius: 38% 38% 28% 28%; }
@@ -1709,7 +1695,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-location-empty { margin: 0; padding: 15px 18px; border-top: 1px solid #d6e0dd; color: var(--rm-muted); background: white; font-size: 14px; text-align: center; }
 .rm-lower-limb-picker > footer { padding: 12px 18px; color: #64736f; border-top: 1px solid #d6e0dd; background: #edf2f0; font-size: 12px; font-weight: 700; }
 
-/* 灞€閮ㄧ毊鑲ゅ浘璋憋細鎸夐挳閫変晶鍒拰澶ч儴浣嶏紝鏀惧ぇ鍥剧洿鎺ラ€夌粏鍒嗗尯鍩熴€?*/
+/* 局部皮肤图谱：按钮选侧别和大部位，放大图直接选细分区域。 */
 .rm-atlas-picker .rm-location-picker-head > b { padding: 8px 11px; color: #17485c; border: 1px solid #9bc9df; border-radius: 999px; background: #edf8fd; font-size: 13px; white-space: nowrap; }
 .rm-atlas-workbench { padding: 18px; background: #eaf1f3; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 18px; }
 .rm-region-atlas { min-width: 0; border: 1px solid #c5d3d7; background: white; }
@@ -1753,7 +1739,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-atlas-picker.is-professional .rm-region-panel { min-height: 500px; aspect-ratio: 3 / 4; }
 .rm-atlas-picker.is-professional .rm-region-atlas > p { padding: 13px 16px; }
 
-/* 妫€鏌ヤ腑鐨勫畾浣嶆槸涓€涓煭闂锛屼笉鍐嶉噸澶嶅睍绀烘暣濂椾汉浣撳伐浣滃彴銆?*/
+/* 检查中的定位是一个短问题，不再重复展示整套人体工作台。 */
 .rm-atlas-picker.is-compact { margin-top: 14px; border-color: #c8d5e6; box-shadow: none; }
 .rm-atlas-picker.is-compact .rm-location-picker-head { min-height: 58px; padding: 11px 14px; }
 .rm-atlas-picker.is-compact .rm-location-picker-head strong { font-size: 18px; }
@@ -2088,6 +2074,7 @@ button:disabled { cursor: not-allowed; opacity: .36; }
 .rm-records-page .rm-record-case > footer { padding: 12px 16px; border-top: 1px solid var(--rm-line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .rm-records-page .rm-record-case > footer button:not([data-present="action-button"]) { min-height: 48px; padding: 8px 16px; border-radius: 8px; font-weight: 850; cursor: pointer; }
 .rm-records-page .rm-record-continue { border: 1px solid var(--rm-blue); color: white; background: var(--rm-blue); }
+/* .rm-record-delete rule retired (P1): the delete button is an ActionButton danger variant. */
 .rm-records-page .rm-record-empty { min-height: 220px; padding: 36px 18px; border: 1px solid var(--rm-line); border-radius: 8px; background: white; display: grid; place-content: center; gap: 8px; text-align: center; }
 .rm-records-page .rm-record-empty p { margin: 0; color: var(--rm-muted); line-height: 1.6; }
 .rm-records-page-actions { min-height: 76px; padding: 12px max(18px, calc((100vw - 920px) / 2)) calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rm-line); background: white; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }

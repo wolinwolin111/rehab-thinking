@@ -61,7 +61,6 @@ body:has(.rm-app) {
 .rm-app article,
 .rm-app section,
 .rm-app details,
-.rm-app .rm-heading > b,
 .rm-app .rm-step-rail button > i {
   border-radius: 12px;
 }
@@ -179,23 +178,6 @@ body:has(.rm-app) {
 .rm-page { animation: rm-visual-page-in .28s cubic-bezier(.16, 1, .3, 1); }
 @keyframes rm-visual-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-.rm-heading { margin-bottom: 26px; }
-.rm-heading span { color: var(--rm-visual-primary-deep); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
-.rm-heading h1 { color: var(--rm-visual-ink); font-weight: 800; letter-spacing: -.055em; }
-.rm-heading p { color: var(--rm-visual-muted); }
-.rm-heading > b {
-  min-width: 58px;
-  height: 58px;
-  color: var(--rm-visual-primary-deep);
-  border-color: rgba(101, 103, 220, .18);
-  background: linear-gradient(145deg, #f4f3ff, #eaf7f4);
-  box-shadow: 0 10px 22px rgba(88, 91, 175, .08);
-  transform: rotate(0);
-}
-.rm-step-progress { gap: 5px; }
-.rm-step-progress i { width: 30px; height: 5px; background: #e4e7f0; }
-.rm-step-progress i.is-done { background: var(--rm-visual-mint); }
-.rm-step-progress i.is-current { background: var(--rm-visual-primary); }
 
 .rm-hero-input,
 .rm-collected,
@@ -466,8 +448,6 @@ body:has(.rm-app) {
   .rm-step-rail button > b { font-size: 10px; }
   .rm-step-rail > section { display: none; }
   .rm-workspace { padding: 30px 0 70px; }
-  .rm-heading h1 { font-size: 30px; }
-  .rm-heading > b { min-width: 48px; height: 48px; }
   .rm-hero-input textarea { min-height: 210px; font-size: 17px; }
   .rm-workbench-stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rm-workbench-columns { grid-template-columns: 1fr; }
@@ -737,19 +717,6 @@ body:has(.rm-app) {
     padding: 24px 0 84px;
   }
 
-  .rm-heading {
-    margin-bottom: 18px;
-    gap: 12px;
-  }
-  .rm-heading span { font-size: 11px; letter-spacing: .08em; }
-  .rm-heading h1 {
-    font-size: 26px;
-    line-height: 1.25;
-    letter-spacing: -.035em;
-  }
-  .rm-heading p { margin-top: 8px; font-size: 14px; line-height: 1.55; }
-  .rm-heading > b { min-width: 44px; height: 44px; font-size: 18px; }
-
   /* Stage-transition theme overrides retired (P2 consolidation): the
    * component owns its full skin via stage-transition.module.css. */
 
@@ -951,7 +918,6 @@ body:has(.rm-app) {
 
 @media (max-width: 420px) {
   .rm-workspace { width: calc(100% - 16px); }
-  .rm-heading h1 { font-size: 25px; }
   .rm-collected-quick span { padding-inline: 8px; }
   .rm-guided-nav button { padding-inline: 7px; }
   .rm-safety-list article { padding: 10px; }
@@ -965,7 +931,6 @@ body:has(.rm-app) {
   .rm-topbar { height: 58px; padding: 0 12px; grid-template-columns: minmax(0, 1fr) auto; }
   .rm-step-rail { display: none; overflow-x: visible; }
   .rm-workspace { width: min(100% - 24px, 720px); padding: 22px 0 calc(86px + env(safe-area-inset-bottom)); }
-  .rm-heading h1 { letter-spacing: 0; }
   .rm-mobile-stagebar { top: 58px; }
   .rm-context-hints { width: auto; margin: 8px 10px; position: static; }
   .rm-context-hints .rm-floating-hint { position: fixed; top: 68px; left: 10px; right: 10px; z-index: 160; box-shadow: 0 10px 30px rgba(28, 55, 78, .18); }
