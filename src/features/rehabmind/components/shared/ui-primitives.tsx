@@ -1,5 +1,6 @@
 import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { scoreGuideLabel } from "./score-guide-copy";
+import { StageTransition as PresentationStageTransition } from "./presentation/stage-transition";
 
 /** 处理流程路线图：已完成 / 正在做 / 接下来。 */
 export function TreatmentRoadmap({ completed, current, upcoming }: { completed: Array<{ label: string; summary?: string }>; current: string; upcoming: string[] }) {
@@ -142,7 +143,7 @@ export function StepHeading({ eyebrow, title, note, current, total, tutorialTarg
   </header>;
 }
 
-/** 阶段过渡页：展示下一阶段的编号、标题、说明和操作按钮。 */
+/** 阶段过渡页：转接到 presentation/StageTransition（P2 迁移，原签名保持）。 */
 export function StageTransition({ number, title, message, button, onContinue, onBack }: {
   number: string;
   title: string;
@@ -151,15 +152,5 @@ export function StageTransition({ number, title, message, button, onContinue, on
   onContinue: () => void;
   onBack: () => void;
 }) {
-  return <section className="rm-stage-transition" aria-live="polite">
-    <div className="rm-stage-transition-copy">
-      <span>第 {number} 阶段 · 下一阶段</span>
-      <h1>{title}</h1>
-      <p>下一步：{message}</p>
-    </div>
-    <div className="rm-stage-transition-actions" data-action-layout="stage-transition">
-      <button data-action-role="secondary" type="button" onClick={onBack}>返回查看</button>
-      <button data-action-role="primary" type="button" className="rm-primary" onClick={onContinue}>{button}</button>
-    </div>
-  </section>;
+  return <PresentationStageTransition {...{ number, title, message, button, onContinue, onBack }} />;
 }

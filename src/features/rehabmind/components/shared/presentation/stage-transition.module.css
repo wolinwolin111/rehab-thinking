@@ -1,0 +1,64 @@
+/*
+ * StageTransition (plan §7.6): two DOM sections — copy and actions — map to
+ * two layout rows. No three-row grid, no giant number tile, no card-stretching
+ * buttons. Desktop buttons stay content-sized (~48-58px); phone stacking is a
+ * layout-only media query. Skin applies at every viewport.
+ */
+
+.transition {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--present-line);
+  border-radius: var(--present-card-radius);
+  background: var(--present-surface);
+  font-family: var(--present-font);
+}
+
+.copy {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.eyebrow {
+  color: var(--present-success);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.title {
+  margin: 0;
+  color: var(--present-ink);
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.message {
+  margin: 0;
+  color: var(--present-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+
+/* Buttons keep their ActionButton skin; only width assignment happens here. */
+.actions > :global(button),
+.actions > button {
+  width: 100%;
+  min-height: 52px;
+}
+
+/* Phone ≤359px: secondary on top, primary below (plan §7.6). */
+@media (max-width: 359px) {
+  .actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
